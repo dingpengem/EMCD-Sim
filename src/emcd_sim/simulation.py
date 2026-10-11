@@ -21,12 +21,20 @@ class SimulationResult:
     moment_muB: float
     thickness_nm: float
     voltage_v: float
+    chiral_groups: Mapping[str, tuple[str, ...]] | None = None
+
+    def chiral_spectrum(self, label: str) -> np.ndarray:
+        """Sum physical aperture spectra belonging to one chirality group."""
+        names = (self.chiral_groups[label] if self.chiral_groups is not None
+                 else (label,))
+        return sum((self.detector_spectra[name] for name in names),
+                   np.zeros_like(self.energy_ev))
 
     def difference(self, positive: str = "A", negative: str = "B") -> np.ndarray:
-        return self.detector_spectra[positive] - self.detector_spectra[negative]
+        return self.chiral_spectrum(positive) - self.chiral_spectrum(negative)
 
     def asymmetry(self, positive: str = "A", negative: str = "B") -> np.ndarray:
-        a, b = self.detector_spectra[positive], self.detector_spectra[negative]
+        a, b = self.chiral_spectrum(positive), self.chiral_spectrum(negative)
         return np.divide(a-b, a+b, out=np.zeros_like(a), where=(a+b)!=0)
 
     def at_edge(self, edge_ev: float = 852.7) -> tuple[float, float, float]:
@@ -41,6 +49,7 @@ class EMCDSimulation:
     magnetization: MagnetizationLaw
     detectors: Mapping[str, VirtualDetector]
     magnetization_direction_xyz: tuple[float, float, float] = (0.0, 0.0, 1.0)
+    chiral_groups: Mapping[str, tuple[str, ...]] | None = None
 
     def __post_init__(self) -> None:
         if len(self.detectors) < 2:
@@ -48,6 +57,12 @@ class EMCDSimulation:
         direction = np.asarray(self.magnetization_direction_xyz, dtype=float)
         if direction.shape != (3,) or not np.all(np.isfinite(direction)) or np.linalg.norm(direction) < 1e-12:
             raise ValueError("magnetization direction must be a nonzero 3-vector")
+        if self.chiral_groups is not None:
+            if set(self.chiral_groups) != {"A", "B"}:
+                raise ValueError("chiral_groups must define A and B")
+            a, b = set(self.chiral_groups["A"]), set(self.chiral_groups["B"])
+            if not a or not b or a & b or a | b != set(self.detectors):
+                raise ValueError("chiral groups must partition all physical apertures")
 
     def angular_components(self, energy_ev: float, coherence: np.ndarray,
                            qx: np.ndarray, qy: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -58,12 +73,14 @@ class EMCDSimulation:
         """
         qz = -characteristic_qz_angstrom_inv(energy_ev, self.elastic.microscope.acceleration_kv)
         g = self.elastic.reciprocal_vectors_xy
-        incident_kxy = self.elastic.microscope.incident_k_xy
-        # Q is absolute outgoing transverse k, referenced to incident optic axis.
-        # q_j = k_f - k_i - g_j, with inelastic |k_f| effects retained only in qz.
+        # The map coordinates are relative to the 000 (transmitted) beam:
+        # Q = k_f,perp - k_inc,perp. Therefore q_j,perp = Q - g_j.
+        # Do NOT subtract the incident tilt again: doing so displaced the
+        # apparent reciprocal map away from the indexed elastic diffraction.
+        # Longitudinal momentum transfer uses the paraxial qz approximation.
         q = np.stack((
-            qx[..., None] - incident_kxy[0] - g[:, 0],
-            qy[..., None] - incident_kxy[1] - g[:, 1],
+            qx[..., None] - g[:, 0],
+            qy[..., None] - g[:, 1],
             np.broadcast_to(np.asarray(qz), qx.shape)[..., None] * np.ones(len(g)),
         ), axis=-1)
         norm2 = np.sum(q*q, axis=-1)
@@ -115,4 +132,5 @@ class EMCDSimulation:
                 nonmag_l3 = thickness_nm * n * energy_nonmag[i]
                 magnetic_l3 = thickness_nm * m * energy_mag[i]
         return SimulationResult(energies, qx, qy, nonmag_l3, magnetic_l3,
-                                spectra, masks, moment, thickness_nm, voltage_v)
+                                spectra, masks, moment, thickness_nm, voltage_v,
+                                self.chiral_groups)

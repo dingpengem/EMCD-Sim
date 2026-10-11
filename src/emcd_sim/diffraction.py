@@ -100,7 +100,8 @@ def select_diffraction_setup(
 
 
 def save_diffraction_pattern(model, thickness_nm: float, output: Path | str,
-                             condition: DiffractionSetup) -> dict:
+                             condition: DiffractionSetup, detectors=None,
+                             chiral_groups=None) -> dict:
     """Save calculated elastic spot intensities, s_g, and labeled PNG/NPZ/CSV.
 
     Spot broadening in the PNG is visual only, not a detector or probe model.
@@ -152,6 +153,21 @@ def save_diffraction_pattern(model, thickness_nm: float, output: Path | str,
         ax.annotate(label, (gx,gy), xytext=(-4,9) if gx > 0.88*gmax else (3,9),
                     textcoords="offset points", color="white", fontsize=8,
                     ha="right" if gx > 0.88*gmax else "left", va="bottom")
+    if detectors:
+        from matplotlib.patches import Circle
+        for name, detector in detectors.items():
+            xy_det = detector.center_q_xy
+            ax.add_patch(Circle(xy_det, detector.radius_q, fill=False,
+                                ec="cyan", ls="--", lw=1.5))
+            ax.annotate(name, xy_det, textcoords="offset points", xytext=(8,-12),
+                        color="cyan", fontsize=9, fontweight="bold")
+        if condition.name in {"two-beam", "near-2bc", "symmetric-3bc"}:
+            g200 = 2.0 / 3.524
+            from matplotlib.patches import Circle as ThalesCircle
+            xcenters = [g200/2] if condition.name != "symmetric-3bc" else [-g200/2,g200/2]
+            for xc in xcenters:
+                ax.add_patch(ThalesCircle((xc,0),g200/2,fill=False,
+                                          ec="white",ls=":",alpha=.5,lw=0.9))
     ax.axhline(0, color="white", alpha=0.2, lw=0.7)
     ax.axvline(0, color="white", alpha=0.2, lw=0.7)
     ax.set(xlabel=r"$g_x$ (cycles / $\AA$)",ylabel=r"$g_y$ (cycles / $\AA$)",
@@ -180,6 +196,40 @@ def save_diffraction_pattern(model, thickness_nm: float, output: Path | str,
     fig.tight_layout(rect=(0,0.045,1,.90))
     fig.savefig(output / "diffraction_pattern.png", dpi=180)
     plt.close(fig)
+
+    # A dedicated near-origin view makes the chiral aperture pairs visible
+    # even when the elastic basis contains far-out ±400/±600 reflections.
+    if detectors and condition.name in {"two-beam", "near-2bc", "symmetric-3bc"}:
+        fig_ap, ax_ap = plt.subplots(figsize=(7.0, 6.5))
+        g200 = 2.0 / 3.524
+        from matplotlib.patches import Circle
+        for index in ((0,0,0),(2,0,0),(-2,0,0)):
+            if index not in condition.beams.hkl:
+                continue
+            gx, gy = model.crystal.g_vector(index)[:2]
+            ax_ap.plot(gx,gy,"ko",ms=8)
+            ax_ap.annotate("("+"".join(map(str,index))+")",(gx,gy),
+                           xytext=(4,8),textcoords="offset points",fontsize=11)
+        for sign in ([1,-1] if condition.name == "symmetric-3bc" else [1]):
+            ax_ap.add_patch(Circle((sign*g200/2,0), g200/2,
+                                   fill=False, ls=":", ec="gray",lw=1.4))
+        for name,det in detectors.items():
+            gx, gy = det.center_q_xy
+            ax_ap.add_patch(Circle((gx,gy),det.radius_q,
+                                   fill=False, lw=2, ec="#177AA6"))
+            ax_ap.text(gx,gy,name,ha="center",va="center",fontsize=10)
+        ax_ap.axhline(0,color="0.6",lw=.6)
+        ax_ap.axvline(0,color="0.6",lw=.6)
+        ax_ap.set(xlabel=r"$Q_x$ ($\AA^{-1}$)",ylabel=r"$Q_y$ ($\AA^{-1}$)",
+                  title=f"FCC Ni [001]  |  {condition.name}\nChiral EELS collection apertures")
+        ax_ap.set_xlim(-1.3*g200,1.3*g200)
+        ax_ap.set_ylim(-1.05*g200,1.05*g200)
+        ax_ap.set_aspect("equal")
+        fig_ap.text(.5,.02,"Dotted: geometric Thales circles (paraxial transverse approximation)."
+                    " Not SNR-optimized.",fontsize=9,ha="center")
+        fig_ap.tight_layout(rect=(0,.035,1,1))
+        fig_ap.savefig(output / "aperture_geometry.png",dpi=180)
+        plt.close(fig_ap)
     return {
         "diffraction_condition":condition.name,
         "nominal_zone_axis_hkl":list(condition.zone_axis),
@@ -190,4 +240,8 @@ def save_diffraction_pattern(model, thickness_nm: float, output: Path | str,
         "elastic_intensity":intensity.tolist(),
         "elastic_total_intensity":float(sum(intensity)),
         "diffraction_approximation":condition.approximation,
+        "physical_apertures":({name:{"center_q_xy":list(det.center_q_xy),
+                                       "radius_q":det.radius_q}
+                                for name, det in detectors.items()} if detectors else {}),
+        "chiral_groups":chiral_groups or {"A":["A"], "B":["B"]},
     }

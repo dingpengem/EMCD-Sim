@@ -2,7 +2,7 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**.
 
-> **Research status: v0.3.0.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.3.1.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 ## What works
 
@@ -11,7 +11,7 @@ Independent, modular **electron magnetic circular dichroism (EMCD)** simulation 
 - **Physical multi-beam elastic Ni scattering:** Lobato–Van Dyck atomic electron factors, FCC electron structure factors, occupancy and optional Debye–Waller B, relativistically corrected diffraction coupling, seven-beam [001] baseline (or auto-generated 2D ZOLZ set).
 - Hermitian Bloch-wave elastic propagation and depth-averaged coherence (incident wave); optional original surrogate backend for comparison.
 - Cubic dipole-MDFF geometry `N(E) q·q′ + i M(E) m·(q×q′)` and energy-resolved diffraction map.
-- Opposite-side circular virtual detectors A/B → spectra, Δ(E), asymmetry `(A−B)/(A+B)`.
+- 2BC Thales-circle A/B apertures and 3BC four-quadrant double-difference chiral grouping. EELS maps and indexed diffraction use the same 000-centered coordinates.
 - **Pluggable core-loss line-shapes** (`LEdgeSpectrum` or `TabulatedEdgeSpectrum` using measured/DFT arrays).
 - **Pluggable sample-bias-to-moment models**: constant (default) or user-supplied `V,µB` table; fictional demo data clearly marked.
 - Lightweight numerical tests and reproducible PNG / NPZ / JSON output.
@@ -96,3 +96,7 @@ V0.3 **does** use tabulated neutral-Ni scattering factors to derive a real, nona
 ## GitHub / Mac deployment
 
 The initial project can be unpacked at `~/EM_code/EMCD-Sim`. From inside the folder, run `bash scripts/publish_on_mac.sh` (requires `gh` and GitHub authentication). It creates the **separate public** `dingpengem/EMCD-Sim` repository on GitHub and publishes the local commit. Environments, caches, generated outputs, local editor settings, and secrets are excluded by `.gitignore`.
+
+## Detector geometry correction (v0.3.1)
+
+2BC: A/B at (g/2, +/-g/2), g=|g_200|. Symmetric 3BC: physical apertures RU, RD, LU, LD at (+/-g/2,+/-g/2), with chiral difference (RU+LD)-(RD+LU). The previous v0.3.0 coordinates erroneously re-subtracted incident tilt from 000-centered reciprocal maps. These are geometric, not SNR-optimized apertures. See [diffraction and detector geometry](docs/DIFFRACTION_CONDITIONS.md).

@@ -1,3 +1,10 @@
+# v0.3.1 — Chiral aperture geometry fix
+
+- Corrected 000-centered transverse momentum coordinate for tilted 2BC/3BC EMCD maps (removed erroneous extra incident-tilt subtraction).
+- Exact transverse Thales-circle detector centers for 2BC/near-2BC; four physical 3BC apertures and symmetry-correct double difference.
+- Added detector overlays and standalone `aperture_geometry.png`, per-aperture spectra, group metadata and focused regression tests.
+- Still illustrative: truncated systematic rows, simplified MDFF, no outgoing channeling or SNR optimization.
+
 # Changelog
 
 ## 0.2.0 — Ni physical elastic Bloch-wave solver

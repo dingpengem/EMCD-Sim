@@ -66,7 +66,8 @@ def main() -> None:
         sim = nickel_physical_benchmark(
             law, tilt_mrad_xy=tilt, acceleration_kv=args.acceleration_kv,
             beam_order=args.beam_order, debye_waller_b_angstrom2=args.b_factor,
-            beams_override=setup.beams)
+            beams_override=setup.beams,
+            diffraction_condition=setup.name)
     else:
         sim = nickel_three_beam(law, tilt_mrad_xy=tilt,
                                 acceleration_kv=args.acceleration_kv,
@@ -77,7 +78,9 @@ def main() -> None:
                         approximation="Legacy 3-beam surrogate, not physical Ni potential")
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
-    diffraction = save_diffraction_pattern(sim.elastic, args.thickness_nm, output, setup)
+    diffraction = save_diffraction_pattern(sim.elastic, args.thickness_nm, output, setup,
+                                           detectors=sim.detectors,
+                                           chiral_groups=sim.chiral_groups)
     if args.diffraction_only:
         metadata = {**diffraction, "material":"FCC Ni", "acceleration_kv":args.acceleration_kv,
                     "thickness_nm":args.thickness_nm,"elastic_backend":args.elastic_backend,
@@ -92,8 +95,9 @@ def main() -> None:
     np.savez_compressed(output / "ni_emcd.npz", energy_ev=result.energy_ev,
         qx_inv_angstrom=result.qx_angstrom_inv, qy_inv_angstrom=result.qy_angstrom_inv,
         nonmag_map=result.nonmag_map_at_l3, magnetic_map=result.magnetic_map_at_l3,
-        detector_A=result.detector_spectra["A"], detector_B=result.detector_spectra["B"],
-        difference=result.difference(), asymmetry=result.asymmetry())
+        detector_A=result.chiral_spectrum("A"), detector_B=result.chiral_spectrum("B"),
+        difference=result.difference(), asymmetry=result.asymmetry(),
+        **{"aperture_"+name:spectrum for name, spectrum in result.detector_spectra.items()})
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -106,16 +110,21 @@ def main() -> None:
         axes[0].add_patch(patches.Circle(det.center_q_xy, det.radius_q, fill=False,
                                         edgecolor="black", linewidth=1.4))
         axes[0].text(*det.center_q_xy, name, ha="center", va="center", color="black")
+    for hkl, g in zip(sim.elastic.beams.hkl, sim.elastic.reciprocal_vectors_xy):
+        if ext[0] <= g[0] <= ext[1] and ext[2] <= g[1] <= ext[3]:
+            axes[0].plot(g[0], g[1], 'k+', ms=4, alpha=.5)
+            axes[0].annotate("("+"".join(str(x) for x in hkl)+")", g,
+                             xytext=(3,4), textcoords="offset points", fontsize=6)
     fig.colorbar(im, ax=axes[0], shrink=.8, label="magnetic term (arb.)")
     axes[0].set(xlabel=r"$q_x$ ($\AA^{-1}$)", ylabel=r"$q_y$ ($\AA^{-1}$)", title="Ni L3 magnetic angular term")
-    for label, val in result.detector_spectra.items():
-        axes[1].plot(result.energy_ev, val, label=label)
+    for label in ("A", "B"):
+        axes[1].plot(result.energy_ev, result.chiral_spectrum(label), label=label)
     axes[1].set(xlabel="Energy loss (eV)", ylabel="Integrated signal (arb.)", title="Virtual detector EELS")
     axes[1].legend()
     axes[2].plot(result.energy_ev, result.asymmetry())
     axes[2].axhline(0., linewidth=.6, color="gray")
     axes[2].set(xlabel="Energy loss (eV)", ylabel="(A−B)/(A+B)", title="EMCD asymmetry")
-    fig.suptitle(f"FCC Ni EMCD (illustrative MDFF; {args.elastic_backend} elastic) | "
+    fig.suptitle(f"FCC Ni {setup.name} EMCD (illustrative MDFF; {args.elastic_backend} elastic) | "
                  f"{result.thickness_nm:g} nm | {result.voltage_v:g} V")
     fig.tight_layout()
     fig.savefig(output / "ni_emcd.png", dpi=180)
@@ -154,6 +163,8 @@ def main() -> None:
         extinction_distance_200_nm=(sim.elastic.extinction_distance_nm((2,0,0))
                                       if is_physical else args.xi_nm),
         b_factor_angstrom2=(args.b_factor if is_physical else None),
+        aperture_coordinates="transmitted-beam-centered Q=(kf-ki)_perp, cycles/angstrom",
+        emcd_difference_definition="A-B; symmetric-3bc A=RU+LD, B=RD+LU",
         elastic_absorption=False, outgoing_channeling=False,
         edge_sample_ev=energy, difference_at_l3_arbitrary= difference,
         asymmetry_at_l3=contrast, calibrated=False,

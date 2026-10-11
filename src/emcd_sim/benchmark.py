@@ -7,6 +7,36 @@ from .simulation import EMCDSimulation
 from .voltage import ConstantMagnetization, MagnetizationLaw
 
 
+def nickel_apertures(condition: str):
+    """Nominal collection apertures in 000-centered reciprocal coordinates.
+
+    Thales circle: 000--+200 for 2BC, and 000--±200 for 3BC.
+    Geometry presets are not numerical optimization of EMCD SNR.
+    """
+    g200 = 2 / 3.524
+    radius = 0.16 * g200
+    if condition in {"two-beam", "near-2bc"}:
+        return {
+            "A": VirtualDetector((0.5*g200, 0.5*g200), radius),
+            "B": VirtualDetector((0.5*g200, -0.5*g200), radius),
+        }, None
+    if condition == "symmetric-3bc":
+        # Symmetric 3BC has four chiral positions and alternating signs:
+        # (RU+LD) - (RD+LU). Two apertures on +200 side alone omit the
+        # left/right symmetry cancellation of the classical double difference.
+        return {
+            "RU": VirtualDetector((0.5*g200, 0.5*g200), radius),
+            "RD": VirtualDetector((0.5*g200, -0.5*g200), radius),
+            "LU": VirtualDetector((-0.5*g200, 0.5*g200), radius),
+            "LD": VirtualDetector((-0.5*g200, -0.5*g200), radius),
+        }, {"A": ("RU", "LD"), "B": ("RD", "LU")}
+    # Preserve original v0.3 systematic-row and zone-axis demonstrators.
+    return {
+        "A": VirtualDetector((0.55*g200, 0.52*g200), radius),
+        "B": VirtualDetector((0.55*g200, -0.52*g200), radius),
+    }, None
+
+
 def nickel_three_beam(magnetization: MagnetizationLaw | None = None,
                       tilt_mrad_xy: tuple[float, float] = (0, 0),
                       acceleration_kv: float = 200.0,
@@ -39,7 +69,8 @@ def nickel_physical_benchmark(magnetization: MagnetizationLaw | None = None,
                               debye_waller_b_angstrom2: float = 0.0,
                               zone2d_max_g_angstrom_inv: float | None = None,
                               max_beams: int = 25,
-                              beams_override: BeamSet | None = None) -> EMCDSimulation:
+                              beams_override: BeamSet | None = None,
+                              diffraction_condition: str = "systematic-row") -> EMCDSimulation:
     """FCC Ni neutral-atom physical-potential *entrance-only* EMCD benchmark.
 
     Default basis: (000), ±(200), ±(400), ±(600). The optionally centered
@@ -59,13 +90,9 @@ def nickel_physical_benchmark(magnetization: MagnetizationLaw | None = None,
         potential=IndependentAtomPotential(
             crystal=crystal, debye_waller_b_angstrom2=debye_waller_b_angstrom2),
     )
-    g200 = 2 / 3.524
-    centers = (0.55 * g200, 0.52 * g200)
+    detectors, chiral_groups = nickel_apertures(diffraction_condition)
     return EMCDSimulation(
         elastic=elastic, mdff=DipoleMDFF(LEdgeSpectrum()),
         magnetization=magnetization or ConstantMagnetization(),
-        detectors={
-            "A": VirtualDetector((centers[0], centers[1]), 0.16 * g200),
-            "B": VirtualDetector((centers[0], -centers[1]), 0.16 * g200),
-        },
+        detectors=detectors, chiral_groups=chiral_groups,
     )
