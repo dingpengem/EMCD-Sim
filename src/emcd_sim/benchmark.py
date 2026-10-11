@@ -38,7 +38,8 @@ def nickel_physical_benchmark(magnetization: MagnetizationLaw | None = None,
                               beam_order: int = 3,
                               debye_waller_b_angstrom2: float = 0.0,
                               zone2d_max_g_angstrom_inv: float | None = None,
-                              max_beams: int = 25) -> EMCDSimulation:
+                              max_beams: int = 25,
+                              beams_override: BeamSet | None = None) -> EMCDSimulation:
     """FCC Ni neutral-atom physical-potential *entrance-only* EMCD benchmark.
 
     Default basis: (000), ±(200), ±(400), ±(600). The optionally centered
@@ -48,8 +49,9 @@ def nickel_physical_benchmark(magnetization: MagnetizationLaw | None = None,
     from .scattering import IndependentAtomPotential
     from .physical_elastic import PhysicalElasticModel
     crystal = fcc_nickel()
-    beams = (BeamSet.systematic_row(beam_order) if zone2d_max_g_angstrom_inv is None
-             else BeamSet.zolz(crystal, zone2d_max_g_angstrom_inv, max_beams))
+    beams = (beams_override if beams_override is not None else
+             BeamSet.systematic_row(beam_order) if zone2d_max_g_angstrom_inv is None else
+             BeamSet.zolz(crystal, zone2d_max_g_angstrom_inv, max_beams))
     elastic = PhysicalElasticModel(
         crystal=crystal,
         microscope=Microscope(acceleration_kv, tilt_mrad_xy),

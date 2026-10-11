@@ -5,6 +5,8 @@ from pathlib import Path
 import numpy as np
 
 from .benchmark import nickel_three_beam, nickel_physical_benchmark
+from .crystal import fcc_nickel
+from .diffraction import select_diffraction_setup, save_diffraction_pattern
 from .voltage import TabulatedMagnetization
 
 
@@ -19,6 +21,14 @@ def main() -> None:
                         help="Default uses tabulated neutral Ni scattering factors")
     parser.add_argument("--xi-nm", type=float, default=55.0,
                         help="Only used with --elastic-backend surrogate")
+    parser.add_argument("--diffraction-condition",
+                        choices=("systematic-row", "zone-axis", "two-beam", "near-2bc", "symmetric-3bc"),
+                        default="systematic-row",
+                        help="Nominal diffraction geometry; default preserves the v0.2 row model")
+    parser.add_argument("--diffraction-only", action="store_true",
+                        help="Only calculate indexed elastic pattern and excitation errors (no MDFF)")
+    parser.add_argument("--offzone-tilt-mrad", type=float, default=25.0,
+                        help="Y tilt preset in the off-zone 2BC/3BC systematic-row approximations")
     parser.add_argument("--beam-order", type=int, default=3,
                         help="Physical systematic-row ±n(200) order; default 3 = 7 beams")
     parser.add_argument("--zone2d-max-g", type=float, default=None,
@@ -26,8 +36,10 @@ def main() -> None:
     parser.add_argument("--max-beams", type=int, default=25)
     parser.add_argument("--b-factor", type=float, default=0.0,
                         help="Isotropic Debye-Waller B in Å²; default 0 (no guessed Ni B)")
-    parser.add_argument("--tilt-x-mrad", type=float, default=0.0)
-    parser.add_argument("--tilt-y-mrad", type=float, default=0.0)
+    parser.add_argument("--tilt-x-mrad", type=float, default=None,
+                        help="Override geometry preset x tilt; mrad")
+    parser.add_argument("--tilt-y-mrad", type=float, default=None,
+                        help="Override geometry preset y tilt; mrad")
     parser.add_argument("--grid", type=int, default=65)
     parser.add_argument("--steps", type=int, default=64)
     parser.add_argument("--voltage-table", default=None,
@@ -38,22 +50,45 @@ def main() -> None:
         data = np.genfromtxt(args.voltage_table, delimiter=",", names=True)
         law = TabulatedMagnetization(tuple(np.atleast_1d(data["voltage_v"]).tolist()),
                                     tuple(np.atleast_1d(data["moment_muB"]).tolist()))
-    tilt = (args.tilt_x_mrad, args.tilt_y_mrad)
+    if args.elastic_backend != "physical" and (args.diffraction_condition != "systematic-row" or args.zone2d_max_g is not None):
+        parser.error("diffraction presets and 2D ZOLZ require --elastic-backend physical")
+    try:
+        setup = select_diffraction_setup(
+            args.diffraction_condition, fcc_nickel(), args.acceleration_kv,
+            beam_order=args.beam_order, zone2d_max_g=args.zone2d_max_g,
+            max_beams=args.max_beams, tilt_x_mrad=args.tilt_x_mrad,
+            tilt_y_mrad=args.tilt_y_mrad,
+            offzone_tilt_mrad=args.offzone_tilt_mrad)
+    except ValueError as exc:
+        parser.error(str(exc))
+    tilt = setup.tilt_mrad_xy
     if args.elastic_backend == "physical":
         sim = nickel_physical_benchmark(
             law, tilt_mrad_xy=tilt, acceleration_kv=args.acceleration_kv,
             beam_order=args.beam_order, debye_waller_b_angstrom2=args.b_factor,
-            zone2d_max_g_angstrom_inv=args.zone2d_max_g, max_beams=args.max_beams)
+            beams_override=setup.beams)
     else:
-        if args.zone2d_max_g is not None:
-            parser.error("--zone2d-max-g requires the physical solver")
         sim = nickel_three_beam(law, tilt_mrad_xy=tilt,
                                 acceleration_kv=args.acceleration_kv,
                                 extinction_distance_200_nm=args.xi_nm)
-    result = sim.run(np.linspace(837., 883., 185), thickness_nm=args.thickness_nm,
-                     voltage_v=args.voltage_v, grid_size=args.grid, depth_steps=args.steps)
+        # Surrogate retains its original fixed 3-beam basis.
+        from dataclasses import replace
+        setup = replace(setup, beams=sim.elastic.beams,
+                        approximation="Legacy 3-beam surrogate, not physical Ni potential")
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
+    diffraction = save_diffraction_pattern(sim.elastic, args.thickness_nm, output, setup)
+    if args.diffraction_only:
+        metadata = {**diffraction, "material":"FCC Ni", "acceleration_kv":args.acceleration_kv,
+                    "thickness_nm":args.thickness_nm,"elastic_backend":args.elastic_backend,
+                    "mdff_computed":False}
+        (output / "metadata.json").write_text(json.dumps(metadata, indent=2)+"\n")
+        print(json.dumps({"output":str(output),"condition":setup.name,
+                          "beam_count":diffraction["beam_count"],
+                          "elastic_total_intensity":diffraction["elastic_total_intensity"]},indent=2))
+        return
+    result = sim.run(np.linspace(837., 883., 185), thickness_nm=args.thickness_nm,
+                     voltage_v=args.voltage_v, grid_size=args.grid, depth_steps=args.steps)
     np.savez_compressed(output / "ni_emcd.npz", energy_ev=result.energy_ev,
         qx_inv_angstrom=result.qx_angstrom_inv, qy_inv_angstrom=result.qy_angstrom_inv,
         nonmag_map=result.nonmag_map_at_l3, magnetic_map=result.magnetic_map_at_l3,
@@ -109,16 +144,15 @@ def main() -> None:
     energy, difference, contrast = result.at_edge()
     from .physical_elastic import PhysicalElasticModel
     is_physical = isinstance(sim.elastic, PhysicalElasticModel)
-    metrics = dict(model="entrance_channeling_dipole_mdff_illustrative_v1",
+    metrics = dict(**diffraction, model="entrance_channeling_dipole_mdff_illustrative_v1",
         material="FCC Ni", zone_axis="[001]", reflections=[list(h) for h in sim.elastic.beams.hkl],
         lattice_constant_angstrom=3.524, moment_muB_per_atom=result.moment_muB,
         thickness_nm=result.thickness_nm, sample_bias_v=result.voltage_v,
-        acceleration_kv=args.acceleration_kv, tilt_mrad_xy=list(tilt),
+        acceleration_kv=args.acceleration_kv,
         elastic_backend=args.elastic_backend,
         elastic_scattering_source=("Lobato & Van Dyck (2014), Z=28, IAM" if is_physical else "power-law surrogate"),
         extinction_distance_200_nm=(sim.elastic.extinction_distance_nm((2,0,0))
                                       if is_physical else args.xi_nm),
-        beam_count=len(sim.elastic.beams.hkl),
         b_factor_angstrom2=(args.b_factor if is_physical else None),
         elastic_absorption=False, outgoing_channeling=False,
         edge_sample_ev=energy, difference_at_l3_arbitrary= difference,

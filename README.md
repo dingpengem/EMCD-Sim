@@ -2,7 +2,7 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**.
 
-> **Research status: v0.2.0.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.3.0.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 ## What works
 
@@ -27,7 +27,7 @@ pytest -q
 emcd-ni --output outputs/ni_baseline
 ```
 
-Outputs: `ni_elastic_diffraction.png/.npz`, `ni_emcd.png/.npz`, `metadata.json`.
+Outputs now also include `diffraction_pattern.png/.npz` and `diffraction_spots.csv`, with indexed `(h,k,l)` Bragg spots and nominal `[001]` zone-axis labels.
 
 The **default** command uses Ni physical elastic scattering (seven selected beams). Switch options:
 
@@ -76,9 +76,22 @@ tests/              focused validation tests
 docs/               physics assumptions and upgrade roadmap
 ```
 
+## Indexed diffraction geometries (v0.3.0)
+
+The FCC Ni elastic Bloch-wave solver now supports nominal [001] `zone-axis`, idealized `two-beam`, `near-2bc` and `symmetric-3bc` conditions. Run the quick diffraction-only mode (no illustrative MDFF/EELS):
+
+```bash
+emcd-ni --diffraction-condition zone-axis --max-beams 13 --diffraction-only --output outputs/ni_zone_axis
+emcd-ni --diffraction-condition near-2bc --diffraction-only --output outputs/ni_near_2bc
+emcd-ni --diffraction-condition symmetric-3bc --diffraction-only --output outputs/ni_3bc
+emcd-ni --diffraction-condition two-beam --diffraction-only --output outputs/ni_two_beam
+```
+
+See [diffraction conditions and limitations](docs/DIFFRACTION_CONDITIONS.md). The Bragg spot widths in PNGs are **visual only**, not CBED disks; systematic-row 2BC/3BC modes omit off-row beams. The default behavior of the old CLI remains unchanged.
+
 ## What is deliberately not claimed
 
-V0.2 **does** use tabulated neutral-Ni scattering factors to derive a real, nonabsorptive independent-atom potential. However it is **not parameter-free** in the ab-initio electronic-structure sense. It does **not** include calibrated Ni EMCD matrix elements, ab-initio ELNES/MDFF, outgoing dynamical propagation, absolute cross sections, quantitative sum rules, experimental validation or voltage-driven magnetic theory. [Details](docs/PHYSICAL_ELASTIC.md).
+V0.3 **does** use tabulated neutral-Ni scattering factors to derive a real, nonabsorptive independent-atom potential. However it is **not parameter-free** in the ab-initio electronic-structure sense. It does **not** include calibrated Ni EMCD matrix elements, ab-initio ELNES/MDFF, outgoing dynamical propagation, absolute cross sections, quantitative sum rules, experimental validation or voltage-driven magnetic theory. [Details](docs/PHYSICAL_ELASTIC.md).
 
 ## GitHub / Mac deployment
 
