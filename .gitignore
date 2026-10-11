@@ -1,0 +1,46 @@
+# Python environments, bytecode, caches, and packaging
+.venv/
+venv/
+env/
+.env/
+.conda/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Generated simulation results and logs
+/outputs/
+*.log
+.ipynb_checkpoints/
+
+# Local editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Secrets and local credentials
+.env
+.env.*
+!.env.example
+!.env.template
+.aws/
+.ssh/
+secrets/
+credentials*.json
+*.pem
+*.key
