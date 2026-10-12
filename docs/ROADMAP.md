@@ -1,44 +1,68 @@
 # Magnetic EMCD project roadmap
 
-This project **must remain independent from the QCBED repository and its magnetic-QCBED workstream**. Physics interfaces may be compared conceptually, but code, Git history and deployment remain separate unless explicitly requested later.
+EMCD-Sim is independent of QCBED (separate code, Git history and `emcd-python` environment) and must remain native on Windows, macOS and Linux.
 
-## V0 — demonstrator (implemented)
+## Scope and quantitative terminology
 
-- FCC Ni [001], ±(200) three-beam diffraction, simple finite-beam Hermitian channeling.
-- Core-loss L2/L3 phenomenological nonmagnetic/chiral MDFF and reciprocal map.
-- Finite virtual detector integration: A/B spectra, Δ, asymmetry; voltage data law interface.
-- Command-line output and lightweight invariance tests.
+**Immediate physics priority: make single-channeling EMCD quantitatively correct and validated first.** Outgoing/double channeling is the **next** major solver step, but should not disrupt incoming-wave and MDFF validation.
 
-## V0.2 — physical elastic entrance propagation (implemented, not yet validated to experiment)
+"Quantitative single channeling" means real atomic/DFT transition matrix elements, correctly normalized incident channeling and finite-aperture cross sections, tested physical symmetries, independent benchmarks and declared numerical convergence. It **does not** imply fully quantitative measured EMCD, because post-inelastic dynamical scattering is omitted. See [detailed acceptance plan](SINGLE_CHANNELING_QUANTITATIVE.md) and [architecture](ARCHITECTURE.md).
 
-- Ni Z=28 Lobato–Van Dyck elastic factors and complex FCC Fourier coefficients, isotropic DW B and occupancy inputs.
-- Relativistic, nonabsorptive finite-basis Bloch-wave propagation (default 7-beam Ni row; optional symmetric [001] ZOLZ set).
-- Source-controlled elastic intensity/thickness curves and a two-beam Bragg Pendellösung numerical check; original surrogate retained as explicit option.
-- Still **not** quantitative EMCD: outgoing channeling, magnetic MDFF and experimental convergence remain V1–V2 work.
+## Implemented baseline (v0.3.x; demonstrator, NOT quantitative EMCD)
 
-## V1 — quantitative elastic geometry
+- FCC Ni [001] lattice and neutral-atom physical elastic potential; finite-beam Bloch-wave incoming propagation.
+- Selected 2BC, near-2BC, symmetric-3BC and 2D ZOLZ settings with indexed elastic diffraction images. Current 2BC/3BC presets are finite-beam approximations.
+- Thales-paired/4-quadrant apertures, reciprocal-space maps, L2/L3 detector EELS and chiral differences.
+- **Illustrative** Gaussian `N(E)`, `M(E)` (magnetic fraction arbitrarily set to 0.12), not DFT-based Ni MDFF.
+- Reproducible outputs, focused tests, platform-neutral `python -m emcd_sim` and Windows/macOS/Linux CI checks.
 
-- Crystal orientations incl. arbitrary zone and detector projection; extend tabulated electron scattering factors beyond Ni and independently validate Ni IAM potentials.
-- Compare current finite-beam physical Bloch-wave solver to an independent multislice/reference implementation and measured Ni CBED; convergence versus beam count, thickness, tilt.
-- Source/aperture coherence and calibrated illuminated volume.
+## P0 — Geometry / physical definitions
 
-## V2 — proper EMCD double channeling
+- Freeze 000-centered reciprocal maps, [uvw]/(hkl), specimen orientation, electron angular versus cycles/Angstrom wavevector, diffraction excitation error and magnetic sign conventions.
+- Verify 2BC and 3BC Thales/double-difference apertures including systematic-row truncation limitations.
+- Separate pure MDFF from fast-electron Coulomb denominators, cross-section normalization and detector integration.
 
-- Excitation-position-resolved incoming and outgoing channeling, exit-wave reciprocity and full MDFF convolution.
-- Elastic absorption/thermal diffuse scattering, energy-dependence and transition operator; validated sign conventions.
-- Ni L2,3 radial and spin-orbit matrix elements from DFT or calibrated XAS/ELNES; quantitatively meaningful spectral units.
+## P1 — Reliable incident elastic channeling
 
-## V3 — experiments and inferred moments
+- Validate Ni Bloch-wave diffraction against an independent solver and matched experimental/reference cases.
+- Converge diffraction beam basis, specimen tilt, sample thickness, depth integration and 2D off-row reflections; incorporate beam convergence/thermal effects when warranted.
+- Support general crystal orientations and reproducible reference diffraction intensities.
 
-- Reader for measured EELS/4D-STEM datasets; dark-current/gain/background, PSF, drift correction.
-- Map virtual aperture geometries; optimize thickness, tilt, field and momentum acceptance by predicted EMCD SNR.
-- Ni benchmark measured vs predicted: contrast, edge integrals and spin/orbital sum-rule estimators; uncertainty estimates.
+## P2 — Physical Ni L2,3 MDFF, before double channeling
 
-## V4 — electrically tunable EMCD (research target)
+- Implement a complex, Hermitian, positive-semidefinite site-aware 3x3 dipole transition tensor.
+- Use atomic reference transitions first; then export spin-polarized SOC-DFT Ni 2p -> unoccupied-state complex transition matrix elements.
+- Converge k points, empty bands, energy broadening, SOC/core states and matrix-element definitions; benchmark nonmagnetic ELNES and magnetic energy dependence.
+- Keep full momentum-dependent MDFF as a future backend. Keep the current Gaussian model explicitly labeled illustrative.
 
-- Device-agnostic `MagneticState(V, B, T, z)` provider with spin/orbital magnetic moments, orientation, domain populations.
-- Separate `ElectronicResponse(E,V)` for bias-dependent nonmagnetic and magnetic white lines.
-- Couple to first-principles calculations, micromagnetics or *measured* voltage curves; track hysteresis, sweep direction and dynamics.
-- Distinguish true magnetic EMCD from thickness/strain drift, bias-dependent ELNES/oxidation and microscope deflection.
+## P3 — **Quantitative single-channeling EMCD benchmark (main immediate goal)**
 
-**Validation gate:** do not interpret numerical V0 amplitude changes as proof of voltage-controlled magnetism or absolute magnetic moment.
+- Contract the actual Ni complex MDFF with depth-dependent *incoming* Bloch waves, retaining site and beam coherence phases.
+- Fix relative/absolute normalization, energy/momentum-transfer units, reciprocal maps, energy-resolved L2/L3 signals and aperture geometry.
+- Compare 2BC, near-2BC, 3BC and zone-axis scans; converge thickness, tilt, beam count, detector area, reciprocal grid, depth grid and spectrum resolution.
+- Independently verify numerical and physics invariants; compare Ni L-edge spectra/EMCD sign/geometry with reliable references and, when available, experiment.
+- **Acceptance:** traceable inputs and units, independent calculations, convergence tolerances, reported uncertainty, and an unambiguous `entrance_only` label. Do not describe results as fully quantitative experiment-level EMCD until outgoing propagation and other missing effects are bounded or incorporated.
+
+## P4 — Double channeling (after P3)
+
+- Add outgoing Bloch-wave propagation at the post-loss electron energy using the same MDFF and detector contracts; multislice optional later.
+- Directly compare single versus double channeling for identical Ni parameters; quantify changes in EMCD sign, L2/L3 contrast, thickness and reciprocal maps.
+- Verify reciprocity/boundary conditions, beam/depth convergence and correct physical normalization; never compensate for outgoing dynamics by refitting an arbitrary magnetic fraction.
+
+## P5 — Measurement-level quantitative validation
+
+- Include finite probe source, specimen-specific strain/thickness, aperture calibration, spectrometer/energy response, backgrounds, dose/noise and artifacts.
+- Compare experimental Ni data to model predictions; test sum rules and uncertainty/identifiability of effective spin and orbital contributions.
+
+## P6 — Electrically tunable EMCD
+
+- Implement spatially resolved `MaterialState(V, position, time)`: screening, charge, structure, magnetization/orientation and site-resolved transition tensors.
+- Attach external DFT/electrostatic/ferroelectric/nonequilibrium transport providers depending on the actual device.
+- Distinguish intrinsic magnetic changes from beam deflection, drift, ELNES/oxidation and structural effects; preserve hysteresis and history.
+
+## P7 — Scale and deploy
+
+- Larger/inhomogeneous structures and optional full-q MDFF, CPU optimization, GPU adapters and GUI/Windows packaging where useful.
+- Maintain one portable core on Windows, macOS and Linux; external DFT calculations may run on Linux/HPC and export portable transition data.
+
+**Development cadence:** focused tests/docs per patch, milestone reference/convergence suites when physics changes. Do not change implemented solver physics just to reorder this roadmap.
