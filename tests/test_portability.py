@@ -7,7 +7,7 @@ from emcd_sim import __version__
 
 
 def test_version_matches_public_release():
-    assert __version__ == "0.3.3"
+    assert __version__ == "0.3.4"
 
 
 def test_module_entrypoint_writes_outputs_into_path_with_spaces(tmp_path):

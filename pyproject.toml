@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "emcd-sim"
-version = "0.3.3"
+version = "0.3.4"
 description = "Research-stage EMCD forward-simulation framework with an FCC Ni benchmark"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -18,6 +18,7 @@ dev = ["pytest>=7.4"]
 [project.scripts]
 emcd-ni = "emcd_sim.cli:main"
 emcd-scan = "emcd_sim.scan:main"
+emcd-compare = "emcd_sim.compare_conditions:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

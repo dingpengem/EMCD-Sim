@@ -109,3 +109,15 @@ The initial project can be unpacked at `~/EM_code/EMCD-Sim`. From inside the fol
 ## Detector geometry correction (v0.3.1)
 
 2BC: A/B at (g/2, +/-g/2), g=|g_200|. Symmetric 3BC: physical apertures RU, RD, LU, LD at (+/-g/2,+/-g/2), with chiral difference (RU+LD)-(RD+LU). The previous v0.3.0 coordinates erroneously re-subtracted incident tilt from 000-centered reciprocal maps. These are geometric, not SNR-optimized apertures. See [diffraction and detector geometry](docs/DIFFRACTION_CONDITIONS.md).
+
+
+## Compare EMCD maps across diffraction conditions
+
+For the **same FCC Ni L3 energy (852.7 eV)**, generate a 2-row × 4-column reciprocal-space comparison of ideal 2BC, near-2BC, symmetric-3BC and [001] zone-axis:
+
+```bash
+python -m emcd_sim.compare_conditions --output outputs/ni_condition_maps
+# or: emcd-compare --output outputs/ni_condition_maps
+```
+
+The comparison includes shared-color-range magnetic and local M/N maps, indexed diffraction spots, virtual apertures, condition-specific tilts, metadata and NPZ arrays. A fixed global color scale intentionally reveals differences in magnitudes; nearly blank panels do **not** prove zero EMCD. These results use **entrance-only channeling and illustrative Gaussian MDFF**, not quantitative Ni predictions. Reproducibility notes and a checked-in preview are in [examples/ni_condition_maps](examples/ni_condition_maps/README.md).

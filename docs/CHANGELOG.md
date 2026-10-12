@@ -1,3 +1,9 @@
+# v0.3.4 — EMCD reciprocal maps by diffraction condition
+
+- Added portable `emcd-compare` / `python -m emcd_sim.compare_conditions` to generate a side-by-side FCC Ni L3 reciprocal-map comparison for 2BC, near-2BC, symmetric-3BC and zone-axis.
+- Shared q axes and color limits across conditions; indexed diffracted beams, condition-specific apertures/tilts, illustrative local magnetic/nonmagnetic ratio, integrated A−B metadata and machine-readable NPZ.
+- Reproducible example and deliberately non-quantitative provenance; no changes to Bloch-wave or MDFF physics.
+
 # v0.3.3 — Tilt and thickness EMCD diagnostic
 
 - Added `python -m emcd_sim.scan` / `emcd-scan`: 3D tilt-x × tilt-y × thickness scans at Ni L3 using the existing entrance-only illustrative MDFF.
