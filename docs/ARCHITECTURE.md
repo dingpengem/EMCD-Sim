@@ -14,6 +14,14 @@ Build a **material-independent, reproducible, quantitative EMCD forward/inverse 
 6. **Stay independent of QCBED.** Share well-validated algorithms later via a standalone package if genuinely useful; do not import QCBED internals or reuse its Conda environment.
 7. During small changes use focused tests and update Markdown docs; demand deeper reference and convergence checks when changing core physics.
 
+## Near-term priority: quantitative *single* channeling first
+
+**Development order:** correct the entrance-only elastic/geometry physics -> build a real complex Ni L2,3 MDFF from atomic/DFT transition matrix elements -> produce physically normalized, numerically converged **single-channeling** maps and spectra -> compare with independent and measured Ni references -> **then** implement outgoing/double channeling. This is a deliberate sequencing decision, not a claim that single channeling suffices for all experimental EMCD.
+
+"Quantitative single channeling" means quantitative **within its stated approximation**, with real matrix elements, correct geometry/units/cross-section normalization, and measured/calculated reference checks. It must remain clearly distinguishable from *fully quantitative experimental prediction*, because post-core-loss dynamical propagation and other instrument effects are absent. The initial Gaussian `N(E), M(E)` and `magnetic_fraction=0.12` are illustrative and cannot serve as a Ni quantitative calibration.
+
+Follow the detailed physics and validation acceptance gates in [SINGLE_CHANNELING_QUANTITATIVE.md](SINGLE_CHANNELING_QUANTITATIVE.md). Keep double channeling next in sequence once the entrance-only benchmark passes; do not interleave a major outgoing-channeling rewrite into the current MDFF and single-channeling refinement work.
+
 ## 2. Long-term physics and software pipeline
 
 ```text
@@ -91,11 +99,17 @@ In the angular-wavevector convention, `S_dip(Q,Q',E) = Q^T T(E) Q'` (conjugation
 
 For arbitrary momentum transfers, later implement `<f|exp(i Q·r)|i>` directly. Preserve site positions and corresponding crystal phase factors, core-level 2p SOC, magnetization axes and optional inter-site coherence. Do not convert DOS alone into an MDFF. Investigate core-hole, multiplet and other beyond-DFT corrections where needed. DFT importers (e.g. Elk, WIEN2k, exciting) are optional and must be verified for actual wavefunction/transition-data export; no package should be presumed to output full MDFF automatically.
 
-### 4.3 Double channeling and measured signals
+### 4.3 Priority: quantitatively controlled entrance-only EMCD
 
-Use the incoming wave at the inelastic event depth and the outgoing/back-propagated detector channel (including the post-loss electron energy), contracted with the *local* transition/MDFF kernel. Sum amplitudes/coherences with the correct site/depth phase conventions and detector integration. Treat elastic propagation, inelastic transition physics, and final instrument convolution as separate operators.
+Before adding outgoing channeling, make the **single-channeling backend** a trustworthy scientific reference: use converged incoming Bloch-wave amplitudes and geometry, complex site-aware DFT/atomic-transition MDFF, correct coherent cross-section contraction, energy and momentum-transfer conventions, physical prefactors/units when available, and carefully constructed detectors. Independently test the elastic model, MDFF tensor, nonmagnetic cancellation, magnetization reversal, spectrum shape, depth/beam/tilt/aperture convergence, and source-to-detector coordinates.
 
-Test the two-beam limit, propagation reciprocity where applicable, nonnegative physical intensities, magnetic reversal and aperture handedness. The existing 2BC/3BC labels are finite-beam approximations, not proof of full experimental alignment.
+Produce indexed diffraction, nonmagnetic and magnetic reciprocal maps, Ni L2/L3 spectra, aperture differences, and explicit approximation metadata. Calibrate against reliable Ni electronic/spectroscopic references, but do **not** claim absolute experimental EMCD accuracy solely from a converged single-channeling computation. See [the single-channeling benchmark specification](SINGLE_CHANNELING_QUANTITATIVE.md).
+
+### 4.3a Deferred next step: double channeling
+
+Once single-channeling baselines are stable, reuse their MDFF, material state and geometry to add an outgoing/back-propagated detector channel at the appropriate post-loss energy. Contract incident and outgoing amplitudes at the core-loss depth with the same local transition/MDFF kernel; retain correct site/depth phases and detector projection. Compare both backends on matched Ni 2BC/3BC/zone-axis configurations to **quantify the error caused by ignoring the outgoing wave**; do not retrofit its effect as an arbitrary scale factor.
+
+Test propagation reciprocity where applicable, cross-section positivity, magnetic reversal, aperture handedness and thickness/beam convergence. The existing 2BC/3BC labels denote finite-basis approximations, not a complete experimental alignment simulation.
 
 ### 4.4 Bias and magnetism: distinct mechanisms
 
@@ -162,22 +176,23 @@ Avoid restructuring the current flat package solely for aesthetics: migrate modu
 
 | Phase | Primary deliverable | Acceptance gate |
 |---|---|---|
-| P0 — Geometry and definitions | Freeze coordinate frames, sign conventions, sample/electron voltages and benchmark metadata | 2BC/3BC detector symmetry, index/frame/unit and magnetization reversal tests; independent elastic reference |
-| P1 — Complex MDFF tensor | Generic site-aware dipole tensor and imported complex transition amplitudes; keep Gaussian model labeled illustrative | Hermiticity, PSD, correct limits, magnetic reversal, benchmark atomic transitions |
-| P2 — Double channeling | Incoming + outgoing Bloch-wave solver; optional multislice adapter later | Reference two-beam limits, detector reciprocity and beam/thickness/depth/angle convergence |
-| P3 — DFT Ni L2,3 | First validated Ni 2p core -> unoccupied band transitions with SOC and calibrated spectral treatment | k/band/broadening convergence; compare nonmag and magnetic edge shape; robust magnetic sum-rule interpretation |
-| P4 — Quantitative baseline | Detector/instrument response, reference Ni data, uncertainty, inverse analysis | Controlled measured-versus-simulated thickness/tilt/aperture benchmarks with error budgets |
-| P5 — Bias-dependent states | Site/layer-resolved electric-field, electronic and magnetic state providers for a **specified device** | Show predicted effects survive charge/structure/beam-deflection confounds; hysteresis/time path when relevant |
-| P6 — Scaling and distribution | Full/efficient MDFF, device heterogeneity, optimized CPU/optional GPU, Windows delivery | Same scientific benchmarks on Windows/macOS/Linux; reproducible files and release artifacts |
+| P0 — Geometry and definitions | Freeze reciprocal/crystal/lab frames, sign conventions, detector chirality and provenance | 2BC/3BC symmetry, unit/phase checks, controlled baseline |
+| P1 — Elastic entrance validation | Converged Ni Bloch-wave, 2D ZOLZ and independent diffraction checks | Beam/thickness/tilt convergence and matched reference elastic intensities |
+| P2 — Physical Ni MDFF | Complex site-aware dipole tensor -> spin-polarized SOC-DFT Ni 2p transitions; Gaussian retained only as demonstrator | Hermiticity/PSD; core-state, k/band/broadening convergence; referenced L2/L3 shapes |
+| P3 — **Quantitative single-channeling** | Contract calibrated MDFF with incident Bloch waves; cross-section normalization, reciprocal maps, apertures and Ni reference comparisons | Defined physical units, invariants and convergence; declare the missing outgoing channel and its uncertainty |
+| P4 — **Double channeling** | Add outgoing Bloch-wave propagation *after P3* using unchanged MDFF/state/detector contracts | Matched single vs double limits, reciprocity, convergence and a quantified outgoing-channel contribution |
+| P5 — Full experimental validation | Instrument response, reference Ni spectra, magnetic sum-rule interpretation, uncertainty/inverse analysis | Measured-versus-predicted comparisons with error budgets |
+| P6 — Voltage-dependent states | Site/layer magnetic/electronic state providers for a specified device; gating vs current-driven adapters | Separate magnetic response from ELNES, chemistry, structural and electron-optical artifacts |
+| P7 — Scaling and distribution | Larger full-q MDFF and heterogeneous specimens, optional GPU, Windows delivery | Same scientific benchmark data across Windows, macOS and Linux |
 
-P1 and P2 can progress in parallel if they share the contract from P0. DFT is **not** a prerequisite for developing/testing double channeling with synthetic positive-semidefinite tensors. Conversely, implementing a high-fidelity tensor does not by itself establish a quantitative EMCD forward signal.
+Develop P1 and P2 with a shared P0 contract; integrate and **validate P3 before beginning P4**. An accurate MDFF alone does not imply an accurate single-channeling signal, and an accurate single-channeling signal **within that approximation** does not guarantee quantitative agreement with experimental EMCD.
 
 ## 8. Immediate next decisions
 
-1. **Freeze P0 interfaces and coordinate/sign conventions** without changing the numerical solver.
-2. Implement P1 with a hand-checked atomic reference transition dataset before choosing or integrating a DFT package.
-3. Develop P2 against the same `MDFFSource` contract, keeping 2BC, 3BC and 2D ZOLZ comparisons.
-4. Define the first **real bias-device geometry** before making a predictive `VoltageDependentMaterialStateProvider`: gating, ferroelectric polarization, or current-driven transport require different physics.
-5. Keep the portable Windows CPU path runnable through every phase.
+1. **Freeze P0 units, coordinate frames, sign conventions and 2BC/3BC detector geometry.**
+2. Validate the Ni **incoming** Bloch-wave elastic solver (P1) with independent reference calculations and convergence.
+3. Implement a hand-checked complex dipole tensor, then DFT-derived Ni L2,3 transition amplitudes (P2); document every physical approximation.
+4. Combine these in a **physically normalized, converged single-channeling** Ni benchmark (P3). Only after this gate, add outgoing/double channeling (P4).
+5. Defer a predictive voltage-response provider until the baseline is established and a specific device/bias mechanism is defined. Keep the CPU pipeline native on Windows/macOS/Linux throughout.
 
 **Scientific rule:** measured EMCD asymmetry, fit moments or voltage-induced magnetic changes must not be presented as ab initio predictions until each required theory, geometry, instrument and validation gate is satisfied.
