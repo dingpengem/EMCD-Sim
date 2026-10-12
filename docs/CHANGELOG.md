@@ -1,3 +1,10 @@
+# v0.3.3 — Tilt and thickness EMCD diagnostic
+
+- Added `python -m emcd_sim.scan` / `emcd-scan`: 3D tilt-x × tilt-y × thickness scans at Ni L3 using the existing entrance-only illustrative MDFF.
+- CSV and NPZ numerical results, fixed color scales for comparison heatmaps and magnetic/nonmagnetic reciprocal maps.
+- Demonstrated that systematic-row Y tilt insensitivity is a basis-truncation artifact; finite 2D ZOLZ can vary with Y tilt.
+- Portable Windows/macOS/Linux CLI, focused symmetry/data-shape regression tests; no changes to Bloch-wave, MDFF or EELS equations.
+
 # v0.3.2 — Windows/macOS/Linux portability
 
 - Added `python -m emcd_sim` as a shell-independent entry point (the original `emcd-ni` remains supported).

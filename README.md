@@ -2,7 +2,7 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**.
 
-> **Research status: v0.3.2.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.3.3.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 ## What works
 
@@ -92,6 +92,11 @@ emcd-ni --diffraction-condition two-beam --diffraction-only --output outputs/ni_
 ```
 
 See [diffraction conditions and limitations](docs/DIFFRACTION_CONDITIONS.md). The Bragg spot widths in PNGs are **visual only**, not CBED disks; systematic-row 2BC/3BC modes omit off-row beams. The default behavior of the old CLI remains unchanged.
+
+
+## Tilt × thickness scans (v0.3.3)
+
+Use `python -m emcd_sim.scan` or `emcd-scan` to compare a seven-beam systematic row and a finite 2D ZOLZ basis under identical tilts. The command saves 3D `(tilt_x, tilt_y, thickness)` L3 difference/asymmetry arrays, fixed-color-scale reciprocal maps, beam metadata and CSV outputs. See [the scan guide](docs/TILT_THICKNESS_SCAN.md). MDFF remains **illustrative**, not quantitative Ni.
 
 ## What is deliberately not claimed
 
