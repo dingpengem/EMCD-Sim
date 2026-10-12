@@ -1,0 +1,292 @@
+{
+  "material": "FCC Ni",
+  "nominal_zone_axis": "[001]",
+  "l3_energy_ev": 852.7,
+  "acceleration_kv": 200.0,
+  "thickness_nm": 30.0,
+  "debye_waller_b_angstrom2": 0.0,
+  "grid": 65,
+  "depth_steps": 64,
+  "conditions": {
+    "two-beam": {
+      "beam_count": 2,
+      "beam_hkl": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ]
+      ],
+      "incident_tilt_mrad_xy": [
+        -7.116725439974256,
+        25.0
+      ],
+      "apertures": {
+        "A": [
+          0.28376844494892167,
+          0.28376844494892167,
+          0.09080590238365494
+        ],
+        "B": [
+          0.28376844494892167,
+          -0.28376844494892167,
+          0.09080590238365494
+        ]
+      },
+      "chiral_groups": null,
+      "detector_A": 4.684354802682025,
+      "detector_B": 4.554901815155068,
+      "difference_arbitrary": 0.12945298752695678,
+      "asymmetry": 0.01401119082210985,
+      "approximation": "Ideal two-beam basis truncation: all other diffracted beams excluded"
+    },
+    "near-2bc": {
+      "beam_count": 7,
+      "beam_hkl": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          -2,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0
+        ],
+        [
+          -4,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0
+        ],
+        [
+          -6,
+          0,
+          0
+        ]
+      ],
+      "incident_tilt_mrad_xy": [
+        -7.116725439974256,
+        25.0
+      ],
+      "apertures": {
+        "A": [
+          0.28376844494892167,
+          0.28376844494892167,
+          0.09080590238365494
+        ],
+        "B": [
+          0.28376844494892167,
+          -0.28376844494892167,
+          0.09080590238365494
+        ]
+      },
+      "chiral_groups": null,
+      "detector_A": 4.88987779439408,
+      "detector_B": 4.8666771738385055,
+      "difference_arbitrary": 0.023200620555574147,
+      "asymmetry": 0.0023779521184593886,
+      "approximation": "Systematic-row approximation (off-row diffraction not propagated)"
+    },
+    "symmetric-3bc": {
+      "beam_count": 7,
+      "beam_hkl": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          -2,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0
+        ],
+        [
+          -4,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0
+        ],
+        [
+          -6,
+          0,
+          0
+        ]
+      ],
+      "incident_tilt_mrad_xy": [
+        0.0,
+        25.0
+      ],
+      "apertures": {
+        "RU": [
+          0.28376844494892167,
+          0.28376844494892167,
+          0.09080590238365494
+        ],
+        "RD": [
+          0.28376844494892167,
+          -0.28376844494892167,
+          0.09080590238365494
+        ],
+        "LU": [
+          -0.28376844494892167,
+          0.28376844494892167,
+          0.09080590238365494
+        ],
+        "LD": [
+          -0.28376844494892167,
+          -0.28376844494892167,
+          0.09080590238365494
+        ]
+      },
+      "chiral_groups": {
+        "A": [
+          "RU",
+          "LD"
+        ],
+        "B": [
+          "RD",
+          "LU"
+        ]
+      },
+      "detector_A": 9.11991220527864,
+      "detector_B": 8.950274342402214,
+      "difference_arbitrary": 0.16963786287642613,
+      "asymmetry": 0.00938772062085865,
+      "approximation": "Systematic-row approximation (off-row diffraction not propagated)"
+    },
+    "zone-axis": {
+      "beam_count": 13,
+      "beam_hkl": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          -2,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ],
+        [
+          0,
+          -2,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          -2,
+          -2,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          -2,
+          2,
+          0
+        ],
+        [
+          2,
+          -2,
+          0
+        ],
+        [
+          -4,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0
+        ],
+        [
+          0,
+          -4,
+          0
+        ],
+        [
+          0,
+          4,
+          0
+        ]
+      ],
+      "incident_tilt_mrad_xy": [
+        0.0,
+        0.0
+      ],
+      "apertures": {
+        "A": [
+          0.31214528944381387,
+          0.29511918274687854,
+          0.09080590238365494
+        ],
+        "B": [
+          0.31214528944381387,
+          -0.29511918274687854,
+          0.09080590238365494
+        ]
+      },
+      "chiral_groups": null,
+      "detector_A": 2.5086014765058904,
+      "detector_B": 2.5086315809646687,
+      "difference_arbitrary": -3.0104458778268395e-05,
+      "asymmetry": -6.00021135821934e-06,
+      "approximation": "Finite 2D ZOLZ basis, perfect crystal, parallel-beam illumination"
+    }
+  },
+  "magnetic_abs_color_limit": 4.477422279014204,
+  "magnetic_over_nonmagnetic_color_limit": 0.015975106405467513,
+  "low_signal_mask_threshold": 2.3924243955991424,
+  "map_coordinates": "000-centered cycles/angstrom (fixed across conditions)",
+  "approximation": "entrance-only, finite-beam IAM, Gaussian N(E)/M(E) with magnetic_fraction=0.12",
+  "quantitative": false,
+  "interpretation": "M/N is local magnetization-reversal contrast for the illustrative model, not integrated detector asymmetry. Aperture-based A-B is listed per condition.",
+  "limitation": "Condition-specific preset tilts; basis cutoff and missing outgoing channeling prohibit direct quantitative comparison to measured EMCD."
+}
