@@ -1,0 +1,29 @@
+name: Cross-platform Python tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    name: ${{ matrix.os }} / Python 3.11
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install package and test requirements
+        run: python -m pip install -e ".[dev]"
+      - name: Run focused regression tests
+        run: python -m pytest -q
+      - name: Smoke-test CLI and output paths
+        run: python -m emcd_sim --diffraction-condition two-beam --diffraction-only --output "outputs/ci results"
+      - name: Verify saved diffraction data
+        run: python -c "from pathlib import Path; p=Path('outputs/ci results'); assert all((p / name).is_file() for name in ('diffraction_pattern.png','diffraction_pattern.npz','diffraction_spots.csv','metadata.json'))"

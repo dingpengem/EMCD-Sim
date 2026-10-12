@@ -2,7 +2,7 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**.
 
-> **Research status: v0.3.1.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.3.2.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 ## What works
 
@@ -16,13 +16,17 @@ Independent, modular **electron magnetic circular dichroism (EMCD)** simulation 
 - **Pluggable sample-bias-to-moment models**: constant (default) or user-supplied `V,µB` table; fictional demo data clearly marked.
 - Lightweight numerical tests and reproducible PNG / NPZ / JSON output.
 
-## Install and run (Mac with Conda or Python 3.10+)
+## Cross-platform setup (Windows, macOS, Linux)
+
+EMCD-Sim is a Python 3.11 research package designed for Windows, macOS and Linux. The portable command `python -m emcd_sim` runs without a Unix shell. Windows PowerShell/Conda/VS Code setup is in [the cross-platform guide](docs/CROSS_PLATFORM.md). GitHub Actions runs tests on all three platforms; these tests do not establish quantitative EMCD accuracy.
+
+## Install and run (macOS/Linux; Windows commands in platform guide)
 
 ```bash
 cd ~/EM_code/EMCD-Sim
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[dev]'
+python -m pip install -e ".[dev]"
 pytest -q
 emcd-ni --output outputs/ni_baseline
 ```

@@ -1,3 +1,11 @@
+# v0.3.2 — Windows/macOS/Linux portability
+
+- Added `python -m emcd_sim` as a shell-independent entry point (the original `emcd-ni` remains supported).
+- Documented native Windows PowerShell, Conda and VS Code setup; added cross-platform development conventions.
+- Added a GitHub Actions matrix for Windows, macOS and Linux (Python 3.11), including an output-path CLI smoke test.
+- Added regression testing for paths with spaces and synchronized the package version.
+- No changes to Bloch-wave diffraction or the illustrative MDFF.
+
 # v0.3.1 — Chiral aperture geometry fix
 
 - Corrected 000-centered transverse momentum coordinate for tilted 2BC/3BC EMCD maps (removed erroneous extra incident-tilt subtraction).
