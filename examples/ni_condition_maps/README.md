@@ -8,7 +8,7 @@ Regenerate on Windows/macOS/Linux:
 
 ```bash
 python -m pip install -e ".[dev]"
-python -m emcd_sim.compare_conditions --output outputs/ni_condition_maps
+python -m emcd_sim.compare_conditions --output outputs/ni_emcd_gaussian
 ```
 
 Outputs: `emcd_diffraction_conditions.png`, `emcd_diffraction_conditions.svg`, `emcd_condition_maps.npz` (magnetic and nonmagnetic arrays, local ratio, hkl and beam positions) and `comparison_metadata.json` (apertures, tilt, integrated A−B and model assumptions).
