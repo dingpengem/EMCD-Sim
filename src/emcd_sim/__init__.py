@@ -13,7 +13,7 @@ from .inelastic import LEdgeSpectrum, TabulatedEdgeSpectrum, DipoleMDFF
 from .simulation import EMCDSimulation, SimulationResult
 from .voltage import ConstantMagnetization, TabulatedMagnetization
 
-__version__ = "0.3.4"
+__version__ = "0.3.5"
 __all__ = [
     "Crystal", "fcc_nickel", "BeamSet", "ElasticModel", "PhysicalElasticModel",
     "IndependentAtomPotential", "nickel_lobato_factor", "depth_coherence",

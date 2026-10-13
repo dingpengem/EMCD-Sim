@@ -1,3 +1,11 @@
+# v0.3.5 — Entrance Bloch-wave 2D basis convergence diagnostic
+
+- Added `python -m emcd_sim.convergence` / `emcd-convergence` to compare growing FCC Ni 2D ZOLZ bases under fixed 2BC/3BC/zone-axis incident geometry.
+- Compare elastic 000/±200 intensities, norm, full beam-distribution total variation against largest *finite* basis, and illustrative L3 EMCD difference/asymmetry.
+- Export CSV, NPZ, metadata and labeled PNG; shared detector and tilt within each condition, platform-neutral paths.
+- No modifications to elastic Hamiltonian, scattering factors or Gaussian MDFF. **No convergence certificate or quantitative EMCD claim**.
+- Added focused validations for reference alignment, normalization, CLI output and path portability.
+
 # v0.3.4 — EMCD reciprocal maps by diffraction condition
 
 - Added portable `emcd-compare` / `python -m emcd_sim.compare_conditions` to generate a side-by-side FCC Ni L3 reciprocal-map comparison for 2BC, near-2BC, symmetric-3BC and zone-axis.

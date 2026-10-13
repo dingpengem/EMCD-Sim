@@ -121,3 +121,13 @@ python -m emcd_sim.compare_conditions --output outputs/ni_condition_maps
 ```
 
 The comparison includes shared-color-range magnetic and local M/N maps, indexed diffraction spots, virtual apertures, condition-specific tilts, metadata and NPZ arrays. A fixed global color scale intentionally reveals differences in magnitudes; nearly blank panels do **not** prove zero EMCD. These results use **entrance-only channeling and illustrative Gaussian MDFF**, not quantitative Ni predictions. Reproducibility notes and a checked-in preview are in [examples/ni_condition_maps](examples/ni_condition_maps/README.md).
+
+## FCC Ni Bloch-wave basis convergence (v0.3.5)
+
+To diagnose whether finite 2D ZOLZ diffraction and **illustrative** EMCD depend on the number of retained elastic beams, run:
+
+```bash
+python -m emcd_sim.convergence --output outputs/ni_convergence
+```
+
+The command compares **5, 13, 21 and 37 beams** for [001] zone-axis and symmetric-3BC tilt presets at 10, 30 and 50 nm. It saves `basis_convergence.png`, `convergence_results.csv/.npz`, and `convergence_metadata.json`. This is a *sensitivity/convergence diagnostic*, not evidence that the largest set is converged or that the illustrative Ni MDFF is quantitative. See [the basis-convergence guide](docs/BLOCH_CONVERGENCE.md). Python/Conda commands work on Windows, macOS and Linux.
