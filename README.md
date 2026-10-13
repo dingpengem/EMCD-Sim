@@ -2,10 +2,10 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**. 
 
-> **Research status: v0.4.2 (P2 non-DFT local atomic MDFF and radial input; still not quantitative Ni).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.4.5 (WIEN2k Ni XAS/XMCD-constrained effective dipole MDFF, still not quantitative Ni EMCD).** The default elastic channel uses a **Ni scattering-factor-derived multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 
-## WIEN2k Ni XMCD-constrained effective MDFF (experimental v0.4.5 development)
+## WIEN2k Ni XMCD-constrained effective MDFF (v0.4.5)
 
 The `xmcd-effective` mode now accepts the native 5-column `Ni_fm.xmcd` spectrum, constructs a Hermitian positive-semidefinite axisymmetric *dipole proxy*, and passes it to the existing **entrance-only** channeling engine:
 
