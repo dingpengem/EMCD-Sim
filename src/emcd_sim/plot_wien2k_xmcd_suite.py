@@ -1,6 +1,6 @@
 """Generate a small visualization suite for WIEN2k Ni XMCD results.
 
-Outputs written under examples/ni_xmcd_indexed/ by default:
+Outputs written under examples/ni_dft_xas_xmcd/ by default:
 - ni_dft_xmcd.svg/.png
 - ni_dft_xmcd_zoom_L3L2.svg/.png
 - ni_xmcd_indexing_dashboard.svg/.png
@@ -196,19 +196,18 @@ def save_summary(outdir: Path, E, XMCD, XAS):
         f.write(f'Energy range: {E.min():.3f} to {E.max():.3f} eV\n')
         f.write(f'Max XAS: {XAS.max():.6e}\n')
         f.write(f'Max |XMCD|: {np.max(np.abs(XMCD)):.6e}\n')
-        f.write('Figure files: ni_dft_xmcd.svg, ni_dft_xmcd_zoom_L3L2.svg, ni_xmcd_indexing_dashboard.svg\n')
+        f.write('Figure files: ni_dft_xmcd.svg, ni_dft_xmcd_zoom_L3L2.svg\n')
 
 
 def main(argv=None):
     p = argparse.ArgumentParser(description='Generate WIEN2k XMCD visualization suite')
     p.add_argument('--xmcd-file', type=Path, default=Path('data/wien2k_ni/Ni_fm.xmcd'))
-    p.add_argument('--output-dir', type=Path, default=Path('examples/ni_xmcd_indexed'))
+    p.add_argument('--output-dir', type=Path, default=Path('examples/ni_dft_xas_xmcd'))
     args = p.parse_args(argv)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     E, RP, LP, XMCD, XAS, NXMCD = load_xmcd(args.xmcd_file)
     save_full_spectrum(args.output_dir, E, RP, LP, XMCD, XAS, NXMCD)
     save_zoom(args.output_dir, E, RP, LP, XMCD, XAS, NXMCD)
-    save_dashboard(args.output_dir, E, RP, LP, XMCD, XAS, NXMCD)
     save_summary(args.output_dir, E, XMCD, XAS)
 
 
