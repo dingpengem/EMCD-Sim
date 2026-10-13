@@ -2,7 +2,7 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**. It is **not part of QCBED**.
 
-> **Research status: v0.4.1 (P2 Ni core-SOC angular benchmark and data adapter).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.4.2 (P2 non-DFT local atomic MDFF and radial input; still not quantitative Ni).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 ## P2 — Complex transition-derived dipole MDFF (v0.4.0)
 
@@ -167,3 +167,21 @@ python -m emcd_sim.transition_csv --help
 A future validated Elk/all-electron 2p-to-band matrix-element export can feed
 these interfaces on Windows, macOS or Linux without requiring the DFT solver
 on the EMCD machine.
+
+## P2 — Non-DFT local MDFF (v0.4.2)
+
+The new [non-DFT MDFF guide](docs/NONDFT_MDFF.md) and
+`src/emcd_sim/ni_local_mdff.py` calculate complex Ni 2p→3d dipoles from
+normalized screened-hydrogenic radial orbitals (or externally supplied
+atomic Hartree-Fock radial tables), cubic 3d orbitals, SOC core angular states,
+and **user-supplied** hole occupations, crystal field and exchange splitting.
+
+```bash
+python -m emcd_sim.ni_local_mdff --output outputs/ni_local_non_dft
+```
+
+This is **not** self-consistent DFT, not a full charge-transfer/atomic multiplet
+solver, and not a quantitative prediction for metallic FCC Ni. The existing
+`emcd-ni` reciprocal maps still use the Gaussian illustrative MDFF.
+Atomic multiplet providers (for example Quanty) and periodic DFT will remain
+independent, optional inputs to the same complex tensor interface.

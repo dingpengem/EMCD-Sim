@@ -1,3 +1,10 @@
+# v0.4.2 — Non-DFT local atomic MDFF option (P2)
+
+- Added independently written Ni core-SOC + cubic-orbital local dipole transitions with analytic normalized screened-hydrogenic 2p/3d radial integral.
+- Added optional imported radial wavefunction CSV and normalized numerical radial dipole integral for external atomic Hartree-Fock data.
+- Preserved complex amplitudes and transition-derived tensor; added cubic basis, radial quadrature, chirality and cross-platform CLI checks.
+- Documented atomic multiplet/Quanty route and explicit non-DFT versus quantitative limitations. Existing Gaussian-MDFF `emcd-ni` is unchanged.
+
 # v0.4.1 — Ni 2p core-SOC angular reference and portable transition data bridge
 
 - Computed 2p3/2 and 2p1/2 core angular spinors and 2p->3d complex Cartesian
