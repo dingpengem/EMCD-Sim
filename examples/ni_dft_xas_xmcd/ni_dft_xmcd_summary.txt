@@ -1,0 +1,5 @@
+WIEN2k FCC Ni DFT XMCD summary
+Energy range: 823.625 to 882.521 eV
+Max XAS: 1.484970e-03
+Max |XMCD|: 3.029780e-04
+Figure files: ni_dft_xmcd.svg, ni_dft_xmcd_zoom_L3L2.svg, ni_xmcd_indexing_dashboard.svg

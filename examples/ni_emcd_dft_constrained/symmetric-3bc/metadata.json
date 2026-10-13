@@ -1,0 +1,115 @@
+{
+  "diffraction_condition": "symmetric-3bc",
+  "nominal_zone_axis_hkl": [
+    0,
+    0,
+    1
+  ],
+  "tilt_mrad_xy": [
+    0.0,
+    25.0
+  ],
+  "beam_hkl": [
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      2,
+      0,
+      0
+    ],
+    [
+      -2,
+      0,
+      0
+    ],
+    [
+      4,
+      0,
+      0
+    ],
+    [
+      -4,
+      0,
+      0
+    ],
+    [
+      6,
+      0,
+      0
+    ],
+    [
+      -6,
+      0,
+      0
+    ]
+  ],
+  "beam_count": 7,
+  "excitation_error_inv_angstrom": [
+    0.0,
+    0.0040390042224598514,
+    0.0040390042224598514,
+    0.016156016889839402,
+    0.016156016889839402,
+    0.036351038002138646,
+    0.036351038002138646
+  ],
+  "elastic_intensity": [
+    0.3985691404983855,
+    0.29565354663372395,
+    0.2956535466337255,
+    0.004662024082754007,
+    0.004662024082753976,
+    0.0003998590343287113,
+    0.0003998590343287127
+  ],
+  "elastic_total_intensity": 1.0000000000000002,
+  "diffraction_approximation": "Systematic-row approximation (off-row diffraction not propagated)",
+  "physical_apertures": {
+    "RU": {
+      "center_q_xy": [
+        0.28376844494892167,
+        0.28376844494892167
+      ],
+      "radius_q": 0.09080590238365494
+    },
+    "RD": {
+      "center_q_xy": [
+        0.28376844494892167,
+        -0.28376844494892167
+      ],
+      "radius_q": 0.09080590238365494
+    },
+    "LU": {
+      "center_q_xy": [
+        -0.28376844494892167,
+        0.28376844494892167
+      ],
+      "radius_q": 0.09080590238365494
+    },
+    "LD": {
+      "center_q_xy": [
+        -0.28376844494892167,
+        -0.28376844494892167
+      ],
+      "radius_q": 0.09080590238365494
+    }
+  },
+  "chiral_groups": {
+    "A": [
+      "RU",
+      "LD"
+    ],
+    "B": [
+      "RD",
+      "LU"
+    ]
+  },
+  "mdff_source": "XMCD_EFFECTIVE_NOT_ABINITIO;eta=1.0;beta=1.0;sha256=4fd517af3e54db94588a76b7a6ed9c2f9a1b745cd8fe52b9fca0f87fc4938db3",
+  "xmcd_eta": 1.0,
+  "xmcd_beta": 1.0,
+  "absolute_cross_section": false,
+  "outgoing_channeling": false
+}
