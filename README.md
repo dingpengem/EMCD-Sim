@@ -24,7 +24,7 @@ The original 4,329-point WIEN2k spectrum is now committed at `data/wien2k_ni/Ni_
 ```bash
 python -m emcd_sim.xmcd_indexed_maps \
   --xmcd-file data/wien2k_ni/Ni_fm.xmcd \
-  --output examples/ni_xmcd_indexed \
+  --output examples/ni_dft_xas_xmcd \
   --thickness-nm 30 --grid 65 --steps 64
 ```
 
@@ -170,11 +170,11 @@ For the **same FCC Ni L3 energy (852.7 eV)**, generate a 2-row × 4-column recip
 
 
 ```bash
-python -m emcd_sim.compare_conditions --output outputs/ni_condition_maps
-# or: emcd-compare --output outputs/ni_condition_maps
+python -m emcd_sim.compare_conditions --output outputs/ni_emcd_gaussian
+# or: emcd-compare --output outputs/ni_emcd_gaussian
 ```
 
-The comparison includes shared-color-range magnetic and local M/N maps, indexed diffraction spots, virtual apertures, condition-specific tilts, metadata and NPZ arrays. A fixed global color scale intentionally reveals differences in magnitudes; nearly blank panels do **not** prove zero EMCD. These results use **entrance-only channeling and illustrative Gaussian MDFF**, not quantitative Ni predictions. Reproducibility notes and a checked-in preview are in [examples/ni_condition_maps](examples/ni_condition_maps/README.md).
+The comparison includes shared-color-range magnetic and local M/N maps, indexed diffraction spots, virtual apertures, condition-specific tilts, metadata and NPZ arrays. A fixed global color scale intentionally reveals differences in magnitudes; nearly blank panels do **not** prove zero EMCD. These results use **entrance-only channeling and illustrative Gaussian MDFF**, not quantitative Ni predictions. Reproducibility notes and a checked-in preview are in [examples/ni_emcd_gaussian](examples/ni_emcd_gaussian/README.md).
 
 ## FCC Ni Bloch-wave basis convergence (v0.3.5)
 
