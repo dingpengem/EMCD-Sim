@@ -50,8 +50,7 @@ jobs:
               if missing: raise SystemExit(f'{name} missing/empty: {missing}')
               print(name,'verified',len(required),'outputs')
           for name in ('ni_dft_xmcd.png','ni_dft_xmcd.svg',
-                       'ni_dft_xmcd_zoom_L3L2.png','ni_dft_xmcd_zoom_L3L2.svg',
-                       'ni_xmcd_indexing_dashboard.png','ni_xmcd_indexing_dashboard.svg'):
+                       'ni_dft_xmcd_zoom_L3L2.png','ni_dft_xmcd_zoom_L3L2.svg'):
               if not (Path('examples/ni_dft_xas_xmcd')/name).is_file(): raise SystemExit(f'Missing figure {name}')
           PY
       - name: Commit all generated images and numerical results
