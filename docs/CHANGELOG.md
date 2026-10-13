@@ -1,3 +1,11 @@
+# v0.3.6 — Independent elastic Fourier multislice reference (P1)
+
+- Added pure NumPy projected FCC Ni [001] periodic FFT split-step elastic propagation, independent of finite-beam eigendecomposition.
+- Added matched Fourier-truncated IAM potentials for Bloch/FFT propagation, and cross-method comparisons under zone-axis and illustrative 3BC geometry, multiple cutoffs and thicknesses.
+- Exported elastic intensity, full distribution total-variation discrepancy, source parameters and PNG/CSV/JSON reference; no EMCD or outgoing-wave changes.
+- Added convergence-sensitive tests for Fourier potential normalization, unitary propagation, tilt response, matched Bloch/FFT diffraction and Windows-safe CLI.
+- Documented residual physical potential/basis cutoff sensitivity and limitation of the 2D z-independent projected reference. No quantitative Ni EMCD claim.
+
 # v0.3.5 — Entrance Bloch-wave 2D basis convergence diagnostic
 
 - Added `python -m emcd_sim.convergence` / `emcd-convergence` to compare growing FCC Ni 2D ZOLZ bases under fixed 2BC/3BC/zone-axis incident geometry.
@@ -14,18 +22,18 @@
 
 # v0.3.3 — Tilt and thickness EMCD diagnostic
 
-- Added `python -m emcd_sim.scan` / `emcd-scan`: 3D tilt-x × tilt-y × thickness scans at Ni L3 using the existing entrance-only illustrative MDFF.
+- Added `python -m emcd_sim.scan` / `emcd-scan`: 3D tilt-x × tilt-y × thickness scans at Ni L3 using existing entrance-only illustrative MDFF.
 - CSV and NPZ numerical results, fixed color scales for comparison heatmaps and magnetic/nonmagnetic reciprocal maps.
-- Demonstrated that systematic-row Y tilt insensitivity is a basis-truncation artifact; finite 2D ZOLZ can vary with Y tilt.
-- Portable Windows/macOS/Linux CLI, focused symmetry/data-shape regression tests; no changes to Bloch-wave, MDFF or EELS equations.
+- Explicitly demonstrate that systematic-row Y tilt insensitivity is a basis truncation artifact, while finite 2D ZOLZ can vary with Y tilt.
+- Portable Windows/macOS/Linux CLI, focused symmetry/data-shape regression tests; no changes to existing Bloch-wave, MDFF or EELS equations.
 
 # v0.3.2 — Windows/macOS/Linux portability
 
-- Added `python -m emcd_sim` as a shell-independent entry point (the original `emcd-ni` remains supported).
-- Documented native Windows PowerShell, Conda and VS Code setup; added cross-platform development conventions.
-- Added a GitHub Actions matrix for Windows, macOS and Linux (Python 3.11), including an output-path CLI smoke test.
-- Added regression testing for paths with spaces and synchronized the package version.
-- No changes to Bloch-wave diffraction or the illustrative MDFF.
+- Added an OS-neutral entry point: `python -m emcd_sim`.
+- Added PowerShell/Conda/VS Code setup instructions for Windows and portable commands for macOS/Linux.
+- Added GitHub Actions Python 3.11 test matrix for Windows, macOS and Linux and a CLI smoke test.
+- Added regression coverage for paths with spaces and version consistency.
+- No changes to electron diffraction physics or MDFF; quantitative limitations remain unchanged.
 
 # v0.3.1 — Chiral aperture geometry fix
 

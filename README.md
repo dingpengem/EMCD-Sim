@@ -1,8 +1,8 @@
 # EMCD-Sim
 
-Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**.
+Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**. It is **not part of QCBED**.
 
-> **Research status: v0.3.3.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.3.6.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 ## What works
 
@@ -11,27 +11,29 @@ Independent, modular **electron magnetic circular dichroism (EMCD)** simulation 
 - **Physical multi-beam elastic Ni scattering:** Lobato–Van Dyck atomic electron factors, FCC electron structure factors, occupancy and optional Debye–Waller B, relativistically corrected diffraction coupling, seven-beam [001] baseline (or auto-generated 2D ZOLZ set).
 - Hermitian Bloch-wave elastic propagation and depth-averaged coherence (incident wave); optional original surrogate backend for comparison.
 - Cubic dipole-MDFF geometry `N(E) q·q′ + i M(E) m·(q×q′)` and energy-resolved diffraction map.
-- 2BC Thales-circle A/B apertures and 3BC four-quadrant double-difference chiral grouping. EELS maps and indexed diffraction use the same 000-centered coordinates.
+- 2BC Thales-circle apertures and 3BC four-quadrant **double difference**; detector coordinates match the 000-centered diffraction map. Other geometries retain illustrative A/B detectors.
 - **Pluggable core-loss line-shapes** (`LEdgeSpectrum` or `TabulatedEdgeSpectrum` using measured/DFT arrays).
 - **Pluggable sample-bias-to-moment models**: constant (default) or user-supplied `V,µB` table; fictional demo data clearly marked.
 - Lightweight numerical tests and reproducible PNG / NPZ / JSON output.
 
-## Cross-platform setup (Windows, macOS, Linux)
+## Windows, macOS and Linux
 
-EMCD-Sim is a Python 3.11 research package designed for Windows, macOS and Linux. The portable command `python -m emcd_sim` runs without a Unix shell. Windows PowerShell/Conda/VS Code setup is in [the cross-platform guide](docs/CROSS_PLATFORM.md). GitHub Actions runs tests on all three platforms; these tests do not establish quantitative EMCD accuracy.
+EMCD-Sim supports source installation with Python 3.11 on Windows, macOS and Linux.
+The same cross-platform module command works on all three: `python -m emcd_sim`.
+See [platform setup and Windows PowerShell instructions](docs/CROSS_PLATFORM.md).
+Tests run in GitHub Actions on all three platforms.
 
-## Install and run (macOS/Linux; Windows commands in platform guide)
+## Install and run (Mac with Conda or Python 3.10+)
 
 ```bash
 cd ~/EM_code/EMCD-Sim
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -e ".[dev]"
-pytest -q
+conda activate emcd-python
+python -m pip install -e '.[dev]'
+python -m pytest -q
 emcd-ni --output outputs/ni_baseline
 ```
 
-Outputs now also include `diffraction_pattern.png/.npz` and `diffraction_spots.csv`, with indexed `(h,k,l)` Bragg spots and nominal `[001]` zone-axis labels.
+Outputs: `diffraction_pattern.png/.npz`, `diffraction_spots.csv`, `ni_elastic_diffraction.png/.npz`, `ni_emcd.png/.npz`, `metadata.json`.
 
 The **default** command uses Ni physical elastic scattering (seven selected beams). Switch options:
 
@@ -47,6 +49,17 @@ emcd-ni --elastic-backend surrogate --xi-nm 55 --output outputs/ni_surrogate
 # Elastic-only sensitivity to number of diffracted beams
 python examples/ni_elastic_convergence.py --max-order 6
 ```
+
+For indexed diffraction patterns without MDFF/EELS (fast):
+
+```bash
+emcd-ni --diffraction-condition zone-axis --max-beams 13 --diffraction-only --output outputs/ni_zone_axis
+emcd-ni --diffraction-condition near-2bc --diffraction-only --output outputs/ni_near_2bc
+emcd-ni --diffraction-condition symmetric-3bc --diffraction-only --output outputs/ni_3bc
+emcd-ni --diffraction-condition two-beam --diffraction-only --output outputs/ni_two_beam
+```
+
+See [Diffraction conditions](docs/DIFFRACTION_CONDITIONS.md) (including **corrected v0.3.1 apertures**) for definition of the nominal [001] zone axis, signed excitation errors, finite-beam caveats and comparison between 2BC and symmetric 3BC. The rendered Bragg spot width is **not** a calculated CBED disk or instrumental resolution.
 
 `--xi-nm` affects only the `surrogate` backend; physical `ξ₂₀₀` is computed from Ni scattering factors. `--voltage-v` is **sample bias**, not microscope accelerating voltage (`--acceleration-kv`). The elastic backend is physical but the EMCD MDFF remains illustrative, and no outgoing channeling has been added.
 
@@ -66,6 +79,7 @@ For real voltage-dependent studies, replace the example CSV with measured or ind
 src/emcd_sim/
   crystal.py       FCC structural model, reciprocal lattice, extinction
   geometry.py      electron optics, qz, reciprocal detectors
+  diffraction.py   indexed diffraction geometries, s_g and elastic plots
   scattering.py    Ni Lobato elastic factors and F_G, Debye-Waller, occupancies
   physical_elastic.py  physical finite-basis Bloch-wave propagation
   elastic.py       legacy surrogate, beam selection and coherence integration
@@ -80,40 +94,23 @@ tests/              focused validation tests
 docs/               physics assumptions and upgrade roadmap
 ```
 
-## Indexed diffraction geometries (v0.3.0)
-
-The FCC Ni elastic Bloch-wave solver now supports nominal [001] `zone-axis`, idealized `two-beam`, `near-2bc` and `symmetric-3bc` conditions. Run the quick diffraction-only mode (no illustrative MDFF/EELS):
-
-```bash
-emcd-ni --diffraction-condition zone-axis --max-beams 13 --diffraction-only --output outputs/ni_zone_axis
-emcd-ni --diffraction-condition near-2bc --diffraction-only --output outputs/ni_near_2bc
-emcd-ni --diffraction-condition symmetric-3bc --diffraction-only --output outputs/ni_3bc
-emcd-ni --diffraction-condition two-beam --diffraction-only --output outputs/ni_two_beam
-```
-
-See [diffraction conditions and limitations](docs/DIFFRACTION_CONDITIONS.md). The Bragg spot widths in PNGs are **visual only**, not CBED disks; systematic-row 2BC/3BC modes omit off-row beams. The default behavior of the old CLI remains unchanged.
-
 
 ## Tilt × thickness scans (v0.3.3)
 
-Use `python -m emcd_sim.scan` or `emcd-scan` to compare a seven-beam systematic row and a finite 2D ZOLZ basis under identical tilts. The command saves 3D `(tilt_x, tilt_y, thickness)` L3 difference/asymmetry arrays, fixed-color-scale reciprocal maps, beam metadata and CSV outputs. See [the scan guide](docs/TILT_THICKNESS_SCAN.md). MDFF remains **illustrative**, not quantitative Ni.
+Use `python -m emcd_sim.scan` or `emcd-scan` to compare a seven-beam systematic row and a finite 2D ZOLZ basis under identical tilts. The script produces complete `(tilt_x, tilt_y, thickness)` L3 difference/asymmetry arrays, fixed-color-scale reciprocal maps, indexed basis metadata and CSV outputs. See [the scan guide](docs/TILT_THICKNESS_SCAN.md). The current MDFF is still **illustrative**, not quantitative Ni.
 
 ## What is deliberately not claimed
 
-V0.3 **does** use tabulated neutral-Ni scattering factors to derive a real, nonabsorptive independent-atom potential. However it is **not parameter-free** in the ab-initio electronic-structure sense. It does **not** include calibrated Ni EMCD matrix elements, ab-initio ELNES/MDFF, outgoing dynamical propagation, absolute cross sections, quantitative sum rules, experimental validation or voltage-driven magnetic theory. [Details](docs/PHYSICAL_ELASTIC.md).
+V0.2 **does** use tabulated neutral-Ni scattering factors to derive a real, nonabsorptive independent-atom potential. However it is **not parameter-free** in the ab-initio electronic-structure sense. It does **not** include calibrated Ni EMCD matrix elements, ab-initio ELNES/MDFF, outgoing dynamical propagation, absolute cross sections, quantitative sum rules, experimental validation or voltage-driven magnetic theory. [Details](docs/PHYSICAL_ELASTIC.md).
 
 ## GitHub / Mac deployment
 
-The initial project can be unpacked at `~/EM_code/EMCD-Sim`. From inside the folder, run `bash scripts/publish_on_mac.sh` (requires `gh` and GitHub authentication). It creates the **separate public** `dingpengem/EMCD-Sim` repository on GitHub and publishes the local commit. Environments, caches, generated outputs, local editor settings, and secrets are excluded by `.gitignore`.
-
-## Detector geometry correction (v0.3.1)
-
-2BC: A/B at (g/2, +/-g/2), g=|g_200|. Symmetric 3BC: physical apertures RU, RD, LU, LD at (+/-g/2,+/-g/2), with chiral difference (RU+LD)-(RD+LU). The previous v0.3.0 coordinates erroneously re-subtracted incident tilt from 000-centered reciprocal maps. These are geometric, not SNR-optimized apertures. See [diffraction and detector geometry](docs/DIFFRACTION_CONDITIONS.md).
-
+The initial project can be unpacked at `~/EM_code/EMCD-Sim`. From inside the folder, run `bash scripts/publish_on_mac.sh` (requires `gh` and GitHub authentication). The script creates the **separate public** `dingpengem/EMCD-Sim` repository on GitHub and publishes a curated source-code commit. Generated outputs and local environment files are excluded by `.gitignore`. This research-stage simulator does not yet provide quantitative Ni EMCD predictions.
 
 ## Compare EMCD maps across diffraction conditions
 
 For the **same FCC Ni L3 energy (852.7 eV)**, generate a 2-row × 4-column reciprocal-space comparison of ideal 2BC, near-2BC, symmetric-3BC and [001] zone-axis:
+
 
 ```bash
 python -m emcd_sim.compare_conditions --output outputs/ni_condition_maps
@@ -131,3 +128,13 @@ python -m emcd_sim.convergence --output outputs/ni_convergence
 ```
 
 The command compares **5, 13, 21 and 37 beams** for [001] zone-axis and symmetric-3BC tilt presets at 10, 30 and 50 nm. It saves `basis_convergence.png`, `convergence_results.csv/.npz`, and `convergence_metadata.json`. This is a *sensitivity/convergence diagnostic*, not evidence that the largest set is converged or that the illustrative Ni MDFF is quantitative. See [the basis-convergence guide](docs/BLOCH_CONVERGENCE.md). Python/Conda commands work on Windows, macOS and Linux.
+
+## Independent elastic multislice reference (v0.3.6, P1)
+
+To independently cross-check the **incoming elastic Bloch-wave** propagator against a **real-space Fourier split-step multislice** implementation, with deliberately matched *Fourier-truncated* FCC Ni [001] crystal potentials:
+
+```bash
+python -m emcd_sim.elastic_reference --output outputs/ni_elastic_reference
+```
+
+The command saves a labeled comparison PNG, CSV diffraction intensities and full reference metadata. See [elastic FFT reference methodology, convergence warnings and observed results](docs/ELASTIC_FFT_REFERENCE.md). It **does not** compute an EMCD spectrum, use 3D atom-resolved potentials, or certify physical/MDFF convergence. Both propagation algorithms can agree while the underlying high-order Ni potential is still cutoff-sensitive.
