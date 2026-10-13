@@ -4,6 +4,20 @@ Independent, modular **electron magnetic circular dichroism (EMCD)** simulation 
 
 > **Research status: v0.4.2 (P2 non-DFT local atomic MDFF and radial input; still not quantitative Ni).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
+
+## WIEN2k Ni XMCD-constrained effective MDFF (experimental v0.4.5 development)
+
+The `xmcd-effective` mode now accepts the native 5-column `Ni_fm.xmcd` spectrum, constructs a Hermitian positive-semidefinite axisymmetric *dipole proxy*, and passes it to the existing **entrance-only** channeling engine:
+
+```bash
+python -m emcd_sim --mdff-model xmcd-effective \
+  --xmcd-file data/wien2k_ni/Ni_fm.xmcd \
+  --xmcd-eta 1 --xmcd-beta 1 \
+  --diffraction-condition near-2bc --output outputs/ni_xmcd_2bc
+```
+
+The user-provided WIEN2k dataset should be unpacked locally into `data/wien2k_ni/` from the original archive; the complete source archive is **not yet checked into this repository**. No WIEN2k source-code modifications are necessary for the proxy path. See [XMCD technical pathway and future full DFT MDFF migration](docs/WIEN2K_XMCD_MDFF_ROADMAP.md). The existing audited `ni-metal-external` remains reserved for actual complex core-to-band transition amplitudes. **Neither model nor its output is a quantitatively validated metallic-Ni EMCD cross section.**
+
 ## P2 — Complex MDFF in single-channeling EMCD (v0.4.3)
 
 The real-complex `DipoleTensor` can now be contracted with the Ni incident
