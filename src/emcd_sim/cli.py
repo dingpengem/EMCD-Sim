@@ -42,12 +42,18 @@ def main() -> None:
                         help="Override geometry preset y tilt; mrad")
     parser.add_argument("--grid", type=int, default=65)
     parser.add_argument("--steps", type=int, default=64)
-    parser.add_argument("--mdff-model", choices=("gaussian", "ni-local", "transitions", "ni-metal-external"), default="gaussian",
+    parser.add_argument("--mdff-model", choices=("gaussian", "ni-local", "transitions", "ni-metal-external", "xmcd-effective"), default="gaussian",
                         help="gaussian: original illustrative model; ni-local: non-DFT atomic complex tensor; transitions: complex transition NPZ")
     parser.add_argument("--mdff-transitions", type=Path, default=None,
                         help="TransitionDataset NPZ, mandatory for --mdff-model transitions")
     parser.add_argument("--mdff-provenance", type=Path, default=None,
                         help="Required external FCC Ni dipole provenance JSON for ni-metal-external mode")
+    parser.add_argument("--xmcd-file", type=Path, default=None,
+                        help="WIEN2k Ni_fm.xmcd input for approximate xmcd-effective model")
+    parser.add_argument("--xmcd-eta", type=float, default=1.0,
+                        help="Effective magnetic calibration and convention factor")
+    parser.add_argument("--xmcd-beta", type=float, default=1.0,
+                        help="Unknown longitudinal/transverse nonmagnetic tensor ratio")
     parser.add_argument("--mdff-site", default=None,
                         help="Select one explicit site label from an imported transition dataset")
     parser.add_argument("--mdff-sigma-ev", type=float, default=0.8,
@@ -57,6 +63,10 @@ def main() -> None:
     parser.add_argument("--voltage-table", default=None,
                         help="CSV with header voltage_v,moment_muB from experiment/theory")
     args = parser.parse_args()
+    if args.mdff_model == "xmcd-effective" and args.xmcd_file is None:
+        parser.error("--mdff-model xmcd-effective requires --xmcd-file")
+    if args.mdff_model != "xmcd-effective" and args.xmcd_file is not None:
+        parser.error("--xmcd-file applies only to --mdff-model xmcd-effective")
     if args.mdff_model != "gaussian":
         if args.voltage_table is not None or args.voltage_v != 0.0:
             parser.error("Complex MDFF uses the electronic state supplied by its transitions; the illustrative bias-to-moment scaling is unsupported")
@@ -118,6 +128,16 @@ def main() -> None:
                           "elastic_total_intensity":diffraction["elastic_total_intensity"]},indent=2))
         return
     energies = np.linspace(837., 883., 185)
+    if args.mdff_model == "xmcd-effective":
+        from .wien2k_xmcd import load_wien2k_xmcd
+        try:
+            xmcd_spectrum = load_wien2k_xmcd(args.xmcd_file)
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
+        lo, hi = max(837., float(xmcd_spectrum.energy_ev[0])), min(883., float(xmcd_spectrum.energy_ev[-1]))
+        if not lo < hi:
+            parser.error("No overlap between standard EMCD grid and XMCD spectrum")
+        energies = np.linspace(lo, hi, 185)
     tensor = None
     external_audit = None
     mdff_source = "ILLUSTRATIVE_GAUSSIAN_magnetic_fraction_0.12"
@@ -127,7 +147,16 @@ def main() -> None:
     else:
         from .mdff_tensor import TransitionDataset, dipole_tensor_from_transitions
         from .single_channeling_tensor import run_tensor_single_channeling
-        if args.mdff_model == "ni-local":
+        if args.mdff_model == "xmcd-effective":
+            from .xmcd_effective_mdff import effective_tensor_from_xmcd
+            try:
+                tensor = effective_tensor_from_xmcd(args.xmcd_file, energies,
+                    eta=args.xmcd_eta, beta=args.xmcd_beta)
+            except (ValueError, OSError) as exc:
+                parser.error(str(exc))
+            mdff_source = tensor.source
+            transitions = None
+        elif args.mdff_model == "ni-local":
             from .ni_local_mdff import ni_local_transitions, radial_dipole_from_table, NiLocalConfig
             radial_override = None
             if args.mdff_radial_table is not None:
@@ -145,15 +174,16 @@ def main() -> None:
                 except (ValueError, OSError, json.JSONDecodeError) as exc:
                     parser.error(str(exc))
             transitions = TransitionDataset.load_npz(args.mdff_transitions)
-        available_sites = set(transitions.site.tolist())
-        if args.mdff_site is None and len(available_sites) != 1:
+        available_sites = set(transitions.site.tolist()) if transitions is not None else set()
+        if transitions is not None and args.mdff_site is None and len(available_sites) != 1:
             parser.error("Multi-site transition data require an explicit --mdff-site; spatial site registration is not automatic")
-        selected_site = args.mdff_site or next(iter(available_sites))
-        if selected_site not in available_sites:
+        selected_site = (args.mdff_site or next(iter(available_sites))) if transitions is not None else None
+        if transitions is not None and selected_site not in available_sites:
             parser.error(f"Unknown transition site: {selected_site!r}")
         try:
-            tensor = dipole_tensor_from_transitions(transitions, energies, args.mdff_sigma_ev,
-                                                    site=selected_site)
+            if transitions is not None:
+                tensor = dipole_tensor_from_transitions(transitions, energies, args.mdff_sigma_ev,
+                                                        site=selected_site)
         except ValueError as exc:
             parser.error(str(exc))
         mdff_source = tensor.source
@@ -298,6 +328,9 @@ def main() -> None:
         cross_section_units="relative_only_missing_fast_electron_prefactors",
         core_loss_site_phase="localized core, equivalent FCC Ni sites averaged incoherently",
         magnetic_fraction_applied=(tensor is None),
+        xmcd_effective_assumptions=({"eta":args.xmcd_eta, "beta":args.xmcd_beta,
+                                     "relative_only":True, "full_DFT_MDFF":False}
+                                    if args.mdff_model == "xmcd-effective" else None),
         elastic_absorption=False, outgoing_channeling=False,
         edge_sample_ev=energy, difference_at_l3_arbitrary= difference,
         asymmetry_at_l3=contrast, calibrated=False,
