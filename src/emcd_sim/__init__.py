@@ -15,7 +15,7 @@ from .voltage import ConstantMagnetization, TabulatedMagnetization
 from .mdff_tensor import TransitionDataset, DipoleTensor, dipole_tensor_from_transitions, cycles_to_angular_q
 from .single_channeling_tensor import run_tensor_single_channeling
 
-__version__ = "0.4.3"
+__version__ = "0.4.4"
 __all__ = [
     "Crystal", "fcc_nickel", "BeamSet", "ElasticModel", "PhysicalElasticModel",
     "IndependentAtomPotential", "nickel_lobato_factor", "depth_coherence",

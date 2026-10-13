@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "emcd-sim"
-version = "0.4.3"
+version = "0.4.4"
 description = "Research-stage EMCD forward-simulation framework with an FCC Ni benchmark"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,6 +25,7 @@ emcd-mdff = "emcd_sim.mdff_reference:main"
 emcd-ni-atomic = "emcd_sim.ni_atomic_reference:main"
 emcd-ni-local-mdff = "emcd_sim.ni_local_mdff:main"
 emcd-import-transitions = "emcd_sim.transition_csv:main"
+emcd-audit-ni-data = "emcd_sim.ni_data_audit:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

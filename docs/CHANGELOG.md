@@ -1,11 +1,17 @@
-# v0.4.3 — Complex transition MDFF in entrance-only EMCD
+# v0.4.4 — Metallic Ni transition-data provenance gate
 
-- Couple complex dipole MDFF tensors to incoming Bloch-wave coherence with equivalent Ni core-site phases and consistent angular Q/Coulomb denominators.
-- Add selectable `gaussian`, `ni-local`, and imported `transitions` MDFF sources; legacy Gaussian remains the default.
-- Save common-scale L2/L3 nonchiral and chiral reciprocal maps plus NPZ data; explicitly mark relative-only normalization and missing electron-scattering prefactors.
-- Reject unsupported tensor voltage-to-moment scaling; retain Windows/macOS/Linux portable CLI.
-- Focused checks: direct complex amplitude equivalence, Hermiticity/positivity, magnetic-handedness reversal, spin-degenerate reference, and CLI outputs.
-- No DFT Ni benchmark, absolute units, or outgoing channeling.
+- Audited public Ni L2/L3 datasets and distinguished phase-correct FCC Ni **complex transitions** from EELS/XAS/XMCD intensity datasets and NiO models. No suitable publicly downloadable complex FCC-Ni transition table was verified; no automatic physics replacement was performed.
+- Added `ni_data_audit.py` to check NPZ dipoles, L2/L3 labels, core-SOC/spin/phase declarations, phase-specific source metadata and algebraic tensor consistency. Audit pass is **not** scientific validation.
+- Added optional `--mdff-model ni-metal-external --mdff-provenance path.json`; it refuses missing/mismatched inputs and continues to report relative/nonquantitative units.
+- Preserved all prior EMCD modes and Windows/macOS/Linux compatibility.
+
+# v0.4.3 — Complex MDFF in entrance-only Ni EMCD
+
+- Added a transition-derived complex tensor backend to the physical Bloch-wave single-channeling forward calculation, preserving the legacy Gaussian model as a selectable default.
+- Coupled coherent incoming beam amplitudes to localized FCC Ni core-loss site phases; kept the **proper** dipole MDFF separate from fast-electron Coulomb denominators, with explicit cycles-to-angular-Q conversion.
+- Added `--mdff-model {gaussian,ni-local,transitions}` and portable complex transition NPZ support; disabled unsupported tensor voltage-to-moment scaling.
+- Added matched L₂/L₃ reciprocal component figures and data, source/approximation metadata and focused positive-intensity, phase, and chirality-reversal tests.
+- No claim of Ni-specific quantitative MDFF, absolute cross sections, DFT, voltage response or double channeling.
 
 # v0.4.2 — Non-DFT local atomic MDFF option (P2)
 

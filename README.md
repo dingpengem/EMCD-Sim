@@ -2,18 +2,24 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**. It is **not part of QCBED**.
 
-> **Research status: v0.4.3 (P2 non-DFT local atomic MDFF and radial input; still not quantitative Ni).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.4.2 (P2 non-DFT local atomic MDFF and radial input; still not quantitative Ni).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
-## P2 — Complex transition-derived MDFF coupled to single channeling (v0.4.3)
+## P2 — Complex MDFF in single-channeling EMCD (v0.4.3)
 
-Complex transition tensors now drive the existing physical Bloch-wave entrance-only EMCD forward model:
+The real-complex `DipoleTensor` can now be contracted with the Ni incident
+Bloch-wave to generate **L₂/L₃ reciprocal maps, spectra and apertures** without
+the Gaussian `magnetic_fraction=0.12`. Use a deliberately non-DFT local atomic
+model, or import complex transition dipoles calculated elsewhere:
 
 ```bash
 python -m emcd_sim --mdff-model ni-local --diffraction-condition near-2bc --output outputs/ni_local_emcd
-python -m emcd_sim --mdff-model transitions --mdff-transitions path/to/transitions.npz --diffraction-condition symmetric-3bc --output outputs/from_transitions
+python -m emcd_sim --mdff-model transitions --mdff-transitions path/to/transitions.npz --diffraction-condition symmetric-3bc --output outputs/ni_imported_emcd
 ```
 
-L2/L3 chiral and nonchiral reciprocal maps and aperture spectra are saved. These outputs remain **relative intensity, not quantitative Ni**. The legacy `gaussian` model is still the default. See [complex MDFF coupling](docs/SINGLE_CHANNELING_TENSOR.md).
+Both are **entrance-only relative-intensity calculations**, not quantitative Ni predictions.
+The original `--mdff-model gaussian` remains the default for older examples.
+The tensor path rejects voltage-to-moment scaling. See
+[full coupling equations, site phases, Coulomb factors, units and limitations](docs/SINGLE_CHANNELING_TENSOR.md).
 
 ## P2 — Complex transition-derived dipole MDFF (v0.4.0)
 
@@ -23,7 +29,7 @@ The new [MDFF tensor API](docs/MDFF_TENSOR.md) constructs complex Hermitian spec
 python -m emcd_sim.mdff_reference --toy --output outputs/mdff_toy
 ```
 
-Supply a compatible real transition dataset via `--transitions path/to/transitions.npz` instead of `--toy`. The generated `mdff_tensor.npz` is a spectral *dipole tensor*; it does **not** include Coulomb denominators or experimental cross-section calibration. The original Gaussian-MDFF EMCD CLI is retained unchanged until the tensor-to-channeling coupling is implemented and checked.
+Supply a compatible real transition dataset via `--transitions path/to/transitions.npz` instead of `--toy`. The generated `mdff_tensor.npz` is a spectral *dipole tensor*; it does **not** include Coulomb denominators or experimental cross-section calibration. The original Gaussian-MDFF EMCD CLI remains the default for compatibility; the tensor-to-channeling backend is separately selectable from v0.4.3.
 
 References: [abTEM core-loss source](https://github.com/abTEM/abTEM/blob/main/abtem/inelastic/core_loss.py) for transition-potential/channeling design and [Elk elnes.f90](https://elk.sourceforge.io/doxygen/html/elnes_8f90_source.html) for complex electronic excitation matrix elements. These are references **not copied source code**, and neither automatically supplies a quantitative Ni magnetic MDFF.
 
@@ -196,3 +202,9 @@ solver, and not a quantitative prediction for metallic FCC Ni. The existing
 `emcd-ni` reciprocal maps still use the Gaussian illustrative MDFF.
 Atomic multiplet providers (for example Quanty) and periodic DFT will remain
 independent, optional inputs to the same complex tensor interface.
+
+## Ni metallic complex transition-data audit (v0.4.4)
+
+A literature/open-data audit **did not identify a verified, downloadable FCC metallic Ni L2/L3 complex transition-amplitude dataset**. The project therefore does **not** silently substitute NiO spectra, ordinary XAS intensity or made-up DFT transitions. `--mdff-model ni-metal-external` now requires phase/SOC/complex-phase provenance and checks source consistency before use. **This is an input/schema audit, not independent physical validation.**
+
+See [Ni metallic transition data sources and audit](docs/NI_L23_EXTERNAL_DATA.md). Existing Gaussian and non-DFT models are retained and clearly labeled.
