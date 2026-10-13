@@ -2,7 +2,19 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**. It is **not part of QCBED**.
 
-> **Research status: v0.3.6.** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.4.0 (P2 MDFF mathematical kernel).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+
+## P2 — Complex transition-derived dipole MDFF (v0.4.0)
+
+The new [MDFF tensor API](docs/MDFF_TENSOR.md) constructs complex Hermitian spectral tensors from externally supplied core-to-unoccupied-state transition dipoles. It **does not compute DFT wavefunctions**. Run a synthetic-only demonstration on Windows/macOS/Linux:
+
+```bash
+python -m emcd_sim.mdff_reference --toy --output outputs/mdff_toy
+```
+
+Supply a compatible real transition dataset via `--transitions path/to/transitions.npz` instead of `--toy`. The generated `mdff_tensor.npz` is a spectral *dipole tensor*; it does **not** include Coulomb denominators or experimental cross-section calibration. The original Gaussian-MDFF EMCD CLI is retained unchanged until the tensor-to-channeling coupling is implemented and checked.
+
+References: [abTEM core-loss source](https://github.com/abTEM/abTEM/blob/main/abtem/inelastic/core_loss.py) for transition-potential/channeling design and [Elk elnes.f90](https://elk.sourceforge.io/doxygen/html/elnes_8f90_source.html) for complex electronic excitation matrix elements. These are references **not copied source code**, and neither automatically supplies a quantitative Ni magnetic MDFF.
 
 ## What works
 

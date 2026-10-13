@@ -1,3 +1,10 @@
+# v0.4.0 — P2 complex MDFF tensor foundation
+
+- Added `TransitionDataset` for externally supplied complex dipole matrix elements, energy losses, site/edge labels and transition weights. Portable NPZ with strict explicit conventions and provenance.
+- Added spectrally broadened Hermitian dipole tensor `T_ab(E)` and full complex `S_dip(Q,Q',E)` contraction, separate from Coulomb factors.
+- Added `emcd-mdff` / `python -m emcd_sim.mdff_reference` synthetic-only demonstration and basic physics tests.
+- No real Ni DFT/SOC transitions provided; no claim of quantitative Ni EMCD and no changes to existing Gaussian EMCD results.
+
 # v0.3.6 — Independent elastic Fourier multislice reference (P1)
 
 - Added pure NumPy projected FCC Ni [001] periodic FFT split-step elastic propagation, independent of finite-beam eigendecomposition.

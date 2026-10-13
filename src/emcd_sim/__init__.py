@@ -12,12 +12,14 @@ from .geometry import Microscope, VirtualDetector, electron_wavelength_angstrom
 from .inelastic import LEdgeSpectrum, TabulatedEdgeSpectrum, DipoleMDFF
 from .simulation import EMCDSimulation, SimulationResult
 from .voltage import ConstantMagnetization, TabulatedMagnetization
+from .mdff_tensor import TransitionDataset, DipoleTensor, dipole_tensor_from_transitions, cycles_to_angular_q
 
-__version__ = "0.3.6"
+__version__ = "0.4.0"
 __all__ = [
     "Crystal", "fcc_nickel", "BeamSet", "ElasticModel", "PhysicalElasticModel",
     "IndependentAtomPotential", "nickel_lobato_factor", "depth_coherence",
     "Microscope", "VirtualDetector", "electron_wavelength_angstrom",
     "LEdgeSpectrum", "TabulatedEdgeSpectrum", "DipoleMDFF", "EMCDSimulation", "SimulationResult",
     "ConstantMagnetization", "TabulatedMagnetization",
+    "TransitionDataset", "DipoleTensor", "dipole_tensor_from_transitions", "cycles_to_angular_q",
 ]
