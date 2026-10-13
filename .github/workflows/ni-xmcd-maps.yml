@@ -28,18 +28,18 @@ jobs:
         run: |
           python -m emcd_sim.plot_wien2k_xmcd_suite \
             --xmcd-file data/wien2k_ni/Ni_fm.xmcd \
-            --output-dir examples/ni_xmcd_indexed
+            --output-dir examples/ni_dft_xas_xmcd
       - name: Run indexed diffraction and EMCD maps
         run: |
           python -m emcd_sim.xmcd_indexed_maps \
             --xmcd-file data/wien2k_ni/Ni_fm.xmcd \
-            --output examples/ni_emcd_dft_maps \
+            --output examples/ni_emcd_dft_constrained \
             --thickness-nm 30 --grid 65 --steps 64
       - name: Verify all four condition output sets
         run: |
           python - <<'PY'
           from pathlib import Path
-          base=Path('examples/ni_emcd_dft_maps')
+          base=Path('examples/ni_emcd_dft_constrained')
           required=('diffraction_pattern.png','diffraction_pattern.npz',
                     'diffraction_spots.csv','emcd_L23_indexed.png',
                     'emcd_L3_map.npz','emcd_L2_map.npz',
@@ -52,12 +52,12 @@ jobs:
           for name in ('ni_dft_xmcd.png','ni_dft_xmcd.svg',
                        'ni_dft_xmcd_zoom_L3L2.png','ni_dft_xmcd_zoom_L3L2.svg',
                        'ni_xmcd_indexing_dashboard.png','ni_xmcd_indexing_dashboard.svg'):
-              if not (Path('examples/ni_xmcd_indexed')/name).is_file(): raise SystemExit(f'Missing figure {name}')
+              if not (Path('examples/ni_dft_xas_xmcd')/name).is_file(): raise SystemExit(f'Missing figure {name}')
           PY
       - name: Commit all generated images and numerical results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f examples/ni_xmcd_indexed examples/ni_emcd_dft_maps
+          git add -f examples/ni_dft_xas_xmcd examples/ni_emcd_dft_constrained
           git diff --cached --quiet || git commit -m "Save calculated Ni XMCD and indexed EMCD results [skip ci]"
           git push
