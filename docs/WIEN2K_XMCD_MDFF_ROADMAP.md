@@ -36,7 +36,7 @@ tensor = effective_tensor_from_xmcd("data/wien2k_ni/Ni_fm.xmcd", energy_ev=energ
 # result = run_tensor_single_channeling(sim, tensor, thickness_nm=...,
 #                                      grid_size=..., depth_steps=...)
 ```
-Existing `cli.py` has **not yet gained a --mdff-model xmcd-effective switch**; this document intentionally describes the callable interface without claiming end-to-end CLI integration.
+The CLI now supports `--mdff-model xmcd-effective --xmcd-file data/wien2k_ni/Ni_fm.xmcd --xmcd-eta 1 --xmcd-beta 1`. It regrids energy within the measured range and uses entrance-only channeling. End-to-end physical validation remains pending.
 
 ## Future full WIEN2k-derived MDFF, unchanged solver interface
 
