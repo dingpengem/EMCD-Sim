@@ -1,0 +1,64 @@
+{
+  "diffraction_condition": "two-beam",
+  "nominal_zone_axis_hkl": [
+    0,
+    0,
+    1
+  ],
+  "tilt_mrad_xy": [
+    -7.116725439974256,
+    25.0
+  ],
+  "beam_hkl": [
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      2,
+      0,
+      0
+    ]
+  ],
+  "beam_count": 2,
+  "excitation_error_inv_angstrom": [
+    0.0,
+    0.0
+  ],
+  "elastic_intensity": [
+    0.6491269181803698,
+    0.3508730818196299
+  ],
+  "elastic_total_intensity": 0.9999999999999998,
+  "diffraction_approximation": "Ideal two-beam basis truncation: all other diffracted beams excluded",
+  "physical_apertures": {
+    "A": {
+      "center_q_xy": [
+        0.28376844494892167,
+        0.28376844494892167
+      ],
+      "radius_q": 0.09080590238365494
+    },
+    "B": {
+      "center_q_xy": [
+        0.28376844494892167,
+        -0.28376844494892167
+      ],
+      "radius_q": 0.09080590238365494
+    }
+  },
+  "chiral_groups": {
+    "A": [
+      "A"
+    ],
+    "B": [
+      "B"
+    ]
+  },
+  "mdff_source": "XMCD_EFFECTIVE_NOT_ABINITIO;eta=1.0;beta=1.0;sha256=4fd517af3e54db94588a76b7a6ed9c2f9a1b745cd8fe52b9fca0f87fc4938db3",
+  "xmcd_eta": 1.0,
+  "xmcd_beta": 1.0,
+  "absolute_cross_section": false,
+  "outgoing_channeling": false
+}
