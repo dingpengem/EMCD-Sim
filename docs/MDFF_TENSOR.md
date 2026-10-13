@@ -69,3 +69,17 @@ Reference implementations have different licenses. **Do not paste third-party GP
 ## Next P2 patch
 
 Build an adapter exporting real, **complex** SOC-resolved Ni 2p -> unoccupied-state transition dipoles from an electronic structure code; compare ELNES and magnetic tensor with published Ni data. Only then integrate the tensor with entrance-only Bloch-wave, site phases and correct scattering normalization. Outgoing/double channeling remains deferred.
+
+## P2 follow-up: physical 2p SOC angular reference and DFT transition bridge (v0.4.1)
+
+See [NI_TRANSITION_PIPELINE.md](NI_TRANSITION_PIPELINE.md). The
+`ni_atomic_reference.py` module computes 2p core spinor Clebsch-Gordan
+coupling and 2p-to-3d *angular* transition matrix elements instead of
+inventing circular dipoles. Final 3d bands, spin holes, edge energies and the
+radial matrix element remain model parameters: **not Ni DFT**.
+
+The `transition_csv.py` converter accepts externally calculated, complex
+Cartesian core dipoles (length gauge) with explicit amplitude ordering and
+provenance, then writes the same portable `TransitionDataset` NPZ schema.
+Raw Elk `ELNES.OUT` intensities cannot reconstruct full complex MDFF.
+The default `emcd-ni` still uses the illustrative Gaussian model.

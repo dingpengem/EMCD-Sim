@@ -1,3 +1,13 @@
+# v0.4.1 — Ni 2p core-SOC angular reference and portable transition data bridge
+
+- Computed 2p3/2 and 2p1/2 core angular spinors and 2p->3d complex Cartesian
+  dipole amplitudes using Clebsch-Gordan coefficients and spin selection.
+- Illustrative Ni 3d spin-hole weights, L3/L2 onset energies and radial dipole
+  integral remain explicitly user-specified. **Not** DFT or calibrated Ni MDFF.
+- Added strict external complex dipole CSV -> TransitionDataset NPZ converter
+  (with explicit input bra convention), platform-neutral command line and tests.
+- Preserved legacy Gaussian EMCD CLI unchanged. Double channeling deferred.
+
 # v0.4.0 — P2 complex MDFF tensor foundation
 
 - Added `TransitionDataset` for externally supplied complex dipole matrix elements, energy losses, site/edge labels and transition weights. Portable NPZ with strict explicit conventions and provenance.

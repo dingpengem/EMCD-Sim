@@ -2,7 +2,7 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**. It is **not part of QCBED**.
 
-> **Research status: v0.4.0 (P2 MDFF mathematical kernel).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.4.1 (P2 Ni core-SOC angular benchmark and data adapter).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 ## P2 — Complex transition-derived dipole MDFF (v0.4.0)
 
@@ -150,3 +150,20 @@ python -m emcd_sim.elastic_reference --output outputs/ni_elastic_reference
 ```
 
 The command saves a labeled comparison PNG, CSV diffraction intensities and full reference metadata. See [elastic FFT reference methodology, convergence warnings and observed results](docs/ELASTIC_FFT_REFERENCE.md). It **does not** compute an EMCD spectrum, use 3D atom-resolved potentials, or certify physical/MDFF convergence. Both propagation algorithms can agree while the underlying high-order Ni potential is still cutoff-sensitive.
+
+## P2 — Ni 2p angular core-SOC reference and external transition import (v0.4.1)
+
+The new [Ni transition pipeline](docs/NI_TRANSITION_PIPELINE.md) provides
+exact 2p j,mj Clebsch-Gordan **angular** coupling to 3d orbitals and a portable
+complex-dipole CSV -> NPZ adapter. This is **not** Ni DFT: band states, 3d holes,
+core energies and radial matrix elements remain illustrative inputs. The
+existing EMCD maps still use the original Gaussian `magnetic_fraction=0.12`.
+
+```bash
+python -m emcd_sim.ni_atomic_reference --output outputs/ni_atomic_reference
+python -m emcd_sim.transition_csv --help
+```
+
+A future validated Elk/all-electron 2p-to-band matrix-element export can feed
+these interfaces on Windows, macOS or Linux without requiring the DFT solver
+on the EMCD machine.
