@@ -26,6 +26,7 @@ emcd-ni-atomic = "emcd_sim.ni_atomic_reference:main"
 emcd-ni-local-mdff = "emcd_sim.ni_local_mdff:main"
 emcd-import-transitions = "emcd_sim.transition_csv:main"
 emcd-audit-ni-data = "emcd_sim.ni_data_audit:main"
+emcd-xmcd-maps = "emcd_sim.xmcd_indexed_maps:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
