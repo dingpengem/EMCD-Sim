@@ -16,7 +16,21 @@ python -m emcd_sim --mdff-model xmcd-effective \
   --diffraction-condition near-2bc --output outputs/ni_xmcd_2bc
 ```
 
-The user-provided WIEN2k dataset should be unpacked locally into `data/wien2k_ni/` from the original archive; the complete source archive is **not yet checked into this repository**. No WIEN2k source-code modifications are necessary for the proxy path. See [XMCD technical pathway and future full DFT MDFF migration](docs/WIEN2K_XMCD_MDFF_ROADMAP.md). The existing audited `ni-metal-external` remains reserved for actual complex core-to-band transition amplitudes. **Neither model nor its output is a quantitatively validated metallic-Ni EMCD cross section.**
+The original 4,329-point WIEN2k spectrum is now committed at `data/wien2k_ni/Ni_fm.xmcd`. The entire WIEN2k project archive is not committed (only the XMCD spectrum used here). No WIEN2k source-code modifications are necessary for the proxy path. See [XMCD technical pathway and future full DFT MDFF migration](docs/WIEN2K_XMCD_MDFF_ROADMAP.md). The existing audited `ni-metal-external` remains reserved for actual complex core-to-band transition amplitudes. **Neither model nor its output is a quantitatively validated metallic-Ni EMCD cross section.**
+
+
+### Generate diffraction-condition-indexed XMCD EMCD maps
+
+```bash
+python -m emcd_sim.xmcd_indexed_maps \
+  --xmcd-file data/wien2k_ni/Ni_fm.xmcd \
+  --output examples/ni_xmcd_indexed \
+  --thickness-nm 30 --grid 65 --steps 64
+```
+
+Generates `zone-axis`, `two-beam`, `near-2bc`, and `symmetric-3bc` outputs. Each folder contains `diffraction_pattern.png`, `diffraction_spots.csv` with **(h,k,l), g_x, g_y, signed s_g, intensity**, `emcd_L23_indexed.png` (indexed L3/L2 nonmagnetic and chiral maps), `emcd_L3_map.npz`, `emcd_L2_map.npz`, detector spectra and `metadata.json`. The automatic workflow `.github/workflows/ni-xmcd-maps.yml` is configured to commit the generated example outputs to Git when its calculation and write permissions succeed. Do not infer that images have already been calculated from the presence of the workflow.
+
+The ZOLZ and systematic-row bases are different **finite approximations**: 2BC is a truncated two-beam model, near-2BC retains the 7-beam row, and symmetric-3BC is a nominal symmetric systematic row with off-zone tilt. Gaussian-looking diffraction spots are plot rendering, not CBED disks. All EMCD maps are entrance-only **relative intensities** using an XMCD-constrained proxy, not fully quantitative EMCD.
 
 ## P2 — Complex MDFF in single-channeling EMCD (v0.4.3)
 
