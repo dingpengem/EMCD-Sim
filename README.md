@@ -2,7 +2,18 @@
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**. It is **not part of QCBED**.
 
-> **Research status: v0.4.2 (P2 non-DFT local atomic MDFF and radial input; still not quantitative Ni).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Research status: v0.4.3 (P2 non-DFT local atomic MDFF and radial input; still not quantitative Ni).** The default elastic channel now uses a **real Ni scattering-factor-derived, multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+
+## P2 — Complex transition-derived MDFF coupled to single channeling (v0.4.3)
+
+Complex transition tensors now drive the existing physical Bloch-wave entrance-only EMCD forward model:
+
+```bash
+python -m emcd_sim --mdff-model ni-local --diffraction-condition near-2bc --output outputs/ni_local_emcd
+python -m emcd_sim --mdff-model transitions --mdff-transitions path/to/transitions.npz --diffraction-condition symmetric-3bc --output outputs/from_transitions
+```
+
+L2/L3 chiral and nonchiral reciprocal maps and aperture spectra are saved. These outputs remain **relative intensity, not quantitative Ni**. The legacy `gaussian` model is still the default. See [complex MDFF coupling](docs/SINGLE_CHANNELING_TENSOR.md).
 
 ## P2 — Complex transition-derived dipole MDFF (v0.4.0)
 

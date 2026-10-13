@@ -18,7 +18,7 @@ class SimulationResult:
     magnetic_map_at_l3: np.ndarray
     detector_spectra: Mapping[str, np.ndarray]
     detector_masks: Mapping[str, np.ndarray]
-    moment_muB: float
+    moment_muB: float | None
     thickness_nm: float
     voltage_v: float
     chiral_groups: Mapping[str, tuple[str, ...]] | None = None

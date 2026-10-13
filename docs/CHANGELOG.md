@@ -1,3 +1,12 @@
+# v0.4.3 — Complex transition MDFF in entrance-only EMCD
+
+- Couple complex dipole MDFF tensors to incoming Bloch-wave coherence with equivalent Ni core-site phases and consistent angular Q/Coulomb denominators.
+- Add selectable `gaussian`, `ni-local`, and imported `transitions` MDFF sources; legacy Gaussian remains the default.
+- Save common-scale L2/L3 nonchiral and chiral reciprocal maps plus NPZ data; explicitly mark relative-only normalization and missing electron-scattering prefactors.
+- Reject unsupported tensor voltage-to-moment scaling; retain Windows/macOS/Linux portable CLI.
+- Focused checks: direct complex amplitude equivalence, Hermiticity/positivity, magnetic-handedness reversal, spin-degenerate reference, and CLI outputs.
+- No DFT Ni benchmark, absolute units, or outgoing channeling.
+
 # v0.4.2 — Non-DFT local atomic MDFF option (P2)
 
 - Added independently written Ni core-SOC + cubic-orbital local dipole transitions with analytic normalized screened-hydrogenic 2p/3d radial integral.
