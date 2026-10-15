@@ -269,3 +269,9 @@ describes optional shared circular-area weights for tensor Bloch-wave and
 FFT-multislice EMCD (`--integration-mode fractional`). Binary center masks
 remain the default. A small validation compares aperture area and Ni contrast
 grid sensitivity without changing the underlying propagation or MDFF.
+
+The [post-edge normalization guide](docs/XMCD_POSTEDGE_NORMALIZATION.md)
+describes `python -m emcd_sim.xmcd_postedge_normalization`: experimental-style
+constant scaling, an oracle nonmagnetic comparison, and exact magnetic/even
+residual diagnostics. Cleaner detector differences can still have biased
+magnetic amplitudes; the limited, nonzero-magnetic Ni post-edge is retained.
