@@ -327,7 +327,7 @@ def plot_comparison(result, output):
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--xmcd-file',type=Path,required=True)
-    p.add_argument('--output',type=Path,default=Path('outputs/ni_postedge_emcd_map_comparison'))
+    p.add_argument('--output',type=Path,default=None)
     p.add_argument('--conditions',nargs='+',choices=('near-2bc','symmetric-3bc'),default=['near-2bc','symmetric-3bc'])
     for name,default in [('potential-cutoff',.75),('beam-cutoff',2.2),('slice-step-nm',.04),('thickness-nm',30.),
         ('acceleration-kv',200.),('eta',1.),('beta',1.),('b-factor-angstrom2',0.),('offzone-tilt-mrad',25.),
@@ -337,13 +337,27 @@ def main(argv=None):
         p.add_argument('--'+name,type=int,default=default)
     p.add_argument('--integration-mode',choices=('binary','fractional'),default='fractional')
     p.add_argument('--plot-only',action='store_true',help='Replot saved output; numerical CLI settings are ignored')
-    args=vars(p.parse_args(argv));plot_only=args.pop('plot_only');source=args.pop('xmcd_file');output=args.pop('output')
+    p.add_argument('--angular-output',action='store_true',help='Export indexed intrinsic angular maps and virtual-detector EELS figures')
+    p.add_argument('--full-source-range',action='store_true',help='Start spectra at actual source minimum; overrides --energy-start')
+    args=vars(p.parse_args(argv));angular=args.pop('angular_output');full_source=args.pop('full_source_range');plot_only=args.pop('plot_only');source=args.pop('xmcd_file');output=args.pop('output')
+    if output is None:output=Path('outputs/ni_emcd_angular_comparison' if angular else 'outputs/ni_postedge_emcd_map_comparison')
+    if full_source and not plot_only:args['energy_start']=float(load_wien2k_xmcd(source).energy_ev[0])
     args['conditions']=tuple(args['conditions']);args['thickness_nm']=(args['thickness_nm'],)
+    if angular:
+        from .emcd_angular_plots import angular_diagnostics,save_angular_outputs,plot_angular_comparison
     if plot_only:
-        plot_comparison(load_comparison(output),output);return
+        result=load_comparison(output)
+        if angular:plot_angular_comparison(result,output)
+        else:plot_comparison(result,output)
+        return
     try:result=run_map_comparison(source,MapConfig(**args))
     except ValueError as exc:p.error(str(exc))
-    save_comparison(result,output);plot_comparison(result,output)
+    if angular:
+        result['metadata']['angular_diagnostics']=angular_diagnostics(result)
+        save_comparison(result,output);save_angular_outputs(result,output)
+        plot_angular_comparison(result,output)
+    else:
+        save_comparison(result,output);plot_comparison(result,output)
     print(json.dumps(_json_safe(dict(output=str(output),map_discrepancies=result['metadata']['map_discrepancies'])),indent=2,allow_nan=False))
 
 

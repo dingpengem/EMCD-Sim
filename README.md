@@ -283,3 +283,7 @@ raw spectra and diagnostic normalization-bias terms.
 The [spatial post-edge map comparison](docs/POSTEDGE_EMCD_MAP_COMPARISON.md)
 compares paired raw/corrected aperture maps using matched independent Bloch
 and FFT multislice incident propagation, with intrinsic parity maps retained.
+
+The [Ni angular-map and EELS guide](docs/NI_EMCD_ANGULAR_COMPARISON.md)
+adds indexed L3/L2 intrinsic magnetic/even/total maps and full-source virtual
+detector spectra via `--angular-output --full-source-range`.
