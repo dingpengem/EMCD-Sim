@@ -245,3 +245,8 @@ the unchanged entrance-only XMCD-effective model. See the
 [diagnostic guide](docs/XMCD_MAGNETIC_REVERSAL_DIAGNOSTICS.md) for equations,
 source-hash provenance, output definitions and cross-platform commands.
 These relative-intensity diagnostics are not quantitative Ni predictions.
+
+The [matched systematic-row/2D ZOLZ guide](docs/XMCD_BASIS_CONVERGENCE.md)
+describes `python -m emcd_sim.xmcd_basis_convergence`, which compares parity
+signals at fixed near-2BC geometry while varying beam cutoff and y tilt.
+Its largest finite basis is a comparison point, not a validated reference.
