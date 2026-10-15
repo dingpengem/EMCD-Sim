@@ -344,16 +344,26 @@ def main(argv=None):
     if full_source and not plot_only:args['energy_start']=float(load_wien2k_xmcd(source).energy_ev[0])
     args['conditions']=tuple(args['conditions']);args['thickness_nm']=(args['thickness_nm'],)
     if angular:
-        from .emcd_angular_plots import angular_diagnostics,save_angular_outputs,plot_angular_comparison
+        from .emcd_angular_plots import angular_diagnostics,save_angular_outputs,plot_angular_comparison,result_coordinate_markers
     if plot_only:
         result=load_comparison(output)
-        if angular:plot_angular_comparison(result,output)
+        if angular:
+            plot_angular_comparison(result,output)
+            result['metadata']['coordinate_markers']=result_coordinate_markers(result)
+            metadata_path=Path(output)/'comparison_metadata.json'
+            metadata_path.write_text(json.dumps(_json_safe(result['metadata']),indent=2,allow_nan=False)+'\n',encoding='utf-8')
+            for condition,markers in result['metadata']['coordinate_markers'].items():
+                path=Path(output)/condition/'comparison_metadata.json'
+                if not path.exists():continue
+                local=json.loads(path.read_text(encoding='utf-8'));local['coordinate_markers']=markers
+                path.write_text(json.dumps(_json_safe(local),indent=2,allow_nan=False)+'\n',encoding='utf-8')
         else:plot_comparison(result,output)
         return
     try:result=run_map_comparison(source,MapConfig(**args))
     except ValueError as exc:p.error(str(exc))
     if angular:
         result['metadata']['angular_diagnostics']=angular_diagnostics(result)
+        result['metadata']['coordinate_markers']=result_coordinate_markers(result)
         save_comparison(result,output);save_angular_outputs(result,output)
         plot_angular_comparison(result,output)
     else:

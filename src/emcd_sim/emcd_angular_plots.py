@@ -6,8 +6,49 @@ from pathlib import Path
 import numpy as np
 
 from .postedge_emcd_maps import METHODS, map_error
+from .geometry import Microscope, electron_wavelength_angstrom
 from .xmcd_geometry_decomposition import _json_safe
 from .xmcd_postedge_normalization import LABEL, _integral
+
+
+def coordinate_markers(microscope):
+    """000-centered q=k_f,perp-k_incident,perp; crystal [001] has k_f,perp=0."""
+    return dict(nominal_zone_axis=[0,0,1],tilt_x_mrad=float(microscope.tilt_mrad_xy[0]),
+        tilt_y_mrad=float(microscope.tilt_mrad_xy[1]),acceleration_kv=microscope.acceleration_kv,
+        electron_wavelength_angstrom=electron_wavelength_angstrom(microscope.acceleration_kv),
+        transmitted_q_cycles_per_angstrom=[0.,0.],
+        zone_axis_q_cycles_per_angstrom=(-microscope.incident_k_xy).tolist(),
+        convention='q_ZA=-k_incident,perp; transmitted beam at q=(0,0)')
+
+
+def result_coordinate_markers(result):
+    """One physical geometry shared by BW and MS; use saved actual tilt."""
+    pg=result['metadata']['propagation']
+    return {c['condition']:coordinate_markers(Microscope(pg['config']['acceleration_kv'],
+        tuple(pg['geometries'][c['condition']]['tilt_mrad_xy']))) for c in result['cases']}
+
+
+def draw_coordinate_markers(ax, markers):
+    """Overlay positions without changing data or expanding a zoomed view."""
+    from matplotlib.lines import Line2D
+    from matplotlib.patheffects import withStroke
+    xlim,ylim=ax.get_xlim(),ax.get_ylim()
+    inside=lambda x,y:min(xlim)<=x<=max(xlim) and min(ylim)<=y<=max(ylim)
+    origin=markers['transmitted_q_cycles_per_angstrom']
+    za=markers['zone_axis_q_cycles_per_angstrom']
+    style=dict(marker='*',ms=9,mfc='gold',mec='black',mew=.7,ls='none')
+    if inside(*origin):ax.plot(*origin,marker='+',ms=6,color='black',mew=1.,ls='none',zorder=10)
+    if inside(*za):
+        ax.plot(*za,**style,zorder=9)
+        offset=(8,9) if za[1]<min(ylim)+.15*abs(ylim[1]-ylim[0]) else (8,-15)
+        ax.annotate('ZA [001]',za,xytext=offset,textcoords='offset points',fontsize=7,
+            path_effects=[withStroke(linewidth=1.5,foreground='white')],zorder=11)
+    else:
+        ax.text(.02,.03,f'ZA [001] outside view\nq=({za[0]:+.5f}, {za[1]:+.5f}) cycles/A',
+            transform=ax.transAxes,fontsize=7,bbox=dict(facecolor='white',alpha=.85,edgecolor='none'),zorder=11)
+    ax.legend(handles=[Line2D([],[],marker='+',ms=6,color='black',ls='none',label='Transmitted (000)'),
+        Line2D([],[],**style,label='ZA [001]')],loc='upper left',fontsize=6,framealpha=.85)
+    ax.set_xlim(xlim);ax.set_ylim(ylim)
 
 
 def angular_diagnostics(result):
@@ -37,6 +78,7 @@ def save_angular_outputs(result, output):
     """Export selected intrinsic arrays and spectra from the canonical result."""
     output=Path(output)
     result['metadata']['angular_diagnostics']=angular_diagnostics(result)
+    result['metadata']['coordinate_markers']=result_coordinate_markers(result)
     for c in result['cases']:
         folder=output/c['condition'];folder.mkdir(parents=True,exist_ok=True)
         meta=result['metadata'];pmeta=meta['propagation'];geom=c['geometry']
@@ -58,6 +100,7 @@ def save_angular_outputs(result, output):
             diagnostics=meta['angular_diagnostics'][c['condition']],software_commit=meta.get('software_commit'),
             software_worktree_dirty=meta.get('software_worktree_dirty'),
             map_axes='method, edge (L3,L2), qy, qx',intrinsic_maps='I_mag, I_nonmag, I_plus (total plus-state intensity)',
+            coordinate_markers=meta['coordinate_markers'][c['condition']],
             canonical_metadata='../comparison_metadata.json')
         (folder/'comparison_metadata.json').write_text(json.dumps(_json_safe(local),indent=2,allow_nan=False)+'\n',encoding='utf-8')
 
@@ -70,6 +113,7 @@ def plot_angular_comparison(result, output):
     from matplotlib.patches import Circle
     from matplotlib.patheffects import withStroke
     diagnostics=angular_diagnostics(result)
+    markers=result_coordinate_markers(result)
     for c in result['cases']:
         condition=c['condition'];folder=Path(output)/condition;folder.mkdir(parents=True,exist_ok=True)
         meta=result['metadata'];pg=meta['propagation'];half=np.sqrt(c['geometry']['dq2'])/2
@@ -85,6 +129,7 @@ def plot_angular_comparison(result, output):
                 ax.add_patch(Circle(d['center_q_xy'],d['radius_q'],fill=False,ec='black',ls='-' if group else '--',lw=.8,path_effects=[withStroke(linewidth=2,foreground='white')]))
                 ax.annotate(name,d['center_q_xy'],ha='center',va='center',fontsize=7,path_effects=[withStroke(linewidth=1.4,foreground='white')])
             ax.set(xlabel='qx (cycles/A)',ylabel='qy (cycles/A)',aspect='equal')
+            draw_coordinate_markers(ax,markers[condition])
         title=lambda text:condition+' | '+text+'\n'+LABEL
         for j,edge in enumerate(('L3','L2')):
             maps=[m['maps'][j] for m in c['methods']]

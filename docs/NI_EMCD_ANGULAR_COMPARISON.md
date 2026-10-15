@@ -161,3 +161,34 @@ exports, and regenerates all figures with forward contraction disabled.
 Existing tests cover reversal parity, exact raw/corrected decompositions,
 matched source/detector conventions and legacy binary weights. No broad
 regression suite, packaging validation or parameter sweep was performed.
+
+## Transmitted beam and projected [001] direction
+
+All angular, paired raw/corrected and intrinsic residual map panels distinguish
+the transmitted (000) beam (small cross at q=0) from the crystallographic
+[001] zone-axis direction (gold star labeled `ZA [001]`). Both are explained
+in each panel legend; hkl indexing and virtual-detector outlines are retained.
+BW and MS share the same overlay geometry.
+
+The maps use transverse coordinates relative to the transmitted beam:
+q_perp=k_f,perp-k_incident,perp. Crystal [001] has k_f,perp=0, hence
+q_ZA=-k_incident,perp. The helper uses `Microscope.incident_k_xy` and the existing
+relativistic wavelength, not fixed coordinates. This sign is consistent with
+the BW Hamiltonian and FFT kinetic operator, which use (g+k_incident,perp),
+and with the shared tensor's q_g=q-g convention. The near-2BC negative Bragg
+tilt therefore places the projected zone axis at positive g200/2 in qx;
+positive off-zone y tilt places it at negative qy. At zero tilt it coincides
+with transmitted (000), while the cross and larger star remain distinguishable.
+
+Root and per-geometry JSON record nominal [001], actual x/y tilt in mrad,
+accelerating voltage, wavelength in angstrom, transmitted q and projected
+zone-axis q in cycles/angstrom under `coordinate_markers`. Plot-only updates
+these metadata and figures without rewriting numerical NPZ files. A zone axis
+outside a zoom is reported by its true coordinates beside the plot; the view
+limits and physical coordinates are never expanded or shifted to fit it.
+
+Five focused angular-plot tests passed, covering zero and signed nonzero
+tilts, the near-2BC Bragg-sign relation, identical BW/MS overlay positions,
+off-view reporting and unchanged axes, and byte-identical NPZ data after
+plot-only rendering. The existing saved full example was replotted without
+forward simulation; all five numerical NPZ archives remained byte-identical.

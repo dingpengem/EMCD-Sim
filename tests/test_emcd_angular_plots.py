@@ -1,5 +1,7 @@
 """Selected spectral weighting and angular/EELS export of a small real-source run."""
 from pathlib import Path
+import hashlib
+import pytest
 from dataclasses import replace
 import numpy as np
 from emcd_sim.postedge_emcd_maps import MapConfig,run_map_comparison,save_comparison,load_comparison
@@ -50,7 +52,52 @@ def test_full_source_angular_terms_export_and_replot(tmp_path,monkeypatch):
     # Replotting reads arrays; a forward call would fail immediately.
     import emcd_sim.postedge_emcd_maps as workflow
     monkeypatch.setattr(workflow,'run_tensor_with_coherence',lambda *a,**k:(_ for _ in ()).throw(AssertionError('forward rerun')))
-    plot_angular_comparison(load_comparison(tmp_path),tmp_path)
+    saved={p:hashlib.sha256(p.read_bytes()).hexdigest() for p in tmp_path.rglob('*.npz')}
+    workflow.main(['--xmcd-file',str(source),'--angular-output','--plot-only','--output',str(tmp_path)])
+    for p,digest in saved.items():assert hashlib.sha256(p.read_bytes()).hexdigest()==digest
+    np.testing.assert_array_equal(c['methods'][0]['maps'][0]['I_mag'],before)
     for name in ('L3_angular_maps.png','L2_angular_maps.png','virtual_detector_eels.png',
                  'raw_corrected_emcd_maps.png','bloch_multislice_difference.png'):
         assert (tmp_path/'near-2bc'/name).stat().st_size>1000
+
+
+@pytest.mark.parametrize('tilt',[(0.,0.),(-7.,25.),(3.,-4.)])
+def test_zone_axis_coordinate_sign_and_overlay_limits(tilt):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from emcd_sim.geometry import Microscope,electron_wavelength_angstrom
+    from emcd_sim.emcd_angular_plots import coordinate_markers,draw_coordinate_markers,result_coordinate_markers
+    microscope=Microscope(200.,tilt);markers=coordinate_markers(microscope)
+    za=np.asarray(markers['zone_axis_q_cycles_per_angstrom'])
+    np.testing.assert_array_equal(markers['transmitted_q_cycles_per_angstrom'],[0.,0.])
+    np.testing.assert_allclose(za,-np.asarray(tilt)*1e-3/electron_wavelength_angstrom(200.))
+    # k_f,perp=ki+q vanishes along crystal [001], unlike the transmitted q=0.
+    np.testing.assert_array_equal(za+microscope.incident_k_xy,[0.,0.])
+    if tilt==(0.,0.):np.testing.assert_array_equal(za,[0.,0.])
+    result={'cases':[{'condition':'near-2bc'}],'metadata':{'propagation':{
+        'config':{'acceleration_kv':200.},'geometries':{'near-2bc':{'tilt_mrad_xy':tilt}}}}}
+    matched=result_coordinate_markers(result)['near-2bc']
+    fig,axs=plt.subplots(1,2)
+    for ax in axs:
+        ax.set(xlim=(-.5,.5),ylim=(-.5,.5))
+        draw_coordinate_markers(ax,matched)
+        assert ax.get_xlim()==(-.5,.5) and ax.get_ylim()==(-.5,.5)
+    # The two method panels use exactly the same physical marker coordinates.
+    assert len(axs[0].lines)==len(axs[1].lines)
+    for a,b in zip(axs[0].lines,axs[1].lines):
+        np.testing.assert_array_equal(a.get_xydata(),b.get_xydata())
+    if np.any(abs(za)>.5):
+        assert any('outside view' in t.get_text() for t in axs[0].texts)
+        assert len(axs[0].lines)==1  # only 000; no clipped or relocated star
+    plt.close(fig)
+
+
+def test_near_2bc_bragg_tilt_places_zone_axis_at_positive_half_g():
+    from emcd_sim.diffraction import select_diffraction_setup
+    from emcd_sim.geometry import Microscope
+    from emcd_sim.emcd_angular_plots import coordinate_markers
+    crystal=fcc_nickel();setup=select_diffraction_setup('near-2bc',crystal,200.,offzone_tilt_mrad=25.)
+    marker=coordinate_markers(Microscope(200.,setup.tilt_mrad_xy))
+    assert marker['zone_axis_q_cycles_per_angstrom'][0]==pytest.approx(crystal.g_vector((2,0,0))[0]/2)
+    assert marker['zone_axis_q_cycles_per_angstrom'][1]<0
