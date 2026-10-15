@@ -59,7 +59,8 @@ class ReversalResult:
 
 def run_xmcd_reversal(model, xmcd_file, energy_ev=None, *, eta=1., beta=1.,
                       thickness_nm=30., grid_size=65, depth_steps=64,
-                      l3_energy_ev=852.7, l2_energy_ev=870.):
+                      l3_energy_ev=852.7, l2_energy_ev=870.,
+                      integration_mode="binary", aperture_subpixels=64):
     """Pair +/-eta on the identical model, grid and source normalization.
 
     Only the effective imaginary antisymmetric tensor changes. This operation
@@ -68,7 +69,8 @@ def run_xmcd_reversal(model, xmcd_file, energy_ev=None, *, eta=1., beta=1.,
     tensors = [effective_tensor_from_xmcd(xmcd_file, energy_ev, eta=sign*eta,
                                          beta=beta) for sign in (1, -1)]
     options = dict(thickness_nm=thickness_nm, grid_size=grid_size,
-                   depth_steps=depth_steps)
+                   depth_steps=depth_steps, integration_mode=integration_mode,
+                   aperture_subpixels=aperture_subpixels)
     plus, minus = [run_tensor_single_channeling(model, t, **options,
                         reference_energy_ev=l3_energy_ev) for t in tensors]
     maps = {}
@@ -131,6 +133,8 @@ def main(argv=None):
     for flag, default in [('beam-order', 3), ('max-beams', 25), ('grid', 65), ('steps', 64),
                           ('energy-points', 185)]:
         p.add_argument('--'+flag, type=int, default=default)
+    p.add_argument('--integration-mode',choices=('binary','fractional'),default='binary')
+    p.add_argument('--aperture-subpixels',type=int,default=64)
     p.add_argument('--tilt-x-mrad', type=float)
     p.add_argument('--tilt-y-mrad', type=float)
     args = p.parse_args(argv)
@@ -155,7 +159,8 @@ def main(argv=None):
             diffraction_condition=name)
         result = run_xmcd_reversal(model, args.xmcd_file, energies, eta=args.eta,
             beta=args.beta, thickness_nm=args.thickness_nm, grid_size=args.grid,
-            depth_steps=args.steps, l3_energy_ev=args.l3_energy_ev, l2_energy_ev=args.l2_energy_ev)
+            depth_steps=args.steps, l3_energy_ev=args.l3_energy_ev, l2_energy_ev=args.l2_energy_ev,
+            integration_mode=args.integration_mode, aperture_subpixels=args.aperture_subpixels)
         folder = args.output / name
         folder.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(folder/'magnetic_parity_spectra.npz', **result.spectra)
@@ -164,13 +169,16 @@ def main(argv=None):
         metadata = dict(xmcd_file=str(args.xmcd_file.resolve()), xmcd_sha256=source.source_sha256,
             model='XMCD-constrained axisymmetric effective tensor; entrance-only',
             eta=args.eta, beta=args.beta, tensor_sources=result.tensor_sources,
+            integration_mode=args.integration_mode, aperture_subpixels=args.aperture_subpixels,
             reversal='Txy=+i*eta*(RP-LP)/2 -> -i*eta*(RP-LP)/2; Tyx=-Txy; diagonal unchanged',
             normalization='Both tensors divided by the same peak source N=(RP+LP)/2',
             denominator_policy='NaN unless denominator > 1e-12 times its spectral peak',
             thickness_nm=args.thickness_nm, acceleration_kv=args.acceleration_kv,
             tilt_mrad_xy=setup.tilt_mrad_xy, condition=name, approximation=setup.approximation,
             beam_hkl=np.asarray(setup.beams.hkl).tolist(),
-            detectors={k: dict(center_q_xy=v.center_q_xy, radius_q=v.radius_q)
+            detectors={k: dict(center_q_xy=v.center_q_xy, radius_q=v.radius_q,
+                **v.integration_info(result.maps['L3']['qx_inv_angstrom'],result.maps['L3']['qy_inv_angstrom'],
+                    mode=args.integration_mode,subpixels=args.aperture_subpixels))
                        for k,v in model.detectors.items()}, chiral_groups=model.chiral_groups,
             reciprocal_coordinate_units='cycles/angstrom', grid_size=args.grid,
             map_halfwidth_q=1., depth_steps=args.steps, energy_points=args.energy_points,

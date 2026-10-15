@@ -23,6 +23,11 @@ class SimulationResult:
     voltage_v: float
     chiral_groups: Mapping[str, tuple[str, ...]] | None = None
 
+    # Boolean masks retain center membership; integration weights are separate.
+    detector_weights: Mapping[str, np.ndarray] | None = None
+    integration_mode: str = "binary"
+    aperture_subpixels: int = 64
+
     def chiral_spectrum(self, label: str) -> np.ndarray:
         """Sum physical aperture spectra belonging to one chirality group."""
         names = (self.chiral_groups[label] if self.chiral_groups is not None

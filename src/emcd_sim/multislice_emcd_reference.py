@@ -15,6 +15,7 @@ from .benchmark import nickel_physical_benchmark
 from .crystal import fcc_nickel
 from .diffraction import select_diffraction_setup
 from .elastic import BeamSet
+from .geometry import validate_detector_integration
 from .elastic_reference import FourierCutoffPotential
 from .mdff_tensor import DipoleTensor
 from .multislice_reference import fft_multislice_ni
@@ -48,8 +49,11 @@ class MultisliceEMCDConfig:
     beta: float = 1.
     max_kernel_mib: float = 512.
     leakage_warning: float = 1e-3
+    integration_mode: str = "binary"
+    aperture_subpixels: int = 64
 
     def validate(self):
+        validate_detector_integration(self.integration_mode,self.aperture_subpixels)
         if not self.conditions or len(set(self.conditions)) != len(self.conditions) or any(c not in CONDITIONS for c in self.conditions):
             raise ValueError(f'Conditions must be nonempty unique members of {CONDITIONS}')
         t = np.asarray(self.thickness_nm, float)
@@ -187,11 +191,13 @@ def run_multislice_emcd_reference(xmcd_file, config=MultisliceEMCDConfig()):
             method_records = []
             for method,c in zip(('bloch','fft-multislice'),coherences):
                 plus,minus = [run_tensor_with_coherence(model,t,c,thickness_nm=thickness,
-                    grid_size=config.detector_grid,reference_energy_ev=energy) for t in tensors]
+                    grid_size=config.detector_grid,reference_energy_ev=energy,
+                    integration_mode=config.integration_mode,aperture_subpixels=config.aperture_subpixels) for t in tensors]
                 s = {k:v[0].item() for k,v in parity_spectra(plus,minus).items()}
                 metrics = {k:v.item() for k,v in magnetic_contribution_metrics(s['delta_odd'],s['delta_even'],s['sigma_ref']).items()}
                 r = dict(case_index=len(cases),condition=condition,method=method,
-                    thickness_nm=thickness,**s,**metrics)
+                    thickness_nm=thickness,integration_mode=config.integration_mode,
+                    aperture_subpixels=config.aperture_subpixels,**s,**metrics)
                 r.update(A_mag=r['A_odd'],A_nonmag=r['A_even'],Delta_mag=r['delta_odd'],
                          Delta_nonmag=r['delta_even'],Sigma_ref=r['sigma_ref'])
                 records.append(r); method_records.append(r)
@@ -200,6 +206,9 @@ def run_multislice_emcd_reference(xmcd_file, config=MultisliceEMCDConfig()):
                 method_maps.append(dict(I_mag=(ip-im)/2,I_nonmag=(ip+im)/2,I_plus=ip,I_minus=im))
                 case['qx_inv_angstrom'],case['qy_inv_angstrom'] = plus.qx_angstrom_inv,plus.qy_angstrom_inv
                 geometry[condition]['aperture_grid_points'] = {k:int(v.sum()) for k,v in plus.detector_masks.items()}
+                geometry[condition]['aperture_integration'] = {k:det.integration_info(
+                    plus.qx_angstrom_inv,plus.qy_angstrom_inv,mode=config.integration_mode,
+                    subpixels=config.aperture_subpixels) for k,det in model.detectors.items()}
             case['method_maps'] = method_maps
             case['scalar_discrepancies'] = {}
             for k in ('A_mag','A_nonmag','A_raw_plus','A_raw_minus','Delta_mag','Delta_nonmag','Sigma_ref','f_mag'):
@@ -237,7 +246,8 @@ def run_multislice_emcd_reference(xmcd_file, config=MultisliceEMCDConfig()):
         xmcd_file=str(Path(xmcd_file).resolve()),xmcd_sha256=source.source_sha256,
         software_commit=commit,software_worktree_dirty=dirty,python_version=platform.python_version(),
         pair_array_memory_estimate_mib=estimate,pair_array_estimate_bytes_per_pixel_pair=64,
-        detector_integration='Identical legacy circular hard masks times dq^2; no fractional aperture integration',
+        detector_integration=('Identical legacy circular hard masks times dq^2' if config.integration_mode=='binary'
+                              else 'Identical fractional circular-area weights times dq^2; boundary midpoint sampling'),
         depth_quadrature='Identical linspace(0,t,depth_steps); trapezoidal integral divided by t',
         fft_step_policy='Each interval subdivided into ceil(delta_z/slice_step_nm) equal Strang steps',
         fourier_convention='psi(r)=sum_g a_g exp(+2*pi*i*g.r); a=fft2(psi)/N^2; FFT (m,n)->hkl=(2m,2n,0)',
@@ -377,6 +387,8 @@ def main(argv=None):
         p.add_argument('--'+key,type=float,default=default)
     for key,default in [('max-beams',121),('fft-grid',32),('depth-steps',64),('detector-grid',33)]:
         p.add_argument('--'+key,type=int,default=default)
+    p.add_argument('--integration-mode',choices=('binary','fractional'),default='binary')
+    p.add_argument('--aperture-subpixels',type=int,default=64)
     p.add_argument('--check-propagation-controls',action='store_true',
                    help='On last case: halve FFT step and enlarge BW basis for wave-only residual diagnosis')
     args = vars(p.parse_args(argv)); check_controls = args.pop('check_propagation_controls')

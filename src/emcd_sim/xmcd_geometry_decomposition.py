@@ -15,6 +15,7 @@ from .benchmark import nickel_physical_benchmark
 from .crystal import fcc_nickel
 from .diffraction import select_diffraction_setup
 from .elastic import BeamSet
+from .geometry import validate_detector_integration
 from .wien2k_xmcd import load_wien2k_xmcd
 from .xmcd_basis_convergence import selected_energy_grid
 from .xmcd_reversal import CONDITIONS, run_xmcd_reversal
@@ -43,8 +44,11 @@ class GeometryDecompositionConfig:
     finer_grid: int | None = 97
     grid_atol: float = 1e-4
     grid_rtol: float = .05
+    integration_mode: str = "binary"
+    aperture_subpixels: int = 64
 
     def validate(self):
+        validate_detector_integration(self.integration_mode,self.aperture_subpixels)
         if not self.conditions or len(set(self.conditions)) != len(self.conditions) or any(c not in CONDITIONS for c in self.conditions):
             raise ValueError('Require nonempty unique supported diffraction conditions')
         for value in (self.cutoff, self.acceleration_kv, self.thickness_nm, self.l3_energy_ev):
@@ -164,11 +168,14 @@ def run_geometry_decomposition(xmcd_file, config=GeometryDecompositionConfig()):
             tilt_mrad_xy=setup.tilt_mrad_xy, beams_override=basis, diffraction_condition=condition)
         parity = run_xmcd_reversal(model, xmcd_file, energies, eta=config.eta, beta=config.beta,
             thickness_nm=config.thickness_nm, grid_size=grid, depth_steps=config.steps,
-            l3_energy_ev=selected['L3'], l2_energy_ev=selected.get('L2',selected['L3']))
+            l3_energy_ev=selected['L3'], l2_energy_ev=selected.get('L2',selected['L3']),
+            integration_mode=config.integration_mode, aperture_subpixels=config.aperture_subpixels)
         run_id = f'{group}_{condition}_{role}'
         qx, qy = parity.maps['L3']['qx_inv_angstrom'], parity.maps['L3']['qy_inv_angstrom']
         detectors = {k:dict(center_q_xy=list(v.center_q_xy), radius_q=v.radius_q,
-            grid_points=int(v.mask(qx,qy).sum())) for k,v in model.detectors.items()}
+            grid_points=int(v.mask(qx,qy).sum()),
+            **v.integration_info(qx,qy,mode=config.integration_mode,subpixels=config.aperture_subpixels))
+            for k,v in model.detectors.items()}
         elastic = abs(model.elastic.amplitudes(np.array([config.thickness_nm]))[0])**2
         geometries[run_id] = dict(group=group, condition=condition, sampling_role=role,
             basis_kind='2d-zolz' if group==A else 'two-beam-truncated',
@@ -190,6 +197,7 @@ def run_geometry_decomposition(xmcd_file, config=GeometryDecompositionConfig()):
                 cutoff_inv_angstrom=config.cutoff if group==A else np.nan,
                 tilt_x_mrad=setup.tilt_mrad_xy[0], tilt_y_mrad=setup.tilt_mrad_xy[1],
                 edge=edge, energy_ev=energy, grid=grid, steps=config.steps,
+                integration_mode=config.integration_mode, aperture_subpixels=config.aperture_subpixels,
                 thickness_nm=config.thickness_nm, acceleration_kv=config.acceleration_kv,
                 eta=config.eta, beta=config.beta, detectors_json=json.dumps(detectors),
                 chiral_groups_json=json.dumps(model.chiral_groups), beam_hkl_json=json.dumps(basis.hkl))
@@ -208,7 +216,8 @@ def run_geometry_decomposition(xmcd_file, config=GeometryDecompositionConfig()):
                 chiral_groups_json=np.asarray(json.dumps(model.chiral_groups)),
                 group=np.asarray(group), condition=np.asarray(condition), grid=grid,
                 tilt_mrad_xy=np.asarray(setup.tilt_mrad_xy), thickness_nm=config.thickness_nm,
-                depth_steps=config.steps)
+                depth_steps=config.steps, integration_mode=np.asarray(config.integration_mode),
+                aperture_subpixels=config.aperture_subpixels)
     try:
         root = Path(__file__).resolve().parents[2]
         commit = subprocess.check_output(['git','rev-parse','HEAD'], cwd=root, stderr=subprocess.DEVNULL).decode().strip()
@@ -341,6 +350,8 @@ def main(argv=None):
         p.add_argument('--'+key,type=float)
     for key,default in [('grid',65),('steps',64),('max-beams',81),('finer-grid',97)]:
         p.add_argument('--'+key,type=int,default=default)
+    p.add_argument('--integration-mode',choices=('binary','fractional'),default='binary')
+    p.add_argument('--aperture-subpixels',type=int,default=64)
     p.add_argument('--skip-finer-grid',action='store_true')
     args = vars(p.parse_args(argv))
     output,source = args.pop('output'),args.pop('xmcd_file')

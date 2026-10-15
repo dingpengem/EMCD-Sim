@@ -263,3 +263,9 @@ using a shared Fourier-truncated potential and inelastic kernel. Run
 `python -m emcd_sim.multislice_emcd_reference --help` for the small benchmark.
 This validates numerical propagation within shared approximations, not the
 XMCD-effective MDFF, outgoing channeling or quantitative Ni accuracy.
+
+The [fractional-aperture guide](docs/FRACTIONAL_APERTURE_INTEGRATION.md)
+describes optional shared circular-area weights for tensor Bloch-wave and
+FFT-multislice EMCD (`--integration-mode fractional`). Binary center masks
+remain the default. A small validation compares aperture area and Ni contrast
+grid sensitivity without changing the underlying propagation or MDFF.

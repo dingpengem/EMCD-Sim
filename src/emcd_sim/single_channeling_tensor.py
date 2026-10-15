@@ -70,6 +70,8 @@ def run_tensor_single_channeling(
     depth_steps: int = 64,
     map_halfwidth_q: float = 1.0,
     reference_energy_ev: float = 852.7,
+    integration_mode: str = "binary",
+    aperture_subpixels: int = 64,
 ) -> SimulationResult:
     """Contract the existing incoming Bloch-wave coherence with a dipole tensor.
 
@@ -80,7 +82,8 @@ def run_tensor_single_channeling(
     coherence = depth_coherence(model.elastic, thickness_nm, depth_steps)
     return run_tensor_with_coherence(model, tensor, coherence,
         thickness_nm=thickness_nm, grid_size=grid_size,
-        map_halfwidth_q=map_halfwidth_q, reference_energy_ev=reference_energy_ev)
+        map_halfwidth_q=map_halfwidth_q, reference_energy_ev=reference_energy_ev,
+        integration_mode=integration_mode, aperture_subpixels=aperture_subpixels)
 
 
 def run_tensor_with_coherence(
@@ -92,12 +95,15 @@ def run_tensor_with_coherence(
     grid_size: int = 65,
     map_halfwidth_q: float = 1.0,
     reference_energy_ev: float = 852.7,
+    integration_mode: str = "binary",
+    aperture_subpixels: int = 64,
 ) -> SimulationResult:
     """Apply the unchanged tensor kernel to a supplied incoming coherence.
 
     The model carries ordered beam hkl/reciprocal geometry, Ni site phases and
-    physical detector apertures. Grid coordinates and legacy hard-mask weights
-    are identical to run_tensor_single_channeling. Trace need not equal one:
+    physical detector apertures. Binary (default) or fractional integration
+    is shared with run_tensor_single_channeling; Boolean masks retain center
+    membership. Trace need not equal one:
     FFT projection leakage must not be removed by renormalization.
     """
     if not np.isfinite(thickness_nm) or thickness_nm <= 0:
@@ -118,7 +124,10 @@ def run_tensor_with_coherence(
         raise ValueError("Coherence must be positive semidefinite")
     site_phase = fcc_site_phase_matrix(model)
     masks = {name: det.mask(qx, qy) for name, det in model.detectors.items()}
-    if not all(mask.any() for mask in masks.values()):
+    weights = {name: det.integration_weights(qx,qy,mode=integration_mode,subpixels=aperture_subpixels)
+               for name,det in model.detectors.items()}
+    supported = masks if integration_mode == 'binary' else weights
+    if not all(w.any() for w in supported.values()):
         raise ValueError("At least one virtual aperture is outside the reciprocal map")
     spectra = {name: np.empty(len(tensor.energy_ev), dtype=float) for name in masks}
     selected_index = int(np.argmin(abs(tensor.energy_ev - reference_energy_ev)))
@@ -131,9 +140,12 @@ def run_tensor_with_coherence(
         if total.min() < -1e-8 * max(1., total.max()):
             raise ValueError("Negative tensor-derived inelastic intensity: check conventions/phase")
         for name, mask in masks.items():
-            spectra[name][i] = float(total[mask].sum() * dq2)
+            # Keep the historical reduction bitwise unchanged in binary mode.
+            spectra[name][i] = (float(total[mask].sum() * dq2) if integration_mode == 'binary'
+                                else float(np.sum(total*weights[name]) * dq2))
         if i == selected_index:
             nonmag_map, chiral_map = thickness_nm * nonmag, thickness_nm * chiral
     return SimulationResult(
         tensor.energy_ev, qx, qy, nonmag_map, chiral_map,
-        spectra, masks, None, thickness_nm, 0.0, model.chiral_groups)
+        spectra, masks, None, thickness_nm, 0.0, model.chiral_groups,
+        weights, integration_mode, aperture_subpixels)
