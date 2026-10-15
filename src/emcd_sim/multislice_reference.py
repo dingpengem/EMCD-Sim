@@ -29,6 +29,7 @@ class ElasticFFTResult:
     grid_points: int
     slice_step_nm: float
     potential_cutoff_inv_angstrom: float
+    amplitudes: np.ndarray | None = None  # optional (n_depth,n_grid**2), no renormalization
 
     def intensity_at(self, hkl: tuple[int, int, int]) -> np.ndarray:
         selection = np.all(self.beam_hkl == hkl, axis=1)
@@ -89,6 +90,7 @@ def fft_multislice_ni(
     slice_step_nm: float = 0.1,
     potential_cutoff_inv_angstrom: float = 2.2,
     b_factor_angstrom2: float = 0.,
+    return_amplitudes: bool = False,
 ) -> ElasticFFTResult:
     """Elastic projected-potential FFT multislice on periodic FCC Ni [001].
 
@@ -96,6 +98,8 @@ def fft_multislice_ni(
     exp(i D dz/2) exp(i U_xy dz) exp(i D dz/2). The periodic entrance
     envelope is unity; tilt enters the transverse kinetic operator.
     Finite FFT grid and finite Fourier potential cutoff must be converged.
+    return_amplitudes retains raw fft2(wave)/N^2 coefficients at the requested
+    depths; the default historical intensity output and propagation are unchanged.
     """
     depth = np.asarray(thickness_nm, dtype=float)
     if depth.ndim != 1 or not len(depth) or not np.all(np.isfinite(depth)) or np.any(depth < 0) or np.any(np.diff(depth) <= 0):
@@ -116,6 +120,7 @@ def fft_multislice_ni(
     wave = np.ones((grid_points, grid_points), dtype=complex)
     n2 = grid_points**2
     values = np.empty((len(depth), n2), dtype=float)
+    amplitudes = np.empty((len(depth), n2), dtype=complex) if return_amplitudes else None
     current_z = 0.
     for index, target in enumerate(depth):
         delta = float(target-current_z)
@@ -132,7 +137,9 @@ def fft_multislice_ni(
                 wave = np.fft.ifft2(q*kinetic)*n2
         coeff = (np.fft.fft2(wave)/n2).reshape(-1)
         values[index] = np.abs(coeff)**2
+        if amplitudes is not None:
+            amplitudes[index] = coeff
         current_z = float(target)
     norm_error = float(np.max(np.abs(values.sum(axis=1)-1)))
     return ElasticFFTResult(depth, hkl, g, values, norm_error,
-                            grid_points, slice_step_nm, potential_cutoff_inv_angstrom)
+                            grid_points, slice_step_nm, potential_cutoff_inv_angstrom, amplitudes)

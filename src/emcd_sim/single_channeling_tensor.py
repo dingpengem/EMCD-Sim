@@ -71,14 +71,37 @@ def run_tensor_single_channeling(
     map_halfwidth_q: float = 1.0,
     reference_energy_ev: float = 852.7,
 ) -> SimulationResult:
-    """Contract a complex proper dipole tensor with incoming Bloch-wave coherence.
+    """Contract the existing incoming Bloch-wave coherence with a dipole tensor.
 
-    No magnetic_fraction parameter, guessed moment-to-spectrum scaling, or
-    voltage law is used. The result is relative intensity; fast-electron
-    absolute cross-section constants and detector calibration are absent.
+    Relative intensity, no outgoing channeling or fitted magnetic scale.
     """
     if not np.isfinite(thickness_nm) or thickness_nm <= 0 or depth_steps < 2:
         raise ValueError("Thickness must be positive; depth steps must be >=2")
+    coherence = depth_coherence(model.elastic, thickness_nm, depth_steps)
+    return run_tensor_with_coherence(model, tensor, coherence,
+        thickness_nm=thickness_nm, grid_size=grid_size,
+        map_halfwidth_q=map_halfwidth_q, reference_energy_ev=reference_energy_ev)
+
+
+def run_tensor_with_coherence(
+    model: EMCDSimulation,
+    tensor: DipoleTensor,
+    coherence: np.ndarray,
+    *,
+    thickness_nm: float = 30.0,
+    grid_size: int = 65,
+    map_halfwidth_q: float = 1.0,
+    reference_energy_ev: float = 852.7,
+) -> SimulationResult:
+    """Apply the unchanged tensor kernel to a supplied incoming coherence.
+
+    The model carries ordered beam hkl/reciprocal geometry, Ni site phases and
+    physical detector apertures. Grid coordinates and legacy hard-mask weights
+    are identical to run_tensor_single_channeling. Trace need not equal one:
+    FFT projection leakage must not be removed by renormalization.
+    """
+    if not np.isfinite(thickness_nm) or thickness_nm <= 0:
+        raise ValueError("Thickness must be positive")
     if grid_size < 9 or not np.isfinite(map_halfwidth_q) or map_halfwidth_q <= 0:
         raise ValueError("grid >=9 and positive finite map halfwidth required")
     if not np.isfinite(reference_energy_ev) or reference_energy_ev <= 0:
@@ -86,7 +109,13 @@ def run_tensor_single_channeling(
     q = np.linspace(-map_halfwidth_q, map_halfwidth_q, grid_size)
     qx, qy = np.meshgrid(q, q, indexing="xy")
     dq2 = float((q[1] - q[0])**2)
-    coherence = depth_coherence(model.elastic, thickness_nm, depth_steps)
+    coherence = np.asarray(coherence, dtype=complex)
+    n = len(model.elastic.beams.hkl)
+    if (coherence.shape != (n,n) or not np.all(np.isfinite(coherence))
+            or not np.allclose(coherence, coherence.conj().T, rtol=1e-10, atol=1e-12)):
+        raise ValueError("Coherence must be finite Hermitian and match the ordered beam basis")
+    if np.linalg.eigvalsh(coherence).min() < -1e-10*max(1., np.linalg.norm(coherence)):
+        raise ValueError("Coherence must be positive semidefinite")
     site_phase = fcc_site_phase_matrix(model)
     masks = {name: det.mask(qx, qy) for name, det in model.detectors.items()}
     if not all(mask.any() for mask in masks.values()):

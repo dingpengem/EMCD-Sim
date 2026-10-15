@@ -256,3 +256,10 @@ describes `python -m emcd_sim.xmcd_geometry_decomposition`: matched 2D
 geometry comparisons, a separate two-beam truncation reference, magnetic/even
 contrast metrics and a lightweight aperture-grid sensitivity check. Results
 remain entrance-only relative intensities without quantitative Ni validation.
+
+The [independent multislice EMCD reference](docs/MULTISLICE_EMCD_REFERENCE.md)
+compares complex FFT/Bloch incident waves, coherence and magnetic/even EMCD
+using a shared Fourier-truncated potential and inelastic kernel. Run
+`python -m emcd_sim.multislice_emcd_reference --help` for the small benchmark.
+This validates numerical propagation within shared approximations, not the
+XMCD-effective MDFF, outgoing channeling or quantitative Ni accuracy.
