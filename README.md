@@ -250,3 +250,9 @@ The [matched systematic-row/2D ZOLZ guide](docs/XMCD_BASIS_CONVERGENCE.md)
 describes `python -m emcd_sim.xmcd_basis_convergence`, which compares parity
 signals at fixed near-2BC geometry while varying beam cutoff and y tilt.
 Its largest finite basis is a comparison point, not a validated reference.
+
+The [diffraction-resolved magnetic decomposition guide](docs/XMCD_GEOMETRY_MAGNETIC_DECOMPOSITION.md)
+describes `python -m emcd_sim.xmcd_geometry_decomposition`: matched 2D
+geometry comparisons, a separate two-beam truncation reference, magnetic/even
+contrast metrics and a lightweight aperture-grid sensitivity check. Results
+remain entrance-only relative intensities without quantitative Ni validation.
