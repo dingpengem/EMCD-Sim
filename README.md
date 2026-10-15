@@ -275,3 +275,7 @@ describes `python -m emcd_sim.xmcd_postedge_normalization`: experimental-style
 constant scaling, an oracle nonmagnetic comparison, and exact magnetic/even
 residual diagnostics. Cleaner detector differences can still have biased
 magnetic amplitudes; the limited, nonzero-magnetic Ni post-edge is retained.
+
+The [post-edge robustness validation](docs/XMCD_POSTEDGE_ROBUSTNESS.md) compares
+matched diffraction bases and separate detector/depth refinements, retaining
+raw spectra and diagnostic normalization-bias terms.
