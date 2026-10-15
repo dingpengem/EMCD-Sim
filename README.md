@@ -24,7 +24,7 @@ The original 4,329-point WIEN2k spectrum is now committed at `data/wien2k_ni/Ni_
 ```bash
 python -m emcd_sim.xmcd_indexed_maps \
   --xmcd-file data/wien2k_ni/Ni_fm.xmcd \
-  --output examples/ni_dft_xas_xmcd \
+  --output examples/ni_emcd_dft_constrained \
   --thickness-nm 30 --grid 65 --steps 64
 ```
 
@@ -236,3 +236,12 @@ independent, optional inputs to the same complex tensor interface.
 A literature/open-data audit **did not identify a verified, downloadable FCC metallic Ni L2/L3 complex transition-amplitude dataset**. The project therefore does **not** silently substitute NiO spectra, ordinary XAS intensity or made-up DFT transitions. `--mdff-model ni-metal-external` now requires phase/SOC/complex-phase provenance and checks source consistency before use. **This is an input/schema audit, not independent physical validation.**
 
 See [Ni metallic transition data sources and audit](docs/NI_L23_EXTERNAL_DATA.md). Existing Gaussian and non-DFT models are retained and clearly labeled.
+
+## Magnetic-reversal parity diagnostics (v0.4.6 candidate)
+
+The new `python -m emcd_sim.xmcd_reversal` command separates reversal-odd
+magnetic response from reversal-even detector/diffraction asymmetry using
+the unchanged entrance-only XMCD-effective model. See the
+[diagnostic guide](docs/XMCD_MAGNETIC_REVERSAL_DIAGNOSTICS.md) for equations,
+source-hash provenance, output definitions and cross-platform commands.
+These relative-intensity diagnostics are not quantitative Ni predictions.

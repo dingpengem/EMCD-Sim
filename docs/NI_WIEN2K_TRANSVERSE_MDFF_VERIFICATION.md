@@ -33,3 +33,14 @@ The importer in `src/emcd_sim/wien2k_xmcd.py` already checks the five-column sum
 Use existing `xmcd-effective` CLI with `eta=1, beta=1` as baseline, then sweep `eta` and `beta` while holding diffraction condition, sample thickness, energy windows and solver settings constant. Treat the resulting map changes as model sensitivities. Compare to the Gaussian pathway separately; do not describe differences caused by changed spectrum normalization as newly predicted diffraction physics.
 
 No changes to the existing importer or tensor kernel are needed for these checks.
+
+## Current committed source provenance (2026-10-15)
+
+The independent archive hash above does **not** identify the current committed
+`data/wien2k_ni/Ni_fm.xmcd`. Its Git blob SHA256 is
+`4fd517af3e54db94588a76b7a6ed9c2f9a1b745cd8fe52b9fca0f87fc4938db3`,
+also recorded by the published near-2BC example. Windows CRLF checkout bytes
+have a further distinct hash. See the [reversal diagnostic provenance investigation](XMCD_MAGNETIC_REVERSAL_DIAGNOSTICS.md#source-provenance).
+The earlier archive is unavailable for comparison here; the independent
+verification above applies to that earlier dataset and does not establish
+byte or numerical identity with the current committed file.
