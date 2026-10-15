@@ -279,3 +279,7 @@ magnetic amplitudes; the limited, nonzero-magnetic Ni post-edge is retained.
 The [post-edge robustness validation](docs/XMCD_POSTEDGE_ROBUSTNESS.md) compares
 matched diffraction bases and separate detector/depth refinements, retaining
 raw spectra and diagnostic normalization-bias terms.
+
+The [spatial post-edge map comparison](docs/POSTEDGE_EMCD_MAP_COMPARISON.md)
+compares paired raw/corrected aperture maps using matched independent Bloch
+and FFT multislice incident propagation, with intrinsic parity maps retained.
