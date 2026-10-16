@@ -11,6 +11,37 @@ from .xmcd_geometry_decomposition import _json_safe
 from .xmcd_postedge_normalization import LABEL, _integral
 
 
+def decorate_reciprocal_map(ax, model, extent):
+    """Draw geometry only, in the existing transmitted-beam coordinates."""
+    from matplotlib.patches import Circle
+    from matplotlib.patheffects import withStroke
+    stroke=[withStroke(linewidth=1.5,foreground='white')]
+    # Thales circle has the transmitted and +200 beams as diameter endpoints.
+    g=model.elastic.crystal.g_vector((2,0,0))[:2]
+    ax.add_patch(Circle(g/2,np.linalg.norm(g)/2,fill=False,ec='darkcyan',
+                        ls=':',lw=1.3,label='Thales (000)-(200)',path_effects=stroke))
+    for hkl,(gx,gy) in zip(model.elastic.beams.hkl,model.elastic.reciprocal_vectors_xy):
+        if extent[0]<=gx<=extent[1] and extent[2]<=gy<=extent[3]:
+            ax.plot(gx,gy,'k+',ms=4,mew=.7,path_effects=stroke)
+            if hkl!=(0,0,0):
+                ax.annotate(str(hkl),(gx,gy),xytext=(3,3),textcoords='offset points',fontsize=6,path_effects=stroke)
+    for name,d in model.detectors.items():
+        ax.add_patch(Circle(d.center_q_xy,d.radius_q,fill=False,ec='black',lw=1,
+                           ls='-' if name=='A' else '--',path_effects=stroke))
+        ax.annotate(name,d.center_q_xy,ha='center',va='center',fontsize=7,path_effects=stroke)
+    ax.plot(0,0,'kx',ms=6,mew=1.2,label='(000)',path_effects=stroke)
+    za=-model.elastic.microscope.incident_k_xy
+    if extent[0]<=za[0]<=extent[1] and extent[2]<=za[1]<=extent[3]:
+        ax.plot(*za,marker='*',ms=10,color='gold',mec='black',mew=.7,ls='',label='ZA [001]')
+        ax.annotate('ZA [001]',za,xytext=(5,6),textcoords='offset points',fontsize=7,path_effects=stroke)
+    else:
+        ax.text(.02,.02,f'ZA [001] = ({za[0]:.3f}, {za[1]:.3f}) cycles/A\n(outside view)',
+                transform=ax.transAxes,fontsize=7,bbox=dict(facecolor='white',alpha=.8,edgecolor='none'))
+    ax.legend(loc='upper right',fontsize=6,framealpha=.8)
+    ax.set(xlabel='qx (cycles/A)',ylabel='qy (cycles/A)',aspect='equal',
+           xlim=extent[:2],ylim=extent[2:])
+
+
 def coordinate_markers(microscope):
     """000-centered q=k_f,perp-k_incident,perp; crystal [001] has k_f,perp=0."""
     return dict(nominal_zone_axis=[0,0,1],tilt_x_mrad=float(microscope.tilt_mrad_xy[0]),
