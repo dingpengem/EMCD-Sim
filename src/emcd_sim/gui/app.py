@@ -1,4 +1,4 @@
-"""Stage A: native Qt scientific controls and a real elastic diffraction preview."""
+"""Native Qt diffraction controls and Stage B Bloch-wave EMCD/EELS."""
 from dataclasses import asdict
 from pathlib import Path
 import argparse,json,sys
@@ -24,7 +24,10 @@ class PreviewWorker(QtCore.QThread):
         except Exception as exc:self.failed.emit(str(exc))
 
 
-class MainWindow(QtWidgets.QMainWindow):
+from .stage_b import StageB
+
+
+class MainWindow(StageB,QtWidgets.QMainWindow):
     preview_ready=QtCore.Signal()
     def __init__(self):
         super().__init__();self.setWindowTitle('EMCD-Sim Desktop — Stage A: diffraction geometry')
@@ -53,15 +56,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.section('C. Microscope & Sample')
         self.number('kv','Voltage (kV)',200,20,1000,self.tilt_changed)
         self.number('thickness','Thickness (nm)',30,.1,1000,self.refresh)
-        self.section('D. MDFF Model — Stage B',False)
-        model_box=QtWidgets.QComboBox();model_box.addItems(['XMCD-constrained (WIEN2k / DFT)','Atomic ionization (non-DFT Ni local)']);model_box.setEnabled(False)
-        model_box.setToolTip('Stage A is elastic only. No MDFF or EELS calculation is wired yet.');self.form.addRow(model_box)
+        self.section('D. MDFF Model',False)
+        self.mdff_controls()
         self.section('E. Propagation Method')
-        method=QtWidgets.QLabel('Bloch-wave elastic preview\nMultislice / EELS: later milestones');method.setWordWrap(True);self.form.addRow(method)
+        method=QtWidgets.QLabel('Bloch-wave entrance channeling\nMultislice: disabled until Stage C');method.setWordWrap(True);self.form.addRow(method)
         self.section('F. Calculation Settings')
         self.number('beam','Beam cutoff (cycles/A)',3.2,.2,6.5,self.refresh)
         self.number('potential','Potential cutoff (cycles/A)',2.2,.1,6.5,self.refresh)
         self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
+        self.numerical_controls()
         self.section('Virtual detectors')
         self.show_detectors=QtWidgets.QCheckBox('Show physical A/B apertures');self.show_detectors.setChecked(True);self.show_detectors.toggled.connect(self.refresh);self.form.addRow(self.show_detectors)
         for key,label,val in [('ax','A qx',0),('ay','A qy',0),('bx','B qx',0),('by','B qy',0)]:self.number(key,label+' (cycles/A)',val,-20,20,self.detectors_changed)
@@ -71,6 +74,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.section('G. Output Settings',False)
         self.button('Export current plot PNG / SVG…',self.export_plot)
         self.button('Save elastic preview…',self.save_preview)
+        self.button('Export completed EMCD / EELS...',self.save_emcd)
         self.form_layout.addStretch()
         center=QtWidgets.QWidget();layout=QtWidgets.QVBoxLayout(center);self.figure=Figure(layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure);self.ax=self.figure.add_subplot()
         self.toolbar=NavigationToolbar2QT(self.canvas,self);layout.addWidget(self.toolbar)
@@ -90,7 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.splitter.addWidget(self.tabs);self.splitter.setSizes([340,820,390]);self.saved_sizes=None
         self.canvas.mpl_connect('button_press_event',self.clicked)
         self.zone.returnPressed.connect(self.apply_orientation);self.target.returnPressed.connect(self.apply_orientation)
-        self.sync_za();self.restore_detectors();self.refresh()
+        self.sync_za();self.restore_detectors();self.refresh();self.setup_stage_b()
 
     def section(self,title,expanded=True):
         group=QtWidgets.QGroupBox(title);group.setCheckable(True);group.setChecked(expanded);body=QtWidgets.QWidget();self.form=QtWidgets.QFormLayout(body)
@@ -164,7 +168,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ax.legend(fontsize=7,loc='upper right');self.canvas.draw_idle()
             self.info.setPlainText(self.structure.description()+f'\n\nNominal zone: {s.zone}\nR crystal-to-local:\n{R}\nIncluded beams: {len(hkl)} (full radial cutoff)\n'
                 f'Current tilt: {s.tilt} mrad\nZA: {za} cycles/A\nSelected target: {s.target}\n'
-                'Stage A: no MDFF, magnetic map or EELS is calculated.\nNi projected ZOLZ IAM; no outgoing channeling, absorption/TDS or physical CBED disks.\n'
+                'Stage B: BW entrance-channeling MDFF and EELS available through explicit Run EMCD / EELS.\nNi projected ZOLZ IAM; no outgoing channeling, absorption/TDS or physical CBED disks.\n'
                 + ('Current inputs match last completed preview.' if fresh else 'Inputs differ from last preview, or no preview exists. Right diffraction table is the last completed result.')
                 +f'\nCompleted previews this session: {len(self.history)}')
             self.statusBar().showMessage(f'{len(hkl)} included reciprocal points. '+('Current preview.' if fresh else 'Geometry only; press Preview diffraction explicitly.'))
@@ -172,6 +176,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'Ni IAM species supported; geometry needs correction.'))
             self.info.setPlainText(self.structure.description()+'\n\nNo valid current geometry: '+str(exc))
             self.run_button.setEnabled(False);self.align_button.setEnabled(False);self.tabs.setTabText(0,'Diffraction (last preview)');self.ax.clear();self.ax.set_title('Invalid configuration — no current plot');self.canvas.draw_idle();self.selection.setText(str(exc));self.statusBar().showMessage(str(exc))
+
+        self.emcd_stale()
 
     def clicked(self,event):
         if self.busy or event.inaxes is not self.ax or event.button!=1 or self.toolbar.mode:return
@@ -222,7 +228,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.structure.elastic_reason:self.error(self.structure.elastic_reason);return
         if s.target not in actual[2] or s.target==(0,0,0):self.error('Select a valid nonzero target');return
         self.refresh()
-        self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0)
+        self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0);self.emcd_button.setEnabled(False)
         self.statusBar().showMessage('Preparing crystal / selecting basis / running Bloch-wave elastic preview…')
         self.worker=PreviewWorker(Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings),s)
         self.worker.result.connect(self.completed);self.worker.failed.connect(self.preview_failed);self.worker.finished.connect(self.finished);self.worker.start()
@@ -240,7 +246,7 @@ class MainWindow(QtWidgets.QMainWindow):
         elif self.run_outcome=='failed':self.statusBar().showMessage('Preview failed; no new result was registered.')
     def preview_failed(self,message):self.run_outcome='failed';self.error(message)
     def cancel(self):
-        if self.worker:self.worker.requestInterruption();self.statusBar().showMessage('Cancellation requested; waiting for the current elastic stage to finish…')
+        if self.worker:self.worker.requestInterruption();self.statusBar().showMessage('Cancellation requested; waiting for the current numerical stage to finish…')
     def closeEvent(self,event):
         if self.busy:self.cancel();event.ignore();return
         super().closeEvent(event)
@@ -265,8 +271,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 def main():
-    parser=argparse.ArgumentParser(description='EMCD-Sim Stage A desktop diffraction interface')
+    parser=argparse.ArgumentParser(description='EMCD-Sim desktop diffraction and BW EMCD/EELS interface')
     parser.add_argument('--smoke-screenshot',type=Path,help='Run a real default elastic preview, save a Qt window screenshot and exit')
+    parser.add_argument('--smoke-emcd-screenshot',type=Path,help='Compute and export real default BW EMCD, capture native Qt results')
+    parser.add_argument('--smoke-atomic',action='store_true',help='Use the atomic model for EMCD acceptance run')
     args=parser.parse_args();app=QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:1])
     if not QtGui.QFontDatabase.families():
         # Qt's offscreen Windows plugin may expose no system fonts. Use the
@@ -282,4 +290,20 @@ def main():
             args.smoke_screenshot.parent.mkdir(parents=True,exist_ok=True);window.grab().save(str(args.smoke_screenshot));app.quit()
         window.preview_ready.connect(lambda:QtCore.QTimer.singleShot(300,capture));QtCore.QTimer.singleShot(200,window.start_preview)
         QtCore.QTimer.singleShot(30000,lambda:app.exit(2))
+    if args.smoke_emcd_screenshot:
+        if args.smoke_atomic:window.model_box.setCurrentIndex(1)
+        def capture_emcd():
+            if window.busy:QtCore.QTimer.singleShot(100,capture_emcd);return
+            from .emcd_forward import export_result
+            import datetime
+            root=Path('outputs/gui_stage_b')/('atomic_' if args.smoke_atomic else 'xmcd_')
+            root=root.parent/(root.name+datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
+            export_result(window.emcd_result,root)
+            window.eels_view.maximize();window.tabs.setCurrentIndex(2)
+            def grab():
+                args.smoke_emcd_screenshot.parent.mkdir(parents=True,exist_ok=True)
+                window.grab().save(str(args.smoke_emcd_screenshot));print('Completed EMCD export: '+str(root),flush=True);app.quit()
+            QtCore.QTimer.singleShot(700,grab)
+        window.emcd_ready.connect(lambda:QtCore.QTimer.singleShot(300,capture_emcd));QtCore.QTimer.singleShot(300,window.start_emcd)
+        QtCore.QTimer.singleShot(240000,lambda:app.exit(2))
     return app.exec()

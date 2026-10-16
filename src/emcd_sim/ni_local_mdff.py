@@ -124,13 +124,18 @@ class NiLocalConfig:
 
 
 def ni_local_transitions(config: NiLocalConfig = NiLocalConfig(), *,
-                         radial_override_angstrom: float | None = None) -> TransitionDataset:
+                         radial_override_angstrom: float | None = None,
+                         magnetization_sign: int = 1) -> TransitionDataset:
     """Local one-electron Ni transitions using 2p SOC and cubic d orbitals.
 
     Individual final cubic-orbital components interfere in dipole *amplitude*;
     different final orbitals and core states are incoherently summed later.
+    Reversal swaps spin holes and reverses exchange shifts in this fixed
+    core-SOC basis; the default +1 retains the historical calculation.
     """
     config.validate()
+    if magnetization_sign not in (-1, 1):
+        raise ValueError('magnetization_sign must be +1 or -1')
     if radial_override_angstrom is not None and (not np.isfinite(radial_override_angstrom)
                                                  or abs(radial_override_angstrom) < 1e-14):
         raise ValueError("radial override must be finite and nonzero")
@@ -143,13 +148,14 @@ def ni_local_transitions(config: NiLocalConfig = NiLocalConfig(), *,
             for spin, name in ((1, "up"), (-1, "down")):
                 for orbital, components in basis.items():
                     group = "eg" if orbital in ("z2", "x2_y2") else "t2g"
-                    holes = getattr(config, f"{group}_{name}_holes")
+                    occupation_name = name if magnetization_sign == 1 else ('down' if name == 'up' else 'up')
+                    holes = getattr(config, f"{group}_{occupation_name}_holes")
                     if holes <= 0:
                         continue
                     # Cubic 3d centroid fixed at zero:
                     # 2 eg at +3/5 Delta, 3 t2g at -2/5 Delta.
                     crystal_shift = (0.6 if group == "eg" else -0.4) * config.crystal_field_10dq_ev
-                    exchange_shift = -0.5 * spin * config.exchange_split_ev
+                    exchange_shift = -0.5 * spin * magnetization_sign * config.exchange_split_ev
                     energy = edge_energy + crystal_shift + exchange_shift
                     if energy <= 0:
                         raise ValueError("resulting transition energy must be positive")
@@ -172,7 +178,7 @@ def ni_local_transitions(config: NiLocalConfig = NiLocalConfig(), *,
         source=("NON_DFT_ILLUSTRATIVE_LOCAL_Ni_2p3d: normalized screened hydrogenic radial functions "
                 f"(Zeff_2p={config.zeff_2p:g},Zeff_3d={config.zeff_3d:g}), "
                 f"cubic field 10Dq={config.crystal_field_10dq_ev:g}eV, "
-                f"exchange={config.exchange_split_ev:g}eV; "
+                f"exchange={config.exchange_split_ev:g}eV; M_sign={magnetization_sign}; "
                 f"radial_source={'hydrogenic' if radial_override_angstrom is None else 'external_tabulated'}; "
                 "NO many-body multiplets or Ni fit"),
     )

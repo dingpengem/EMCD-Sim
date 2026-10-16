@@ -1,10 +1,17 @@
-# EMCD-Sim desktop GUI — Stage A
+# EMCD-Sim desktop GUI ? Stage B
 
-Stage A is a functional **crystal/orientation and elastic-diffraction GUI**.
-It does not yet run EMCD, construct an MDFF, calculate EELS, or propagate
-FFT multislice. Those controls/tabs are explicitly disabled for the next
-milestones; no synthetic magnetic curves are displayed. Package version
-0.4.5 and existing CLI workflows are unchanged.
+Stage B adds genuine **Bloch-wave entrance-channeling EMCD and EELS** to the
+existing Stage A diffraction interface. Both XMCD-constrained and atomic
+2p?3d MDFF models are implemented and tested. Multislice GUI execution remains
+disabled until Stage C; full history/reopening remains Stage D. Package
+version 0.4.5 and the existing CLI workflows are unchanged.
+
+![Actual Windows GUI after a default Ni [017] BW EMCD calculation](images/gui/stage_b_windows.png)
+
+The screenshot shows computed A/B ?M EELS, reversal-odd/even differences and
+raw/corrected contrast. **Maximize / restore results** expands the scientific
+figures; it does not rerun or rescale the calculation. The earlier elastic
+preview is retained below as a Stage A reference.
 
 ![Actual Windows Qt application after a numerical Ni [017] elastic preview](images/gui/stage_a_windows.png)
 
@@ -89,8 +96,8 @@ preview automatically. Completed values remain explicitly labeled **last
 preview** on the right when inputs become stale; central markers revert to
 unweighted references. The calculation-information tab records the current
 structure, orientation and settings, and whether they match the last result.
-The preview is elastic only: the GUI does not yet use the source magnetization
-to calculate an ionization tensor or magnetic signal.
+The diffraction preview is elastic only; the separate Stage B run uses source
+magnetization to calculate the ionization tensor and magnetic signal.
 
 ## CIF import, orientation and capability boundaries
 
@@ -136,9 +143,10 @@ The left panel also exposes radius and center coordinates, show/hide,
 centers at g/2 +/- the transverse perpendicular g/2 for the current target.
 Manual centers stay fixed during subsequent tilt edits. A status label
 distinguishes an exact y-mirrored pair from a manual/non-y-mirrored pair.
-No paired-map subtraction or fractional integration is performed in Stage A;
-later EMCD integration must use the existing fractional weights and validate
-the reflection-bijection assumptions before enabling mirrored pixel maps.
+The lightweight elastic preview does not integrate EELS. Stage B uses shared
+fractional-aperture weights and validates physical reflection pairing before
+enabling mirrored pixel maps. Direct EELS integrates the actual manual A/B
+apertures even when mirror pairing fails.
 
 ## Progress, cancellation and exports
 
@@ -188,12 +196,10 @@ inspected but is not that desktop application; no code was copied from it.
 This standalone interface follows the requested left-input / center-viewer /
 right-results organization, with no QCBED dependency.
 
-Stage B will integrate both MDFF paths with an audited atomic-reversal adapter;
-Stage C will wire matched incoming FFT coherences into the existing EELS
-contraction; Stage D will add full save/reopen and result registration. They
-are intentionally not offered as working calculations in this Stage A report.
+Stage B is implemented below. Stage C will add matched incoming FFT coherences;
+Stage D will add full save/reopen and result registration. Neither is enabled.
 
-The eventual EMCD GUI retains projected IAM, entrance-only ionization,
+The EMCD GUI retains projected IAM, entrance-only ionization,
 XMCD-effective rather than complete DFT-derived MDFF, no outgoing channeling,
 HOLZ/TDS/absorption, uncalibrated absolute cross sections/energies and unresolved
 potential-cutoff convergence. An attractive preview or BW agreement cannot
@@ -201,3 +207,179 @@ establish quantitative experimental accuracy. See the [case-study guide](NI_017_
 
 Implementation references: [Qt threads](https://doc.qt.io/qtforpython-6/PySide6/QtCore/QThread.html),
 [Matplotlib Qt canvas](https://matplotlib.org/stable/gallery/user_interfaces/embedding_in_qt_sgskip.html).
+
+## Stage B: MDFF selection and source preview
+
+Expand **D. MDFF Model**. Switching models leaves the crystal, tilt and
+physical detector positions unchanged.
+
+**XMCD-constrained (WIEN2k):** select a compatible five-column file
+`energy, RP, LP, XMCD, XAS`, then **Validate source / native features**.
+Validation checks positivity, ascending energies, XMCD=RP−LP and XAS=RP+LP.
+The preview displays those original sums/differences with full/L3/L2 zoom;
+there is no source energy shift. For the bundled audited Ni source the
+selected magnetic features are **831.271 / 848.698 eV**. They are native
+calculated L3/L2 features, not calibrated experimental edge energies.
+
+When the original Ni companion files exist, the existing energy/core and
+magnetic-axis audit runs. Independent five-column imports do not require
+those files. The GUI distinguishes format validation from provenance,
+suggests two separated source-dependent magnetic features when possible,
+and allows explicit L3/L2 selection. For an ambiguous assignment the user
+must select the energies and declare them. The declaration checkbox covers
+the crystal Cartesian magnetic axis, RP/LP handedness and edge identity;
+independent files are never silently assigned verified [001] provenance.
+
+The effective tensor has Txy=+i eta (RP−LP)/2, transverse response proportional
+to (RP+LP)/2, and longitudinal response beta times that response. It uses the
+existing source-maximum normalization, not experimental absolute units.
+Eta/beta and the declared axis must satisfy positivity. This is an
+XMCD-constrained effective tensor, **not** a full complex DFT MDFF.
+
+**Atomic ionization:** L3/L2 default independently to 852.7/870.0 eV.
+Controls expose Gaussian sigma (default 0.8 eV), 10Dq, exchange and eg/t2g
+spin holes. Advanced controls expose effective nuclear charges and an
+optional explicit radial dipole in angstrom; otherwise the existing
+normalized screened-hydrogenic radial functions are used. The preview shows
+Re Tr(T)/3, Im Txy and Re Tzz. This is an **atomic 2p–3d approximation,
+non-DFT, not quantitative metallic Ni**, without multiplets, core-hole or
+band dispersion. Atomic magnetization is currently restricted to crystal
+[001], preserving the existing cubic orbital conventions.
+
+Atomic reversal is performed **before tensor construction**: spin-up/down
+holes swap and the exchange-energy shift reverses for each fixed spin
+channel. The complex 2p core-SOC amplitudes remain in their established basis.
+For the supported real cubic orbital model this gives T(−M)=conj(T(+M));
+real even response is invariant and imaginary odd response changes sign.
+Nonzero-exchange tests check occupations, transition energies, Hermiticity,
+PSD and nonnegative EELS. A failed reversal-symmetry check rejects the run.
+For both models the final transformation is **R T_crystal R^T**, using the
+actual Stage A orientation. Default [017] local M is
+(0, −0.1414213562, 0.9899494937), rather than the local beam axis.
+
+## Stage B: run, inspect and interpret
+
+1. Choose the verified conventional FCC Ni cell (a=3.524 angstrom). Other
+   zone directions/finite ZOLZ bases of this same cell are supported; arbitrary
+   Ni-containing CIFs are not given a bulk-Ni MDFF automatically. An equivalent
+   conventional Ni CIF may pass the conservative cell/site gate; other cells
+   retain Stage A inspection and supported elastic previews.
+2. Set geometry and physical A/B apertures. **Preview diffraction** remains
+   separate and lightweight. **Run EMCD / EELS** snapshots structure,
+   orientation, MDFF, tilt, detectors and numerics in a QThread. It propagates
+   depth amplitudes once (64 nodes by default), constructs the existing
+   trapezoidal coherence and reuses `run_tensor_with_coherence` for all
+   energies, both edges and reversal states. Full spectra include the exact
+   selected map energies. Progress reports actual stages, not fitted timing
+   percentages. Cancellation is checked between contraction calls; an active
+   eigensolve/contraction finishes before stopping. Failed/cancelled runs
+   never replace the last completed result.
+3. Numerical controls default to 241 uniform energy samples plus selected
+   energies, 33×33 reciprocal pixels and 64×64 boundary subpixels. Energy,
+   grid, depth and subpixel counts are bounded. The existing dense kernel
+   estimate is shown; configurations above 512 MiB are rejected. Apertures
+   must be fully covered by the map. Beam/potential cutoffs are explicit;
+   they are never reduced silently for performance.
+4. **EMCD Angular Maps** switches L3/L2 in a 2×3 layout: odd magnetic,
+   reversal-even, total +M, raw paired, corrected paired and residual even.
+   Signed fields use shared absolute scales across edges for each field;
+   no per-map peak normalization is applied. Every available map uses its
+   completed-run 000/hkl/target/ZA/Thales/A/B geometry. Out-of-view ZA is
+   reported by coordinates. Use the toolbar or maximize results for detailed
+   inspection. Edits mark retained results **STALE** until recalculation.
+5. **Virtual Detector EELS** shows A/B ±M, odd/even differences and
+   raw/corrected/intrinsic magnetic contrasts. Choose full/L3/L2 zoom and click
+   legend entries to toggle curves. Markers show the selected energies and a
+   shaded band shows a valid correction window. Intensities are not peak
+   normalized. **Magnetic / Nonmagnetic** gives signed edge metrics; negligible
+   denominators display `undefined`.
+
+For each physical detector, N=(I_plus+I_minus)/2 and
+M=(I_plus−I_minus)/2. Then D_mag=M_A−M_B, D_nonmag=N_A−N_B and
+D_raw=I_A_plus−I_B_plus=D_mag+D_nonmag. Nonmagnetic/even **intensity** is not
+its A/B **imbalance**. Direct integration uses each actual aperture even
+when manually moved. Only exactly validated y-reflection pairs receive
+pixelwise paired maps; otherwise those panels explain why they are disabled,
+while intrinsic angular maps and integrated spectral decomposition remain.
+
+Post-edge correction is optional. For the audited XMCD source, 878–882 eV is
+the established default. Other sources/atomic mode default to correction
+off until a scientifically suitable window is chosen. An invalid/out-of-range
+or insufficiently sampled/zero-signal window disables correction with an
+explanation and preserves all original spectra. Alpha is obtained from the
+observed +M A/B integral ratio. Corrected contrast is
+I_A_plus−alpha I_B_plus = (M_A−alpha M_B)+(N_A−alpha N_B).
+The latter term is residual even contamination; correction also changes the
+magnetic term. Neither corrected contrast nor its improved visual symmetry
+establishes an intrinsic magnetic signal. The comparison tab reports alpha,
+magnetic bias and residual even signal separately.
+
+## Stage B: explicit export and validation
+
+**Export completed EMCD / EELS** writes a new timestamped subdirectory:
+
+```text
+input_parameters.json
+metadata.json
+angular_maps.npz
+virtual_detector_eels.npz
+L3_angular_maps.png
+L2_angular_maps.png
+virtual_detector_eels.png
+```
+
+NPZs load with `allow_pickle=False`; they include original ±M spectra,
+odd/even decomposition, valid corrected fields, detector weights, coherence,
+depths and amplitudes. JSON records source path/hash and optional companion
+audit, atomic parameters, native energy grid, R, cubic/local M, reversal,
+actual tilt, target excitation error, hkl, detector positions/areas,
+wavelength/ZA/000, thickness, cutoffs, sampling, solver, software commit,
+worktree state and adapter hashes. Plots use the completed snapshot even
+after live input edits. This is explicit export, without Stage D reopening
+or a result database. Previous elastic/[017] output files are preserved.
+
+Focused validation on Windows in `emcd-python`:
+
+```powershell
+python -m unittest discover -s tests -p 'test_gui_stage_*.py'
+python -m pytest tests/test_ni_local_mdff.py -q
+python scripts/gui_stage_b_validation.py
+# Optional direct check of a completed native default [017] XMCD GUI export:
+python scripts/gui_stage_b_validation.py --gui-export outputs/gui_stage_b/<xmcd_run_folder>
+python -m emcd_sim.gui --smoke-emcd-screenshot docs/images/gui/stage_b_windows.png
+python -m emcd_sim.gui --smoke-emcd-screenshot outputs/gui_stage_b/stage_b_atomic_windows.png --smoke-atomic
+```
+
+The 16 focused GUI tests pass (6 Stage A, 10 Stage B), including real-worker
+manual-detector recalculation and cancelled/failed result rejection. All eight
+existing local-atomic MDFF tests also pass, including radial/CLI round trips
+and the historical default construction. Native
+Windows XMCD and atomic runs both calculated full default 243-energy,
+27-beam, 33×33, 64-depth-node results. A separate established CLI [017] model,
+rotation and depth coherence produced **bitwise-identical full A/B ±M
+spectra and coherence** with matched source/energies/numerics. The same check
+against the native Windows export, using its saved spinbox tilt and apertures,
+also gave exactly zero differences for all four spectra and coherence. Alpha was
+1.0001764206684876. Local artifacts are in `outputs/gui_stage_b/`; the
+repeatable comparison writes `default_cli_validation/cli_comparison.json`.
+
+| Model / selected feature | Sigma_ref | D_mag | A_mag |
+| --- | ---: | ---: | ---: |
+| XMCD L3, 831.271 eV | 0.2481701746 | −9.422031175e−4 | −0.00379660094 |
+| XMCD L2, 848.698 eV | 0.1662582163 | +1.022746402e−3 | +0.00615155404 |
+| Atomic L3, 852.7 eV | 1.463431066e−5 | +2.456363271e−8 | +0.00167849605 |
+| Atomic L2, 870.0 eV | 7.299292676e−6 | −2.445000509e−8 | −0.00334964032 |
+
+These two models have different spectral/operator approximations and scales;
+the table is not a quantitative intermodel comparison. At symmetric default
+A/B the reversal-even imbalance is numerical roundoff. Nevertheless XMCD
+post-edge correction creates residual even terms of −2.189117405e−5 (L3)
+and −1.466569283e−5 (L2), demonstrating why corrected is not pure magnetic.
+
+Research limitations remain: projected independent-atom elastic potential,
+depth-integrated localized single-ionization approximation, entrance-only
+channeling, no outgoing/double channeling, no complete DFT-derived MDFF,
+nonquantitative atomic model, no experimental absolute EELS cross-section
+normalization, uncertain experimental energy calibration and unresolved
+global physical-potential Fourier-cutoff convergence. No broad regression
+suite, multislice GUI integration or 43-orientation sweep was performed.
