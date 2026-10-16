@@ -1,8 +1,28 @@
 # EMCD-Sim
 
+## Current research main: oriented Ni [017] EMCD / X-Y mistilt study (post-v0.4.5)
+
+The **`main` branch now includes the completed Ni [710] and Ni [017] oriented projected-IAM benchmarks and the 43-orientation Ni [017] high-mistilt X/Y survey**. The *published package metadata* remains **v0.4.5** until a separately validated/versioned release; later research features are present on `main` without an automatic version or release-tag bump.
+
+**Start here: [Ni [017] case-study guide — native WIEN2k L3/L2 edge assignment, minor-zone / (200) exact Bragg, mistilt coordinates and which figures to inspect](docs/NI_017_CASE_STUDY_GUIDE.md).** Detailed numerical results: [Ni [017] high-mistilt technical report](docs/NI_017_HIGH_MISTILT_XY.md) and [Ni [017] oriented diffraction report](docs/NI_017_MINORZONE.md).
+
+- **Native magnetic spectral samples**, not absolute experimental calibration: L3 **831.271 eV** and L2 **848.698 eV** on the unshifted WIEN2k axis. XAS maxima: 831.421 and 848.752 eV. Earlier 852.7/870 eV nominal reference selections are **not** the native calculated peak energies.
+- **Geometry:** genuine Ni [017] minor-zone axis (approximately 8.13° from the source's cubic-[001] magnetization), target **(200)**, exact paraxial Bragg reference `theta_x=-7.11672544 mrad`, `theta_y=0`. The local magnetization tensor is rotated from cubic [001], rather than reassigned to the electron-beam direction. This is **two-beam-like, not isolated two-beam**: competing diffraction channels can be populated inside the foil.
+- **Mistilt:** `theta_x=theta_Bragg200+delta_x`, `theta_y=delta_y` in local [017] coordinates. X and Y series plus a measured 5×5 grid include **43 unique orientations**, with BW/FFT-multislice angular maps and **individual full virtual-detector EELS** for every case.
+- **Inspect the generated pictures locally:** `outputs/ni_017_high_mistilt_xy/aggregate/emcd_xy_heatmaps.png` (magnetic/even asymmetry and relative detectability); `aggregate/raw_corrected_xy.png` (normalization effects); `scan_y/summary_figures/mirror_symmetry.png` (Y-tilt even-part reversal); and per-case `L3_angular_maps.png` / `virtual_detector_eels.png` (magnetic/even/raw/corrected spectral details). The output directory is local and generally Git-ignored; GitHub stores the code and explanations, not necessarily the calculated figures.
+
+**Limitations:** XMCD-*constrained* effective MDFF (not a full DFT Cartesian complex MDFF), z-independent projected Ni elastic potential, incoming-only depth-integrated ionization and no outgoing channeling, unresolved physical Fourier-potential convergence, uncalibrated absolute cross sections and sample dose. BW–FFT agreement does not establish fully quantitative Ni EMCD. Older `emcd-ni` / [001] / Gaussian examples below remain separate legacy/reference workflows.
+
+```powershell
+$env:PYTHONPATH='src'
+python -m emcd_sim.ni_017_high_mistilt_xy --scan all
+python -m emcd_sim.ni_017_high_mistilt_xy --scan all --plot-only
+```
+
+
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**. 
 
-> **Research status: v0.4.5 (WIEN2k Ni XAS/XMCD-constrained effective dipole MDFF, still not quantitative Ni EMCD).** The default elastic channel uses a **Ni scattering-factor-derived multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Packaged release version: v0.4.5; current `main` includes subsequent [017] research-stage implementations, still not quantitative Ni EMCD.** The default elastic channel uses a **Ni scattering-factor-derived multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 
 ## WIEN2k Ni XMCD-constrained effective MDFF (v0.4.5)
