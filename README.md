@@ -1,5 +1,19 @@
 # EMCD-Sim
 
+## Desktop GUI development: Stage A
+
+The optional Windows PySide6 interface provides ASE CIF inspection, actual
+zone-axis orientation, indexed Ni Bloch-wave elastic previews, reflection
+selection, Bragg alignment and interactive projected-ZA/tilt controls.
+**EMCD/MDFF, EELS and multislice GUI execution are later milestones and are
+disabled in Stage A.** See [GUI setup, screenshot and capability limits](docs/EMCD_GUI.md).
+
+```powershell
+conda activate emcd-python
+python -m pip install -e ".[gui]"
+python -m emcd_sim.gui
+```
+
 ## Current research main: oriented Ni [017] EMCD / X-Y mistilt study (post-v0.4.5)
 
 The **`main` branch now includes the completed Ni [710] and Ni [017] oriented projected-IAM benchmarks and the 43-orientation Ni [017] high-mistilt X/Y survey**. The *published package metadata* remains **v0.4.5** until a separately validated/versioned release; later research features are present on `main` without an automatic version or release-tag bump.
