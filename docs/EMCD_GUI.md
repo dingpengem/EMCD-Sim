@@ -850,3 +850,76 @@ and excessive contraction memory are blocked rather than silently altered.
 Use Maximize / restore results for readable scientific plots at high display
 scaling; the canvas remains scrollable. This candidate is unsigned; no clean
 machine or SmartScreen trust is implied by a successful development-machine test.
+
+
+## EMCD signal normalization and percentage conventions (Stage F)
+
+Percentage normalization changes only the displayed derived quantities. It does not modify the simulated cross section, MDFF, dynamical scattering or underlying numerical data.
+
+In **Virtual Detector EELS**, select **Intensity Display**:
+
+| Display | Definition for every difference curve D |
+| --- | --- |
+| Raw (a.u.) | D in the original saved relative-intensity units |
+| Asymmetry (%) | 100 D(E) / Sigma_ref(E), where Sigma_ref = N_A + N_B |
+| EELS Peak (%) | 100 D(E) / P_edge, where P_edge = max in the selected window of (N_A + N_B) |
+
+N_A and N_B are magnetization-reversal-even detector spectra. The peak is of
+their **sum**, never their mean or independent detector maxima. Magnetic,
+nonmagnetic, raw, corrected, processed and bias curves share this reference;
+signs are preserved. A/B spectra use the same denominator. The historical
+plus-state raw asymmetry uses I_A_plus + I_B_plus and is listed separately.
+Relative detectability |D_mag|/sqrt(Sigma_ref) remains unchanged.
+
+**Auto** uses one fixed L3 peak throughout Full spectrum and L3 zoom, and one
+fixed L2 peak for L2 zoom. Explicit L3/L2 selection overrides it. The denominator
+never changes partway through a spectrum. Expand **Peak windows (native eV)**
+to edit bounds, detect the maximum or reset. Defaults are selected saved edge
+energy +/- min(5 eV, edge separation / 3), clipped to the saved range. Windows
+must remain in their respective half of the L3/L2 region, contain at least two
+finite saved samples and have a positive finite maximum. Peaks use saved
+sampling without interpolation. Native WIEN2k and atomic energy axes remain
+distinct: no experimental shift, background subtraction or assumption of
+852.7/870 eV for native Ni is applied.
+
+BW/MS uses a shared BW peak by default, including when viewing MS alone.
+Independent method peaks are presentation-only and can hide intensity changes.
+Solver discrepancy values always use raw data. Saved-run comparisons default
+to a selected common run peak. Per-run peaks permit qualitative overlays but
+cannot establish absolute cross-model calibration. Shared peaks are blocked
+across incompatible models, source hashes or intensity conventions. Existing
+grid, frame, energy, magnetic-sign and model gates still govern map differences.
+
+Angular maps separately offer **Raw**, **Local magnetic fraction (%)** and
+**Paired angular asymmetry (%)**. Local fraction is
+100 I_mag(q,E)/I_nonmag(q,E), not detector A/B contrast. Paired percentages use
+100 D(q,E)/[N(q,E)+N(reflect_y(q),E)], for magnetic, even, raw and corrected
+paired maps. Validated mirror apertures are required; only original A support
+is retained. Invalid pairing disables the mode with an explanation. Integrated
+EELS peaks are not divided into angular densities because the units differ.
+Signed maps use zero-centered diverging colors, shared BW/MS scales by default,
+and optional independent scales.
+
+Denominators must be positive and finite, exceeding 1e-8 (spectra) or 1e-6
+(maps) times their positive finite 95th percentile. Undefined divisions remain
+NaN and appear grey, including outside paired A support; grey is not zero.
+PNG/SVG exports include metadata and a JSON sidecar. Derived CSV/NPZ exports
+record denominator, window, reference identity, masks and source hash, alongside
+original raw spectra/maps, coordinates and weights. They create new folders;
+original projects and schema are unchanged. Legacy B/C exports remain read-only;
+unsupported missing quantities are explained.
+
+D_mag is magnetic-odd under reversal; D_nonmag is reversal-even imbalance.
+D_raw combines both. Post-edge-corrected A-B can retain even contamination and
+magnetic processing bias: corrected contrast is not intrinsically magnetic.
+Percentages do not resolve absolute energy calibration, incomplete DFT-derived
+MDFF, omitted outgoing channeling or finite-potential-cutoff convergence.
+
+![Native Windows percentage visualization from saved Ni results](images/gui/stage_f_emcd_percentage.png)
+
+Actual source GUI capture at 150% Windows scaling. The opt-in acceptance tab
+combines saved L3 magnetic/even paired maps and full-range BW/MS spectra,
+with fixed BW L3 peak P=0.2508784247. Grey retains A-only support; the even
+reference case is numerical zero. The full-range L2 feature uses this same L3
+denominator. Normal EELS/map tabs provide the controls.
+See [Stage F acceptance](EMCD_GUI_STAGE_F_ACCEPTANCE.md) for values and scope.

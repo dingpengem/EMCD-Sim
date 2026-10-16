@@ -286,9 +286,16 @@ def main():
     parser.add_argument('--rc-acceptance', type=Path, help='Run real native RC acceptance into a new directory')
     parser.add_argument('--rc-source', type=Path, help='External audited Ni source for acceptance')
     parser.add_argument('--rc-reopen', action='store_true', help='Reopen RC projects in a new process without calculations')
+    parser.add_argument('--stage-f-acceptance',type=Path,help='Validate normalized visualization from saved projects; no solvers')
+    parser.add_argument('--stage-f-project',type=Path)
+    parser.add_argument('--stage-f-comparison',type=Path)
     args=parser.parse_args()
     from .runtime import configure_logging, LABEL, build_info
     configure_logging()
+    if args.stage_f_acceptance:
+        if not args.stage_f_project or not args.stage_f_comparison:parser.error('Stage F needs both saved project folders')
+        from .stage_f_acceptance import run
+        return run(args.stage_f_acceptance,args.stage_f_project,args.stage_f_comparison)
     if args.rc_acceptance:
         from .rc_acceptance import run
         return run(args.rc_acceptance, args.rc_source, args.rc_reopen)

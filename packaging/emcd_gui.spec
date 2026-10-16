@@ -4,13 +4,14 @@ from importlib.metadata import distribution, version
 from datetime import datetime, timezone
 
 root = Path(SPECPATH).parent
-stage = root / 'build/windows-rc/resources'
+stage = root / os.environ.get('EMCD_GUI_BUILD_ROOT','build/windows-rc') / 'resources'
 stage.mkdir(parents=True, exist_ok=True)
 # Only the explicitly tracked example, never the modified working copy or companions.
 reference = stage / 'Ni_fm.xmcd'
 reference.write_bytes(subprocess.check_output(['git', '-C', str(root), 'show', 'HEAD:data/wien2k_ni/Ni_fm.xmcd']))
 from emcd_sim.gui.runtime import build_info
 info = build_info()
+info['label']=os.environ.get('EMCD_GUI_BUILD_LABEL',info['label'])
 info.update(build_utc=datetime.now(timezone.utc).isoformat(), reference_sha256=hashlib.sha256(reference.read_bytes()).hexdigest(),
             reference_provenance='Repository tracked five-column Ni example; MIT repository license; no WIEN2k code or companion audit included.')
 info['versions']={name:version(name) for name in ('numpy','scipy','matplotlib','ase','PySide6','pyinstaller')}

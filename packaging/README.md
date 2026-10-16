@@ -39,3 +39,25 @@ missing sources. Reports contain local provenance paths; nothing is uploaded.
 Use the comparison tab's **Export NPZ/CSV** action for CSV spectra and scalar
 metrics. The build command above uses a process-only script-policy override;
 it does not change the user or machine execution policy.
+
+
+Stage F uses the same specification in a fresh location:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1
+```
+
+Defaults are `build/windows-stage-f/dist/EMCD-Sim/` and
+`build/windows-stage-f/EMCD-Sim-Stage-F-Windows-RC.zip`, labeled
+`EMCD-Sim GUI Stage F RC (unreleased)`. Existing distributions are refused;
+use `-BuildRoot` and `-BuildLabel` for a new candidate. Stage E remains untouched.
+Package version is unchanged.
+
+Display-only acceptance reopens existing projects, guards forward calls and
+exports derived figures/data (fresh output paths required):
+
+```powershell
+EMCD-Sim.exe --stage-f-acceptance C:/F-validation --stage-f-project C:/saved/reference_project --stage-f-comparison C:/saved/mistilt_project
+```
+
+This does not invoke the expensive Stage E physics acceptance.

@@ -339,3 +339,5 @@ and FFT multislice incident propagation, with intrinsic parity maps retained.
 The [Ni angular-map and EELS guide](docs/NI_EMCD_ANGULAR_COMPARISON.md)
 adds indexed L3/L2 intrinsic magnetic/even/total maps and full-source virtual
 detector spectra via `--angular-output --full-source-range`.
+
+The desktop GUI supports [EMCD percentage visualization](docs/EMCD_GUI.md#emcd-signal-normalization-and-percentage-conventions-stage-f) from saved projects: common-even asymmetry, fixed L3/L2 EELS peaks, and distinct local/paired angular percentages. See [Stage F acceptance](docs/EMCD_GUI_STAGE_F_ACCEPTANCE.md).

@@ -279,9 +279,14 @@ class ProjectWorkspace:
     def export_current_figure(self):
         widget=self.tabs.currentWidget();figure=getattr(widget,'figure',self.figure)
         path,_=QtWidgets.QFileDialog.getSaveFileName(self,'Export currently displayed plot','','PNG (*.png);;SVG (*.svg)')
-        if path:figure.savefig(path,dpi=300)
+        if path:
+            from .normalization_export import save_figure
+            save_figure(figure,path)
     def export_selected_data(self):
         if self.emcd_result is None:return
+        widget=self.tabs.currentWidget()
+        if hasattr(widget,'export_derived'):widget.export_derived();return
+        if hasattr(widget,'export_data'):widget.export_data();return
         from .compare_results import export_comparison_data
         parent=QtWidgets.QFileDialog.getExistingDirectory(self,'Data export parent (new folder)')
         if not parent:return
