@@ -1,25 +1,43 @@
 # EMCD-Sim
 
-The desktop GUI has a local, unreleased Windows one-folder candidate. See
-[Windows RC acceptance](docs/EMCD_WINDOWS_RC_ACCEPTANCE.md) for standalone
-testing, numerical comparisons and remaining limitations; see the
-[GUI guide](docs/EMCD_GUI.md) for BW/MS, MDFF and saved-project workflows.
+## EMCD-Sim Windows Desktop
 
-## Desktop GUI development: Stage D
+Explore indexed diffraction and Bragg/mistilt geometry, calculate Ni magnetic
+and nonmagnetic core-loss maps and virtual-detector EELS, compare Bloch-wave
+with verified FCC Ni [017] FFT multislice, and inspect raw, asymmetry-percent
+or fixed-EELS-peak-percent signals. Save/reopen complete projects, compare
+saved conditions, and export PNG/SVG figures and NPZ/CSV data.
 
-The Windows PySide6 interface now supports **complete project save/open,
-a persistent Results Browser and comparison of saved EMCD maps/EELS** without
-rerunning the solver. Use saved settings to prepare a new explicit calculation,
-and export PNG/SVG figures plus NPZ/CSV data. Source files may be absent when
-viewing completed data; reruns require verified provenance. The existing
-XMCD/atomic MDFF and BW/verified Ni [017] FFT calculations are preserved.
-See [GUI guide, project format, actual Windows screenshot and scientific limits](docs/EMCD_GUI.md).
+- **Portable Windows ZIP:** no Python, Conda, VS Code or WIEN2k runtime needed.
+  The accepted Stage F candidate is a **local, unsigned, unreleased artifact**;
+  request it from the maintainer. No public binary download is available yet.
+  [Installation, checksum and troubleshooting](docs/INSTALL_WINDOWS.md).
+- **Start using it:** [Quick Start](docs/QUICK_START.md) and
+  [Complete User Manual](docs/USER_GUIDE.md), with actual GUI screenshots.
+- **Technical reference:** [GUI controls, numerical conventions and project format](docs/EMCD_GUI.md).
+- **Status:** package version remains **0.4.5**; the GUI is on
+  `feat/emcd-desktop-gui`, pending authorized integration. See
+  [Stage G acceptance, blockers and merge/release plan](docs/STAGE_G_RELEASE_READINESS.md).
+
+For Python source users, run from the checked-out GUI branch in an environment
+with the GUI dependencies; the installation guide also provides a venv recipe:
 
 ```powershell
 conda activate emcd-python
 python -m pip install -e ".[gui]"
 python -m emcd_sim.gui
 ```
+
+**Scientific scope:** projected IAM, entrance-only depth-integrated ionization,
+no outgoing/full double channeling or atom-layer-resolved 3D multislice.
+XMCD-effective is not a complete complex DFT MDFF; atomic ionization is non-DFT.
+Absolute cross sections and native WIEN2k energies are uncalibrated; GUI FFT
+is verified only for FCC Ni [017]. Physical potential-cutoff convergence is
+unresolved. BW/MS agreement does not establish quantitative experimental EMCD
+or arbitrary-CIF support. See [physics and limitations](docs/PHYSICS.md).
+
+The CLI and research studies below remain accessible and retain their own
+documented assumptions; GUI milestones are development history, not separate products.
 
 ## Current research main: oriented Ni [017] EMCD / X-Y mistilt study (post-v0.4.5)
 

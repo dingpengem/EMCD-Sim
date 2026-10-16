@@ -1,10 +1,18 @@
-# EMCD-Sim desktop GUI - Stage D
+# EMCD-Sim desktop GUI — technical reference and milestone record
+
+For current use, start with [Windows installation](INSTALL_WINDOWS.md),
+[Quick Start](QUICK_START.md) and the [complete User Manual](USER_GUIDE.md).
+[Stage G readiness](STAGE_G_RELEASE_READINESS.md) reviews the accepted Stage F
+portable candidate, final acceptance, pending distribution checks and the
+proposed integration plan. The following sections retain A–F development
+evidence and screenshots; they are not separate current applications.
 
 The desktop is now a **persistent scientific workspace**: save complete
 projects, reopen numerical results without recomputation, browse previous runs,
 compare saved conditions and restore inputs for an explicit new calculation.
 Stage A-C geometry, MDFF and independent BW/FFT physics are retained. Package
-version remains 0.4.5; no installer or executable packaging is added.
+version remains 0.4.5. Stage D added persistence; Stage E/F later added the
+portable Windows candidate and percentage visualization described below.
 
 ![Actual Windows Results Browser and saved two-tilt comparison](images/gui/stage_d_windows.png)
 
