@@ -137,6 +137,10 @@ class SavedVisualizationTests(unittest.TestCase):
         with np.load(self.out/'derived/derived_and_raw.npz',allow_pickle=False) as z:
             np.testing.assert_array_equal(z['run0__raw__D_mag'],self.r['spectra']['D_mag'])
             self.assertLess(z['run0__derived__D_mag'][np.argmin(abs(self.r['spectra']['energy_ev']-831.271))],0)
+        export_derived(entries,self.out/'raw_derived',DisplaySettings())
+        with (self.out/'raw_derived/percentage_metrics.csv').open(newline='') as f:
+            rows=list(csv.DictReader(f))
+        self.assertTrue(all(row['reference_run']==entries[0][0] and row['reference_method']==entries[0][2] for row in rows))
     def test_saved_comparison_compatibility_and_controls(self):
         from emcd_sim.gui.compare_results import CompareResults,map_compatibility
         from emcd_sim.gui.app import MainWindow

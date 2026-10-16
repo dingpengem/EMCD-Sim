@@ -191,7 +191,7 @@ class ResultsView(QtWidgets.QWidget):
             elif self.kind=='diffraction':draw_diffraction(self.figure,self.result,method,self.choice.currentIndex()==1)
             elif self.kind=='comparison':draw_comparison(self.figure,self.result,display)
             else:self.proxies=draw_eels(self.figure,self.result,self.choice.currentText(),method,display)
-            self.display_note.setText('Display-only derived quantities. '+('Raw solver discrepancies remain unchanged.' if display.mode!='raw' else 'Raw (a.u.); no rescaling.'))
+            self.display_note.setText('Display-only derived quantities. '+('Raw solver discrepancies remain unchanged.' if display.mode!='raw' or display.map_mode!='raw' else 'Raw (a.u.); no rescaling.'))
         except (ValueError,KeyError) as exc:
             self.figure.clear();self.figure.subplots().text(.05,.6,'Normalization unavailable: '+str(exc),wrap=True);self.display_note.setText(str(exc));self.figure._emcd_display_metadata=dict(unavailable=str(exc),derived_visualization_only=True)
         if self.kind=='eels' and hasattr(self.owner,'comparison'):self.owner.comparison.setPlainText(comparison_text(self.result,display.windows))

@@ -33,7 +33,7 @@ def export_derived(entries,path,settings=None,zoom='Full spectrum'):
         try:
             reference=entries[min(settings.reference,len(entries)-1)][1] if settings.scope=='shared' else None
             windows=None if meta.get('window_note') else (settings.windows or None)
-            for edge,row in percentage_metrics(r,windows,reference).items():scalars.append(dict(run=label,method=method,edge=edge,reference_run=meta['reference_run'],**row))
+            for edge,row in percentage_metrics(r,windows,reference).items():scalars.append(dict(run=label,method=method,edge=edge,reference_run=entries[min(settings.reference,len(entries)-1)][0] if reference is not None else label,reference_method=entries[min(settings.reference,len(entries)-1)][2] if reference is not None else method,**row))
         except ValueError as exc:meta['scalar_unavailable']=str(exc)
         records.append(dict(label=label,method=method,source_sha256=r['config'].source_sha256,
                             software_commit=r['metadata'].get('software_commit'),normalization=meta,maps=maps_meta))

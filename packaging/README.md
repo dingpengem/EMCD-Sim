@@ -20,8 +20,9 @@ working copy, WIEN2k companions and simulation outputs are excluded. Git is
 needed to build, not to run. Conda-backed builds explicitly supply base
 OpenSSL/Expat DLLs.
 
-Outputs: `build/windows-rc/dist/EMCD-Sim/` and
-`build/windows-rc/EMCD-Sim-Windows-RC.zip`. Copy/extract the **whole folder**;
+Historical Stage E outputs: `build/windows-rc/dist/EMCD-Sim/` and
+`build/windows-rc/EMCD-Sim-Windows-RC.zip`. The command now defaults to the
+separate Stage F paths below. Copy/extract the **whole folder**;
 keep `_internal` beside the EXE. User files belong outside the program folder.
 
 Opt-in native acceptance uses actual widgets and numerical workers:
