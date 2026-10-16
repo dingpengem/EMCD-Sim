@@ -1,5 +1,10 @@
 # EMCD-Sim
 
+Development on `feat/atomic-3d-multislice` adds [P1 real atomic supercells and
+subslice geometry](docs/ATOMIC_3D_MULTISLICE_P1.md), starting with FCC Ni [017].
+This is structural preparation only; finite-z potentials and new 3D propagation
+are not yet implemented. Existing projected-2D/GUI results remain unchanged.
+
 ## EMCD-Sim Windows Desktop
 
 Explore indexed diffraction and Bragg/mistilt geometry, calculate Ni magnetic
