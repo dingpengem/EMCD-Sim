@@ -32,8 +32,8 @@ for package in ('numpy','scipy','matplotlib','ase','PySide6','PySide6_Essentials
 a = Analysis([str(root/'packaging/launcher.py')], pathex=[str(root/'src')],
     binaries=runtime_binaries,
     datas=[(str(reference),'data/wien2k_ni'), (str(stage/'build_info.json'),'.'), (str(root/'LICENSE'),'.')]+licenses,
-    hiddenimports=['matplotlib.backends.backend_qtagg','ase.io.cif','ase.io.jsonio','ase.io.extxyz'],
-    hooksconfig={'matplotlib': {'backends': ['Agg', 'QtAgg']}},
+    hiddenimports=['matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg','ase.io.cif','ase.io.jsonio','ase.io.extxyz'],
+    hooksconfig={'matplotlib': {'backends': ['Agg', 'QtAgg', 'svg']}},
     excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow'], noarchive=False)
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='EMCD-Sim', console=False)

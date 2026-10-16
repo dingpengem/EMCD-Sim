@@ -130,7 +130,8 @@ class ProjectWorkspace:
         try:index=Registry(self.workspace/'results_index.json')
         except Exception as exc:self.statusBar().showMessage('Results index could not be read: '+str(exc));index=Registry(self.workspace/('recovered_index_'+uuid.uuid4().hex+'.json'))
         self.browser=ResultsBrowser(self,index);self.browser_dock=QtWidgets.QDockWidget('Results Browser',self);self.browser_dock.setObjectName('resultsBrowser');self.browser_dock.setWidget(self.browser);self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea,self.browser_dock);self.resizeDocks([self.browser_dock],[190],QtCore.Qt.Orientation.Vertical)
-        self.setWindowTitle('EMCD-Sim Desktop - Stage D: projects and scientific results')
+        from .runtime import LABEL
+        self.setWindowTitle(LABEL)
         file=self.menuBar().addMenu('File');results=self.menuBar().addMenu('Results');view=self.menuBar().addMenu('View')
         for title,callback,shortcut in [('New',self.new_project,'Ctrl+N'),('Open Project...',self.open_project_dialog,'Ctrl+O'),('Save Project',self.save_project_action,'Ctrl+S'),('Save Project As...',lambda:self.save_project_action(save_as=True),'Ctrl+Shift+S')]:
             action=file.addAction(title);action.triggered.connect(lambda checked=False,f=callback:f());action.setShortcut(shortcut)

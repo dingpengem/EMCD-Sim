@@ -39,12 +39,16 @@ def run(output, source, reopen=False):
             class Counters(ctypes.Structure):
                 _fields_=[('cb',wintypes.DWORD),('faults',wintypes.DWORD)]+[(k,ctypes.c_size_t) for k in ('peak_ws','ws','peak_paged','paged','peak_nonpaged','nonpaged','pagefile','peak_pagefile')]
             c=Counters();c.cb=ctypes.sizeof(c)
-            ctypes.windll.psapi.GetProcessMemoryInfo(ctypes.windll.kernel32.GetCurrentProcess(),ctypes.byref(c),c.cb)
+            ctypes.windll.kernel32.GetCurrentProcess.restype=wintypes.HANDLE
+            get_memory=ctypes.windll.psapi.GetProcessMemoryInfo
+            get_memory.argtypes=[wintypes.HANDLE,ctypes.POINTER(Counters),wintypes.DWORD]
+            if not get_memory(ctypes.windll.kernel32.GetCurrentProcess(),ctypes.byref(c),c.cb):raise OSError('Process memory counter unavailable')
             report['peak_working_set_mib']=c.peak_ws/2**20
         except Exception as exc:report['memory_error']=str(exc)
         (output/('reopen.json' if reopen else 'acceptance.json')).write_text(json.dumps(report,indent=2),encoding='utf-8')
         w.close();app.quit()
     def reopened():
+        export_root=output/'reopen_exports'/str(time.time_ns());export_root.mkdir(parents=True)
         previous=json.loads((output/'acceptance.json').read_text())
         t=time.perf_counter();r=load_project(output/'xmcd_both_project');report['timings']['open_s']=time.perf_counter()-t
         assert fingerprints(r)==previous['cases']['xmcd_both']['fingerprints']
@@ -55,19 +59,19 @@ def run(output, source, reopen=False):
         missing=dict(r)
         missing['config']=replace(r['config'],source=str(output/'unavailable/Ni_fm.xmcd'))
         missing['structure_snapshot']=dict(r['structure_snapshot'],source=str(output/'unavailable/Ni.cif'),sha256='0'*64)
-        save_project(missing,output/'missing_sources_project')
+        if not (output/'missing_sources_project').exists():save_project(missing,output/'missing_sources_project')
         from .project_io import rerun_reason
         unavailable=load_project(output/'missing_sources_project')
         assert rerun_reason(unavailable)
         w.display_saved_result(unavailable);w.use_result_settings()
         assert not w.emcd_button.isEnabled()
-        export_result(unavailable,output/'missing_sources_export')
+        export_result(unavailable,export_root/'missing_sources_export')
         report['missing_sources_view_export_rerun_blocked']=True
         widget=CompareResults(w,[('reference',r),('mistilt',second)])
         w.tabs.addTab(widget,'Saved comparison');w.tabs.setCurrentWidget(widget)
         widget.maximize()
         widget.figure.savefig(output/'saved_comparison.png');widget.figure.savefig(output/'saved_comparison.svg')
-        export_result(r,output/'reopened_export')
+        export_result(r,export_root/'reopened_export')
         report['saved_arrays_exact']=True;report['reopen_without_worker']=w.worker is None
         QtCore.QTimer.singleShot(1000,lambda:(screenshot('stage_e_results_browser.png'),finish()))
     if reopen:
@@ -107,9 +111,9 @@ def run(output, source, reopen=False):
                 t=time.perf_counter();save_project(r,output/(key+'_project'));report['timings'][key+'_save_s']=time.perf_counter()-t
                 w.browser.registry.register(r,output/(key+'_project'),key);w.browser.refresh()
                 if key=='xmcd_both':
-                    w.tabs.setCurrentIndex(6);w.overview_view.maximize()
+                    w.tabs.setCurrentIndex(6);w.browser_dock.hide();w.overview_view.canvas.setMinimumSize(900,420);w.overview_view.maximize()
                     def grabbed():
-                        screenshot('stage_e_bw_ms.png');w.overview_view.maximize();next_case()
+                        screenshot('stage_e_bw_ms.png');w.browser_dock.show();w.overview_view.maximize();next_case()
                     QtCore.QTimer.singleShot(700,grabbed)
                 else:QtCore.QTimer.singleShot(50,next_case)
             idle(capture)
@@ -120,6 +124,19 @@ def run(output, source, reopen=False):
             idle(after)
         def begin():
             report['timings']['startup_to_window_s']=time.perf_counter()-start
+            from matplotlib.backend_bases import MouseEvent
+            from .geometry import za_from_tilt, excitation, Structure
+            w.structure.atoms.write(output/'native_ni.cif')
+            assert not Structure.from_cif(output/'native_ni.cif').elastic_reason
+            w.mode.setCurrentIndex(1);w.canvas.draw()
+            point=np.array([.25,.02]);x,y=w.ax.transData.transform(point)
+            w.canvas.callbacks.process('button_press_event',MouseEvent('button_press_event',w.canvas,x,y,button=1))
+            np.testing.assert_allclose(za_from_tilt(w.settings().tilt,200),point,atol=1e-9)
+            w.reset_reference();w.mode.setCurrentIndex(0);w.canvas.draw()
+            g=w.current[3][w.current[2].index((2,0,0))];x,y=w.ax.transData.transform(g)
+            w.canvas.callbacks.process('button_press_event',MouseEvent('button_press_event',w.canvas,x,y,button=1))
+            w.align();assert abs(excitation(g,w.settings().tilt,200))<1e-10
+            report['native_cif_and_viewer_events']=True
             if source:
                 w.source_path.setText(str(source));w.validate_xmcd();w.declaration.setChecked(True)
             w.propagation_box.setCurrentIndex(2);w.zone.setText('0 0 1');w.refresh()
