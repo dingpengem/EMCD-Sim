@@ -809,5 +809,44 @@ depth-integrated single ionization, no outgoing/double channeling or atom-layer
 3D propagation, incomplete complex DFT MDFF, approximate XMCD conventions,
 nonquantitative atomic Ni, uncalibrated absolute cross sections/dose and unresolved
 physical Fourier-potential cutoff convergence remain. Browser persistence and
-visually good comparisons do not add physical validation. No installer,
-Windows executable packaging, new DFT calculation or new solver is included.
+visually good comparisons do not add physical validation. Stage D did not
+include executable packaging or a new solver.
+
+## Windows release candidate (Stage E)
+
+The portable one-folder candidate is **unreleased**, with package version
+0.4.5. Extract the entire ZIP, keep `_internal` beside `EMCD-Sim.exe`, and
+launch the EXE without Conda activation. Do not run directly inside the ZIP.
+See [acceptance and limitations](EMCD_WINDOWS_RC_ACCEPTANCE.md) and
+[reproducible build instructions](../packaging/README.md).
+
+The bundled Ni spectrum is the repository-tracked five-column example, with
+its SHA256 in build metadata. No original WIEN2k companions, proprietary code,
+executables or user simulation outputs are included. The package does not
+claim a companion audit. Select an external source with **Browse XMCD**,
+validate it and explicitly declare the magnetic-axis/RP-LP/edge conventions.
+The native energy axis is retained. Native Ni magnetic features are
+831.271/848.698 eV; atomic-model defaults are 852.7/870 eV. They are separate
+models, with no fitted normalization or energy shift between them.
+
+Use the built-in Ni [017] reference and exact (200) alignment, choose BW,
+FFT Multislice or Both, then explicitly Run. Save completed projects with
+Save Project; open them or select them in Results Browser to inspect maps,
+EELS and comparisons without recalculation. **Use These Settings** restores
+inputs separately. Missing original XMCD/CIF does not prevent viewing or
+export, but rerunning requires hash-verified reconnection. Figure exports
+support PNG/SVG, with numerical NPZ/CSV exports retained.
+
+Default workspace/index/preferences live under
+`%LOCALAPPDATA%/EMCD-Sim/workspace`; logs are under
+`%LOCALAPPDATA%/EMCD-Sim/logs`. `EMCD_GUI_WORKSPACE` still overrides the workspace.
+The program directory and current working directory need not be writable.
+About / build displays the source commit and build timestamp without Git.
+
+For launch failures, check that the full folder was extracted and review the
+runtime log. Missing source and hash errors require the original file, not a
+same-named substitute. Unsupported FFT orientations, odd/insufficient meshes
+and excessive contraction memory are blocked rather than silently altered.
+Use Maximize / restore results for readable scientific plots at high display
+scaling; the canvas remains scrollable. This candidate is unsigned; no clean
+machine or SmartScreen trust is implied by a successful development-machine test.

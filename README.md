@@ -1,5 +1,10 @@
 # EMCD-Sim
 
+The desktop GUI has a local, unreleased Windows one-folder candidate. See
+[Windows RC acceptance](docs/EMCD_WINDOWS_RC_ACCEPTANCE.md) for standalone
+testing, numerical comparisons and remaining limitations; see the
+[GUI guide](docs/EMCD_GUI.md) for BW/MS, MDFF and saved-project workflows.
+
 ## Desktop GUI development: Stage D
 
 The Windows PySide6 interface now supports **complete project save/open,
