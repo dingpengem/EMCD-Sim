@@ -1,10 +1,18 @@
-# EMCD-Sim desktop GUI ? Stage B
+# EMCD-Sim desktop GUI - Stage C
 
-Stage B adds genuine **Bloch-wave entrance-channeling EMCD and EELS** to the
-existing Stage A diffraction interface. Both XMCD-constrained and atomic
-2p?3d MDFF models are implemented and tested. Multislice GUI execution remains
-disabled until Stage C; full history/reopening remains Stage D. Package
-version 0.4.5 and the existing CLI workflows are unchanged.
+Stage C adds independent **FFT multislice incoming-wave EMCD/EELS** and
+**Both (BW/MS comparison)** to the existing Stage A/B application. Both
+XMCD-constrained and non-DFT atomic Ni MDFF models are supported. The default
+remains Bloch-wave. FFT support is gated to the verified FCC Ni [017] projected
+geometry. Full history/reopening remains Stage D. Package version 0.4.5 and
+existing CLI workflows are unchanged.
+
+![Actual native Windows BW/MS comparison](images/gui/stage_c_windows.png)
+
+The Stage C screenshot shows actual default [017] magnetic maps, numerical
+solver differences and full EELS overlays. The following Stage B/A sections
+retain their original workflows and milestone screenshots; the final Stage C
+section explains the new propagation and comparison controls.
 
 ![Actual Windows GUI after a default Ni [017] BW EMCD calculation](images/gui/stage_b_windows.png)
 
@@ -196,8 +204,8 @@ inspected but is not that desktop application; no code was copied from it.
 This standalone interface follows the requested left-input / center-viewer /
 right-results organization, with no QCBED dependency.
 
-Stage B is implemented below. Stage C will add matched incoming FFT coherences;
-Stage D will add full save/reopen and result registration. Neither is enabled.
+Stages B and C are implemented. Stage D full save/reopen and result
+registration are not enabled.
 
 The EMCD GUI retains projected IAM, entrance-only ionization,
 XMCD-effective rather than complete DFT-derived MDFF, no outgoing channeling,
@@ -383,3 +391,211 @@ nonquantitative atomic model, no experimental absolute EELS cross-section
 normalization, uncertain experimental energy calibration and unresolved
 global physical-potential Fourier-cutoff convergence. No broad regression
 suite, multislice GUI integration or 43-orientation sweep was performed.
+
+## Stage C: independent incoming multislice and comparison
+
+Select **E. Propagation Method**:
+
+- **Bloch-wave** preserves Stage B propagation and numerical results for
+  identical settings. Other supported pure-Ni orientations remain available,
+  subject to the original finite-basis and memory gates.
+- **FFT Multislice** executes the existing real-space split-step propagator;
+  it does not evaluate a BW Hamiltonian as a substitute.
+- **Both (BW / MS comparison)** computes independent BW and FFT wavefields on
+  identical depth nodes, then applies the same already-constructed ±M tensors,
+  fractional apertures and EELS/parity/post-edge contraction to each coherence.
+
+Expand **Multislice numerical settings** for FFT size (default **32**, even
+12–128) and maximum slice step (default **0.04 nm**, 0.001–1 nm). The existing
+64 depth nodes, voltage, thickness, tilt, beam cutoff, physical potential
+cutoff and Debye–Waller B are shared. Switching solvers does not change those
+physical parameters or move detectors. Runs exceeding 200000 split steps are
+rejected rather than silently coarsened.
+
+**Verified FFT orientation: FCC Ni [017] only.** The existing oriented cell
+has local x=[100], y=[0,7,−1]/sqrt(50), z=[0,1,7]/sqrt(50). The projected mesh
+maps FFT indices (m,n) to actual cubic hkl=(m,7n,−n), includes FCC selection
+rules, and uses the same IAM Fourier coefficients, cutoff and B as BW. It is
+not the old even-only [001] projected potential. The complete requested finite
+2D BW basis remains in propagation; exact (200) Bragg does not imply an
+isolated two-beam wavefield. Both MDFF models retain crystal-[001] magnetization
+and their existing crystal-to-local tensor rotation and reversal rules.
+
+[001], [710], arbitrary zone axes and general CIF FFT meshes are not enabled
+in this milestone. Unsupported requests give an explicit explanation; there
+is no automatic BW fallback or cutoff alteration. The conservative Stage B
+material/site gate still applies. Exact common hkl inclusion, reciprocal
+coordinates and potential coverage below the FFT boundary are checked before
+propagation. The GUI shows common beam count, full FFT harmonic count and
+nonzero physical-potential harmonic count.
+
+FFT coefficients are the raw complex `fft2(wave)/N²` values projected by exact
+integer hkl lookup. No conjugation, sign reversal, amplitude renormalization
+or matching factor is applied. Excluded population is the sum over FFT modes
+outside the common basis, recorded at every depth. Consequently the projected
+FFT coherence need not have unit trace. Each propagator runs once per run and
+its trapezoidal depth coherence is reused across the full spectrum, both edges
+and both magnetic states. Methods contract sequentially, retaining only
+selected L3/L2 maps and full detector spectra.
+
+### Stage C result views
+
+- **EMCD Angular Maps:** select BW, MS or **BW−MS numerical difference**, L3/L2,
+  and either the six-field layout or one field. Physical BW/MS maps share
+  signed color limits across methods and edges for each field. Difference
+  maps retain actual intensity units and are explicitly numerical differences.
+- **Virtual Detector EELS:** choose BW, MS or an overlay; BW is solid, MS dashed,
+  with corresponding curves in matching colors. Full/L3/L2 views, curve
+  toggles, native source axis, selected-energy markers and correction-window
+  shading remain. Neither solver is peak-normalized or refitted. Alpha is
+  obtained separately from each method's observed +M A/B spectra; it is not
+  optimized to match methods. Raw magnetic and even signals remain available.
+- **BW/MS Diffraction:** switch methods or BW−MS differences, and exit
+  intensity versus depth-averaged intensity `diag(C)`. Indexed spots use the
+  exact common hkl basis. Full FFT indexing/exit intensities and excluded
+  population are also exported. Marker size visualizes discrete intensity;
+  it is not a physical CBED disk. Exit diffraction alone does not describe the
+  internal depth-dependent wavefield.
+- **BW/MS Overview:** displays magnetic L3 BW/MS maps and their numerical
+  difference alongside full detector EELS, intrinsic magnetic difference and
+  raw/corrected A−B overlays. The difference colorbar may use its own actual
+  signed scale to resolve small errors; the two physical maps share limits.
+- **Magnetic / Nonmagnetic:** retains signed edge metrics for each method and
+  adds amplitude, coherence, elastic, spectral and selected-map discrepancies,
+  FFT norm error and common-basis leakage. Absolute errors accompany relative
+  errors. Near-cancelled magnetic/even references give `null`/undefined relative
+  errors, not a fabricated zero. Complex global-phase alignment is reported
+  only as a diagnostic and is never applied to propagated amplitudes or C.
+
+All reciprocal views preserve (000), indexed hkl, target, projected ZA, Thales
+circle and physical A/B apertures using the completed snapshot. Results become
+stale when inputs change. Manual nonmirrored detectors still give direct EELS
+and reversal decomposition; mirrored paired maps require the original exact
+physical-pair check. Post-edge correction remains processed magnetic plus
+residual even contamination, not a pure magnetic signal.
+
+The worker reports propagation, projection, coherence and per-method EELS
+stages with indeterminate progress. Cancellation is cooperative between stages
+and contraction calls; it waits for an active FFT propagation/kernel call to
+finish. A cancelled/failed Both run never replaces the previous completed
+result with a partial BW result. No numerical stage mutates live inputs.
+
+### Stage C memory, export and validation
+
+The GUI reports one complex pixel×beam×beam array separately from the
+conservative dense working estimate (four such arrays), FFT storage/scratch,
+coherence temporaries and an aggregate array estimate. Dense working estimates
+above **512 MiB** or aggregate estimates above **1024 MiB** are rejected. These
+are array estimates, **not a complete peak process/RSS measurement**. The
+physical potential is never simplified silently to pass a memory check.
+
+The Stage B top-level result keys remain a primary-method view: BW when present,
+otherwise MS. `methods['bloch']` and `methods['fft-multislice']` contain explicit
+independent maps, spectra, coherence and complex amplitudes. Diagnostics live
+in `comparison`; method results do not recursively contain the collection.
+
+Export retains the Stage B files and adds:
+
+```text
+diffraction_pattern.npz
+comparison_metadata.json
+bw_ms_comparison.png                 # Both only
+L3_bw_minus_ms.png, L2_bw_minus_ms.png
+bloch/, fft-multislice/               # Both: separate method PNG/NPZ/metadata
+```
+
+Top-level angular/EELS NPZs preserve unprefixed primary-method arrays and add
+explicit `method_labels`, `method__field` / `method__edge__field` names. Maps
+are (qy,qx), spectra (energy), amplitudes (depth,ordered common beam). Diffraction
+NPZ includes full FFT amplitudes, hkl, reciprocal vectors, exit intensity,
+norm/excluded-population histories, common-method exit/depth-average intensities
+and complex-wave diagnostic arrays. All NPZs load without pickle. Comparison
+JSON records the schema, actual solver settings, source/model/geometry provenance
+and signed edge metrics. Primary and per-method outputs are unambiguous;
+Both-mode physical map PNGs use shared color limits. Exports are explicit new
+folders, without a Stage D database, reopen browser or installer.
+
+Focused checks and native Windows milestone:
+
+```powershell
+python -m unittest discover -s tests -p 'test_gui_stage_*.py'
+# Normal native Qt platform, not QT_QPA_PLATFORM=offscreen:
+python scripts/gui_stage_c_validation.py
+```
+
+The native script runs both MDFF selections with BW-only, MS-only and Both at
+200 kV, 30 nm, default exact (200) Bragg, crystal-[001] M, beam cutoff 3.2,
+potential cutoff 2.2 cycles/angstrom, FFT32, depth64, maximum step 0.04 nm,
+33×33 detector grid and 243 sampled energies. It saves actual window captures,
+exports and matched standalone numerical checks under `outputs/gui_stage_c/`.
+It verifies identical spectra between each standalone GUI choice and its
+Both-mode counterpart, then independently runs the established standalone
+[017] FFT/complex projection and BW numerical paths with identical controls.
+No 43-orientation sweep or broad regression suite is run.
+
+**Scientific scope:** this is depth-resolved propagation through a
+z-independent projected potential followed by localized incoming-channeling
+ionization. The post-ionization electron is not propagated through the
+remaining specimen. There is no atom-layer-resolved 3D potential, outgoing
+channeling, double channeling, new DFT tensor or calibrated absolute cross
+section. Excellent BW/MS agreement at one fixed cutoff demonstrates numerical
+agreement of incoming propagators; unresolved physical Fourier-potential
+cutoff sensitivity and MDFF/energy-calibration limitations remain. It does
+not establish physical convergence or quantitative experimental Ni EMCD.
+
+### Stage C measured default results
+
+All **25 focused GUI tests pass** (Stage A: 6, B: 10, C: 9). They cover the
+actual [017] IAM coefficient correspondence, exact complex FFT hkl projection,
+no forced normalization, Hermitian/PSD coherences, one tensor construction per
+comparison, unchanged BW output, both MDFF paths, parity and aperture-integral
+identities, manual detectors, shared scales, pickle-free exports, unsupported
+geometry/mesh/memory rejection, method switching, and preservation of the last
+completed result on failure/cancellation. The existing atomic transition-level
+hole/exchange reversal is unchanged. Small calculations are used for these
+checks; native acceptance uses the full default numerical controls above.
+
+The six native Windows runs and independent standalone checks passed. All
+four A/B ±M spectra were **bitwise identical** to their corresponding
+standalone numerical path for both MDFF models. BW-only and MS-only results
+were also bitwise identical to the corresponding method in Both. The actual
+Stage C BW default spectra match the previous Stage B native run exactly.
+
+| MDFF / edge | Method | Sigma_ref | D_mag | A_mag |
+| --- | --- | ---: | ---: | ---: |
+| XMCD L3, 831.271 eV | BW | 0.2481701746 | −9.422031175e−4 | −0.00379660094 |
+| XMCD L3 | MS | 0.2481709356 | −9.425438672e−4 | −0.00379796234 |
+| XMCD L2, 848.698 eV | BW | 0.1662582163 | +1.022746402e−3 | +0.00615155404 |
+| XMCD L2 | MS | 0.1662587268 | +1.023116340e−3 | +0.00615376023 |
+| Atomic L3, 852.7 eV | BW | 1.463431066e−5 | +2.456363271e−8 | +0.00167849605 |
+| Atomic L3 | MS | 1.463435561e−5 | +2.457251799e−8 | +0.00167909805 |
+| Atomic L2, 870.0 eV | BW | 7.299292676e−6 | −2.445000509e−8 | −0.00334964032 |
+| Atomic L2 | MS | 7.299315123e−6 | −2.445885073e−8 | −0.00335084187 |
+
+The models have different physical approximations and intensity scales; their
+rows are not an absolute intermodel comparison. Default even detector imbalance
+is roundoff-level, so its relative BW/MS discrepancy is undefined. XMCD alpha
+is **1.0001764206684878 (BW)** and **1.0001764839635159 (MS)**. Atomic correction
+is disabled by default; no XMCD post-edge window is imposed on it.
+
+For these default runs, common elastic/coherence diagnostics are identical
+between MDFF choices because propagation is reused independently of the tensor:
+
+- Maximum raw complex-amplitude discrepancy: **6.2740e−5**.
+- Coherence Frobenius absolute/relative discrepancy: **2.1216e−5 / 3.0737e−5**.
+- Exit elastic-intensity maximum absolute / relative L2 discrepancy:
+  **1.9941e−5 / 2.8484e−5**.
+- Largest L3/L2 magnetic-map relative L2 discrepancy across both models:
+  **3.7063e−4 (0.0371%)**.
+- Largest magnetic detector-difference relative discrepancy:
+  **3.6165e−4 (0.0362%)**.
+- FFT norm error: **1.7097e−14**; maximum excluded common-basis population:
+  **1.4443e−7** (exit **1.9117e−8**). Projection is not renormalized.
+
+Detailed default reports and numerical exports remain local at
+`outputs/gui_stage_c/windows_20261016_000116/validation.json` and its six case
+folders. The committed screenshot is a genuine native Qt view of those
+completed numerical results. Layout-only recapture uses the saved arrays;
+it does not rerun or change scattering calculations. All previous [017]
+results are preserved. These discrepancies characterize matched numerical
+methods at the stated potential cutoff, not a new physical convergence claim.

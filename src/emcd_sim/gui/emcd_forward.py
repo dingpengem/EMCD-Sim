@@ -1,4 +1,4 @@
-﻿"""Snapshot-based desktop adapter to the shared entrance-only BW tensor solver."""
+"""Snapshot adapter: independent BW/FFT waves and one shared tensor contraction."""
 from dataclasses import dataclass, asdict, replace, field
 from pathlib import Path
 import hashlib, json, platform, subprocess
@@ -65,6 +65,9 @@ class ForwardSettings:
     radius: float=.0908059024
     correction: bool=True
     window: tuple=(878.,882.)
+    propagation: str='bloch'
+    fft_grid: int=32
+    slice_step: float=.04
 
 
 def material_reason(structure):
@@ -133,9 +136,32 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
     model=replace(nickel_physical_benchmark(),elastic=elastic,detectors={k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),cfg.centers)},chiral_groups=None)
     # Direct integration requires full physical aperture coverage as well.
     if any(max(abs(np.asarray(p)))+cfg.radius>cfg.halfwidth for p in cfg.centers):raise ValueError('Map halfwidth must fully cover both physical detector apertures')
-    stage('Calculating Bloch-wave depth amplitudes');z=np.linspace(0,settings.thickness,cfg.depth);psi=elastic.amplitudes(z)
-    stage('Constructing depth-integrated coherence');C=coherence_from_amplitudes(z,psi)
-    stage('Generating +M and -M tensors');ts=tensors(cfg,energy,R)
+    from .propagation import propagate, compare_methods, numerical_info
+    info=numerical_info(structure,settings,cfg,hkl=hkl)
+    stage('Generating common +M and -M tensors');ts=tensors(cfg,energy,R)
+    z=np.linspace(0,settings.thickness,cfg.depth)
+    waves,fft_info=propagate(elastic,settings,cfg,z,stage)
+    methods={}
+    for method,psi in waves.items():
+        stage('Constructing '+method+' depth coherence');C=coherence_from_amplitudes(z,psi)
+        stage('Calculating '+method+' EELS and EMCD')
+        methods[method]=_contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled)
+        methods[method]['method']=method
+        methods[method]['metadata'].update(solver=method+' depth-integrated entrance-only localized single ionization',numerics=info)
+        if method=='fft-multislice':methods[method]['metadata']['fft']=fft_info['summary']
+    stage('Comparing independent BW/MS propagations')
+    comparison=compare_methods(methods,fft_info)
+    primary=methods.get('bloch',next(iter(methods.values())))
+    # Top-level Stage B arrays remain the primary method; method results do not
+    # contain the enclosing collection, avoiding recursive/ambiguous dimensions.
+    result=dict(primary,methods=methods,comparison=comparison,fft=fft_info)
+    result['metadata']=dict(primary['metadata'],method_labels=list(methods),comparison=comparison)
+    stage('Preparing result visualizations')
+    return result
+
+
+def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled):
+    """Stage B EELS/parity/post-edge implementation, shared by both coherences."""
     spectra={k:np.empty(len(energy)) for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')};maps={};qx=qy=None
     opts=dict(thickness_nm=settings.thickness,grid_size=cfg.grid,map_halfwidth_q=cfg.halfwidth,integration_mode='fractional',aperture_subpixels=cfg.subpixels)
     # One shared-kernel energy at a time provides cooperative cancellation;
@@ -187,7 +213,7 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
         s_target=float(excitation(g[hkl.index(settings.target)],settings.tilt,settings.voltage)),alpha=alpha,correction_reason=correction_reason,pair_reason=pair_reason,
         detector_areas={k:float(w.sum()*(qx[0,1]-qx[0,0])**2) for k,w in r.detector_weights.items()},integration='fractional',dense_estimate_mib=memory,
         solver='Bloch-wave depth-integrated entrance-only localized single ionization',software_commit=commit,software_worktree_dirty=dirty,
-        implementation_sha256={name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest() for name in ('emcd_forward.py','geometry.py')},
+        implementation_sha256={name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest() for name in ('emcd_forward.py','geometry.py','propagation.py')},
         python=platform.python_version(),numpy=np.__version__,
         limitations='Projected IAM; no outgoing/double channeling; XMCD-effective is not full DFT MDFF; atomic non-DFT not quantitative Ni; relative units, no absolute cross section; physical-potential cutoff convergence unresolved.')
     stage('Preparing result visualizations')
@@ -204,7 +230,7 @@ def metrics(result):
     return rows
 
 
-def export_result(result,path):
+def _export_single(result,path):
     from matplotlib.figure import Figure
     from .results import draw_maps,draw_eels
     root=Path(path);root.mkdir(parents=True,exist_ok=False)
@@ -218,3 +244,10 @@ def export_result(result,path):
         fig=Figure(figsize=(15,9),layout='constrained');draw_maps(fig,result,edge);fig.savefig(root/(edge+'_angular_maps.png'),dpi=145)
     arrays.update({'weight_'+k:v for k,v in result['weights'].items()});np.savez_compressed(root/'angular_maps.npz',**arrays)
     fig=Figure(figsize=(11,9),layout='constrained');draw_eels(fig,result);fig.savefig(root/'virtual_detector_eels.png',dpi=150)
+
+
+def export_result(result,path):
+    """Keep Stage B primary arrays; add explicitly labeled method exports."""
+    _export_single(result,path)
+    from .propagation import export_comparison
+    export_comparison(result,Path(path),_export_single)

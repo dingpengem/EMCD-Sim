@@ -59,7 +59,7 @@ class MainWindow(StageB,QtWidgets.QMainWindow):
         self.section('D. MDFF Model',False)
         self.mdff_controls()
         self.section('E. Propagation Method')
-        method=QtWidgets.QLabel('Bloch-wave entrance channeling\nMultislice: disabled until Stage C');method.setWordWrap(True);self.form.addRow(method)
+        self.propagation_controls()
         self.section('F. Calculation Settings')
         self.number('beam','Beam cutoff (cycles/A)',3.2,.2,6.5,self.refresh)
         self.number('potential','Potential cutoff (cycles/A)',2.2,.1,6.5,self.refresh)
@@ -168,7 +168,7 @@ class MainWindow(StageB,QtWidgets.QMainWindow):
             self.ax.legend(fontsize=7,loc='upper right');self.canvas.draw_idle()
             self.info.setPlainText(self.structure.description()+f'\n\nNominal zone: {s.zone}\nR crystal-to-local:\n{R}\nIncluded beams: {len(hkl)} (full radial cutoff)\n'
                 f'Current tilt: {s.tilt} mrad\nZA: {za} cycles/A\nSelected target: {s.target}\n'
-                'Stage B: BW entrance-channeling MDFF and EELS available through explicit Run EMCD / EELS.\nNi projected ZOLZ IAM; no outgoing channeling, absorption/TDS or physical CBED disks.\n'
+                'Stage C: BW / verified [017] FFT entrance-channeling EMCD/EELS through explicit Run EMCD / EELS.\nNi projected ZOLZ IAM; no outgoing channeling, absorption/TDS or physical CBED disks.\n'
                 + ('Current inputs match last completed preview.' if fresh else 'Inputs differ from last preview, or no preview exists. Right diffraction table is the last completed result.')
                 +f'\nCompleted previews this session: {len(self.history)}')
             self.statusBar().showMessage(f'{len(hkl)} included reciprocal points. '+('Current preview.' if fresh else 'Geometry only; press Preview diffraction explicitly.'))
@@ -275,6 +275,7 @@ def main():
     parser.add_argument('--smoke-screenshot',type=Path,help='Run a real default elastic preview, save a Qt window screenshot and exit')
     parser.add_argument('--smoke-emcd-screenshot',type=Path,help='Compute and export real default BW EMCD, capture native Qt results')
     parser.add_argument('--smoke-atomic',action='store_true',help='Use the atomic model for EMCD acceptance run')
+    parser.add_argument('--smoke-propagation',choices=['bloch','fft-multislice','both'],default='bloch')
     args=parser.parse_args();app=QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:1])
     if not QtGui.QFontDatabase.families():
         # Qt's offscreen Windows plugin may expose no system fonts. Use the
@@ -291,15 +292,16 @@ def main():
         window.preview_ready.connect(lambda:QtCore.QTimer.singleShot(300,capture));QtCore.QTimer.singleShot(200,window.start_preview)
         QtCore.QTimer.singleShot(30000,lambda:app.exit(2))
     if args.smoke_emcd_screenshot:
+        window.propagation_box.setCurrentIndex(['bloch','fft-multislice','both'].index(args.smoke_propagation))
         if args.smoke_atomic:window.model_box.setCurrentIndex(1)
         def capture_emcd():
             if window.busy:QtCore.QTimer.singleShot(100,capture_emcd);return
             from .emcd_forward import export_result
             import datetime
-            root=Path('outputs/gui_stage_b')/('atomic_' if args.smoke_atomic else 'xmcd_')
+            root=Path('outputs/gui_stage_b' if args.smoke_propagation=='bloch' else 'outputs/gui_stage_c')/('atomic_' if args.smoke_atomic else 'xmcd_')
             root=root.parent/(root.name+datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
             export_result(window.emcd_result,root)
-            window.eels_view.maximize();window.tabs.setCurrentIndex(2)
+            window.eels_view.maximize();window.tabs.setCurrentIndex(window.tabs.indexOf(window.overview_view) if args.smoke_propagation=='both' else 2)
             def grab():
                 args.smoke_emcd_screenshot.parent.mkdir(parents=True,exist_ok=True)
                 window.grab().save(str(args.smoke_emcd_screenshot));print('Completed EMCD export: '+str(root),flush=True);app.quit()

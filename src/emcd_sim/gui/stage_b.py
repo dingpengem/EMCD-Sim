@@ -1,4 +1,4 @@
-﻿"""Stage B controls and worker lifecycle; physical calculations live in emcd_forward."""
+"""MDFF, propagation controls and worker lifecycle; calculations live in emcd_forward."""
 from dataclasses import asdict
 from pathlib import Path
 import datetime,json
@@ -53,6 +53,16 @@ class StageB:
         self.model_box.currentIndexChanged.connect(self.model_changed)
         self.axis.textChanged.connect(self.emcd_stale);self.declaration.toggled.connect(self.emcd_stale);self.source_path.textChanged.connect(self.source_changed);self.radial_override.toggled.connect(self.emcd_stale)
 
+    def propagation_controls(self):
+        self.propagation_box=QtWidgets.QComboBox();self.propagation_box.addItems(['Bloch-wave','FFT Multislice','Both (BW / MS comparison)']);self.form.addRow('Propagation Method',self.propagation_box)
+        self.propagation_box.currentIndexChanged.connect(self.emcd_stale)
+        group=QtWidgets.QGroupBox('Multislice numerical settings');group.setCheckable(True);group.setChecked(False)
+        body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(group);outer.addWidget(body);self.form.addRow(group);body.setVisible(False);group.toggled.connect(body.setVisible)
+        saved=self.form;self.form=QtWidgets.QFormLayout(body)
+        box=QtWidgets.QSpinBox();box.setRange(12,128);box.setSingleStep(2);box.setValue(32);self.spin['fft_grid']=box;self.form.addRow('FFT grid (even)',box);box.valueChanged.connect(self.emcd_stale)
+        self.number('slice_step','Max slice step (nm)',.04,.001,1,self.emcd_stale)
+        label=QtWidgets.QLabel('Verified FFT orientation: Ni [017] only. Shared depth nodes, beam and potential cutoffs below. No outgoing channeling.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
+
     def numerical_controls(self):
         for key,title,value,lo,hi in [('energy','Energy sampling points',241,9,501),('grid','Detector grid points',33,9,97),('depth','Depth integration nodes',64,2,256),('subpixels','Aperture subpixels',64,4,256)]:
             box=QtWidgets.QSpinBox();box.setRange(lo,hi);box.setValue(value);self.spin[key]=box;self.form.addRow(title,box);box.valueChanged.connect(self.emcd_stale)
@@ -62,13 +72,16 @@ class StageB:
         self.memory_label=QtWidgets.QLabel();self.memory_label.setWordWrap(True);self.form.addRow(self.memory_label)
 
     def setup_stage_b(self):
-        self.setWindowTitle('EMCD-Sim Desktop — Stage B: Bloch-wave EMCD / EELS')
+        self.setWindowTitle('EMCD-Sim Desktop — Stage C: BW / FFT multislice EMCD / EELS')
         self.emcd_button=QtWidgets.QPushButton('Run EMCD / EELS');self.emcd_button.clicked.connect(self.start_emcd)
         self.zone.textChanged.connect(self.emcd_stale);self.target.textChanged.connect(self.emcd_stale)
         self.run_button.parentWidget().layout().itemAt(1).layout().insertWidget(1,self.emcd_button)
         self.maps_view=ResultsView(self,'maps');self.eels_view=ResultsView(self,'eels');self.comparison=QtWidgets.QPlainTextEdit();self.comparison.setReadOnly(True)
         for i,widget,title in ((1,self.maps_view,'EMCD Angular Maps'),(2,self.eels_view,'Virtual Detector EELS'),(3,self.comparison,'Magnetic / Nonmagnetic')):
             old=self.tabs.widget(i);self.tabs.removeTab(i);old.deleteLater();self.tabs.insertTab(i,widget,title);self.tabs.setTabEnabled(i,False)
+        self.diffraction_view=ResultsView(self,'diffraction');self.overview_view=ResultsView(self,'comparison')
+        self.tabs.addTab(self.diffraction_view,'BW/MS Diffraction');self.tabs.addTab(self.overview_view,'BW/MS Overview')
+        self.tabs.setTabEnabled(5,False);self.tabs.setTabEnabled(6,False)
         if DEFAULT_SOURCE.exists():self.validate_xmcd(show_error=False)
         self.emcd_stale()
 
@@ -98,7 +111,7 @@ class StageB:
         mode='xmcd' if self.model_box.currentIndex()==0 else 'atomic';axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')
         if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):raise ValueError('Validate the current XMCD source first')
-        return ForwardSettings(model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+        return ForwardSettings(propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
@@ -106,21 +119,29 @@ class StageB:
 
     def emcd_stale(self,*_):
         if not hasattr(self,'emcd_button'):return
-        reason=material_reason(self.structure)
+        reason=material_reason(self.structure);cfg=None;info=None
         try:
             cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
             if cfg.model=='xmcd' and not cfg.axis_declared:raise ValueError('Declare XMCD conventions before Run EMCD')
             if cfg.model=='atomic' and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
-            n=len(self.current[2]);memory=64*cfg.grid**2*n**2/2**20
-            self.memory_label.setText(f'Dense contraction estimate: {memory:.1f} MiB / 512 MiB. BW only; multislice disabled until Stage C.')
-            if memory>512:reason='Memory estimate exceeds 512 MiB; lower grid or beam cutoff.'
+            from .propagation import numerical_info
+            info=numerical_info(self.structure,s,cfg)
+            self.memory_label.setText(f"{info['bw_beams']} common BW beams; {info['fft_harmonics']} FFT harmonics ({info['potential_nonzero_harmonics']} nonzero potential).\nSingle pair {info['single_complex_pair_mib']:.1f} MiB; dense working {info['dense_working_estimate_mib']:.1f} / 512 MiB; estimated arrays {info['estimated_working_mib']:.1f} MiB. Not total peak process memory.")
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
             fresh=self.emcd_result is not None and self.emcd_result['settings']==s and self.emcd_result['config']==cfg and self.emcd_result['metadata']['structure']==self.structure.description()
         except Exception as exc:reason=reason or str(exc);fresh=False
-        self.emcd_button.setEnabled(not reason and not self.busy);self.emcd_button.setToolTip(reason or 'Run genuine BW entrance-channeling EMCD/EELS')
+        self.emcd_button.setEnabled(not reason and not self.busy);self.emcd_button.setToolTip(reason or 'Run the selected incoming-wave propagation and shared EMCD/EELS contraction')
         if self.emcd_result:
             text='Completed-run geometry and spectra; inputs match.' if fresh else 'STALE RESULT — current inputs differ. Showing saved completed-run geometry and spectra.'
-            for view in (self.maps_view,self.eels_view):view.label.setText(text)
+            for view in (self.maps_view,self.eels_view,self.diffraction_view,self.overview_view):view.label.setText(text)
+        current_marker='\n\nCurrent EMCD propagation:';saved_marker='\n\nCompleted EMCD run (snapshot):'
+        base=self.info.toPlainText().split(current_marker)[0].split(saved_marker)[0]
+        if cfg is not None:
+            base+=current_marker+'\n'+json.dumps(dict(requested=cfg.propagation,fft_grid=cfg.fft_grid,max_slice_step_nm=cfg.slice_step,depth_nodes=cfg.depth,numerics=info,unavailable_reason=reason or None),indent=2)
+        if self.emcd_result:
+            r=self.emcd_result
+            base+=saved_marker+'\n'+json.dumps(dict(methods=list(r.get('methods',{'bloch':0})),settings=r['metadata']['settings'],numerics=r['metadata'].get('numerics',{}),comparison=r.get('comparison',{})),indent=2)
+        self.info.setPlainText(base)
 
     def preview_mdff(self):
         try:
@@ -146,6 +167,8 @@ class StageB:
             cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
             reason=material_reason(self.structure)
             if reason:raise ValueError(reason)
+            from .propagation import numerical_info
+            numerical_info(self.structure,s,cfg)
             structure=Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings)
         except Exception as exc:self.error(str(exc));return
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.emcd_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0)
@@ -154,7 +177,9 @@ class StageB:
         if self.worker.isInterruptionRequested():return
         self.emcd_result=result;self.run_outcome='completed'
         for i,view in ((1,self.maps_view),(2,self.eels_view)):
-            self.tabs.setTabEnabled(i,True);view.result=result;view.redraw()
+            self.tabs.setTabEnabled(i,True);view.set_result(result)
+        for i,view in ((5,self.diffraction_view),(6,self.overview_view)):
+            self.tabs.setTabEnabled(i,i==5 or len(result.get('methods',{}))==2);view.set_result(result)
         self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale();self.emcd_ready.emit()
     def emcd_finished(self):
         self.finished();self.emcd_stale()
