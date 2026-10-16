@@ -8,10 +8,21 @@ The **`main` branch now includes the completed Ni [710] and Ni [017] oriented pr
 
 - **Native magnetic spectral samples**, not absolute experimental calibration: L3 **831.271 eV** and L2 **848.698 eV** on the unshifted WIEN2k axis. XAS maxima: 831.421 and 848.752 eV. Earlier 852.7/870 eV nominal reference selections are **not** the native calculated peak energies.
 - **Geometry:** genuine Ni [017] minor-zone axis (approximately 8.13° from the source's cubic-[001] magnetization), target **(200)**, exact paraxial Bragg reference `theta_x=-7.11672544 mrad`, `theta_y=0`. The local magnetization tensor is rotated from cubic [001], rather than reassigned to the electron-beam direction. This is **two-beam-like, not isolated two-beam**: competing diffraction channels can be populated inside the foil.
-- **Mistilt:** `theta_x=theta_Bragg200+delta_x`, `theta_y=delta_y` in local [017] coordinates. X and Y series plus a measured 5×5 grid include **43 unique orientations**, with BW/FFT-multislice angular maps and **individual full virtual-detector EELS** for every case.
-- **Inspect the generated pictures locally:** `outputs/ni_017_high_mistilt_xy/aggregate/emcd_xy_heatmaps.png` (magnetic/even asymmetry and relative detectability); `aggregate/raw_corrected_xy.png` (normalization effects); `scan_y/summary_figures/mirror_symmetry.png` (Y-tilt even-part reversal); and per-case `L3_angular_maps.png` / `virtual_detector_eels.png` (magnetic/even/raw/corrected spectral details). The output directory is local and generally Git-ignored; GitHub stores the code and explanations, not necessarily the calculated figures.
+- **Mistilt:** `theta_x=theta_Bragg200+delta_x`, `theta_y=delta_y` in local [017] coordinates. X and Y series plus a calculated 5×5 grid include **43 unique orientations**, with BW/FFT-multislice angular maps and **individual full virtual-detector EELS** for every case.
+- **Inspect actual simulation previews on GitHub:** the [case-study results gallery](docs/NI_017_CASE_STUDY_GUIDE.md#41-hosted-overview-magnetic-even-and-rawcorrected-contrast) includes XY maps, raw/corrected contrast, the Y-mirror check, and representative angular/EELS figures. Full original images and numerical NPZ files remain local under `outputs/ni_017_high_mistilt_xy/`; the hosted previews do not replace that numerical dataset.
 
 **Limitations:** XMCD-*constrained* effective MDFF (not a full DFT Cartesian complex MDFF), z-independent projected Ni elastic potential, incoming-only depth-integrated ionization and no outgoing channeling, unresolved physical Fourier-potential convergence, uncalibrated absolute cross sections and sample dose. BW–FFT agreement does not establish fully quantitative Ni EMCD. Older `emcd-ni` / [001] / Gaussian examples below remain separate legacy/reference workflows.
+
+### Ni [017] results gallery
+
+Actual saved **200 kV, 30 nm** simulations, losslessly optimized for browsing. Click a preview to enlarge; the [nine-figure guide](docs/NI_017_CASE_STUDY_GUIDE.md#41-hosted-overview-magnetic-even-and-rawcorrected-contrast) explains geometry, components and caveats.
+
+| L3 X/Y survey: BW above FFT multislice | Full EELS at `(0,-25)` mrad Bragg offset |
+| --- | --- |
+| [![Calculated XY-grid magnetic-odd asymmetry, reversal-even imbalance and relative detectability](docs/images/ni017/xy_overview.png)](docs/images/ni017/xy_overview.png) | [![Raw A/B EELS and separate intrinsic, even and corrected EMCD spectra](docs/images/ni017/y_minus25_eels.png)](docs/images/ni017/y_minus25_eels.png) |
+| Magnetic asymmetry, even imbalance and relative shot-noise proxy at calculated points only; no interpolation. Colorbar fractions are not percentages. | Raw contrast combines magnetic-odd and reversal-even terms. Post-edge-corrected contrast contains a scaled magnetic term **and an even residual**, and is not the intrinsic magnetic signal. |
+
+Native L3/L2 samples are **831.271/848.698 eV**, without experimental energy calibration. Larger asymmetry does not guarantee better detectability; potential-cutoff changes can reorder candidate orientations. These are relative model outputs with the limitations stated above, not experimental Ni measurements.
 
 ```powershell
 $env:PYTHONPATH='src'

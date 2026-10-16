@@ -1,0 +1,105 @@
+{
+  "simulation_commit": "cd5b5a9b020d70ee531bf8f91ada0887e86208a2",
+  "processing": "Lossless PNG optimization at native dimensions; original encoding retained when smaller. Decoded RGB pixels unchanged; no simulation or plot regeneration.",
+  "figures": [
+    {
+      "preview": "xy_overview.png",
+      "source": "outputs/ni_017_high_mistilt_xy/aggregate/emcd_xy_heatmaps.png",
+      "dimensions": [
+        1950,
+        1040
+      ],
+      "source_sha256": "0e6b428bdafd81f2bb1b456a21069c24a708e29ea7b680529360fd8087629079",
+      "preview_sha256": "0e6b428bdafd81f2bb1b456a21069c24a708e29ea7b680529360fd8087629079",
+      "bytes": 169158
+    },
+    {
+      "preview": "raw_corrected_xy.png",
+      "source": "outputs/ni_017_high_mistilt_xy/aggregate/raw_corrected_xy.png",
+      "dimensions": [
+        1300,
+        1040
+      ],
+      "source_sha256": "7561c864c89a497b2b3bd1656c501b521cfef9eddc1957c580314b5437f55236",
+      "preview_sha256": "71afe7486f1a2b3cb848980b20e1a6e3ba49c3ea9325191e8f161ccad725aa46",
+      "bytes": 117664
+    },
+    {
+      "preview": "y_mirror_symmetry.png",
+      "source": "outputs/ni_017_high_mistilt_xy/scan_y/summary_figures/mirror_symmetry.png",
+      "dimensions": [
+        1440,
+        960
+      ],
+      "source_sha256": "46762573d7388aa3e389ef94f5cda47be084b922c2e052505c5c2c9517a73aca",
+      "preview_sha256": "b74b497592191dfc73cf3032ec415f786f23ded8ba57f603de3f1df3aa73d06d",
+      "bytes": 128957
+    },
+    {
+      "preview": "reference_l3_angular.png",
+      "source": "outputs/ni_017_high_mistilt_xy/cases/x_p0_y_p0/L3_angular_maps.png",
+      "dimensions": [
+        2100,
+        735
+      ],
+      "source_sha256": "43f2f9816f8815275004d336bec43d3b61ca34bc9f13999f26c86e91f3b745e8",
+      "preview_sha256": "7758dc1c65d60820cfeedca108e547210c9da18e18d524061593ef72a648d596",
+      "bytes": 213174
+    },
+    {
+      "preview": "reference_eels.png",
+      "source": "outputs/ni_017_high_mistilt_xy/cases/x_p0_y_p0/virtual_detector_eels.png",
+      "dimensions": [
+        1540,
+        880
+      ],
+      "source_sha256": "17e2babcc6c951df53123516821d86f452dbcef5a4df6efebb5ef3654c41bc00",
+      "preview_sha256": "84579fc90cfeb9f2c55b0a4ba6fe15fed647dfc8f75a1bd07f6d64d5448dc335",
+      "bytes": 202219
+    },
+    {
+      "preview": "x_minus6_l3_angular.png",
+      "source": "outputs/ni_017_high_mistilt_xy/cases/x_m6_y_p0/L3_angular_maps.png",
+      "dimensions": [
+        2100,
+        735
+      ],
+      "source_sha256": "9260c52ce8921f26fd654f40912fa1f1ace6b0a6d5e6cc3148b38553cb33a513",
+      "preview_sha256": "d120a2de36d6ccc93940b37b1ffbb79b9b732c96257d381ee9b2004a1cb3ea85",
+      "bytes": 218533
+    },
+    {
+      "preview": "x_minus6_eels.png",
+      "source": "outputs/ni_017_high_mistilt_xy/cases/x_m6_y_p0/virtual_detector_eels.png",
+      "dimensions": [
+        1540,
+        880
+      ],
+      "source_sha256": "0f32f5701b428245111295133d20da20017b529b935dcc6ddc80f1f045b5aa3e",
+      "preview_sha256": "2bb0aedfd2bd9c269c0dc1e02e03d1e831ade0f3a2e8118a5767d09e7e093260",
+      "bytes": 199637
+    },
+    {
+      "preview": "y_minus25_l3_angular.png",
+      "source": "outputs/ni_017_high_mistilt_xy/cases/x_p0_y_m25/L3_angular_maps.png",
+      "dimensions": [
+        2100,
+        735
+      ],
+      "source_sha256": "2b8c8814516a387b84967aecade103f62ad4116f8fe68f8b9204de585b5d4c2e",
+      "preview_sha256": "08abc2f4104ed1ab666ea3071dd32cf7105e880173e305aea43ce3190de8dc23",
+      "bytes": 220134
+    },
+    {
+      "preview": "y_minus25_eels.png",
+      "source": "outputs/ni_017_high_mistilt_xy/cases/x_p0_y_m25/virtual_detector_eels.png",
+      "dimensions": [
+        1540,
+        880
+      ],
+      "source_sha256": "7fcad1902e5bf41fc9f6784e1af6a156fa5071f33542935c63feec7628576e4f",
+      "preview_sha256": "218b2be19775f59a09a8b6204883399539d9f03132d11c346ed9d88c7ff623ca",
+      "bytes": 218049
+    }
+  ]
+}

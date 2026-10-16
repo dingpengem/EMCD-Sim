@@ -70,11 +70,11 @@ The existing default numerical study is 200 kV, 30 nm, 27 BW beams at cutoff 3.2
 
 ## 4. What pictures to look at and how to interpret them
 
-The **generated images are under the local working directory** `outputs/ni_017_high_mistilt_xy/`, generally ignored by Git. Their names below are **file paths**, not hosted GitHub images. Recreate them with the plotting workflow in the technical report; the same location contains the underlying numeric NPZ and per-case metadata.
+Selected **actual simulation figures are hosted in the gallery below** under [`docs/images/ni017/`](images/ni017/). The complete original images, numerical NPZ files and per-case metadata remain under the local working directory `outputs/ni_017_high_mistilt_xy/`, generally ignored by Git. The table lists those **local source paths**; it does not link to an uploaded numerical dataset. The hosted previews are losslessly optimized PNGs at their original pixel dimensions, with unchanged decoded RGB pixels. They were copied from existing results without rerunning simulations or regenerating plots. [Preview provenance](images/ni017/manifest.json) records source paths, image checksums and the simulation implementation commit.
 
 | Question | Picture (relative to `outputs/ni_017_high_mistilt_xy/`) | What to look for |
 | --- | --- | --- |
-| How do magnetic and nonmagnetic contrasts vary in the **same** X/Y grid? | **`aggregate/emcd_xy_heatmaps.png`** | Signed magnetic asymmetry, signed nonmagnetic asymmetry, and relative shot-noise proxy on measured 5×5 grid points (not interpolation) |
+| How do magnetic and nonmagnetic contrasts vary in the **same** X/Y grid? | **`aggregate/emcd_xy_heatmaps.png`** | Signed magnetic asymmetry, signed nonmagnetic asymmetry, and relative shot-noise proxy on calculated 5×5 grid points (not interpolation) |
 | Do raw and postedge-corrected contrasts recover the magnetic signal? | **`aggregate/raw_corrected_xy.png`** | Compare corrected and raw asymmetry **against** intrinsic magnetic/even reference; correction is not the reference itself |
 | Where is relative detectability highest? | **`aggregate/detectability_xy.png`** | `abs(D_mag)/sqrt(Sigma_ref)`; relative Poisson-counting proxy, not experimental dose-limited SNR |
 | Are trends numerically reproducible? | **`aggregate/bw_ms_xy.png`** | Matched BW–FFT magnetic map differences, rather than magnetic intensity |
@@ -86,6 +86,56 @@ The **generated images are under the local working directory** `outputs/ni_017_h
 | Which additional beams are activated? | **`cases/x_p0_y_m25/diffraction_pattern.png`** | Real hkl, depth-average vs exit intensity; compare `cases/x_p0_y_p0/diffraction_pattern.png` |
 
 **Starting sequence:** open `aggregate/emcd_xy_heatmaps.png`, then `aggregate/raw_corrected_xy.png`, then the three representative `virtual_detector_eels.png` figures, then `scan_y/summary_figures/mirror_symmetry.png` and the diffraction maps. Read `high_mistilt_summary.csv` and `diffraction_summary.csv` for quantitative labels; do not estimate exact values from pixels. These "pictures" are calculated maps and EELS plots, **not experimental diffraction photos**. An experimental evaluation would require a calibrated diffraction image/4D-STEM tilt map, energy-calibrated EELS, reliable aperture centers, dose/background and thickness information.
+
+### 4.1 Hosted overview: magnetic, even and raw/corrected contrast
+
+All previews below come from the **200 kV, 30 nm, potential-cutoff 2.2 cycles/Å** survey with fixed crystal-[001] magnetization. Coordinates `(delta_x,delta_y)` are **Bragg offsets in mrad**, not absolute incidence angles. The map samples are the native **831.271 eV L3 / 848.698 eV L2** magnetic features; the energy axis has not been experimentally calibrated. Click an image to inspect its original-resolution preview.
+
+![Actual BW and FFT multislice L3 XY maps of intrinsic magnetic asymmetry, reversal-even detector asymmetry and relative shot-noise proxy](images/ni017/xy_overview.png)
+
+**Figure 1 — Intrinsic components and relative detectability.** Columns show `D_mag/Sigma_ref`, `D_nonmag/Sigma_ref` and `abs(D_mag)/sqrt(Sigma_ref)` at L3; BW is above FFT multislice. A colorbar value of 0.02 is **2%**, not 0.02%. Only the 25 calculated XY-grid coordinates are colored; white gaps are not interpolated predictions. The cross marks the exact-(200)-Bragg reference `(0,0)`. The odd signal is defined by **magnetization reversal**, whereas the even signal can be nonzero when detector symmetry is broken. The last column is a relative ideal-counting proxy, not calibrated experimental SNR. Additional 1D/special offsets are not plotted in this grid.
+
+![Actual BW and FFT multislice L3 raw and post-edge-corrected paired-detector asymmetry on the calculated XY grid](images/ni017/raw_corrected_xy.png)
+
+**Figure 2 — Raw versus observed post-edge correction.** Left is `(I_A,+ - I_B,+)/Sigma_ref`; right is `(I_A,+ - alpha*I_B,+)/Sigma_ref`, with alpha obtained independently for each case and method over 878–882 eV. **The two columns use different colorbar ranges**: compare their numerical scales, not color saturation alone. Compare the right column against the intrinsic magnetic column of Figure 1; it is not itself an intrinsic-magnetic reference. Scaling changes both the magnetic contribution and the reversal-even residual, as defined in Section 5.
+
+### 4.2 Y-mirror check of the reversal-even signal
+
+![Independent positive and negative Y-tilt reversal-even detector differences for L3 and L2 with BW and FFT multislice](images/ni017/y_mirror_symmetry.png)
+
+**Figure 3 — Even in magnetization, antisymmetric in Y tilt.** At `delta_x=0`, the plotted curves are `D_nonmag(+delta_y)` and **minus** `D_nonmag(-delta_y)`. Their overlap checks the expected Y-mirror relation in the projected-potential, beta=1 model; these are independently calculated orientations, not symmetrized data. The response is nonmonotonic and changes sign near the largest tilts. This spatial-tilt antisymmetry is distinct from being **even under magnetization reversal**, and must not be imposed on the magnetic response with its fixed cubic magnetization.
+
+### 4.3 Reference `(0,0)`: exact (200) Bragg, not ZA incidence
+
+![Actual L3 BW and FFT multislice intrinsic and paired-detector angular maps at zero Bragg offset](images/ni017/reference_l3_angular.png)
+
+**Figure 4 — Reference L3 angular panels.** Absolute tilt is `(-7.116725,0)` mrad. The six columns are intrinsic magnetic-odd intensity, reversal-even intensity, total `+M` intensity, raw paired difference, corrected paired difference and scaled even residual; rows are BW/MS. Reciprocal axes are **cycles/Å**. The transmitted cross, indexed (200), ZA [017], Thales circle and A/B apertures identify the actual geometry. ZA differs from (000) at this reference. Signed maps retain common comparison scales; weak color is not independently amplified. **Paired-difference maps are A-supported comparisons with reflected B pixels**: white outside that support is masked, not zero contrast over the whole plane. The even intensity map can be strong while its integrated A−B difference is nearly zero.
+
+![Actual full BW and FFT multislice A/B EELS, intrinsic odd and even differences and post-edge-corrected spectra at zero Bragg offset](images/ni017/reference_eels.png)
+
+**Figure 5 — Reference full EELS and normalization artifact.** Left: A/B spectra for both reversal states. Middle: raw, magnetic-odd and reversal-even A−B differences. Right: corrected contrast, the unprocessed intrinsic magnetic signal, its scaled magnetic component and the scaled even residual. Dotted lines mark native L3/L2 samples; shading marks 878–882 eV. Intrinsic even A−B is already at roundoff on `delta_y=0`, so post-edge scaling can **introduce** a residual. Similar-looking corrected and magnetic curves do not establish their equality. The native energy axis and original relative intensity scales are retained.
+
+### 4.4 Horizontal candidate `(-6,0)`: larger absolute magnetic signal
+
+![Actual L3 BW and FFT multislice angular maps at horizontal Bragg offset minus 6 mrad](images/ni017/x_minus6_l3_angular.png)
+
+**Figure 6 — Horizontal mistilt with unchanged apertures.** Absolute tilt is `(-13.116725,0)` mrad, toward the separate (400)-Bragg alignment. These are full multibeam maps, not propagation restricted to 000/200. At the survey cutoff this orientation has the largest **sampled absolute magnetic difference**, while the intrinsic even detector imbalance stays near zero on the Y=0 plane. Panel definitions and color scales match Figure 4; do not confuse that absolute-signal criterion with maximizing magnetic asymmetry or relative detectability.
+
+![Actual full BW and FFT multislice EELS and raw, intrinsic and corrected EMCD spectra at horizontal Bragg offset minus 6 mrad](images/ni017/x_minus6_eels.png)
+
+**Figure 7 — Stronger magnetic EELS on the symmetry plane.** Native L3 and L2 odd differences have opposite signs. BW magnetic asymmetries are approximately **−2.553% / +4.147%**, using the reversal-averaged denominator. The small intrinsic even difference explains why raw and intrinsic magnetic spectra nearly coincide; the right-hand scaling can still introduce an artifact. This candidate's absolute-signal ranking against the vertical candidate below changes with potential cutoff, so it is not a converged global optimum.
+
+### 4.5 Vertical candidate `(0,-25)`: enhancement with even contamination
+
+![Actual L3 BW and FFT multislice angular maps at vertical Bragg offset minus 25 mrad](images/ni017/y_minus25_l3_angular.png)
+
+**Figure 8 — Off-row excitation and broken detector symmetry.** Absolute tilt is `(-7.116725,-25)` mrad. Although `s200` remains zero in the paraxial convention, the wavefield is strongly multibeam and A/B reversal-even intensities are unequal. The fixed apertures and Thales circle have not followed the moving ZA marker. At the survey cutoff this point gives the largest **sampled absolute magnetic asymmetry and relative shot-noise proxy**, rather than the largest absolute magnetic difference. The magnetic asymmetries are approximately **−2.724% / +4.416%** at L3/L2.
+
+![Actual full BW and FFT multislice EELS separating raw contrast, magnetic-odd signal, nonmagnetic-even imbalance and corrected residual at vertical offset minus 25 mrad](images/ni017/y_minus25_eels.png)
+
+**Figure 9 — Correction improves contamination but is not magnetic reversal.** At L3 the BW raw difference contains `D_mag≈−0.005759` plus `D_nonmag≈−0.002490` in relative units. Post-edge scaling reduces this discrepancy in the saved case, but the corrected curve remains the **scaled magnetic term plus an even residual**. The independently fitted alpha values are printed for BW and MS; they were not chosen to force agreement. A finite magnetic post-edge tail and energy-dependent scattering prevent interpreting correction as exact magnetic recovery.
+
+These previews retain the study's limitations: **uncalibrated absolute energies and cross sections, an XMCD-effective rather than complete complex DFT-derived MDFF, no outgoing channeling, and unresolved physical-potential-cutoff convergence**. Section 6 details why close BW/MS agreement does not remove those limitations.
 
 ## 5. Which signals are magnetic and which are nonmagnetic?
 
