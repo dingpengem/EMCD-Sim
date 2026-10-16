@@ -40,7 +40,7 @@ class ElasticFFTResult:
 
 def _projected_ni_potential(
     grid_points: int, acceleration_kv: float, b_factor_angstrom2: float,
-    cutoff_inv_angstrom: float,
+    cutoff_inv_angstrom: float, projected_geometry=None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Return real U(x,y) (nm^-1), hkl indices and reciprocal xy (cycles/Å).
 
@@ -53,16 +53,18 @@ def _projected_ni_potential(
         raise ValueError("potential cutoff must be positive")
     if not np.isfinite(b_factor_angstrom2) or b_factor_angstrom2 < 0:
         raise ValueError("B factor must be finite and nonnegative")
-    crystal = fcc_nickel()
+    crystal = fcc_nickel() if projected_geometry is None else projected_geometry.crystal
     potential = IndependentAtomPotential(crystal, debye_waller_b_angstrom2=b_factor_angstrom2)
-    a = float(crystal.lattice_angstrom[0, 0])
+    a = float(crystal.lattice_angstrom[0, 0]) if projected_geometry is None else projected_geometry.a_angstrom
     fft_indices = np.rint(np.fft.fftfreq(grid_points) * grid_points).astype(int)
     mx, my = np.meshgrid(fft_indices, fft_indices, indexing="ij")
     hkl = np.stack((2*mx, 2*my, np.zeros_like(mx)), axis=-1).reshape(-1, 3)
     g = np.stack((2*mx/a, 2*my/a), axis=-1).reshape(-1, 2)
+    if projected_geometry is not None:
+        hkl,g=projected_geometry.harmonics(grid_points,cutoff_inv_angstrom)
     # Do not let requested potential harmonics reach the Nyquist boundary.
     nyquist_g = (grid_points//2 - 1) * 2/a
-    if cutoff_inv_angstrom >= nyquist_g:
+    if projected_geometry is None and cutoff_inv_angstrom >= nyquist_g:
         raise ValueError("FFT grid too coarse for potential cutoff; increase grid_points")
     fourier = np.zeros((grid_points, grid_points), dtype=complex)
     lam = electron_wavelength_angstrom(acceleration_kv)
@@ -72,6 +74,8 @@ def _projected_ni_potential(
         for j in range(grid_points):
             indices = tuple(int(x) for x in hkl[i*grid_points+j])
             if indices == (0, 0, 0) or np.linalg.norm(g[i*grid_points+j]) > cutoff_inv_angstrom:
+                continue
+            if projected_geometry is not None and not crystal.is_allowed(indices):
                 continue
             fourier[i, j] = prefactor * potential.structure_factor(indices)
     # numpy ifft2 uses +2*pi*i*m*x in real space; inverse transform needs N^2.
@@ -91,6 +95,7 @@ def fft_multislice_ni(
     potential_cutoff_inv_angstrom: float = 2.2,
     b_factor_angstrom2: float = 0.,
     return_amplitudes: bool = False,
+    projected_geometry=None,
 ) -> ElasticFFTResult:
     """Elastic projected-potential FFT multislice on periodic FCC Ni [001].
 
@@ -112,7 +117,7 @@ def fft_multislice_ni(
     if tilt.shape != (2,) or not np.all(np.isfinite(tilt)):
         raise ValueError("tilt_mrad_xy must contain two finite numbers")
 
-    u, hkl, g = _projected_ni_potential(grid_points, acceleration_kv, b_factor_angstrom2, potential_cutoff_inv_angstrom)
+    u, hkl, g = _projected_ni_potential(grid_points, acceleration_kv, b_factor_angstrom2, potential_cutoff_inv_angstrom,projected_geometry)
     lam = electron_wavelength_angstrom(acceleration_kv)
     ki = tilt*1e-3/lam
     d = (-10*np.pi*lam*(np.sum((g+ki)**2, axis=1)-float(ki @ ki))).reshape(grid_points, grid_points)

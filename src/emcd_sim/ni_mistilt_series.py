@@ -142,11 +142,15 @@ def safe_ratio(num,den,floor):
     return float(num/den) if np.isfinite([num,den]).all() and abs(den)>floor else np.nan
 
 
-def calculate_case(source_path,config,offset,energy,selected):
-    model=model_for_offset(config,offset);z=np.linspace(0.,config.thickness_nm,config.depth_steps)
+def calculate_case(source_path,config,offset,energy,selected,*,model_factory=None,
+                   propagator=None,geometry_factory=None,target_key='s200_inv_angstrom'):
+    model=(model_for_offset if model_factory is None else model_factory)(config,offset)
+    record_geometry=geometry_record if geometry_factory is None else geometry_factory
+    propagate=fft_multislice_ni if propagator is None else propagator
+    z=np.linspace(0.,config.thickness_nm,config.depth_steps)
     print(f'offset {offset:+.3f} mrad: independent BW and FFT propagation',flush=True)
     bw=model.elastic.amplitudes(z)
-    fft=fft_multislice_ni(z,acceleration_kv=config.acceleration_kv,
+    fft=propagate(z,acceleration_kv=config.acceleration_kv,
         tilt_mrad_xy=model.elastic.microscope.tilt_mrad_xy,grid_points=config.fft_grid,
         slice_step_nm=config.slice_step_nm,potential_cutoff_inv_angstrom=config.potential_cutoff,
         return_amplitudes=True)
@@ -187,11 +191,11 @@ def calculate_case(source_path,config,offset,energy,selected):
             processed=float(s['D_mag_processed_obs'][0,i]);resid=float(s['D_nonmag_residual_obs'][0,i])
             ap,bp=s['I_A_plus'][i],s['I_B_plus'][i]
             recovery=next(r for r in analysis.comparisons if r['scope']==edge and r['normalization']=='obs')
-            record=geometry_record(config,offset,model)
+            record=record_geometry(config,offset,model)
             za=record['coordinate_markers']['zone_axis_q_cycles_per_angstrom']
             rows.append(dict(delta_x_mrad=float(offset),method=method,edge=edge,energy_ev=selected[edge],
                 theta_x_mrad=record['theta_x_mrad'],theta_y_mrad=record['theta_y_mrad'],
-                total_tilt_mrad=record['total_tilt_mrad'],s200_inv_angstrom=record['s200_inv_angstrom'],
+                total_tilt_mrad=record['total_tilt_mrad'],**{target_key:record[target_key]},
                 za_qx=za[0],za_qy=za[1],I_A_plus=float(ap),I_B_plus=float(bp),Sigma_ref=sigma,
                 magnetic_signal=mag,magnetic_abs=abs(mag),nonmagnetic_signal=nonmag,nonmagnetic_abs=abs(nonmag),
                 raw_difference=float(s['D_raw'][i]),raw_asymmetry=safe_ratio(ap-bp,ap+bp,floor),
@@ -219,7 +223,7 @@ def calculate_case(source_path,config,offset,energy,selected):
         for row in rows:
             if row['edge']==edge:row.update(bw_ms_magnetic_map_l2_abs=error['l2_abs'],
                 bw_ms_magnetic_map_l2_relative=error['l2_relative'])
-    meta=dict(geometry=geometry_record(config,offset,model),normalization=norm_meta,
+    meta=dict(geometry=record_geometry(config,offset,model),normalization=norm_meta,
         coherence_relative_error=float(np.linalg.norm(cs[0]-cs[1])/max(np.linalg.norm(c) for c in cs)),
         coherence_absolute_error=float(np.linalg.norm(cs[0]-cs[1])),fft_norm_error=float(fft.norm_error),
         max_fft_outside_common_basis=float(outside.max()),magnetic_map_discrepancies=discrepancies,
