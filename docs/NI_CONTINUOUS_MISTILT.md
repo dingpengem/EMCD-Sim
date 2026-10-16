@@ -247,3 +247,45 @@ with forward calculations disabled; all nine cases were reused, and saved
 physical arrays remained byte-for-byte unchanged. All 38 earlier results
 also remain byte-for-byte unchanged. `validation_summary.json` records these
 checks, and every generated NPZ was opened with `allow_pickle=False`.
+
+## Individual EELS exports for all nine offsets
+
+Run `python -m emcd_sim.ni_mistilt_eels` after the completed sweep. This is
+an export-only operation: it validates source/configuration/code provenance,
+loads the saved case checkpoints, rechecks normalization and map integration,
+and performs no propagation or tensor contraction. The original aggregate
+spectra and maps remain unchanged.
+
+Each offset has its own `case_m2p0`, `case_m1p5`, ..., `case_0p0_exact_bragg`,
+..., `case_p2p0` directory containing `virtual_detector_eels.png`,
+`virtual_detector_eels.npz`, and `metadata.json`. Each figure has BW/MS rows
+and three columns: original A/B +M spectra; raw/odd/even differences; corrected
+difference versus the unprocessed magnetic reference and even residual.
+The energy axes and column-specific intensity scales are shared across all
+nine cases and both methods. Titles record relative/absolute tilts and s200;
+the actual selected energies and 878–882 eV normalization window are marked.
+
+The per-case NPZ stores both methods on the same complete 243-point energy
+axis: all four original A/B +/-M spectra, N_A/N_B/M_A/M_B, raw differences for
+both states, magnetic/even differences, corrected and processed magnetic/even
+terms, alpha, raw/magnetic/even asymmetries, denominator floors, and matching
+`valid_*` masks. Spectrum arrays have dimensions `[method, energy]`; alpha
+and its validity have dimension `[method]`. Undefined asymmetries remain NaN.
+All arrays load without pickle. Metadata records the physical configuration,
+geometry, normalization integrals, code/source/checkpoint hashes and validation.
+
+Complete individual exports are reused when their provenance and data/figure
+checksums agree. An incomplete case is reconstructed from its existing
+checkpoint; a provenance mismatch is rejected rather than silently replacing
+an existing export. The aggregate `mistilt_eels.npz` remains available.
+
+Additional figures are `L3_emcd_vs_mistilt.png`, `L2_emcd_vs_mistilt.png`,
+`raw_corrected_eels_vs_mistilt.png`, and `eels_mistilt_summary.png`. The first
+two use the established 844–862 / 864–874 eV **requested reference windows on
+the native source axis**, not an inferred energy alignment. Spectral curves
+use a continuous negative-to-positive mistilt color progression; exact Bragg
+is highlighted in black. No individual-peak amplitude scaling or display
+offsets are used. `individual_eels_validation.json` records reconstruction,
+parity, residual identities, undefined counts and preservation checks for
+every offset. Two additional focused tests cover case names, exact raw exports,
+reversal/correction identities, and undefined normalized metrics.
