@@ -2,7 +2,7 @@
 from dataclasses import replace,asdict
 from pathlib import Path
 from datetime import datetime,timezone
-import json,os,uuid
+import json,os,uuid,logging
 import numpy as np
 from PySide6 import QtCore,QtWidgets,QtGui
 from .project_io import load_project,save_project,source_status,sha256,restore_structure,rerun_reason
@@ -12,7 +12,8 @@ from .results import comparison_text
 
 
 def default_workspace():
-    return Path(os.environ.get('EMCD_GUI_WORKSPACE',str(Path(__file__).resolve().parents[3]/'outputs/gui_workspace')))
+    from .runtime import workspace
+    return workspace()
 
 
 class Registry:
@@ -46,7 +47,9 @@ class IOWorker(QtCore.QThread):
             value=self.operation(self.isInterruptionRequested,self.stage.emit)
             if not self.isInterruptionRequested():self.result.emit(value)
         except Cancelled:pass
-        except Exception as exc:self.failed.emit(str(exc))
+        except Exception as exc:
+            logging.getLogger('emcd_sim.gui').exception('Project operation failed')
+            self.failed.emit(str(exc))
 
 
 class ResultsBrowser(QtWidgets.QWidget):

@@ -15,7 +15,9 @@ from ..multislice_emcd_reference import coherence_from_amplitudes
 from ..postedge_emcd_maps import paired_geometry, paired_maps
 from ..xmcd_postedge_normalization import analyze_postedge_spectra
 
-DEFAULT_SOURCE = Path(__file__).resolve().parents[3]/'data/wien2k_ni/Ni_fm.xmcd'
+from .runtime import reference_source, build_info
+
+DEFAULT_SOURCE = reference_source()
 
 
 def inspect_source(path):
@@ -204,10 +206,7 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
     audit=inspect_source(cfg.source) if cfg.model=='xmcd' else None
     if audit and cfg.source_sha256 and audit['sha256']!=cfg.source_sha256:
         raise ValueError('XMCD source changed during calculation; result discarded')
-    try:commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-    except (OSError,subprocess.CalledProcessError):commit='unknown'
-    try:dirty=bool(subprocess.check_output(['git','status','--porcelain'],text=True))
-    except (OSError,subprocess.CalledProcessError):dirty=None
+    build=build_info();commit=build['commit'];dirty=build.get('dirty')
     meta=dict(settings=asdict(settings),mdff=asdict(cfg),structure=structure.description(),frame=R.tolist(),beam_hkl=[list(h) for h in hkl],g=g.tolist(),
         source_audit=audit,energy_ev=energy.tolist(),magnetization_crystal=(np.asarray(cfg.magnetization)/np.linalg.norm(cfg.magnetization)).tolist(),
         magnetization_local=(R@np.asarray(cfg.magnetization)/np.linalg.norm(cfg.magnetization)).tolist(),
@@ -216,7 +215,7 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
         s_target=float(excitation(g[hkl.index(settings.target)],settings.tilt,settings.voltage)),alpha=alpha,correction_reason=correction_reason,pair_reason=pair_reason,
         detector_areas={k:float(w.sum()*(qx[0,1]-qx[0,0])**2) for k,w in r.detector_weights.items()},integration='fractional',dense_estimate_mib=memory,
         solver='Bloch-wave depth-integrated entrance-only localized single ionization',software_commit=commit,software_worktree_dirty=dirty,
-        implementation_sha256={name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest() for name in ('emcd_forward.py','geometry.py','propagation.py')},
+        implementation_sha256=build['implementation_sha256'],
         python=platform.python_version(),numpy=np.__version__,
         intensity_convention=('XMCD-effective; transverse source-maximum normalization; relative scattering units' if cfg.model=='xmcd' else 'Atomic length-gauge A^2/eV tensor; relative scattering units; no absolute cross-section calibration'),
         limitations='Projected IAM; no outgoing/double channeling; XMCD-effective is not full DFT MDFF; atomic non-DFT not quantitative Ni; relative units, no absolute cross section; physical-potential cutoff convergence unresolved.')

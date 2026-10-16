@@ -31,7 +31,9 @@ from .results_browser import ProjectWorkspace
 class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
     preview_ready=QtCore.Signal()
     def __init__(self,workspace=None):
-        super().__init__();self.setWindowTitle('EMCD-Sim Desktop — Stage A: diffraction geometry')
+        super().__init__()
+        from .runtime import LABEL
+        self.setWindowTitle(LABEL)
         self.resize(1550,960);self.structure=Structure.nickel();self.last_result=None;self.worker=None;self.busy=False
         self.history=[];self.detectors=np.zeros((2,2));self.spin={};self.dialogs=[];self.run_outcome=None
         self.splitter=QtWidgets.QSplitter();self.setCentralWidget(self.splitter)
@@ -269,7 +271,10 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             metadata={k:r[k] for k in ('settings','source','source_sha256','structure_description','model')};(root/'metadata.json').write_text(json.dumps(metadata,indent=2)+'\n')
             self.statusBar().showMessage('Saved last completed elastic preview: '+str(root))
         except Exception as exc:self.error(str(exc))
-    def error(self,message):QtWidgets.QMessageBox.warning(self,'EMCD-Sim',message)
+    def error(self,message):
+        import logging
+        logging.getLogger('emcd_sim.gui').warning('%s',message)
+        QtWidgets.QMessageBox.warning(self,'EMCD-Sim',message)
 
 
 def main():
@@ -278,7 +283,16 @@ def main():
     parser.add_argument('--smoke-emcd-screenshot',type=Path,help='Compute and export real default BW EMCD, capture native Qt results')
     parser.add_argument('--smoke-atomic',action='store_true',help='Use the atomic model for EMCD acceptance run')
     parser.add_argument('--smoke-propagation',choices=['bloch','fft-multislice','both'],default='bloch')
-    args=parser.parse_args();app=QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:1])
+    parser.add_argument('--rc-acceptance', type=Path, help='Run real native RC acceptance into a new directory')
+    parser.add_argument('--rc-source', type=Path, help='External audited Ni source for acceptance')
+    parser.add_argument('--rc-reopen', action='store_true', help='Reopen RC projects in a new process without calculations')
+    args=parser.parse_args()
+    from .runtime import configure_logging, LABEL, build_info
+    configure_logging()
+    if args.rc_acceptance:
+        from .rc_acceptance import run
+        return run(args.rc_acceptance, args.rc_source, args.rc_reopen)
+    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:1])
     if not QtGui.QFontDatabase.families():
         # Qt's offscreen Windows plugin may expose no system fonts. Use the
         # font already bundled with Matplotlib, rather than unreadable boxes.
@@ -286,7 +300,10 @@ def main():
         font_id=QtGui.QFontDatabase.addApplicationFont(str(Path(get_data_path())/'fonts/ttf/DejaVuSans.ttf'))
         families=QtGui.QFontDatabase.applicationFontFamilies(font_id)
         if families:app.setFont(QtGui.QFont(families[0],9))
-    window=MainWindow();window.show()
+    window=MainWindow();window.setWindowTitle(LABEL)
+    about=window.menuBar().addMenu('Help').addAction('About / build')
+    about.triggered.connect(lambda:QtWidgets.QMessageBox.information(window,LABEL,json.dumps(build_info(),indent=2)))
+    window.show()
     if args.smoke_screenshot:
         def capture():
             if window.busy:QtCore.QTimer.singleShot(100,capture);return
@@ -300,7 +317,8 @@ def main():
             if window.busy:QtCore.QTimer.singleShot(100,capture_emcd);return
             from .emcd_forward import export_result
             import datetime
-            root=Path('outputs/gui_stage_b' if args.smoke_propagation=='bloch' else 'outputs/gui_stage_c')/('atomic_' if args.smoke_atomic else 'xmcd_')
+            from .runtime import workspace
+            root=(workspace()/'smoke_exports')/('atomic_' if args.smoke_atomic else 'xmcd_')
             root=root.parent/(root.name+datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
             export_result(window.emcd_result,root)
             window.eels_view.maximize();window.tabs.setCurrentIndex(window.tabs.indexOf(window.overview_view) if args.smoke_propagation=='both' else 2)

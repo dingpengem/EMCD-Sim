@@ -1,7 +1,7 @@
 """MDFF, propagation controls and worker lifecycle; calculations live in emcd_forward."""
 from dataclasses import asdict
 from pathlib import Path
-import datetime,json
+import datetime,json,logging
 import numpy as np
 from PySide6 import QtCore,QtWidgets
 from matplotlib.figure import Figure
@@ -19,10 +19,12 @@ class EMCDWorker(QtCore.QThread):
         super().__init__();self.structure=structure;self.settings=settings;self.config=config
     def run(self):
         try:
+            logging.getLogger('emcd_sim.gui').info('Calculate method=%s model=%s source=%s sha256=%s', self.config.propagation, self.config.model, self.config.source, self.config.source_sha256)
             r=calculate(self.structure,self.settings,self.config,self.stage.emit,self.isInterruptionRequested)
             if not self.isInterruptionRequested():self.result.emit(r)
         except Cancelled:pass
         except Exception as exc:
+            logging.getLogger('emcd_sim.gui').exception('Calculation failed')
             if not self.isInterruptionRequested():self.failed.emit(str(exc))
 
 
