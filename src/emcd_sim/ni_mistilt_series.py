@@ -143,7 +143,8 @@ def safe_ratio(num,den,floor):
 
 
 def calculate_case(source_path,config,offset,energy,selected,*,model_factory=None,
-                   propagator=None,geometry_factory=None,target_key='s200_inv_angstrom'):
+                   propagator=None,geometry_factory=None,target_key='s200_inv_angstrom',
+                   tensor_factory=None,edge_windows=None):
     model=(model_for_offset if model_factory is None else model_factory)(config,offset)
     record_geometry=geometry_record if geometry_factory is None else geometry_factory
     propagate=fft_multislice_ni if propagator is None else propagator
@@ -159,9 +160,10 @@ def calculate_case(source_path,config,offset,energy,selected,*,model_factory=Non
     arrays=dict(depth_nm=z,coherence_bw=cs[0],coherence_ms=cs[1],fft_outside_intensity=outside,
         bw_amplitudes=bw,ms_amplitudes_projected=ms,energy_ev=energy,
         selected_energy_ev=np.array([selected[e] for e in EDGES]),method_labels=np.asarray(METHODS))
-    tensors=[effective_tensor_from_xmcd(source_path,energy,eta=sign*config.eta,beta=config.beta) for sign in (1,-1)]
+    make_tensor=effective_tensor_from_xmcd if tensor_factory is None else tensor_factory
+    tensors=[make_tensor(source_path,energy,eta=sign*config.eta,beta=config.beta) for sign in (1,-1)]
     map_energy=np.asarray(sorted(set(selected.values())))
-    mtensors=[effective_tensor_from_xmcd(source_path,map_energy,eta=sign*config.eta,beta=config.beta) for sign in (1,-1)]
+    mtensors=[make_tensor(source_path,map_energy,eta=sign*config.eta,beta=config.beta) for sign in (1,-1)]
     opts=dict(thickness_nm=config.thickness_nm,grid_size=config.detector_grid,
               integration_mode=config.integration_mode,aperture_subpixels=config.aperture_subpixels)
     method_fields=[];spectra=[];rows=[];norm_meta=[]
@@ -169,7 +171,7 @@ def calculate_case(source_path,config,offset,energy,selected,*,model_factory=Non
         print(f'offset {offset:+.3f}: {method}, {len(energy)} energies, +/-M',flush=True)
         rp,rm=[run_tensor_with_coherence(model,t,c,reference_energy_ev=selected['L3'],**opts) for t in tensors]
         analysis=analyze_postedge_spectra(energy,rp.chiral_spectrum('A'),rp.chiral_spectrum('B'),
-            rm.chiral_spectrum('A'),rm.chiral_spectrum('B'),windows=((config.postedge_start_ev,config.postedge_end_ev),))
+            rm.chiral_spectrum('A'),rm.chiral_spectrum('B'),windows=((config.postedge_start_ev,config.postedge_end_ev),),edge_windows=edge_windows)
         s=analysis.spectra;alpha=float(s['alpha_obs'][0]);spectra.append(s);norm_meta.append(analysis.metadata)
         geom=paired_geometry(model,rp.qx_angstrom_inv,rp.qy_angstrom_inv,
                              mode=config.integration_mode,subpixels=config.aperture_subpixels)

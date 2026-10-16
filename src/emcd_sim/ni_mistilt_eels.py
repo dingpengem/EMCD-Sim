@@ -20,12 +20,12 @@ def case_name(offset):
     return 'case_'+('m' if offset<0 else 'p')+value.replace('.','p')
 
 
-def prepare_spectra(data,cfg):
+def prepare_spectra(data,cfg,*,edge_windows=None):
     energy=data['energy_ev'];methods=[];checks=[]
     for method in range(2):
         a,b,c,d=[data['spectra__'+k][method] for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')]
         analysis=analyze_postedge_spectra(energy,a,b,c,d,
-            windows=((cfg.postedge_start_ev,cfg.postedge_end_ev),))
+            windows=((cfg.postedge_start_ev,cfg.postedge_end_ev),),edge_windows=edge_windows)
         s=analysis.spectra
         keys=('I_A_plus','I_B_plus','I_A_minus','I_B_minus','N_A','N_B','M_A','M_B',
               'D_raw','D_mag','D_nonmag','Sigma_ref','D_corrected','D_mag_processed_obs','D_nonmag_residual_obs')
