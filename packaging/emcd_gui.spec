@@ -31,7 +31,8 @@ for package in ('numpy','scipy','matplotlib','ase','PySide6','PySide6_Essentials
             if p.is_file():licenses.append((str(p),'licenses/'+package+'/'+str(entry.parent).split('.dist-info/',1)[-1]))
 a = Analysis([str(root/'packaging/launcher.py')], pathex=[str(root/'src')],
     binaries=runtime_binaries,
-    datas=[(str(reference),'data/wien2k_ni'), (str(stage/'build_info.json'),'.'), (str(root/'LICENSE'),'.')]+licenses,
+    datas=[(str(reference),'data/wien2k_ni'), (str(stage/'build_info.json'),'.'), (str(root/'LICENSE'),'.'),
+           (str(distribution('ase').locate_file('ase/spacegroup/spacegroup.dat')),'ase/spacegroup')]+licenses,
     hiddenimports=['matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg','ase.io.cif','ase.io.jsonio','ase.io.extxyz'],
     hooksconfig={'matplotlib': {'backends': ['Agg', 'QtAgg', 'svg']}},
     excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow'], noarchive=False)
