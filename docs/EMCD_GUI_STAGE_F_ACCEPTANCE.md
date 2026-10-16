@@ -56,3 +56,35 @@ numerical discrepancy definitions were changed. Absolute calibration,
 incomplete DFT-derived MDFF, outgoing channeling and potential-cutoff
 convergence limitations remain. This is development-machine acceptance,
 not an independent clean-Windows-machine or signing certification.
+
+
+## Stage F standalone candidate
+
+The completed candidate is labeled **EMCD-Sim GUI Stage F RC (unreleased)**,
+built from `618789717303cbea246cdb0fbccfe6a44040ecb7`. Every bundled GUI source
+hash matches that commit. Build metadata reports a dirty workspace because
+pre-existing user data/scripts remain; those files were not staged or bundled.
+Only the repository-tracked Ni example was packaged.
+
+- Executable: `build/windows-stage-f/dist/EMCD-Sim/EMCD-Sim.exe`
+- Archive: `build/windows-stage-f/EMCD-Sim-Stage-F-Windows-RC.zip`
+- ZIP SHA256: `523cc3a087a92b4dc7aa790daeefca3399dbe35d0974ad78c7cbb4913cda9ca8`
+- ZIP size: 108,541,536 bytes; 608 application files; archive CRC verified.
+
+An initial packaging attempt was stopped before producing an executable to
+correct Raw-display scalar export reference labels. The completed executable
+was built once from the corrected source. A transient Windows runtime-file
+lock interrupted PowerShell ZIP compression; the completed folder was then
+archived and CRC-checked with Python, without rebuilding the executable.
+
+
+Frozen native acceptance **passed** after extraction to
+`C:/EMCD-Sim-RC-Test/stage-f-rc-20261016/`, launched from Windows System32 with
+Python/Conda environment paths cleared. It reopened copied exact-Bragg and
++1 mrad X-mistilt projects and exercised the same percentage displays,
+PNG/SVG/CSV/NPZ exports and saved-run comparison. All original arrays matched
+the source acceptance fingerprints exactly; project files were unchanged;
+all nine guarded forward entry points recorded zero calls. The actual native
+frozen screenshot was visually inspected. Reports are local in that folder's
+`validation/`, with a report copy at `outputs/gui_stage_f/standalone_acceptance.json`.
+This does not replace independent clean-machine or other-DPI testing.
