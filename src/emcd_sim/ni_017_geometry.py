@@ -38,10 +38,10 @@ class Ni017Geometry(Ni710Geometry):
     def bragg_tilt(self,kv=200.):
         return -500*electron_wavelength_angstrom(kv)*np.linalg.norm(self.crystal.g_vector((2,0,0)))
 
-    def model(self,offset=0.,*,kv=200.,beam_cutoff=3.2,potential_cutoff=2.2,ideal=False):
+    def model(self,offset=0.,*,y_offset=0.,kv=200.,beam_cutoff=3.2,potential_cutoff=2.2,ideal=False):
         crystal=self.crystal;beams=BeamSet(((0,0,0),(2,0,0))) if ideal else self.beams(beam_cutoff)
         p=FourierCutoffPotential(IndependentAtomPotential(crystal),potential_cutoff)
-        elastic=PhysicalElasticModel(crystal,Microscope(kv,(self.bragg_tilt(kv)+offset,0.)),beams,p)
+        elastic=PhysicalElasticModel(crystal,Microscope(kv,(self.bragg_tilt(kv)+offset,y_offset)),beams,p)
         g=crystal.g_vector((2,0,0))[0]
         detectors={k:VirtualDetector((g/2,s*g/2),.16*g) for k,s in (('A',1),('B',-1))}
         return replace(nickel_physical_benchmark(),elastic=elastic,detectors=detectors,chiral_groups=None)
