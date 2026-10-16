@@ -1,11 +1,19 @@
-# EMCD-Sim desktop GUI - Stage C
+# EMCD-Sim desktop GUI - Stage D
 
-Stage C adds independent **FFT multislice incoming-wave EMCD/EELS** and
-**Both (BW/MS comparison)** to the existing Stage A/B application. Both
-XMCD-constrained and non-DFT atomic Ni MDFF models are supported. The default
-remains Bloch-wave. FFT support is gated to the verified FCC Ni [017] projected
-geometry. Full history/reopening remains Stage D. Package version 0.4.5 and
-existing CLI workflows are unchanged.
+The desktop is now a **persistent scientific workspace**: save complete
+projects, reopen numerical results without recomputation, browse previous runs,
+compare saved conditions and restore inputs for an explicit new calculation.
+Stage A-C geometry, MDFF and independent BW/FFT physics are retained. Package
+version remains 0.4.5; no installer or executable packaging is added.
+
+![Actual Windows Results Browser and saved two-tilt comparison](images/gui/stage_d_windows.png)
+
+The screenshot shows three registered real projects and an L3 magnetic
+comparison between the exact-Bragg reference and a +1 mrad x mistilt. Each
+physical panel uses its saved ZA, target and detectors; the difference panel
+also distinguishes the second ZA. The following Stage A-C material retains
+its milestone screenshots and numerical reports. The final Stage D section
+explains current project/browser/comparison workflows.
 
 ![Actual native Windows BW/MS comparison](images/gui/stage_c_windows.png)
 
@@ -181,8 +189,8 @@ depths [0,t], complex amplitudes, exit intensities and orientation matrix;
 it loads with allow_pickle=False. JSON records the computed input snapshot,
 source hash/description and elastic-model scope. Plot export and result export
 are separate so a changed current geometry cannot be silently saved as the
-last calculation's image. Full result reopening, registered-result browser,
-CIF export and complete EMCD run packages belong to Stage D.
+last calculation's image. Stage D adds complete project saving/reopening,
+a registered-results browser and an exported numeric crystal/CIF snapshot.
 
 ## Validation and next milestones
 
@@ -204,8 +212,8 @@ inspected but is not that desktop application; no code was copied from it.
 This standalone interface follows the requested left-input / center-viewer /
 right-results organization, with no QCBED dependency.
 
-Stages B and C are implemented. Stage D full save/reopen and result
-registration are not enabled.
+Stages A-D are implemented. Current project/browser controls are described
+in the Stage D section below; no installer or new scattering model is included.
 
 The EMCD GUI retains projected IAM, entrance-only ionization,
 XMCD-effective rather than complete DFT-derived MDFF, no outgoing channeling,
@@ -343,8 +351,9 @@ audit, atomic parameters, native energy grid, R, cubic/local M, reversal,
 actual tilt, target excitation error, hkl, detector positions/areas,
 wavelength/ZA/000, thickness, cutoffs, sampling, solver, software commit,
 worktree state and adapter hashes. Plots use the completed snapshot even
-after live input edits. This is explicit export, without Stage D reopening
-or a result database. Previous elastic/[017] output files are preserved.
+after live input edits. These Stage B explicit exports remain supported;
+Stage D projects add a manifest, numeric structure and reopening. Previous
+elastic/[017] output files are preserved.
 
 Focused validation on Windows in `emcd-python`:
 
@@ -513,7 +522,8 @@ and complex-wave diagnostic arrays. All NPZs load without pickle. Comparison
 JSON records the schema, actual solver settings, source/model/geometry provenance
 and signed edge metrics. Primary and per-method outputs are unambiguous;
 Both-mode physical map PNGs use shared color limits. Exports are explicit new
-folders, without a Stage D database, reopen browser or installer.
+folders. Stage D adds manifest-based projects and a path-index browser;
+there is no database or installer.
 
 Focused checks and native Windows milestone:
 
@@ -599,3 +609,205 @@ completed numerical results. Layout-only recapture uses the saved arrays;
 it does not rerun or change scattering calculations. All previous [017]
 results are preserved. These discrepancies characterize matched numerical
 methods at the stated potential cutoff, not a new physical convergence claim.
+
+## Stage D: persistent projects and Results Browser
+
+The File menu now provides **New**, **Open Project**, **Save Project** and
+**Save Project As**; Save/Open are also visible in the main toolbar. The left
+parameter panel is **Current Inputs**. The right tabs show the **Selected
+Completed Result**. Merely selecting a browser result never changes the input
+controls and never launches a solver. When they differ, the viewer says
+“Viewing saved result — current inputs differ.” All plotted overlays remain
+bound to the saved result, including its actual tilt and ZA.
+
+**Save Project** saves the selected completed result, not the currently edited
+inputs. Save As chooses a new named folder. Replacing an existing EMCD project
+requires explicit approval through Save As; ordinary Save updates that selected
+project. An unrelated existing folder or legacy validation folder cannot be
+replaced as a project. The data are written to a temporary sibling directory,
+checksummed, loaded for validation, then installed. An interrupted/failed save
+before installation leaves the prior project untouched; a failed final rename
+restores the old project. User notes and figure attachments in an updated
+project are preserved; linked attachments require saving to a new folder.
+Short Windows sharing/access errors receive bounded
+retries; persistent errors remain failures. A cancelled operation does not
+register an incomplete project.
+
+Project schema **1** extends the Stage C JSON/NPZ conventions:
+
+```text
+project.json                     # version, completeness, checksums, shapes/units
+structure.json                   # original Cartesian cell/species/fractional sites
+structure.cif                    # reconstructed actual structure, when available
+input_parameters.json
+metadata.json
+comparison_metadata.json
+validity.json
+angular_maps.npz
+virtual_detector_eels.npz
+diffraction_pattern.npz
+```
+
+The numeric snapshot includes species, lattice vectors, fractional coordinates,
+pbc, supported occupancies, original source/hash and import warnings. It is not
+just a material name or a link to a CIF. JSON retains R, hkl, reciprocal vectors,
+absolute tilt, target, voltage, wavelength/ZA/000, detectors, tensor/reversal and
+MDFF controls, physical cutoffs, propagation sampling, software provenance and
+BW/MS diagnostics. Diffraction NPZ adds the full excitation-error array and
+saved frame/ZA positions. `validity.json` explicitly records available fields,
+valid correction/pairing and defined/undefined scalar metrics.
+
+Maps, EELS, complex coherences and amplitudes retain exact NumPy values.
+`method_labels`, `method__field` and `method__edge__field` preserve the Stage C
+explicit method convention. Maps are (qy,qx), spectra (energy), amplitudes
+(depth,ordered beam); the common primary-method view is reconstructed in memory.
+Project files store each method's scientific arrays once, without duplicated
+unprefixed primary arrays or full energy-resolved angular cubes. All NPZs use
+`allow_pickle=False`. Shapes/dtypes and SHA256 file checksums are checked on
+open. JSON/NPZ data are authoritative; figures can be regenerated from those
+stored values without recomputing scattering. No pickle, SQLite, server or
+project revision database is used.
+
+Open Project reads/validates the manifest and arrays in a background QThread,
+then reconstructs lightweight **saved plotting geometry** from stored R/hkl/g,
+ZA and apertures. It does not construct a new physical potential, call an MDFF
+forward model, diagonalize a BW Hamiltonian or propagate FFT waves. The original
+XMCD/CIF is not needed for viewing completed data. Corrupt/missing required
+files or unsupported schema versions produce an error while preserving the
+previous selected result. Cancellation is cooperative between file stages;
+an active compressed-array read/write finishes before interruption is handled.
+
+### Browser, source relocation and restoring inputs
+
+The dockable/collapsible **Results Browser** lists name, Los Angeles date/time,
+material, zone, target, tilt X/Y, thickness, MDFF, propagation and status.
+Use the filter to match material/zone/model/method/name and click column headers
+to sort; numerical thickness/tilt columns sort numerically. Completed runs
+register automatically in the session. Saved project registrations persist in
+a lightweight JSON index. Unsaved session results remain in memory and must
+be saved before closing if they are needed later.
+
+- Select a single row to view its stored result; **View Selected** and double
+  click also open it. Multi-select rows for **Compare Selected**.
+- **Open Folder** opens its directory; **Details** shows immutable scientific
+  provenance, external source status and import limitations.
+- **Rename** changes the display name in the browser index only; it does not
+  alter scientific data, project checksums or model parameters.
+- **Remove From Browser** removes the registration, never project files.
+- Missing project paths remain listed as unavailable. **Locate Project**
+  reconnects an accessible project after validation rather than dropping it.
+- **Clear Current Selection** hides the selected result without deleting its
+  registration. **Restore Default Layout** restores the three main areas and
+  browser; maximize/pan/zoom remain available. A QSettings INI stores window,
+  splitter and dock preferences separately from physical metadata.
+
+The default workspace index and UI preferences are local to the repository at
+`outputs/gui_workspace/results_index.json` and `ui.ini`. Set
+`EMCD_GUI_WORKSPACE` to use another workspace directory. This index contains
+paths, display names and optional verified source relocations, not a second
+copy of the numerical results.
+
+If the original XMCD/CIF is absent or changed, completed numerical data remain
+available. Details retains its original path and SHA256. **Locate Original
+Source** accepts only a hash-matching file; the same filename is insufficient.
+The new location is a workspace override, preserving original scientific
+provenance. **Use These Settings** restores the numeric crystal, geometry,
+detectors, MDFF and numerical controls, without starting a calculation. A
+missing/mismatched source disables a rerun until it is reconnected and verified.
+The user must click **Run EMCD / EELS** explicitly. Atomic calculations do not
+require the unused XMCD file; their numeric crystal and model parameters are
+self-contained unless original CIF provenance requires reconnection.
+
+**Import Existing Result** supports the existing Stage B/C exports read-only.
+It retains their methods, arrays and available plotting context without changing
+any old file. No manifest means no original integrity guarantee. A missing
+numeric crystal snapshot is reported; the importer does not invent a cell or
+claim full reproducibility. Such data remain viewable/comparable but **Use
+These Settings** and rerun are unavailable. They may be archived to a new
+project with those limitations preserved; this does not recreate missing
+provenance. Earlier Stage A elastic previews retain their existing separate
+export format and are not interpreted as full EMCD projects.
+
+### Scientific comparison and publication exports
+
+Select two or more completed rows and **Compare Selected Results**. For each
+run, choose its stored BW or MS method. The comparison uses the first two runs
+for side-by-side maps plus Result 1−Result 2; spectra and the signed metric table
+include all selected runs. Choose L3/L2, magnetic odd, nonmagnetic even, total,
+raw or corrected paired maps. Physical panels share actual signed color limits;
+the difference uses a zero-centered diverging scale. Full names and physical
+identities stay in selectors, spectral legends and exported metadata. Each
+physical panel uses its own saved ZA and diffraction/detector context; the
+common-coordinate difference distinguishes both ZA positions.
+
+Before pointwise subtraction the code checks the actual qx/qy coordinates,
+selected native energy, Cartesian frame, intensity normalization/source hash,
+magnetization axis/reversal/sign convention and field availability. Paired
+fields also require compatible physical supports/integration; corrected maps
+require the same normalization-window definition. Equal array shapes alone are
+not sufficient. Incompatible grids/energies/models still allow side-by-side
+viewing, with a reason that direct subtraction is disabled. There is no silent
+spatial interpolation, energy shift, sign adjustment or matching factor.
+
+EELS overlays preserve each original native energy axis and intensity. Select
+A/B +M, magnetic odd, even, raw or corrected A−B; choose full/L3/L2 view. Run
+line styles and labels retain tilt, thickness, MDFF and method. Cross-model
+atomic/XMCD overlays are explicitly **qualitative**, with different native
+relative scales; no unqualified absolute intensity difference or ratio is
+presented. The scalar tab retains signed values and `undefined` denominators.
+It shows A_mag/A_nonmag using Sigma_ref, raw asymmetry using the +M detector sum,
+corrected D/Sigma_ref, alpha and the relative detectability proxy
+`|D_mag|/sqrt(Sigma_ref)`. The latter is not a calibrated SNR, dose estimate or
+cross-model ratio. Applicable BW/MS coherence diagnostics remain separate.
+Corrected contrast remains processed magnetic plus residual even contamination.
+
+Use **Export Current Figure**, the Matplotlib toolbar or comparison export to
+save the displayed scientific plot as **300 dpi PNG or SVG**, without rerunning
+physics. Comparison figure exports preserve shared scales, run labels, indexing
+and both saved ZA positions. **Export Selected NPZ/CSV** or the comparison's
+**Export NPZ/CSV** writes untouched original spectra/maps, per-run spectra CSV,
+a signed scalar CSV and provenance JSON to a new directory. No display offsets
+or per-run peak normalization are written over the original spectra. In smaller
+windows scroll the scientific figure or collapse the browser/maximize results;
+the full PNG/SVG export includes the entire maps/EELS figure.
+
+### Stage D validation and limits
+
+All **39 focused GUI tests pass** (Stage A-C: 25, Stage D: 14). Stage D
+checks use compact **real** BW/MS XMCD and atomic fixtures reused across tests. Round trips cover BW-only, MS-only, Both and atomic; arrays and complex
+phases are identical after serialization. Checks cover missing external XMCD
+and CIF, hash-verified reconnection, corruption/schema detection, save failure,
+rollback/cancellation, persistent rename/remove/missing registrations, input
+separation/restoration, compatible/incompatible map comparison, unchanged EELS
+values, legacy read-only import and forward-solver guards. Stage A-C interaction
+and numerical tests remain in the focused GUI suite.
+
+```powershell
+python -m unittest discover -s tests -p 'test_gui_stage_*.py'
+# Native Windows acceptance in two separate processes:
+python scripts/gui_stage_d_validation.py --phase calculate --output outputs/gui_stage_d/windows_20261016
+python scripts/gui_stage_d_validation.py --phase reopen --output outputs/gui_stage_d/windows_20261016
+```
+
+Use a fresh output folder for another calculation-phase acceptance run. The
+reopen phase can be repeated on the saved projects without simulation. The
+milestone saved default Ni [017], 200 kV, 30 nm, native XMCD Both; a +1 mrad x
+mistilt Both case; and a default atomic MS-only case. After closing/relaunching,
+**three projects** remained registered and **two tilt cases** were compared.
+Every saved map/spectral/coherence/amplitude fingerprint matched the original.
+BW/FFT/MDFF forward calls were blocked during reopen, comparison and settings
+restoration. The reference/mistilt ZA qx values were respectively
+**0.28376844495** and **0.24389498807 cycles/angstrom** (qy=0). PNG/SVG comparison
+exports and the actual Windows screenshot succeeded. Detailed reports are at
+`outputs/gui_stage_d/windows_20261016/acceptance.json` and
+`calculated_fingerprints.json`. The Stage D reference also matches the prior
+Stage C BW/MS spectra, amplitudes and coherences bit-for-bit. A preservation
+manifest verified **827 prior Stage B/C and Ni-study files unchanged**.
+
+Stage D does not change scattering physics. Projected IAM, entrance-only
+depth-integrated single ionization, no outgoing/double channeling or atom-layer
+3D propagation, incomplete complex DFT MDFF, approximate XMCD conventions,
+nonquantitative atomic Ni, uncalibrated absolute cross sections/dose and unresolved
+physical Fourier-potential cutoff convergence remain. Browser persistence and
+visually good comparisons do not add physical validation. No installer,
+Windows executable packaging, new DFT calculation or new solver is included.

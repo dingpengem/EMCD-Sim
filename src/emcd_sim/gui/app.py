@@ -25,11 +25,12 @@ class PreviewWorker(QtCore.QThread):
 
 
 from .stage_b import StageB
+from .results_browser import ProjectWorkspace
 
 
-class MainWindow(StageB,QtWidgets.QMainWindow):
+class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
     preview_ready=QtCore.Signal()
-    def __init__(self):
+    def __init__(self,workspace=None):
         super().__init__();self.setWindowTitle('EMCD-Sim Desktop — Stage A: diffraction geometry')
         self.resize(1550,960);self.structure=Structure.nickel();self.last_result=None;self.worker=None;self.busy=False
         self.history=[];self.detectors=np.zeros((2,2));self.spin={};self.dialogs=[];self.run_outcome=None
@@ -94,7 +95,7 @@ class MainWindow(StageB,QtWidgets.QMainWindow):
         self.splitter.addWidget(self.tabs);self.splitter.setSizes([340,820,390]);self.saved_sizes=None
         self.canvas.mpl_connect('button_press_event',self.clicked)
         self.zone.returnPressed.connect(self.apply_orientation);self.target.returnPressed.connect(self.apply_orientation)
-        self.sync_za();self.restore_detectors();self.refresh();self.setup_stage_b()
+        self.sync_za();self.restore_detectors();self.refresh();self.setup_stage_b();self.setup_stage_d(workspace)
 
     def section(self,title,expanded=True):
         group=QtWidgets.QGroupBox(title);group.setCheckable(True);group.setChecked(expanded);body=QtWidgets.QWidget();self.form=QtWidgets.QFormLayout(body)
@@ -249,6 +250,7 @@ class MainWindow(StageB,QtWidgets.QMainWindow):
         if self.worker:self.worker.requestInterruption();self.statusBar().showMessage('Cancellation requested; waiting for the current numerical stage to finish…')
     def closeEvent(self,event):
         if self.busy:self.cancel();event.ignore();return
+        self.store_ui_preferences()
         super().closeEvent(event)
     def maximize_view(self):
         if self.saved_sizes is None:self.saved_sizes=self.splitter.sizes();self.splitter.setSizes([0,sum(self.saved_sizes),0])

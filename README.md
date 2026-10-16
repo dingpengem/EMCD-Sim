@@ -1,15 +1,14 @@
 # EMCD-Sim
 
-## Desktop GUI development: Stage C
+## Desktop GUI development: Stage D
 
-The optional Windows PySide6 interface preserves ASE CIF inspection, indexed
-Ni diffraction, reflection selection, Bragg alignment and projected-ZA/tilt
-controls. It now calculates **Bloch-wave, FFT Multislice or Both** for the
-verified Ni [017] projected geometry, with XMCD-constrained or non-DFT atomic
-MDFF, magnetic/even maps, full A/B EELS, numerical diagnostics and explicit
-exports. Other supported Ni orientations retain Bloch-wave; general-orientation
-FFT and full result reopening are not offered.
-See [GUI setup, actual Windows comparison and limits](docs/EMCD_GUI.md).
+The Windows PySide6 interface now supports **complete project save/open,
+a persistent Results Browser and comparison of saved EMCD maps/EELS** without
+rerunning the solver. Use saved settings to prepare a new explicit calculation,
+and export PNG/SVG figures plus NPZ/CSV data. Source files may be absent when
+viewing completed data; reruns require verified provenance. The existing
+XMCD/atomic MDFF and BW/verified Ni [017] FFT calculations are preserved.
+See [GUI guide, project format, actual Windows screenshot and scientific limits](docs/EMCD_GUI.md).
 
 ```powershell
 conda activate emcd-python

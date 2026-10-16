@@ -156,6 +156,9 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
     # contain the enclosing collection, avoiding recursive/ambiguous dimensions.
     result=dict(primary,methods=methods,comparison=comparison,fft=fft_info)
     result['metadata']=dict(primary['metadata'],method_labels=list(methods),comparison=comparison)
+    from .project_io import structure_snapshot
+    result['structure_snapshot']=structure_snapshot(structure)
+    for r in methods.values():r['structure_snapshot']=result['structure_snapshot']
     stage('Preparing result visualizations')
     return result
 
@@ -215,6 +218,7 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
         solver='Bloch-wave depth-integrated entrance-only localized single ionization',software_commit=commit,software_worktree_dirty=dirty,
         implementation_sha256={name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest() for name in ('emcd_forward.py','geometry.py','propagation.py')},
         python=platform.python_version(),numpy=np.__version__,
+        intensity_convention=('XMCD-effective; transverse source-maximum normalization; relative scattering units' if cfg.model=='xmcd' else 'Atomic length-gauge A^2/eV tensor; relative scattering units; no absolute cross-section calibration'),
         limitations='Projected IAM; no outgoing/double channeling; XMCD-effective is not full DFT MDFF; atomic non-DFT not quantitative Ni; relative units, no absolute cross section; physical-potential cutoff convergence unresolved.')
     stage('Preparing result visualizations')
     return dict(metadata=meta,model=model,settings=settings,config=cfg,maps=maps,spectra=spectra,qx=qx,qy=qy,weights=r.detector_weights,coherence=C,depth_nm=z,amplitudes=psi)

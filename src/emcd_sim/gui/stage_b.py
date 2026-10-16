@@ -118,7 +118,7 @@ class StageB:
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
 
     def emcd_stale(self,*_):
-        if not hasattr(self,'emcd_button'):return
+        if not hasattr(self,'emcd_button') or getattr(self,'_restoring',False):return
         reason=material_reason(self.structure);cfg=None;info=None
         try:
             cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
@@ -128,11 +128,21 @@ class StageB:
             info=numerical_info(self.structure,s,cfg)
             self.memory_label.setText(f"{info['bw_beams']} common BW beams; {info['fft_harmonics']} FFT harmonics ({info['potential_nonzero_harmonics']} nonzero potential).\nSingle pair {info['single_complex_pair_mib']:.1f} MiB; dense working {info['dense_working_estimate_mib']:.1f} / 512 MiB; estimated arrays {info['estimated_working_mib']:.1f} MiB. Not total peak process memory.")
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
-            fresh=self.emcd_result is not None and self.emcd_result['settings']==s and self.emcd_result['config']==cfg and self.emcd_result['metadata']['structure']==self.structure.description()
+            structure_matches=self.emcd_result is not None and self.emcd_result['metadata']['structure']==self.structure.description()
+            if self.emcd_result and self.emcd_result.get('structure_snapshot'):
+                from .project_io import structures_match
+                structure_matches=structures_match(self.emcd_result['structure_snapshot'],self.structure)
+            config_matches=self.emcd_result is not None and self.emcd_result['config']==cfg
+            if self.emcd_result and cfg.model==self.emcd_result['config'].model=='atomic':
+                old=asdict(self.emcd_result['config']);new=asdict(cfg)
+                for key in ('source','source_sha256'):old.pop(key);new.pop(key)
+                config_matches=old==new
+            fresh=self.emcd_result is not None and self.emcd_result['settings']==s and config_matches and structure_matches
+            reason=reason or self.input_source_reason()
         except Exception as exc:reason=reason or str(exc);fresh=False
         self.emcd_button.setEnabled(not reason and not self.busy);self.emcd_button.setToolTip(reason or 'Run the selected incoming-wave propagation and shared EMCD/EELS contraction')
         if self.emcd_result:
-            text='Completed-run geometry and spectra; inputs match.' if fresh else 'STALE RESULT — current inputs differ. Showing saved completed-run geometry and spectra.'
+            text='Completed-run geometry and spectra; inputs match.' if fresh else 'STALE RESULT — Viewing saved result — current inputs differ. Showing completed-run geometry and spectra.'
             for view in (self.maps_view,self.eels_view,self.diffraction_view,self.overview_view):view.label.setText(text)
         current_marker='\n\nCurrent EMCD propagation:';saved_marker='\n\nCompleted EMCD run (snapshot):'
         base=self.info.toPlainText().split(current_marker)[0].split(saved_marker)[0]
@@ -166,6 +176,7 @@ class StageB:
         try:
             cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
             reason=material_reason(self.structure)
+            reason=reason or self.input_source_reason()
             if reason:raise ValueError(reason)
             from .propagation import numerical_info
             numerical_info(self.structure,s,cfg)
@@ -176,6 +187,7 @@ class StageB:
     def emcd_completed(self,result):
         if self.worker.isInterruptionRequested():return
         self.emcd_result=result;self.run_outcome='completed'
+        self.register_completed(result)
         for i,view in ((1,self.maps_view),(2,self.eels_view)):
             self.tabs.setTabEnabled(i,True);view.set_result(result)
         for i,view in ((5,self.diffraction_view),(6,self.overview_view)):
