@@ -1,5 +1,9 @@
 # Ni [017] exact-(200)-Bragg thickness study
 
+Follow-up: [PRB geometry, aperture and depth validation](NI_PRB2007_GEOMETRY_VALIDATION.md)
+adds an explicit [001] systematic-row comparison and documents why atomic-3D
+scattering remains unavailable in the current P1 implementation.
+
 Completed 51 requested thicknesses, 0 through 100 nm in 2 nm steps, with
 Bloch-wave and FFT multislice entrance channeling. Results are in
 `outputs/ni_017_thickness_0_100nm/` (generated data are kept locally).
