@@ -1,4 +1,4 @@
-﻿"""Independent FFT split-step double-channeling, projected Ni [001] IAM.
+"""Independent FFT split-step double-channeling, projected Ni [001] IAM.
 
 No elastic eigenmode decomposition. Coefficients use fft(wave)/N, where N is
 number of spatial samples; q in cycles/angstrom, H in radians/nm. Complex
@@ -7,7 +7,7 @@ Cartesian responses retain the full dipole MDFF, on the BW relative scale.
 from dataclasses import dataclass
 import numpy as np
 from .geometry import electron_wavelength_angstrom, characteristic_qz_angstrom_inv
-from .double_channeling import dipole_kernel
+from .double_channeling import dipole_kernel,equivalent_site_phases
 from .gui.memory_budget import reserve_memory
 
 
@@ -102,28 +102,35 @@ class ProjectedNiFFT:
     reduction: bool
 
     @classmethod
-    def build(cls,elastic,*,grid_points=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False):
+    def build(cls,elastic,*,grid_points=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,projected_geometry=None):
         if not isinstance(grid_points,int) or grid_points<12 or grid_points%2:
             raise ValueError('Even FFT grid >=12 required')
         if not np.isfinite(potential_cutoff) or potential_cutoff<=0:
             raise ValueError('Positive potential cutoff required')
         crystal=elastic.crystal
         a=crystal.lattice_angstrom[0,0]
-        if not np.allclose(crystal.lattice_angstrom,np.eye(3)*a,atol=1e-12) or not all(s=='Ni' for s in crystal.species):
+        if projected_geometry is None and (not np.allclose(crystal.lattice_angstrom,np.eye(3)*a,atol=1e-12) or not all(s=='Ni' for s in crystal.species)):
             raise ValueError('Projected FFT currently requires cubic Ni [001] frame')
         if row_reduction and not systematic_row:
             raise ValueError('1D reduction requires explicit (200) systematic-row potential')
-        if potential_cutoff >= (grid_points//2-1)*2/a:
+        if projected_geometry is not None:
+            if systematic_row or row_reduction:raise ValueError('Oriented full-2D geometry cannot use [001] row reduction')
+            if not np.allclose(crystal.lattice_angstrom,projected_geometry.crystal.lattice_angstrom,atol=1e-13):
+                raise ValueError('FFT/BW oriented crystal frames differ')
+        if projected_geometry is None and potential_cutoff >= (grid_points//2-1)*2/a:
             raise ValueError('Potential cutoff reaches unsafe FFT Nyquist boundary')
         n=np.rint(np.fft.fftfreq(grid_points)*grid_points).astype(int)
         mx,my=np.meshgrid(n,n,indexing='ij')
         hkl=np.stack((2*mx,2*my,np.zeros_like(mx)),axis=-1).reshape(-1,3)
         g=hkl[:,:2]/a
+        if projected_geometry is not None:
+            support=max(potential_cutoff,float(np.max(np.linalg.norm(elastic.reciprocal_vectors_xy,axis=1))))
+            hkl,g=projected_geometry.harmonics(grid_points,support)
         fourier=np.zeros(len(g),complex)
         kv=elastic.microscope.acceleration_kv
         prefactor=10*(1+1000*kv/510998.95)*electron_wavelength_angstrom(kv)/elastic.potential.cell_volume_angstrom3
         for i,(h,gv) in enumerate(zip(hkl,g)):
-            if (np.any(h) and np.linalg.norm(gv)<=potential_cutoff and (not systematic_row or h[1]==0)):
+            if (np.any(h) and np.linalg.norm(gv)<=potential_cutoff and crystal.is_allowed(tuple(h)) and (not systematic_row or h[1]==0)):
                 fourier[i]=prefactor*elastic.potential.structure_factor(tuple(h))
         u=np.fft.ifft2(fourier.reshape(grid_points,grid_points))*grid_points**2
         if np.max(abs(u.imag))>1e-10:
@@ -174,7 +181,7 @@ def incident_fields(grid,thickness_nm,*,depth_steps=257,slice_step_nm=.04):
 def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         fft_grid=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,
         depth_steps=257,slice_step_nm=.04,outgoing_beams=None,outgoing_potential=True,
-        batch_pixels=32,memory_budget_mib=2048,prepared_grid=None,prepared_incoming=None):
+        batch_pixels=32,memory_budget_mib=2048,prepared_grid=None,prepared_incoming=None,projected_geometry=None):
     """Adjoint FFT detector fields contracted coherently at independent depths.
 
     Retain all FFT harmonics during propagation; the explicit incoming/outgoing
@@ -192,7 +199,7 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
     working=(dense+(64*depth_steps*samples+192*b*samples+32*len(q)*9+64*sites*ni*no)/2**20+8)
     with reserve_memory(working,memory_budget_mib,dense_mib=dense) as admission:
         grid=prepared_grid if prepared_grid is not None else ProjectedNiFFT.build(elastic,grid_points=fft_grid,
-            potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction)
+            potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction,projected_geometry=projected_geometry)
         fields,z,w,n,dz=(prepared_incoming if prepared_incoming is not None else
             incident_fields(grid,thickness_nm,depth_steps=depth_steps,slice_step_nm=slice_step_nm))
         if fields.shape!=(depth_steps,grid.potential.size) or not np.allclose(z,np.linspace(0,thickness_nm,depth_steps)):
@@ -201,7 +208,7 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         keep_i=np.zeros(grid.potential.size,bool);keep_i[ii]=True
         keep_o=np.zeros(grid.potential.size,bool);keep_o[oi]=True
         delta=np.asarray(ob.hkl)[None,:,:]-np.asarray(elastic.beams.hkl)[:,None,:]
-        phases=np.exp(2j*np.pi*np.einsum('ghc,sc->sgh',delta,elastic.crystal.fractional_positions))
+        phases,site_weights=equivalent_site_phases(elastic.beams.hkl,ob.hkl,elastic.crystal.fractional_positions)
         if not len(phases):raise ValueError('At least one localized Ni site required')
         qz=-characteristic_qz_angstrom_inv(energy_ev,elastic.microscope.acceleration_kv)
         response=np.zeros((len(q),3,3),complex)
@@ -217,9 +224,9 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
             plan=grid.plan(float(energy_ev),qb,elastic_potential=outgoing_potential)
             reciprocal=np.zeros((nb,plan.size),complex);reciprocal[:,0]=1
             for iz in range(depth_steps-1,-1,-1):
-                for phase in phases:
+                for phase,site_weight in zip(phases,site_weights):
                     v=np.einsum('g,bh,bgha,gh->ba',fields[iz,ii],reciprocal[:,oi].conj(),kernel,phase,optimize=True)
-                    response[sl]+=w[iz]/len(phases)*v[:,:,None]*v[:,None,:].conj()
+                    response[sl]+=w[iz]*site_weight*v[:,:,None]*v[:,None,:].conj()
                 out_norm=max(out_norm,float(np.max(abs(np.sum(abs(reciprocal)**2,axis=-1)-1))))
                 outgoing_leak=max(outgoing_leak,float(np.max(np.sum(abs(reciprocal[:,~keep_o])**2,axis=-1))))
                 if iz:reciprocal=plan.advance(reciprocal,n,-dz)

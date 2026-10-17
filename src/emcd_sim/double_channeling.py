@@ -101,6 +101,20 @@ def outgoing_elastic(elastic, detector_q_xy, energy_ev, beams=None):
                                 elastic.beams if beams is None else beams, elastic.potential)
 
 
+def equivalent_site_phases(incoming_hkl,outgoing_hkl,positions):
+    """Group exactly identical periodic site phases, retaining site multiplicities.
+
+    Integer reciprocal-site cycles are reduced modulo one before exponentiation.
+    This removes repeated evaluations for equivalent FCC sites without dropping
+    independent events or changing their incoherent per-atom normalization.
+    """
+    delta=np.asarray(outgoing_hkl)[None,:,:]-np.asarray(incoming_hkl)[:,None,:]
+    cycles=np.remainder(np.einsum('ghc,sc->sgh',delta,np.asarray(positions)),1.)
+    if not len(cycles):raise ValueError('At least one core site required')
+    unique,counts=np.unique(cycles,axis=0,return_counts=True)
+    return np.exp(2j*np.pi*unique),counts/len(cycles)
+
+
 def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoing_beams=None,
         method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True):
     """Detector-resolved integrated Cartesian response (pixels,3,3).
@@ -126,7 +140,7 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
         positions = elastic.crystal.fractional_positions
         if len(positions) == 0:
             raise ValueError('At least one core site required')
-        phases = np.exp(-2j*np.pi*np.einsum('ghc,sc->sgh', delta, positions))
+        phases,site_weights = equivalent_site_phases(elastic.beams.hkl,ob.hkl,positions)
         gi = elastic.reciprocal_vectors_xy
         result = np.empty((len(q_xy),3,3), complex)
         qz = -characteristic_qz_angstrom_inv(energy_ev, elastic.microscope.acceleration_kv)
@@ -143,8 +157,8 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
             transfer[..., :2] = q+go[None, :, :]-gi[:, None, :]
             transfer[..., 2] = qz
             kernel = dipole_kernel(transfer)
-            result[p] = sum(depth_response(incoming, outgoing, kernel*phase[..., None], thickness_nm,
-                method=method, depth_steps=depth_steps) for phase in phases)/len(phases)
+            result[p] = sum(weight*depth_response(incoming, outgoing, kernel*phase[..., None], thickness_nm,
+                method=method, depth_steps=depth_steps) for phase,weight in zip(phases,site_weights))
         return result
 
 
