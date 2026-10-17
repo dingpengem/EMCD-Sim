@@ -1,5 +1,8 @@
 # Ni PRB 2007 geometry, aperture and depth validation
 
+Follow-up: [100/200/300 kV voltage and extinction-distance study](NI_VOLTAGE_DEPENDENCE.md)
+reuses matching 200 kV results and compares fixed reciprocal-space apertures.
+
 Results: `outputs/ni_prb2007_geometry_validation/`. The completed [017]
 0-100 nm study is reused unchanged. New thickness curves retain 2 nm spacing.
 All generated data remain local. There is no GUI redesign, MDFF rescaling,
