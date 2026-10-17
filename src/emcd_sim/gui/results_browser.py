@@ -245,6 +245,7 @@ class ProjectWorkspace:
             for widget,index in ((self.model_box,0 if c.model=='xmcd' else 1),(self.propagation_box,['bloch','fft-multislice','both'].index(c.propagation))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
             self.mdff_stack.setCurrentIndex(self.model_box.currentIndex())
+            with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setCurrentIndex(self.memory_budget.findData(c.memory_budget_mib))
             values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial or .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
             values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()});self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()
             for widget,checked in ((self.correction,c.correction),(self.radial_override,c.radial is not None),(self.declaration,c.axis_declared)):

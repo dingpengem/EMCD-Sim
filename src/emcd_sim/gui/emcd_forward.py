@@ -70,6 +70,7 @@ class ForwardSettings:
     propagation: str='bloch'
     fft_grid: int=32
     slice_step: float=.04
+    memory_budget_mib: int=2048
 
 
 def material_reason(structure):
@@ -125,6 +126,17 @@ class Cancelled(Exception):pass
 
 
 def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False):
+    from .propagation import numerical_info
+    from .memory_budget import reserve_memory
+    info=numerical_info(structure,settings,cfg)
+    with reserve_memory(info['estimated_working_mib'],cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
+        result=_calculate(structure,settings,cfg,progress,cancelled)
+        result['metadata']['memory_admission']=admission
+        for r in result['methods'].values():r['metadata']['memory_admission']=admission
+        return result
+
+
+def _calculate(structure,settings,cfg,progress,cancelled):
     def stage(s):
         if cancelled():raise Cancelled()
         progress(s)
@@ -134,12 +146,11 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
     energy=energy_grid(cfg);elastic=elastic_model(structure,settings);_,R,hkl,g,_=geometry(structure,settings)
     if settings.target not in hkl or settings.target==(0,0,0):raise ValueError('Select a nonzero target in the finite diffraction basis')
     memory=64*cfg.grid**2*len(hkl)**2/2**20
-    if memory>512:raise ValueError(f'Dense contraction estimate {memory:.1f} MiB exceeds 512 MiB. Lower grid or beam cutoff explicitly.')
     model=replace(nickel_physical_benchmark(),elastic=elastic,detectors={k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),cfg.centers)},chiral_groups=None)
     # Direct integration requires full physical aperture coverage as well.
     if any(max(abs(np.asarray(p)))+cfg.radius>cfg.halfwidth for p in cfg.centers):raise ValueError('Map halfwidth must fully cover both physical detector apertures')
     from .propagation import propagate, compare_methods, numerical_info
-    info=numerical_info(structure,settings,cfg,hkl=hkl)
+    info=numerical_info(structure,settings,cfg,hkl=hkl,check_memory=False)
     stage('Generating common +M and -M tensors');ts=tensors(cfg,energy,R)
     z=np.linspace(0,settings.thickness,cfg.depth)
     waves,fft_info=propagate(elastic,settings,cfg,z,stage)

@@ -10,12 +10,11 @@ from ..multislice_emcd_reference import project_fft_amplitudes,complex_wave_diag
 METHOD_NAMES={'bloch':'Bloch-wave','fft-multislice':'FFT Multislice','difference':'BW-MS numerical difference'}
 
 
-def numerical_info(structure,settings,cfg,*,hkl=None):
+def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True):
     if cfg.propagation not in ('bloch','fft-multislice','both'):raise ValueError('Unknown propagation method')
     if hkl is None:hkl=geometry(structure,settings)[2]
     n=len(hkl);pixels=cfg.grid**2;mesh=cfg.fft_grid**2
     pair=16*pixels*n*n/2**20;dense=4*pair
-    if dense>512:raise ValueError(f'Dense contraction working estimate {dense:.1f} MiB exceeds 512 MiB; lower grid or beam cutoff')
     info=dict(bw_beams=n,fft_harmonics=0,potential_nonzero_harmonics=0,single_complex_pair_mib=pair,dense_working_estimate_mib=dense,
         fft_storage_working_mib=0.,coherence_working_mib=16*cfg.depth*n*n/2**20,propagation=cfg.propagation,
         fft_grid=cfg.fft_grid,slice_step_nm=cfg.slice_step,depth_nodes=cfg.depth)
@@ -38,9 +37,13 @@ def numerical_info(structure,settings,cfg,*,hkl=None):
         count=int(np.sum(allowed & (np.linalg.norm(g,axis=1)<=settings.potential_cutoff) & np.any(harmonics!=0,axis=1)))
         info.update(fft_harmonics=mesh,potential_nonzero_harmonics=count,fft_storage_working_mib=(24*cfg.depth+160)*mesh/2**20,
             projected_geometry='Ni017Geometry; FFT(m,n) -> cubic (m,7n,-n); actual [017] cell and FCC extinctions; same IAM, B and Fourier cutoff as BW')
-    info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+32*cfg.depth*n/2**20
-    info['memory_note']='Conservative array estimate, not complete peak process/RSS; methods contract sequentially.'
-    if info['estimated_working_mib']>1024:raise ValueError('Estimated arrays exceed 1024 MiB; reduce sampling explicitly')
+    methods=2 if cfg.propagation=='both' else 1
+    info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20
+    info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+info['retained_results_working_mib']
+    info['memory_note']='Dense arrays plus FFT/depth storage, retained method results and coordinate/work arrays. Total process estimate adds current RSS, concurrent reservations, 25% allocation margin and 128 MiB reserve. Conservative estimate, not guaranteed peak RSS.'
+    if check_memory:
+        from .memory_budget import assess_memory
+        info.update(assess_memory(info['estimated_working_mib'],cfg.memory_budget_mib,dense_mib=dense))
     return info
 
 

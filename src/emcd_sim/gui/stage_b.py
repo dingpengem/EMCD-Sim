@@ -71,6 +71,11 @@ class StageB:
         self.number('halfwidth','Map halfwidth (cycles/A)',1,.1,10,self.emcd_stale)
         self.correction=QtWidgets.QCheckBox('Enable post-edge A/B correction');self.correction.setChecked(True);self.form.addRow(self.correction);self.correction.toggled.connect(self.emcd_stale)
         self.number('window_lo','Window start (eV)',878,1,10000,self.emcd_stale);self.number('window_hi','Window end (eV)',882,1,10000,self.emcd_stale)
+        from .memory_budget import BUDGETS_MIB,DEFAULT_BUDGET_MIB
+        self.memory_budget=QtWidgets.QComboBox()
+        for budget in BUDGETS_MIB:self.memory_budget.addItem(f'{budget} MiB',budget)
+        self.memory_budget.setCurrentIndex(BUDGETS_MIB.index(DEFAULT_BUDGET_MIB));self.memory_budget.currentIndexChanged.connect(self.emcd_stale)
+        self.form.addRow('Estimated process memory budget',self.memory_budget)
         self.memory_label=QtWidgets.QLabel();self.memory_label.setWordWrap(True);self.form.addRow(self.memory_label)
 
     def setup_stage_b(self):
@@ -113,7 +118,7 @@ class StageB:
         mode='xmcd' if self.model_box.currentIndex()==0 else 'atomic';axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')
         if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):raise ValueError('Validate the current XMCD source first')
-        return ForwardSettings(propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+        return ForwardSettings(memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
@@ -128,7 +133,7 @@ class StageB:
             if cfg.model=='atomic' and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
             from .propagation import numerical_info
             info=numerical_info(self.structure,s,cfg)
-            self.memory_label.setText(f"{info['bw_beams']} common BW beams; {info['fft_harmonics']} FFT harmonics ({info['potential_nonzero_harmonics']} nonzero potential).\nSingle pair {info['single_complex_pair_mib']:.1f} MiB; dense working {info['dense_working_estimate_mib']:.1f} / 512 MiB; estimated arrays {info['estimated_working_mib']:.1f} MiB. Not total peak process memory.")
+            self.memory_label.setText(f"{info['bw_beams']} common BW beams; {info['fft_harmonics']} FFT harmonics. Dense kernel {info['dense_working_estimate_mib']:.1f} MiB; estimated arrays {info['estimated_working_mib']:.1f} MiB.\nEstimated process peak {info['estimated_process_peak_mib']:.1f} / {cfg.memory_budget_mib} MiB; available RAM {info['available_ram_mib']:.1f} MiB (50% allowed). Includes RSS, allocation margin and active calculations; not a guaranteed peak.")
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
             structure_matches=self.emcd_result is not None and self.emcd_result['metadata']['structure']==self.structure.description()
             if self.emcd_result and self.emcd_result.get('structure_snapshot'):
@@ -141,7 +146,7 @@ class StageB:
                 config_matches=old==new
             fresh=self.emcd_result is not None and self.emcd_result['settings']==s and config_matches and structure_matches
             reason=reason or self.input_source_reason()
-        except Exception as exc:reason=reason or str(exc);fresh=False
+        except Exception as exc:reason=reason or str(exc);fresh=False;self.memory_label.setText('Calculation unavailable: '+str(exc))
         self.emcd_button.setEnabled(not reason and not self.busy);self.emcd_button.setToolTip(reason or 'Run the selected incoming-wave propagation and shared EMCD/EELS contraction')
         if self.emcd_result:
             text='Completed-run geometry and spectra; inputs match.' if fresh else 'STALE RESULT — Viewing saved result — current inputs differ. Showing completed-run geometry and spectra.'

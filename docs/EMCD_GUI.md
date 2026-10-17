@@ -934,6 +934,26 @@ See [Stage F acceptance](EMCD_GUI_STAGE_F_ACCEPTANCE.md) for values and scope.
 
 ## PRB 2007 benchmark readout
 
+The calculation controls also provide an **Estimated process memory budget**:
+512, 1024, 2048 (default), 4096 or 8192 MiB. This replaces the fixed 512 MiB
+dense-kernel ceiling. Dense-kernel storage is shown separately from estimated
+array storage and total process peak. The latter includes current process RSS
+(including loaded results), FFT/depth and retained method arrays, active
+calculation reservations, 25% allocation headroom and a 128 MiB process reserve.
+Admission requires this estimate to fit both the chosen budget and **50% of
+currently available physical RAM**. These are conservative estimates, not a
+guaranteed RSS bound. Swap is not counted as available RAM.
+
+RAM is read during preflight and again at calculation admission. Concurrent
+EMCD calculations in one process share atomic reservations; the normal GUI
+already runs one worker at a time. Other processes are reflected in available
+RAM, but changes after admission remain possible. Unavailable RAM measurement,
+budget excess or an allocation failure produces an explicit diagnostic;
+sampling, precision and physics parameters are never reduced automatically.
+Budget selection is stored with project settings. Older settings without this
+field use the 2048 MiB default; 512 MiB remains selectable and now constrains
+the estimated total process peak, rather than only dense kernel storage.
+
 Virtual Detector EELS now includes **PRB 2007 Benchmark**, a post-processing
 readout independent of Raw, Asymmetry and EELS Peak display settings. Its signed
 primary percentage is exactly
