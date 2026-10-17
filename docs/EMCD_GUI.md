@@ -931,3 +931,88 @@ with fixed BW L3 peak P=0.2508784247. Grey retains A-only support; the even
 reference case is numerical zero. The full-range L2 feature uses this same L3
 denominator. Normal EELS/map tabs provide the controls.
 See [Stage F acceptance](EMCD_GUI_STAGE_F_ACCEPTANCE.md) for values and scope.
+
+## PRB 2007 benchmark readout
+
+Virtual Detector EELS now includes **PRB 2007 Benchmark**, a post-processing
+readout independent of Raw, Asymmetry and EELS Peak display settings. Its signed
+primary percentage is exactly
+
+`100 * (I_A_plus(E) - I_B_plus(E)) / (I_A_plus(E) + I_B_plus(E))`.
+
+Both spectra are the original simulated **+M** arrays, at one common sample.
+There is no factor of two, independent spectrum scaling, white-line division,
+post-edge correction or fitting. Positive means A exceeds B. The denominator
+must satisfy the existing spectral validity policy described above; undefined
+values display explicitly and export as null scalars / NaN curves, never zero.
+
+**L3 white-line peak** defaults to the maximum of the original +M detector
+**sum** inside the configured native L3 window. This differs from the
+reversal-even sum used by EELS Peak display normalization. **Current selected
+energy** evaluates the requested native energy at the nearest saved sample
+(lower sample at a tie), reporting the actual sampled energy. Neither option
+maximizes dichroism or shifts the spectrum to an experimental energy.
+
+For loaded thickness comparisons, select **Keep energy across results**. This
+captures the currently evaluated energy and keeps that requested energy when
+loading another result. The actual sample is reported for each result; compare
+sampling before interpreting a thickness trend. Export each condition at this
+fixed energy. No automatic thickness sweep is added.
+
+Two secondary **diagnostics only** use the original magnetization reversals:
+`N_J=(I_J_plus+I_J_minus)/2` and `M_J=(I_J_plus-I_J_minus)/2`.
+Magnetic-only is `100*(M_A-M_B)/(N_A+N_B)`; nonmagnetic imbalance is
+`100*(N_A-N_B)/(N_A+N_B)`. These have a reversal-even denominator and cannot
+replace the primary raw paired percentage. Raw A-B combines magnetic-odd and
+reversal-even differences. Post-edge-corrected contrast can retain even
+contamination and magnetic processing bias; it is not intrinsic magnetic EMCD.
+
+![PRB benchmark readout from the saved Ni project](images/gui/prb2007_benchmark.png)
+
+Actual Windows widget capture using the existing saved project
+`outputs/gui_stage_d/windows_20261016/reference_project`; no new simulation.
+The default common L3 sample is **831.4778 eV**, selected from the original
++M summed intensity, on the unchanged native WIEN2k axis:
+
+| Solver | Raw PRB (%) | Magnetic-only diagnostic (%) | Even imbalance (%) |
+| --- | ---: | ---: | ---: |
+| Bloch wave | -0.36256678 | -0.36263454 | approximately 0 |
+| FFT multislice | -0.36269676 | -0.36276457 | 0 |
+
+This example is FCC Ni **[017]**, 200 kV, **30 nm**, target (200), absolute
+local tilt (-7.11672544, 0) mrad. A/B centres are
+(0.283768445, +0.283768445) and (0.283768445, -0.283768445) cycles/Angstrom;
+circular aperture radius is 0.0908059024 cycles/Angstrom (paraxial collection
+half-angle 2.27735214 mrad). It uses the XMCD-effective approximate MDFF,
+eta=beta=1, crystal magnetization [001], and the legacy projected 2D IAM
+potential. Selecting **831.271 eV** instead gives -0.37958584% (BW) and
+-0.37972193% (MS), demonstrating why the exact energy must accompany a value.
+Exact Bragg alignment alone does not establish an isolated two-beam wavefield.
+
+[Rusz, Rubino and Schattschneider, PRB 75, 214425 (2007)](https://arxiv.org/abs/0704.1407),
+DOI 10.1103/PhysRevB.75.214425, Figure 5 defines difference over sum. Its Ni
+reference uses the [001] vicinity, a (200) two-beam systematic row and opposite
+Thales-circle positions, with optimal thickness roughly 6-10 nm. Approximately
+18% is a visual estimate from the published curve, not a digitized value or
+test target. The current [017] example is **not** a matched physical
+reproduction. Electron energy, finite collection aperture, diffraction state,
+thickness, source and energy selection must be matched for that claim; neither
+geometry nor eta/beta is adjusted to chase the literature percentage.
+
+> PRB-compatible normalization does not imply full physical equivalence to Rusz et al. (2007). The current EMCD-Sim uses an approximate MDFF and may omit outgoing-electron channeling and other effects included in the reference theory.
+
+Existing absolute-energy calibration, incomplete DFT-derived MDFF, outgoing
+channeling and potential-cutoff convergence caveats remain in force. Arbitrary
+intensities are not absolute experimental cross sections.
+
+The EELS **derived-data export** now adds `prb_2007_benchmark.csv`, per-run
+`runN_prb2007_spectrum.csv`, PRB curves in `derived_and_raw.npz` and a benchmark
+record in `normalization_metadata.json`. Records include signed values,
+requested/actual evaluation energy, definitions and denominator, aperture and
+collection angle, saved diffraction condition, thickness, MDFF/solver, source
+hash, saved/new origin and comparison limitations. Original arrays accompany
+the derived values unchanged; original projects are not rewritten. Figure
+exports include the currently displayed benchmark records in their JSON
+sidecars. The saved-data example and full exports are under
+`outputs/prb2007_benchmark/native/` locally; this documentation includes the
+small preview rather than duplicating numerical project files in Git.

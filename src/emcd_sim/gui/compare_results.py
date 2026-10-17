@@ -161,7 +161,8 @@ class CompareResults(QtWidgets.QWidget):
         scroll=QtWidgets.QScrollArea();scroll.setWidgetResizable(True);scroll.setWidget(self.canvas);pl.addWidget(scroll);self.tabs.addTab(plot,'Maps and EELS')
         self.table=QtWidgets.QTableWidget();self.tabs.addTab(self.table,'Signed scalar metrics');self.normalization.set_result(selected[0][1],[label for label,_ in selected]);self.redraw()
     def entries(self):
-        return [(label,dict(r.get('methods',{r.get('method','bloch'):r})[choice.currentData()],comparison=r.get('comparison',{})),choice.currentData()) for (label,r),choice in zip(self.selected,self.methods)]
+        from .prb_benchmark import data_origin
+        return [(label,dict(r.get('methods',{r.get('method','bloch'):r})[choice.currentData()],comparison=r.get('comparison',{}),prb_data_origin=data_origin(r),prb_project_path=r.get('project_path')),choice.currentData()) for (label,r),choice in zip(self.selected,self.methods)]
     def redraw(self,*_):
         if not hasattr(self,'canvas'):return
         entries=self.entries();display=self.normalization.settings()

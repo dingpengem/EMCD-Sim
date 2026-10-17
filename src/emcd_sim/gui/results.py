@@ -160,6 +160,10 @@ class ResultsView(QtWidgets.QWidget):
         maximize=QtWidgets.QPushButton('Maximize / restore results');row.addWidget(maximize);maximize.clicked.connect(self.maximize)
         self.normalization=NormalizationControls(self,maps=kind=='maps');self.normalization.setVisible(kind!='diffraction');layout.addWidget(self.normalization);self.normalization.changed.connect(self.redraw)
         self.display_note=QtWidgets.QLabel();self.display_note.setWordWrap(True);layout.addWidget(self.display_note)
+        if kind=='eels':
+            from .prb_controls import PRBBenchmarkControls
+            self.prb_benchmark=PRBBenchmarkControls(self);layout.addWidget(self.prb_benchmark)
+            self.prb_benchmark.changed.connect(self.update_prb_metadata)
         export=QtWidgets.QPushButton('Export derived NPZ/CSV + metadata');export.setVisible(kind!='diffraction');layout.addWidget(export);export.clicked.connect(self.export_derived)
         self.figure=Figure(layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure)
         layout.addWidget(NavigationToolbar2QT(self.canvas,self))
@@ -195,7 +199,14 @@ class ResultsView(QtWidgets.QWidget):
         except (ValueError,KeyError) as exc:
             self.figure.clear();self.figure.subplots().text(.05,.6,'Normalization unavailable: '+str(exc),wrap=True);self.display_note.setText(str(exc));self.figure._emcd_display_metadata=dict(unavailable=str(exc),derived_visualization_only=True)
         if self.kind=='eels' and hasattr(self.owner,'comparison'):self.owner.comparison.setPlainText(comparison_text(self.result,display.windows))
+        if self.kind=='eels':
+            selected=self.result['config'].l2 if self.choice.currentText()=='L2 zoom' else self.result['config'].l3
+            self.prb_benchmark.set_context(self.result,method,display.windows,selected)
         self.canvas.draw_idle()
+    def update_prb_metadata(self):
+        metadata=getattr(self.figure,'_emcd_display_metadata',{})
+        metadata['prb_2007_benchmark']=dict(values=self.prb_benchmark.records,undefined=self.prb_benchmark.errors)
+        self.figure._emcd_display_metadata=metadata
     def export_derived(self):
         from .normalization_export import export_derived
         from pathlib import Path
@@ -203,8 +214,10 @@ class ResultsView(QtWidgets.QWidget):
         parent=QtWidgets.QFileDialog.getExistingDirectory(self,'Derived visualization export parent (new folder)')
         if parent and self.result is not None:
             try:
-                entries=[(name,r,name) for name,r in self.result.get('methods',{self.result.get('method','bloch'):self.result}).items()]
-                export_derived(entries,Path(parent)/datetime.now().strftime('derived_%Y%m%d_%H%M%S_%f'),self.normalization.settings(),self.choice.currentText())
+                from .prb_benchmark import data_origin
+                entries=[(name,dict(r,prb_data_origin=data_origin(self.result),prb_project_path=self.result.get('project_path')),name) for name,r in self.result.get('methods',{self.result.get('method','bloch'):self.result}).items()]
+                options=self.prb_benchmark.options() if self.kind=='eels' else None
+                export_derived(entries,Path(parent)/datetime.now().strftime('derived_%Y%m%d_%H%M%S_%f'),self.normalization.settings(),self.choice.currentText(),prb_options=options)
             except ValueError as exc:self.owner.error(str(exc))
     def pick(self,event):
         for proxy,line in self.proxies:
