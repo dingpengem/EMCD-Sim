@@ -12,7 +12,7 @@ import sys
 
 from .. import __version__
 
-LABEL = f'EMCD-Sim {__version__} Beta - Double-Channeling EMCD Simulation (development, unpublished)'
+LABEL = f'EMCD-Sim {__version__} Beta - Double-Channeling EMCD Simulation'
 
 
 def resource_root():

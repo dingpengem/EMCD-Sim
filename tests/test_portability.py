@@ -13,7 +13,7 @@ def test_version_matches_source_metadata():
     project = Path(__file__).resolve().parents[1]/'pyproject.toml'
     assert __version__ == '0.6.0' == tomllib.loads(project.read_text(encoding='utf-8'))['project']['version']
     assert build_info()['application_version'] == __version__
-    assert __version__ in LABEL and 'unpublished' in LABEL
+    assert __version__ in LABEL and 'Beta' in LABEL
 
 
 def test_module_entrypoint_writes_outputs_into_path_with_spaces(tmp_path):

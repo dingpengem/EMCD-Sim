@@ -61,6 +61,37 @@ def run(output,source,production):
                 r=w.emcd_result
                 check(key+'_dispatch',r['config'].channeling_model==channel and set(r['methods'])==({'bloch','fft-multislice'} if solver=='both' else {solver}))
                 before=fingerprints(r);view=w.eels_view
+                from .component_display import MODES,primary_angular
+                check(key+'_primary_options',list(MODES.values())==['Raw (a.u.)','EMCD Asymmetry (%)'])
+                for selected in (0,1):
+                    view.component_mode.setCurrentIndex(selected);app.processEvents()
+                    for method,m in r['methods'].items():
+                        from matplotlib.figure import Figure
+                        from .results import draw_eels,draw_maps
+                        fig=Figure(figsize=(12,7),layout='constrained');draw_eels(fig,m,component_mode=('raw','asymmetry')[selected])
+                        spectra=m['spectra']
+                        np.testing.assert_array_equal(fig.axes[0].lines[0].get_ydata(),spectra['I_A_plus'])
+                        np.testing.assert_array_equal(fig.axes[0].lines[1].get_ydata(),spectra['I_B_plus'])
+                        if selected:
+                            from .prb_benchmark import benchmark_spectra
+                            np.testing.assert_array_equal(fig.axes[1].lines[0].get_ydata(),benchmark_spectra(spectra)[0]['prb_relative_dichroism_percent'])
+                        else:
+                            for line,field in zip(fig.axes[1].lines,('D_mag','D_nonmag')):
+                                np.testing.assert_array_equal(line.get_ydata(),spectra[field])
+                        for edge in ('L3','L2'):
+                            mode=('raw','asymmetry')[selected]
+                            draw_maps(fig,m,edge,signal_mode=mode)
+                            panels=[ax for ax in fig.axes if ax.images]
+                            expected,_=primary_angular(m,edge,mode)
+                            check(key+'_'+method+'_'+edge+'_'+mode+'_map_count',len(panels)==(1 if selected else 2))
+                            for ax,value in zip(panels,expected.values()):
+                                np.testing.assert_array_equal(ax.images[0].get_array().filled(np.nan),value)
+                                check(key+'_'+method+'_'+edge+'_'+mode+'_signed',ax.images[0].get_clim()[0]==-ax.images[0].get_clim()[1])
+                    w.maps_view.component_mode.setCurrentIndex(selected);app.processEvents()
+                view.advanced.setChecked(True);view.component_diagnostic.setCurrentIndex(1);app.processEvents()
+                check(key+'_advanced_magnetic_only','Magnetic-only' in view.figure.axes[1].lines[0].get_label())
+                view.advanced.setChecked(False)
+                check(key+'_raw_map_display_invariant',before==fingerprints(r))
                 for mode in (1,0):
                     view.component_mode.setCurrentIndex(mode);app.processEvents();check(key+'_two_panels',len(view.figure.axes)==2)
                 for zoom in (1,2,0):view.choice.setCurrentIndex(zoom);app.processEvents()
@@ -70,10 +101,10 @@ def run(output,source,production):
                 project=output/(key+'_project');w.save_to_path(project);idle()
                 reopened=load_project(project);check(key+'_roundtrip',before==fingerprints(reopened))
                 w.eels_view.component_mode.setCurrentIndex(0);prb.fixed.setChecked(False);w.display_saved_result(reopened)
-                check(key+'_display_state_restored',view.component_mode.currentData()=='relative' and prb.fixed.isChecked() and abs(prb.energy.value()-848.698)<1e-6)
+                check(key+'_display_state_restored',view.component_mode.currentData()=='asymmetry' and prb.fixed.isChecked() and abs(prb.energy.value()-848.698)<1e-6)
                 record=w.browser.registry.register(reopened,project,key);w.browser.refresh()
                 check(key+'_browser',record['channeling_model']==channel and record['propagation']==solver)
-                export_result(reopened,output/(key+'_export'),component_mode='relative')
+                export_result(reopened,output/(key+'_export'),component_mode='asymmetry')
                 with np.load(output/(key+'_export')/'virtual_detector_eels.npz',allow_pickle=False) as arrays:
                     for method,m in r['methods'].items():
                         for name,value in m['spectra'].items():np.testing.assert_array_equal(arrays[method+'__'+name],value)
@@ -82,9 +113,12 @@ def run(output,source,production):
                     view.method.setCurrentIndex(view.method.findData('overlay'))
                     check('both_spectra_overlay',len([line for line in view.figure.axes[0].lines if 'Detector A' in line.get_label()])==2)
                     for ext in ('png','svg'):view.figure.savefig(output/('bw_ms_spectra.'+ext),dpi=160)
-                    w.browser_dock.hide();view.maximize();screenshot('double_both_relative')
+                    w.browser_dock.hide();view.maximize();screenshot('double_both_asymmetry')
                     view.component_mode.setCurrentIndex(0);screenshot('double_both_raw');view.maximize()
-                    w.tabs.setCurrentWidget(w.maps_view);w.maps_view.maximize();screenshot('double_both_maps');w.maps_view.maximize()
+                    w.tabs.setCurrentWidget(w.maps_view);w.maps_view.maximize()
+                    for mode in (0,1):
+                        w.maps_view.component_mode.setCurrentIndex(mode);screenshot('double_both_maps_'+('raw','asymmetry')[mode])
+                    w.maps_view.maximize()
                     for ext in ('png','svg'):w.maps_view.figure.savefig(output/('angular_maps.'+ext),dpi=160)
         previous=w.emcd_result;w.start_emcd();w.cancel();idle();check('cancel_preserves_previous',w.emcd_result is previous)
         w.spin['tx'].setValue(w.spin['tx'].value()+.1);check('stale_detection','STALE' in w.eels_view.label.text())
@@ -116,7 +150,7 @@ def run(output,source,production):
             check('saved_242_'+engine,len(saved['spectra']['energy_ev'])==242 and fingerprints(saved)==before)
             report['cases']['saved_'+engine]=dict(fingerprints=before,source_sha256=saved['config'].source_sha256)
         w.resize(1000,750);app.processEvents();w.resize(1700,1150);app.processEvents();check('resize',w.width()>1000)
-        report['outcome']='PASS';report['checkpoint_C']='PASS';report['checkpoint_D']='PASS'
+        report['outcome']='PASS';report['scientific_gui_acceptance']='PASS'
     except Exception:
         report['outcome']='FAIL';report['failure']=traceback.format_exc()
     finally:
