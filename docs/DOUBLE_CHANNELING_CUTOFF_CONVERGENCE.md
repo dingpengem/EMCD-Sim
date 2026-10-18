@@ -5,12 +5,19 @@ This follow-up starts at `f97e16c495097c27363c8b29938c254825ff7364` on
 benchmark and its failed gate remain unchanged. New results are local under
 `outputs/ni_double_channeling_cutoff_convergence/`.
 
-**Outcome:** final potential-cutoff increments are below the unchanged
+**Uniform enlarged-basis follow-up:** the 4.6 cycles/angstrom profile passes
+matched BW/MS agreement and independent 3.8-to-4.6 basis sensitivity at
+8, 12, 30 and 100 nm, for both geometries and edges. See
+[the enlarged-basis validation report](DOUBLE_CHANNELING_UNIFORM_BASIS.md)
+for numerical tables, the tested production profile and scope limitations.
+The complete 0-100 nm curve remains uncertified.
+
+**Original cutoff-study outcome:** final potential-cutoff increments are below the unchanged
 thresholds at the tested conditions, and the 12 nm entrance versus 8 nm double
 ordering survives. The uniform 3.8 beam-cutoff profile still fails matched
 BW/MS contrast at three [017] points. Enlarging the basis improves agreement
-at 8/12 nm, but a uniform enlarged production profile has not been validated
-at every representative thickness. The overall gate therefore remains failed;
+at 8/12 nm, but a uniform enlarged production profile had not yet been validated
+at every representative thickness. That study's overall gate therefore remained failed;
 the complete 0-100 nm curve is not certified as numerically converged.
 
 ## What failed
