@@ -1,11 +1,10 @@
 # EMCD-Sim Desktop User Manual
 
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
-This manual describes the current GUI on `feat/atomic-3d-multislice`.
-The local 0.4.5 Beta RC is unpublished; the
-[Windows Beta acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md)
-records the exact build and tested scope. Stage E/F screenshots below are
-historical illustrations, not evidence for the current binary.
+This manual describes the **0.4.5 Windows research Beta**, integrated into
+`main`. The [release notes](RELEASE_0_4_5_BETA.md) identify the download,
+binary build source and tested scope. Current Beta captures introduce the
+interface; retained Stage E/F images are explicitly historical illustrations.
 
 ## What the application calculates
 
@@ -25,10 +24,10 @@ provides a fully quantitative experimental metallic-Ni cross section.
 
 ## Find your way around
 
-![Actual Windows main interface](images/gui/stage_e_main.png)
+![Actual Windows main interface](images/gui/beta_rc/startup_150pct.png)
 
-Actual Stage E native capture, still representative of the current input and
-diffraction controls. Use this numbered reading order:
+Actual accepted Beta capture at native 150% scaling, showing the current input
+and diffraction controls. Use this numbered reading order:
 
 1. **Left: Inputs.** Expand/collapse **A. Crystal Structure**, **B. Zone Axis
    & Diffraction**, **C. Microscope & Sample**, **D. MDFF Model**,
@@ -272,7 +271,8 @@ described below. The actual ZA, transmitted beam, hkl, Thales circle and physica
 A/B apertures retain their saved geometry in either solver/model.
 
 Choose **EMCD Angular Maps**, L3/L2, a method (or BW−MS numerical difference)
-and a field. **All six fields** provides the default multi-panel view.
+and a field. Under **Advanced Diagnostics**, **All six fields** provides the
+legacy multi-panel view; the primary view remains the two component maps.
 
 | Field | Interpretation |
 | --- | --- |
@@ -347,10 +347,24 @@ The reference window, alpha and disabled/undefined reasons are recorded;
 changing this window requires an explicit new calculation of the observable,
 whereas changing a **display peak window** only reprocesses saved arrays.
 
-![Actual full virtual-detector spectra](images/gui/stage_e_eels.png)
+![Actual full virtual-detector spectra](images/gui/beta_rc/full_double_spectrum_150pct.png)
 
-Reused Stage E export shows original A/B EELS, reversal parity and separate
-post-edge correction. These raw-unit curves remain available in the current GUI.
+Actual accepted GUI capture of a genuine saved full-energy Double BW result.
+It preserves native energies and the raw detector intensity scale.
+
+![Current raw magnetic and nonmagnetic components](images/gui/beta_rc/double_both_raw.png)
+
+![Current relative magnetic and nonmagnetic components](images/gui/beta_rc/double_both_relative.png)
+
+These actual Beta BW/MS Double captures use the same small dispatch-test
+profile in Raw and Relative modes. They illustrate signed component definitions,
+not production BW/MS convergence. The shared raw EELS scale above is unchanged;
+the separate PRB readout is not the lower-panel component normalization.
+
+![Current Results Browser after cancellation and restart](images/gui/beta_rc/cancellation_restart.png)
+
+Actual cancellation-fixed frozen GUI after successful restart. Cancelled work
+did not add incomplete browser entries; only completed results are registered.
 
 ## Interpret percentages
 

@@ -2,7 +2,7 @@
 
 For a first calculation, continue with [Quick Start](QUICK_START.md). The
 [User Manual](USER_GUIDE.md) explains the science and controls. This is an
-unreleased research application; read the [Beta acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md)
+research Beta; read the [release notes](RELEASE_0_4_5_BETA.md) and [Beta acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md)
 before using it for a research comparison.
 
 ## Recommended: portable Windows application
@@ -12,16 +12,15 @@ or WIEN2k to be installed.** WIEN2k is a separate electronic-structure program,
 not a GUI runtime dependency. This application does not install or provide a
 complete DFT calculation environment.
 
-The current local candidate is **EMCD-Sim 0.4.5 Beta RC (unreleased)**,
+The Windows distribution is **EMCD-Sim 0.4.5 Beta**, tagged `v0.4.5-beta.1`,
 built from `9937d3b820e4225fdf06b7f3ed33c7083d0f35ea`. Older Stage F
 candidates and the original Beta RC are preserved separately and are not the current build.
 See the [cancellation acceptance report](DOUBLE_CHANNELING_CANCELLATION.md) for the replacement.
 
-1. Obtain `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip` from the project maintainer through
-   a trusted project-provided transfer location. **It is currently a local
-   review artifact, not a published GitHub download.** On the build machine it
-   is `build/windows-beta-rc-cancel-final-20261018/EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`. There is no public
-   binary download URL to follow yet; request the reviewed archive from the maintainer.
+1. Open the [Windows Beta release information](RELEASE_0_4_5_BETA.md) and
+   download `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip` from its
+   GitHub release assets. The retained RC filename identifies the exact
+   tested archive; the distributed bytes were not rebuilt or repacked.
 2. Download/copy the ZIP and verify its SHA256 below.
 3. Right-click it in File Explorer, choose **Extract All**, and select a folder
    you control, for example `C:\Users\YourName\Applications\EMCD-Sim-RC`.
@@ -101,8 +100,8 @@ There is no automatic upload.
 
 The x64 candidate was tested on **Windows 11 Enterprise, build 26200.9457**,
 Intel Core i7-1365U, approximately 31.58 GiB host RAM, at 150% display scaling.
-The current Beta archive size, extracted file count and checksums are in the
-[Beta acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md). Earlier Stage F
+The current archive is **108,689,021 bytes (103.65 MiB)**. Provenance and
+checksums are in the [release report](RELEASE_0_4_5_BETA.md). Earlier Stage F
 sizes are not measurements of this new build. Keep additional space for
 projects and exports.
 
@@ -122,15 +121,15 @@ equivalent to a second Windows installation or a clean VM.
 ## Advanced: run from Python source
 
 Obtain the source repository from [dingpengem/EMCD-Sim](https://github.com/dingpengem/EMCD-Sim).
-The current GUI is on `feat/atomic-3d-multislice`; it has not been merged or
-released. Record the commit you use. The local path below is an example,
+The current GUI is integrated into `main`; the Beta tag identifies its release
+source. Record the commit you use. The local path below is an example,
 not a required installation location.
 
 For the existing development Conda environment:
 
 ```powershell
 conda activate emcd-python
-cd C:\Users\peng863\EMCD-Sim
+cd C:\Research\EMCD-Sim
 python -m pip install -e ".[gui]"
 python -m emcd_sim.gui
 ```

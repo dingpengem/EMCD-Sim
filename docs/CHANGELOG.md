@@ -1,3 +1,22 @@
+# v0.4.5-beta.1 - Windows research Beta
+
+Package version remains `0.4.5`; this is a GitHub Pre-release, not a stable release.
+See [release notes and exact binary provenance](RELEASE_0_4_5_BETA.md).
+
+- Added genuine BW and independent FFT Double Channeling with post-loss outgoing propagation and depth-distributed ionization.
+- Added full-energy Ni L3/L2 EELS/EMCD, preserved four raw A/B reversal spectra, signed magnetic/nonmagnetic Raw and Relative displays, and separate PRB dichroism.
+- Clarified crystallographic g=1/d beam/potential cutoffs, zone-axis versus tilt, physical detectors and restricted-row versus full finite ZOLZ geometry.
+- Preserved checksummed projects, Results Browser and PNG/SVG/CSV/NPZ export, including raw/percentage data and saved display state.
+- Added configurable 512/1024/2048/4096/8192 MiB process-memory budgets and cooperative cancellation through BW/MS kernels; Both stops before the second solver starts.
+- Reused the accepted cancellation-fixed Windows ZIP without rebuilding. Main/tag documentation can be newer than its explicit build-source commit.
+- Validation and limitations: earlier 115-test acceptance and 42 focused cancellation tests are separate, overlapping inventories. Native Windows 150% testing passed; independent clean-machine testing remains NOT TESTED. Approximate XMCD MDFF, projected potentials, frozen longitudinal transfer, uncalibrated counts/native energies and representative convergence scope remain.
+
+---
+
+## Historical post-v0.4.5 research record
+
+The sections below retain the original milestone assumptions and numerical results.
+
 # Unreleased research main — Ni [017] high-mistilt XY and native WIEN2k edge audit (post-v0.4.5)
 
 **This records research work already merged into `main`; no new version tag, package-version bump, or experimental/quantitative accuracy claim is implied.** The package metadata is still `0.4.5`.

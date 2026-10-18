@@ -1,50 +1,138 @@
 # EMCD-Sim
 
-Development on `feat/atomic-3d-multislice` adds [P1 real atomic supercells and
-subslice geometry](docs/ATOMIC_3D_MULTISLICE_P1.md), starting with FCC Ni [017].
-This is structural preparation only; finite-z potentials and new 3D propagation
-are not yet implemented. Existing projected-2D/GUI results remain unchanged.
+EMCD-Sim is a research-oriented simulation tool for electron magnetic circular
+dichroism, combining dynamical electron diffraction, inelastic scattering
+models and virtual-detector EELS/EMCD analysis.
 
-## EMCD-Sim Windows Desktop
+**Start here:** [Windows installation](docs/INSTALL_WINDOWS.md) ·
+[Quick Start](docs/QUICK_START.md) · [Complete User Manual](docs/USER_GUIDE.md) ·
+[GUI technical reference](docs/EMCD_GUI.md) ·
+[Beta release notes](docs/RELEASE_0_4_5_BETA.md) ·
+[Scientific limitations](#known-limitations).
 
-Explore indexed diffraction and Bragg/mistilt geometry, calculate Ni magnetic
-and nonmagnetic core-loss maps and virtual-detector EELS, compare Bloch-wave
-with verified FCC Ni [017] FFT multislice, and inspect raw, asymmetry-percent
-or fixed-EELS-peak-percent signals. Save/reopen complete projects, compare
-saved conditions, and export PNG/SVG figures and NPZ/CSV data.
+## Windows Beta download
 
-- **Portable Windows ZIP:** no Python, Conda, VS Code or WIEN2k runtime needed.
-  The accepted Stage F candidate is a **local, unsigned, unreleased artifact**;
-  request it from the maintainer. No public binary download is available yet.
-  [Installation, checksum and troubleshooting](docs/INSTALL_WINDOWS.md).
-- **Start using it:** [Quick Start](docs/QUICK_START.md) and
-  [Complete User Manual](docs/USER_GUIDE.md), with actual GUI screenshots.
-- **Technical reference:** [GUI controls, numerical conventions and project format](docs/EMCD_GUI.md).
-- **Status:** package version remains **0.4.5**; the GUI is on
-  `feat/emcd-desktop-gui`, pending authorized integration. See
-  [Stage G acceptance, blockers and merge/release plan](docs/STAGE_G_RELEASE_READINESS.md).
+**0.4.5 Beta · Windows x64 · portable ZIP · no separate Python or Conda required.**
 
-For Python source users, run from the checked-out GUI branch in an environment
-with the GUI dependencies; the installation guide also provides a venv recipe:
+[Windows Beta release and download information](docs/RELEASE_0_4_5_BETA.md)
+
+Download `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`
+(**108,689,021 bytes; 103.65 MiB**). Verify its SHA256, use **Extract All**,
+keep `EMCD-Sim.exe` and `_internal` together, then launch `EMCD-Sim.exe`.
+This is a portable folder, not an MSI installer. The executable is unsigned;
+verify its origin and follow institutional security policies.
+
+```text
+309438c4a049773a6e99948477c8d52051cd8f1de632a762c795656e6c5a2216
+```
+
+The distributed binary is the cancellation-fixed, accepted build from
+`9937d3b820e4225fdf06b7f3ed33c7083d0f35ea`. Its release tag includes later
+documentation and merge history; the executable is reused unchanged.
+Package metadata remains `0.4.5`; the GitHub release is a **Pre-release**.
+
+## What the Windows application does
+
+- Bloch-wave and independent FFT multislice propagation; **Single Channeling**,
+  **Double Channeling**, or matched **Both** solver comparisons.
+- Crystal/CIF loading, oriented diffraction and hkl indexing, zone-axis/Bragg
+  alignment, excitation errors, physical A/B apertures and Thales circles.
+- Energy-resolved Ni L3/L2 EELS, magnetization reversal, magnetic/nonmagnetic
+  components and angular maps with shared fractional-aperture integration.
+- **Raw EMCD (a.u.) / Relative EMCD (%)** display and a separate PRB-style
+  relative-dichroism benchmark. Display switching preserves raw arrays.
+- Project save/open, Results Browser, PNG/SVG figures and CSV/NPZ numerical
+  exports; configurable memory budgets and cooperative cancellation.
+- Interactive thickness/mistilt conditions and saved-condition comparisons;
+  the repository also supplies dedicated research scan scripts.
+
+Double Channeling includes incoming elastic propagation, ionization integrated
+through specimen depth, outgoing propagation at the post-loss electron energy
+and complex magnetic MDFF interference. It is an explicit scattering model,
+not an empirical correction factor. Single Channeling retains the legacy
+entrance-only outgoing approximation.
+
+![Actual accepted Double-Channeling full-energy GUI](docs/images/gui/beta_rc/full_double_spectrum_150pct.png)
+
+Actual Windows capture of a saved genuine full-energy Double BW result at
+native 150% scaling. See the manual for Raw/Relative components and the
+[cancellation report](docs/DOUBLE_CHANNELING_CANCELLATION.md) for the final
+package's measured active-work tests. No results are fabricated for screenshots.
+
+## Validated Ni examples
+
+The principal experimental-oriented example is **fcc Ni [017]**, a minor
+zone axis, at exact **(200) Bragg alignment and 200 kV**. It is strongly
+two-beam dominated in the tested conditions, while retaining the full finite
+2D ZOLZ basis; exact Bragg alignment is not a strict two-beam approximation.
+A separate **[001] systematic-row-restricted reference** omits off-row beams
+and must not be described as full-ZOLZ EELS.
+
+At the locked native L3 sample **831.4778 eV**, selected 8 nm Double BW
+references give PRB dichroism approximately **-13.0601% ([017])** and
+**-13.2278% ([001] restricted row)**. These are model predictions, not
+experimental measurements or universal optimum thicknesses. The
+[200 kV benchmark](docs/DOUBLE_CHANNELING_FINAL_200KV.md),
+[full-spectrum validation](docs/DOUBLE_CHANNELING_FULL_SPECTRA.md) and
+[geometry audit](docs/NI_TWO_BEAM_GEOMETRY_COMPARISON.md) identify settings,
+sources and numerical scope. The auto-audit extremum **831.271 eV** is a
+different energy selection; no silent source-energy shift is applied.
+
+For each detector, N=(I(+M)+I(-M))/2 and M=(I(+M)-I(-M))/2.
+Raw magnetic/even differences are M_A-M_B and N_A-N_B. Relative components
+use their common N_A+N_B denominator; PRB uses the +M intensity sum instead.
+Post-edge-corrected contrast is a separate observable, not intrinsic magnetic
+signal. Arbitrary-unit intensity and EMCD percentage are not electron counts
+or experimental SNR.
+
+## Known limitations
+
+- The Ni magnetic response uses an **XMCD-constrained approximate MDFF**;
+  a complete DFT-derived MDFF from complex transition wavefunctions is absent.
+- Absolute EELS cross sections/electron counts are uncalibrated; raw units
+  are a.u. Native WIEN2k edge energies are not experimental energy calibration.
+- GUI multislice uses **projected elastic potentials**, not genuine atomic-3D
+  slice-dependent electrostatic potentials. Branch-frozen longitudinal
+  momentum-transfer approximations remain.
+- Convergence is verified for selected configurations, not every thickness,
+  material or geometry. BW/MS agreement alone does not establish convergence.
+- Ni validation and arbitrary CIF import do not establish magnetic EELS support
+  for arbitrary materials. Verified GUI FFT paths are Ni [017] and explicit
+  [001] (200) systematic-row calculations.
+- Testing used a Windows development host at native 150% scaling.
+  **Independent clean-machine validation: NOT TESTED.** The executable is unsigned.
+
+Read the [complete limitations](docs/USER_GUIDE.md#scientific-limitations-and-responsible-interpretation)
+and [release validation scope](docs/RELEASE_0_4_5_BETA.md) before research use.
+
+## Source and research workflows
+
+Python users can install the GUI extra from `main` (Python 3.11 matches the
+tested major/minor version):
 
 ```powershell
-conda activate emcd-python
 python -m pip install -e ".[gui]"
 python -m emcd_sim.gui
 ```
 
-**Scientific scope:** projected IAM, entrance-only depth-integrated ionization,
-no outgoing/full double channeling or atom-layer-resolved 3D multislice.
-XMCD-effective is not a complete complex DFT MDFF; atomic ionization is non-DFT.
-Absolute cross sections and native WIEN2k energies are uncalibrated; GUI FFT
-is verified only for FCC Ni [017]. Physical potential-cutoff convergence is
-unresolved. BW/MS agreement does not establish quantitative experimental EMCD
-or arbitrary-CIF support. See [physics and limitations](docs/PHYSICS.md).
+The [Ni [017] case-study guide](docs/NI_017_CASE_STUDY_GUIDE.md) retains the
+actual X/Y survey gallery, raw/corrected interpretation and native-energy
+audit. [Atomic-3D P1](docs/ATOMIC_3D_MULTISLICE_P1.md) supplies structural
+supercell/subslice preparation only, not a new 3D electrostatic propagator.
+[Changelog](docs/CHANGELOG.md) and the
+[GUI milestone record](docs/EMCD_GUI.md) preserve the research history.
 
-The CLI and research studies below remain accessible and retain their own
-documented assumptions; GUI milestones are development history, not separate products.
+## Historical research and CLI reference
 
-## Current research main: oriented Ni [017] EMCD / X-Y mistilt study (post-v0.4.5)
+<details>
+<summary>Earlier research milestones, examples and command-line workflows</summary>
+
+The following records describe their original versions and models. Statements
+about entrance-only propagation, incomplete outgoing channeling or unresolved
+low-cutoff studies apply to those historical calculations, not the current
+Double-Channeling GUI. Their results and original assumptions are preserved.
+
+## Historical oriented research: oriented Ni [017] EMCD / X-Y mistilt study (post-v0.4.5)
 
 The **`main` branch now includes the completed Ni [710] and Ni [017] oriented projected-IAM benchmarks and the 43-orientation Ni [017] high-mistilt X/Y survey**. The *published package metadata* remains **v0.4.5** until a separately validated/versioned release; later research features are present on `main` without an automatic version or release-tag bump.
 
@@ -364,3 +452,6 @@ adds indexed L3/L2 intrinsic magnetic/even/total maps and full-source virtual
 detector spectra via `--angular-output --full-source-range`.
 
 The desktop GUI supports [EMCD percentage visualization](docs/EMCD_GUI.md#emcd-signal-normalization-and-percentage-conventions-stage-f) from saved projects: common-even asymmetry, fixed L3/L2 EELS peaks, and distinct local/paired angular percentages. See [Stage F acceptance](docs/EMCD_GUI_STAGE_F_ACCEPTANCE.md).
+
+
+</details>

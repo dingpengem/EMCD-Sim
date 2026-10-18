@@ -3,12 +3,12 @@
 This is a short reading guide, not a promise of total calculation time.
 For installation details see [Install on Windows](INSTALL_WINDOWS.md); for
 interpretation and other workflows see the [User Manual](USER_GUIDE.md).
-The application is an unreleased research candidate.
+This guide describes the **0.4.5 Windows research Beta**.
 
 ## 1. Extract and open
 
-Obtain the reviewed `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip` from the maintainer;
-there is currently **no published binary download**. Verify the checksum in
+Open the [Windows Beta release information](RELEASE_0_4_5_BETA.md) and download
+`EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`. Verify the checksum in
 the installation guide and **Extract All**. In the extracted `EMCD-Sim`
 folder, double-click `EMCD-Sim.exe`. Keep `_internal` beside it. No Python,
 Conda, VS Code or WIEN2k installation is required. Initialization can take
@@ -29,10 +29,10 @@ tens of seconds. Do not run inside the ZIP.
    They differ at this exact-Bragg tilt. The Thales circle has (000)–(200)
    as its diameter. Use **Restore Thales A/B** for the physical apertures.
 
-![Default Ni diffraction and controls](images/gui/stage_e_main.png)
+![Default Ni diffraction and controls](images/gui/beta_rc/startup_150pct.png)
 
-Actual accepted Windows capture, reused from Stage E; the current candidate
-retains these controls and geometry. Labels in **Calculation Information**
+Actual accepted Beta Windows capture at native 150% scaling, showing the
+indexed [017] geometry and physical detector outlines. Labels in **Calculation Information**
 distinguish current inputs from the completed-run snapshot.
 
 ## 3. Select the bundled spectrum and run BW
@@ -53,7 +53,13 @@ distinguish current inputs from the completed-run snapshot.
    settings. For corrected curves, explicitly check **Enable post-edge A/B
    correction** and retain its separate `878–882 eV` window. Validation of an
    unaudited source can leave correction off; do not mistake that for failure.
-6. Click **Run EMCD / EELS** once. Wait for completion; **Cancel** is available.
+6. For full energy coverage, choose **Spectral coverage** → **Full native
+   energy-resolved spectrum**; selected L3/L2-only results are two points,
+   not complete curves.
+   Click **Run EMCD / EELS** once. **Cancel** immediately shows **Cancelling...**,
+   then **Calculation cancelled.** after cooperative cleanup. It preserves the
+   last completed result and restores controls. An individual native numerical
+   call must finish before it can acknowledge cancellation.
    Changing display options later does not rerun the solver.
 
 ## 4. Read maps and EELS
@@ -75,11 +81,11 @@ distinguish current inputs from the completed-run snapshot.
   model-specific calculated percentages, not expected results for every GUI
   default. See the [full-spectrum report](DOUBLE_CHANNELING_FULL_SPECTRA.md).
 
-![Saved Ni percentage displays](images/gui/stage_f_emcd_percentage.png)
+![Current Double BW/MS relative components](images/gui/beta_rc/double_both_relative.png)
 
-Actual native Stage F acceptance capture combining saved paired magnetic/even
-maps and BW/MS EELS with a fixed L3 peak. Grey pixels are undefined/outside A
-support. The normal map and EELS tabs provide the display selectors.
+Actual accepted Beta BW/MS Double comparison at a manageable dispatch-test
+profile, not a production convergence benchmark. The lower panel uses the
+common nonmagnetic sum for both signed components; it is not peak-normalized.
 Post-edge-corrected A−B is **not automatically intrinsic magnetic EMCD**.
 
 ## 5. Save and reopen
@@ -99,8 +105,8 @@ Post-edge-corrected A−B is **not automatically intrinsic magnetic EMCD**.
 
 Next: use the [manual's mistilt comparison](USER_GUIDE.md#compare-two-conditions)
 and export tutorials. Check [release readiness](STAGE_G_RELEASE_READINESS.md)
-for historical checks, and [Beta acceptance](WINDOWS_BETA_RELEASE_ACCEPTANCE.md)
-for the current candidate.
+for historical checks, and the [release notes](RELEASE_0_4_5_BETA.md) and
+[cancellation acceptance](DOUBLE_CHANNELING_CANCELLATION.md) for the current Beta.
 
 ## Limits to keep with your figures
 
@@ -109,5 +115,12 @@ no atomic-3D electrostatic multislice; branch-frozen longitudinal transfer.
 The XMCD-effective
 tensor is not a full complex DFT MDFF; the atomic model is non-DFT. There is no
 absolute experimental cross-section or native-energy calibration. GUI FFT is
-verified only for FCC Ni [017], not arbitrary CIFs. Physical Fourier-potential
-cutoff convergence remains unresolved; good BW/MS agreement does not resolve it.
+verified for FCC Ni [017] and the explicit [001] (200) row model, not arbitrary
+CIFs. Potential/basis/FFT/depth controls passed for selected reference settings;
+that does not certify every geometry, thickness or the older low-cutoff survey.
+
+Earlier default XMCD BW/MS/Both runs took about 49–119 seconds and peaked
+near 297 MiB on the tested host; larger Double/full-energy jobs can take much
+longer and require more RAM. These historical observations are not guarantees
+or minimum hardware requirements. Keep your selected numerical settings;
+memory admission rejects oversized jobs without silently reducing them.

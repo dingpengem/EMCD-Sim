@@ -53,7 +53,7 @@ test passed. The relevant application fix preserves Raw/Relative mode and
 locked energy through project save/open without changing scientific arrays.
 
 Machine-readable evidence is in
-[`outputs/windows_beta_acceptance/`](../outputs/windows_beta_acceptance/):
+the local `outputs/windows_beta_acceptance/` directory:
 `checkpoint_AB.json`, `source_test_summary.json`, `source_native/acceptance.json`,
 `frozen_native/acceptance.json`, `frozen_comparison.json`,
 `package_integrity.json`, `package_privacy.json` and

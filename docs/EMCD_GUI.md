@@ -1,8 +1,8 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
-## Current development: Single and Double Channeling
+## Current 0.4.5 research Beta: Single and Double Channeling
 
-The development branch adds **Channeling Model** alongside **Propagation
+The Windows Beta provides **Channeling Model** alongside **Propagation
 Method**. Single Channeling retains the existing entrance-only approximation.
 Double Channeling uses the actual incoming/outgoing BW or independent FFT
 solver, including the outgoing electron's post-loss energy. **Both** runs both
@@ -53,8 +53,9 @@ Rejected jobs explain the limit; they do not silently change settings.
 The [final 200 kV benchmark](DOUBLE_CHANNELING_FINAL_200KV.md) documents the
 validated profile, native energy convention, component definitions and limits
 of representative numerical convergence. The milestone screenshots and
-historical workflows below describe their original versions; they do not imply
-a new Windows executable or release for this development update.
+historical workflows below describe their original versions; they are not the
+current release acceptance. Use the [Beta release notes](RELEASE_0_4_5_BETA.md)
+for the accepted cancellation-fixed executable and source provenance.
 
 ### Primary spectra and exports
 
