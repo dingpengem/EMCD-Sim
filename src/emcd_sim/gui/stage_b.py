@@ -2,6 +2,7 @@
 from dataclasses import asdict
 from pathlib import Path
 import datetime,json,logging
+import threading,time
 import numpy as np
 from PySide6 import QtCore,QtWidgets
 from matplotlib.figure import Figure
@@ -17,15 +18,28 @@ class EMCDWorker(QtCore.QThread):
     result=QtCore.Signal(object);failed=QtCore.Signal(str);stage=QtCore.Signal(str)
     def __init__(self,structure,settings,config):
         super().__init__();self.structure=structure;self.settings=settings;self.config=config
+        self.cancellation_event=threading.Event();self.cancellation_times={}
+    def requestInterruption(self):
+        # Called directly from the GUI, never queued into this busy thread.
+        self.cancellation_times.setdefault('requested',time.perf_counter())
+        self.cancellation_event.set();super().requestInterruption()
+    def isInterruptionRequested(self):
+        return self.cancellation_event.is_set() or super().isInterruptionRequested()
+    def cancelled(self):
+        requested=self.isInterruptionRequested()
+        if requested:self.cancellation_times.setdefault('acknowledged',time.perf_counter())
+        return requested
     def run(self):
         try:
             logging.getLogger('emcd_sim.gui').info('Calculate method=%s model=%s source=%s sha256=%s', self.config.propagation, self.config.model, self.config.source, self.config.source_sha256)
-            r=calculate(self.structure,self.settings,self.config,self.stage.emit,self.isInterruptionRequested)
-            if not self.isInterruptionRequested():self.result.emit(r)
+            r=calculate(self.structure,self.settings,self.config,self.stage.emit,self.cancelled)
+            if not self.cancelled():self.result.emit(r)
         except Cancelled:pass
         except Exception as exc:
             logging.getLogger('emcd_sim.gui').exception('Calculation failed')
             if not self.isInterruptionRequested():self.failed.emit(str(exc))
+        finally:
+            self.cancellation_times['stopped']=time.perf_counter()
 
 
 class StageB:
@@ -202,7 +216,12 @@ class StageB:
             structure=Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings)
         except Exception as exc:self.error(str(exc));return
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.emcd_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0)
-        self.worker=EMCDWorker(structure,s,cfg);self.worker.stage.connect(self.statusBar().showMessage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.preview_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
+        self.worker=EMCDWorker(structure,s,cfg);self.worker.stage.connect(self.emcd_stage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.emcd_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
+    def emcd_stage(self,message):
+        # Queued progress from before Cancel must not hide the pending request.
+        if not self.worker.isInterruptionRequested():self.statusBar().showMessage(message)
+    def emcd_failed(self,message):
+        if not self.worker.isInterruptionRequested():self.preview_failed(message)
     def emcd_completed(self,result):
         if self.worker.isInterruptionRequested():return
         self.emcd_result=result;self.run_outcome='completed'
@@ -214,7 +233,10 @@ class StageB:
         self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale();self.emcd_ready.emit()
     def emcd_finished(self):
         self.finished();self.emcd_stale()
-        self.statusBar().showMessage('EMCD '+('cancelled; no cancelled result registered.' if self.worker.isInterruptionRequested() else ('completed.' if self.run_outcome=='completed' else 'failed; no new result registered.')))
+        if self.worker.isInterruptionRequested():
+            self.run_outcome='cancelled';self.worker.cancellation_times['idle']=time.perf_counter()
+            self.statusBar().showMessage('Calculation cancelled.')
+        else:self.statusBar().showMessage('EMCD '+('completed.' if self.run_outcome=='completed' else 'failed; no new result registered.'))
     def save_emcd(self):
         if self.emcd_result is None:self.error('Run EMCD/EELS successfully first.');return
         path=QtWidgets.QFileDialog.getExistingDirectory(self,'Export completed EMCD result (new subfolder)')

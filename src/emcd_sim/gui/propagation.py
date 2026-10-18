@@ -66,7 +66,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True):
     return info
 
 
-def propagate(elastic,settings,cfg,z,stage):
+def propagate(elastic,settings,cfg,z,stage,*,cancelled=None):
     waves={};extra={}
     if cfg.propagation in ('bloch','both'):
         stage('Running Bloch-wave propagation');waves['bloch']=elastic.amplitudes(z)
@@ -75,7 +75,7 @@ def propagate(elastic,settings,cfg,z,stage):
             from .channeling import fft_geometry,incident_fields
             stage('Running incoming FFT propagation in the matched projected potential')
             grid=fft_geometry(elastic,settings,cfg)
-            incoming=incident_fields(grid,settings.thickness,depth_steps=cfg.depth,slice_step_nm=cfg.slice_step)
+            incoming=incident_fields(grid,settings.thickness,depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,cancelled=cancelled)
             psi=incoming[0][:,grid.indices(elastic.beams.hkl)];waves['fft-multislice']=psi
             total=np.sum(abs(incoming[0])**2,axis=1);outside=total-np.sum(abs(psi)**2,axis=1)
             extra=dict(beam_hkl=grid.hkl,reciprocal_gxy=grid.g,exit_intensity=abs(incoming[0][-1])**2,

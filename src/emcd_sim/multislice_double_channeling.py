@@ -6,6 +6,7 @@ Cartesian responses retain the full dipole MDFF, on the BW relative scale.
 """
 from dataclasses import dataclass
 import numpy as np
+from .cancellation import check_cancelled
 from .geometry import electron_wavelength_angstrom, characteristic_qz_angstrom_inv
 from .double_channeling import dipole_kernel,equivalent_site_phases
 from .gui.memory_budget import reserve_memory
@@ -44,7 +45,8 @@ class FFTSplitStep:
         self.size=self.u.size
         self._cached_dz=None
 
-    def advance(self,coefficients,steps,dz):
+    def advance(self,coefficients,steps,dz,*,cancelled=None):
+        check_cancelled(cancelled)
         if not isinstance(steps,int) or steps<0 or not np.isfinite(dz):
             raise ValueError('Nonnegative integer steps and finite dz required')
         c=np.asarray(coefficients,complex)
@@ -57,8 +59,10 @@ class FFTSplitStep:
         axes=tuple(range(-self.u.ndim,0))
         c=c.reshape(c.shape[:-1]+self.shape).copy()
         for _ in range(steps):
+            check_cancelled(cancelled)
             wave=np.fft.ifftn(c*self._kinetic,axes=axes)*self.size
             c=np.fft.fftn(wave*self._transmission,axes=axes)/self.size*self._kinetic
+        check_cancelled(cancelled)
         return c.reshape(c.shape[:-self.u.ndim]+(self.size,))
 
 
@@ -164,7 +168,8 @@ class ProjectedNiFFT:
         return FFTSplitStep(self.potential*ratio if elastic_potential else np.zeros_like(self.potential),d)
 
 
-def incident_fields(grid,thickness_nm,*,depth_steps=257,slice_step_nm=.04):
+def incident_fields(grid,thickness_nm,*,depth_steps=257,slice_step_nm=.04,cancelled=None):
+    check_cancelled(cancelled)
     z,w=depth_quadrature(thickness_nm,depth_steps)
     if not np.isfinite(slice_step_nm) or slice_step_nm<=0:raise ValueError('Positive finite slice step required')
     interval=float(thickness_nm)/(depth_steps-1)
@@ -174,20 +179,21 @@ def incident_fields(grid,thickness_nm,*,depth_steps=257,slice_step_nm=.04):
     c=np.zeros(grid.potential.size,complex);c[0]=1
     fields=np.empty((depth_steps,plan.size),complex);fields[0]=c
     for i in range(1,depth_steps):
-        c=plan.advance(c,n,dz);fields[i]=c
+        c=plan.advance(c,n,dz,cancelled=cancelled);fields[i]=c
     return fields,z,w,n,dz
 
 
 def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         fft_grid=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,
         depth_steps=257,slice_step_nm=.04,outgoing_beams=None,outgoing_potential=True,
-        batch_pixels=32,memory_budget_mib=2048,prepared_grid=None,prepared_incoming=None,projected_geometry=None):
+        batch_pixels=32,memory_budget_mib=2048,prepared_grid=None,prepared_incoming=None,projected_geometry=None,cancelled=None):
     """Adjoint FFT detector fields contracted coherently at independent depths.
 
     Retain all FFT harmonics during propagation; the explicit incoming/outgoing
     beam sets specify the MDFF paths, without projection or renormalization of
     propagated waves. Return response and norm/leakage/memory diagnostics.
     """
+    check_cancelled(cancelled)
     q=np.asarray(q_xy,float)
     if q.ndim!=2 or q.shape[1]!=2 or not len(q) or not np.isfinite(q).all():raise ValueError('Finite nonempty (pixels,2) array required')
     if not isinstance(batch_pixels,int) or batch_pixels<1:raise ValueError('Positive integer batch required')
@@ -201,7 +207,7 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         grid=prepared_grid if prepared_grid is not None else ProjectedNiFFT.build(elastic,grid_points=fft_grid,
             potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction,projected_geometry=projected_geometry)
         fields,z,w,n,dz=(prepared_incoming if prepared_incoming is not None else
-            incident_fields(grid,thickness_nm,depth_steps=depth_steps,slice_step_nm=slice_step_nm))
+            incident_fields(grid,thickness_nm,depth_steps=depth_steps,slice_step_nm=slice_step_nm,cancelled=cancelled))
         if fields.shape!=(depth_steps,grid.potential.size) or not np.allclose(z,np.linspace(0,thickness_nm,depth_steps)):
             raise ValueError('Prepared incoming fields do not match depth/grid settings')
         ii,oi=grid.indices(elastic.beams.hkl),grid.indices(ob.hkl)
@@ -216,20 +222,25 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         incoming_leak=float(np.max(np.sum(abs(fields[:,~keep_i])**2,axis=-1)))
         outgoing_leak=0.;out_norm=0.
         for start in range(0,len(q),batch_pixels):
+            check_cancelled(cancelled)
             sl=slice(start,start+batch_pixels);qb=q[sl];nb=len(qb)
             transfer=np.empty((nb,ni,no,3))
             transfer[...,:2]=qb[:,None,None,:]+grid.g[oi][None,None,:,:]-grid.g[ii][None,:,None,:]
             transfer[...,2]=qz
             kernel=dipole_kernel(transfer)
+            check_cancelled(cancelled)
             plan=grid.plan(float(energy_ev),qb,elastic_potential=outgoing_potential)
             reciprocal=np.zeros((nb,plan.size),complex);reciprocal[:,0]=1
             for iz in range(depth_steps-1,-1,-1):
+                check_cancelled(cancelled)
                 for phase,site_weight in zip(phases,site_weights):
+                    check_cancelled(cancelled)
                     v=np.einsum('g,bh,bgha,gh->ba',fields[iz,ii],reciprocal[:,oi].conj(),kernel,phase,optimize=True)
                     response[sl]+=w[iz]*site_weight*v[:,:,None]*v[:,None,:].conj()
                 out_norm=max(out_norm,float(np.max(abs(np.sum(abs(reciprocal)**2,axis=-1)-1))))
                 outgoing_leak=max(outgoing_leak,float(np.max(np.sum(abs(reciprocal[:,~keep_o])**2,axis=-1))))
-                if iz:reciprocal=plan.advance(reciprocal,n,-dz)
+                if iz:reciprocal=plan.advance(reciprocal,n,-dz,cancelled=cancelled)
+        check_cancelled(cancelled)
         diagnostics=dict(incoming_norm_error=norm_error,outgoing_norm_error=out_norm,
             incoming_max_excluded_population=incoming_leak,outgoing_max_excluded_population=outgoing_leak,
             actual_slice_step_nm=dz,substeps_per_depth_interval=n,depth_steps=depth_steps,

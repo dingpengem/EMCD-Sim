@@ -255,7 +255,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         elif self.run_outcome=='failed':self.statusBar().showMessage('Preview failed; no new result was registered.')
     def preview_failed(self,message):self.run_outcome='failed';self.error(message)
     def cancel(self):
-        if self.worker:self.worker.requestInterruption();self.statusBar().showMessage('Cancellation requested; waiting for the current numerical stage to finish…')
+        if self.busy and self.worker:
+            self.worker.requestInterruption();self.statusBar().showMessage('Cancelling...')
     def closeEvent(self,event):
         if self.busy:self.cancel();event.ignore();return
         self.store_ui_preferences()
@@ -292,6 +293,8 @@ def main():
     parser.add_argument('--rc-acceptance', type=Path, help='Run real native RC acceptance into a new directory')
     parser.add_argument('--rc-source', type=Path, help='External audited Ni source for acceptance')
     parser.add_argument('--rc-reopen', action='store_true', help='Reopen RC projects in a new process without calculations')
+    parser.add_argument('--cancellation-acceptance',type=Path,help='Run focused real-worker cancellation acceptance into a new directory')
+    parser.add_argument('--cancellation-source',type=Path,help='Explicit external XMCD source for cancellation acceptance')
     parser.add_argument('--stage-f-acceptance',type=Path,help='Validate normalized visualization from saved projects; no solvers')
     parser.add_argument('--stage-f-project',type=Path)
     parser.add_argument('--stage-f-comparison',type=Path)
@@ -301,6 +304,10 @@ def main():
     args=parser.parse_args()
     from .runtime import configure_logging, LABEL, build_info
     configure_logging()
+    if args.cancellation_acceptance:
+        if not args.cancellation_source:parser.error('Cancellation acceptance requires an explicit source')
+        from .cancellation_acceptance import run
+        return run(args.cancellation_acceptance,args.cancellation_source)
     if args.beta_acceptance:
         if not args.beta_source or not args.beta_production:parser.error('Beta acceptance requires source and saved production paths')
         from .beta_acceptance import run

@@ -8,6 +8,7 @@ import numpy as np
 from .geometry import Microscope, electron_wavelength_angstrom, characteristic_qz_angstrom_inv
 from .physical_elastic import PhysicalElasticModel
 from .gui.memory_budget import reserve_memory
+from .cancellation import check_cancelled
 
 
 @dataclass(frozen=True)
@@ -55,11 +56,14 @@ class PreparedBlochIncoming:
     def ket(self,z):return self.fields if np.array_equal(z,self.z) else self.states.ket(z)
 
 
-def prepare_incoming_bloch(elastic,thickness_nm,depth_steps=257):
+def prepare_incoming_bloch(elastic,thickness_nm,depth_steps=257,*,cancelled=None):
+    check_cancelled(cancelled)
     if not np.isfinite(thickness_nm) or thickness_nm<0 or not isinstance(depth_steps,int) or depth_steps<2:
         raise ValueError('Finite nonnegative thickness and at least two depth nodes required')
     states=BlochStates.solve(elastic.hamiltonian_nm_inv(),elastic.beams.hkl.index((0,0,0)))
+    check_cancelled(cancelled)
     z=np.linspace(0,float(thickness_nm),depth_steps);fields=states.ket(z)
+    check_cancelled(cancelled)
     for value in (states.values,states.vectors,z,fields):value.setflags(write=False)
     return PreparedBlochIncoming(elastic,float(thickness_nm),depth_steps,states,z,fields)
 
@@ -77,13 +81,14 @@ def contract_cartesian(vectors, tensor):
     return np.einsum('...a,ab,...b->...', vectors, tensor, vectors.conj()).real
 
 
-def depth_response(incoming, outgoing, kernel, thickness_nm, *, method='analytic', depth_steps=257):
+def depth_response(incoming, outgoing, kernel, thickness_nm, *, method='analytic', depth_steps=257, cancelled=None):
     """Integral of v_a(z) v_b*(z), with v=sum_gh a_g(z) Uout(t-z)_0h K_gha.
 
     kernel has shape (incoming beams, outgoing beams, 3), including site phase.
     Returns Hermitian PSD 3x3 response, usable with any complex dipole tensor.
     Numerical reference uses direct depth propagation, not mode-pair integration.
     """
+    check_cancelled(cancelled)
     t = float(thickness_nm)
     if not np.isfinite(t) or t < 0:
         raise ValueError('Thickness must be finite nonnegative')
@@ -100,19 +105,26 @@ def depth_response(incoming, outgoing, kernel, thickness_nm, *, method='analytic
         z = np.linspace(0, t, depth_steps)
         a = incoming.ket(z)
         # Reciprocal ket U(z-t)e0 conjugated gives the forward detector bra.
+        check_cancelled(cancelled)
         b = outgoing.ket(z-t).conj()
         v = np.einsum('zg,zh,gha->za', a, b, k, optimize=True)
+        check_cancelled(cancelled)
         outer = v[:, :, None]*v[:, None, :].conj()
         return (outer[1:]+outer[:-1]).sum(axis=0)*t/(2*(depth_steps-1))
     ci = incoming.vectors*incoming.vectors[incoming.boundary_index].conj()[None, :]
     co = outgoing.vectors.conj()*outgoing.vectors[outgoing.boundary_index][None, :]
     f = np.einsum('gj,hl,gha->jla', ci, co, k, optimize=True)
+    check_cancelled(cancelled)
     f *= np.exp(1j*outgoing.values*t)[None, :, None]
     f = f.reshape(-1, 3)
     omega = (incoming.values[:, None]-outgoing.values[None, :]).ravel()
     phase = (omega[:, None]-omega[None, :])*t
+    check_cancelled(cancelled)
     integral = t*np.exp(.5j*phase)*np.sinc(phase/(2*np.pi))
-    return f.T @ integral @ f.conj()
+    check_cancelled(cancelled)
+    result = f.T @ integral @ f.conj()
+    check_cancelled(cancelled)
+    return result
 
 
 def outgoing_elastic(elastic, detector_q_xy, energy_ev, beams=None):
@@ -148,13 +160,14 @@ def equivalent_site_phases(incoming_hkl,outgoing_hkl,positions):
 
 
 def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoing_beams=None,
-        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None):
+        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None,cancelled=None):
     """Detector-resolved integrated Cartesian response (pixels,3,3).
 
     Average over equivalent Ni basis sites, continuous uniform depth density,
     relative per-atom scale identical to entrance-only. No absorption or HOLZ.
     Pixel loop avoids a dense (pixels*Ni*No)^2 MDFF allocation.
     """
+    check_cancelled(cancelled)
     q_xy = np.asarray(q_xy, float)
     if q_xy.ndim != 2 or q_xy.shape[1] != 2 or not np.isfinite(q_xy).all():
         raise ValueError('q_xy must be finite (pixels,2)')
@@ -186,16 +199,19 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
         go = eo.reciprocal_vectors_xy
         wavelength = electron_wavelength_angstrom(eo.microscope.acceleration_kv)
         for p, q in enumerate(q_xy):
+            check_cancelled(cancelled)
             h = reference_h + np.diag(-20*np.pi*wavelength*(go @ q))
             if not outgoing_potential:
                 h = np.diag(np.diag(h))
             outgoing = BlochStates.solve(h, ob.hkl.index((0,0,0)))
+            check_cancelled(cancelled)
             transfer = np.empty((ni,no,3))
             transfer[..., :2] = q+go[None, :, :]-gi[:, None, :]
             transfer[..., 2] = qz
             kernel = dipole_kernel(transfer)
             result[p] = sum(weight*depth_response(incoming, outgoing, kernel*phase[..., None], thickness_nm,
-                method=method, depth_steps=depth_steps) for phase,weight in zip(phases,site_weights))
+                method=method, depth_steps=depth_steps, cancelled=cancelled) for phase,weight in zip(phases,site_weights))
+        check_cancelled(cancelled)
         return result
 
 

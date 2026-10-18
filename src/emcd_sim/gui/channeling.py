@@ -40,7 +40,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
         sign=np.ones((len(points),3));sign[points[:,1]<0,1]=-1
     else:query=points
     n=len(elastic.beams.hkl);workers=worker_count(n,method)
-    incoming_bw=prepare_incoming_bloch(elastic,settings.thickness,cfg.depth) if cfg.channeling_model=='double' and method=='bloch' else None
+    incoming_bw=prepare_incoming_bloch(elastic,settings.thickness,cfg.depth,cancelled=cancelled) if cfg.channeling_model=='double' and method=='bloch' else None
     selected={int(np.argmin(abs(energy-v))):edge for edge,v in (('L3',cfg.l3),('L2',cfg.l2))}
     diagnostics=[]
     for ie,e in enumerate(energy):
@@ -68,14 +68,14 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
                 if method=='bloch':
                     return double_channeling_response(elastic,float(e),batch,settings.thickness,
                         method='analytic' if cfg.systematic_row else 'numerical',depth_steps=cfg.depth,
-                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw)
+                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,cancelled=cancelled)
                 grid,incoming=prepared_incoming
                 r,diag=multislice_double_channeling_response(elastic,float(e),batch,settings.thickness,
                     fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
                     systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
                     projected_geometry=Ni017Geometry() if settings.zone==(0,1,7) else None,
                     depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,memory_budget_mib=cfg.memory_budget_mib,
-                    prepared_grid=grid,prepared_incoming=incoming)
+                    prepared_grid=grid,prepared_incoming=incoming,cancelled=cancelled)
                 return r
             # MS chunks bound cancellation latency without retaining outgoing
             # depth stacks. BW retains its existing per-call dense admission.
@@ -87,14 +87,17 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             if folded:r=r[inverse]*sign[:,:,None]*sign[:,None,:]
             values=np.stack([intensities_from_response(r,t.tensor_angstrom2_per_ev[ie]) for t in tensors])
             diagnostics.append(dict(energy_ev=float(e),workers=workers,query_pixels=len(query),mirror_reuse=folded))
+        if cancelled():raise Cancelled()
         for si,s in enumerate(('plus','minus')):
             integrated=w@values[si]*dq2
             for di,d in enumerate(('A','B')):spectra[f'I_{d}_{s}'][ie]=integrated[di]
         if cfg.angular_maps and ie in selected:
             plus,minus=values.reshape(2,cfg.grid,cfg.grid)
             maps[selected[ie]]=dict(I_plus=plus,I_minus=minus,I_mag=(plus-minus)/2,I_nonmag=(plus+minus)/2)
+        if cancelled():raise Cancelled()
         if energy_checkpoint is not None:
             compact=dict(raw=np.array([spectra[k][ie] for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')]))
             if cfg.angular_maps and ie in selected:compact['maps']=values.reshape(2,cfg.grid,cfg.grid)
             energy_checkpoint(float(e),compact)
+    if cancelled():raise Cancelled()
     return dict(spectra=spectra,maps=maps,qx=qx,qy=qy,weights=weights,diagnostics=diagnostics)

@@ -134,18 +134,21 @@ def energy_grid(cfg,requested=None):
     return np.array([cfg.l3,cfg.l2]) if cfg.energy_scope=='edges' else np.unique(np.r_[np.linspace(lo,hi,cfg.energy_points),cfg.l3,cfg.l2])
 
 
-class Cancelled(Exception):pass
+from ..cancellation import Cancelled, check_cancelled
 
 
 def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,energy_ev=None,energy_checkpoint=None):
+    check_cancelled(cancelled)
     from .propagation import numerical_info
     from .memory_budget import reserve_memory
     info=numerical_info(structure,settings,cfg)
+    check_cancelled(cancelled)
     # Double kernels make their own concurrent reservations. Reserve retained
     # GUI arrays here, after admitting the complete estimated working set.
     reserved=info['retained_results_working_mib'] if cfg.channeling_model=='double' else info['estimated_working_mib']
     with reserve_memory(reserved,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
         result=_calculate(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,energy_checkpoint=energy_checkpoint)
+        check_cancelled(cancelled)
         result['metadata']['memory_admission']=admission
         for r in result['methods'].values():r['metadata']['memory_admission']=admission
         return result
@@ -169,7 +172,7 @@ def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy
     memory=info['dense_working_estimate_mib']
     stage('Generating common +M and -M tensors');ts=tensors(cfg,energy,R)
     z=np.linspace(0,settings.thickness,cfg.depth)
-    waves,fft_info=propagate(elastic,settings,cfg,z,stage)
+    waves,fft_info=propagate(elastic,settings,cfg,z,stage,cancelled=cancelled)
     prepared_incoming=fft_info.pop('_prepared',None)
     methods={}
     for method,psi in waves.items():
