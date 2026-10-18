@@ -105,7 +105,7 @@ class PRBBenchmarkControls(QtWidgets.QGroupBox):
             r = self.records[0]
             lines.extend([f'Thickness: {r["thickness_nm"]:.1f} nm | {r["accelerating_voltage_kv"]:g} kV',
                           'Diffraction condition: '+r['diffraction_condition'],
-                          f'Detector A/B: {r["detector_centres_cycles_per_angstrom"]} cycles/Å; radius {r["aperture_radius_cycles_per_angstrom"]:.7g} cycles/Å',
+                          f'Detector A/B: {r["detector_centres_cycles_per_angstrom"]} Å⁻¹; radius {r["aperture_radius_cycles_per_angstrom"]:.7g} Å⁻¹',
                           'Comparison: normalization only; not a physical Figure 5 reproduction.'])
             if tuple(r['nominal_zone_axis']) != (0, 0, 1):
                 lines.append('Geometry mismatch: current '+str(r['nominal_zone_axis'])+' versus literature [001] systematic-row vicinity.')

@@ -111,6 +111,7 @@ def normalized_spectra(entries,settings=None,zoom='Full spectrum'):
 
 
 def validate_pair(result,edge):
+    if edge not in result['maps']:raise ValueError('Angular maps were not calculated for this result.')
     c=result['config'];qx,qy=np.asarray(result['qx']),np.asarray(result['qy'])
     centers=np.asarray(c.centers)
     if centers.shape!=(2,2) or not np.allclose(centers[0],centers[1]*[1,-1],rtol=0,atol=1e-12):raise ValueError('Paired percentages disabled: physical A/B apertures are not y mirrors.')
@@ -122,6 +123,7 @@ def validate_pair(result,edge):
 
 
 def angular_display(result,edge,key,mode='raw'):
+    if edge not in result['maps']:raise ValueError('Angular maps were not calculated for this result.')
     maps=result['maps'][edge]
     if key not in maps:raise ValueError('Requested saved map is unavailable.')
     if mode=='raw':return np.array(maps[key],copy=True),dict(units='Relative intensity (a.u.)',mode=mode)

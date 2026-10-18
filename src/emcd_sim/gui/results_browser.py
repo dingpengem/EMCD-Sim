@@ -29,10 +29,12 @@ class Registry:
     def register(self,result,path=None,name=None):
         resolved=str(Path(path).resolve()) if path else None
         existing=next((r for r in self.records if resolved and r.get('path')==resolved),None)
-        if existing:return existing
+        if existing:
+            existing.update(channeling_model=result['config'].channeling_model,propagation=result['config'].propagation)
+            self.persist();return existing
         s=result['settings'];cfg=result['config'];stamp=(result.get('project_manifest') or {}).get('created_utc',datetime.now(timezone.utc).isoformat())
         record=dict(id=uuid.uuid4().hex,path=resolved,name=name or f'Ni [{" ".join(map(str,s.zone))}] | {s.thickness:g} nm | X={s.tilt[0]:+.3f}, Y={s.tilt[1]:+.3f} | {cfg.model} | {cfg.propagation}',
-            created_utc=stamp,material='Ni',zone=list(s.zone),target=list(s.target),tx=s.tilt[0],ty=s.tilt[1],thickness=s.thickness,model=cfg.model,propagation=cfg.propagation,legacy=result.get('read_only_legacy',False))
+            created_utc=stamp,material='Ni',zone=list(s.zone),target=list(s.target),tx=s.tilt[0],ty=s.tilt[1],thickness=s.thickness,model=cfg.model,channeling_model=cfg.channeling_model,propagation=cfg.propagation,legacy=result.get('read_only_legacy',False))
         self.records.append(record);self.persist();return record
     def remove(self,id):self.records=[r for r in self.records if r['id']!=id];self.persist()
     def rename(self,id,name):
@@ -77,7 +79,7 @@ class ResultsBrowser(QtWidgets.QWidget):
             stamp=QtCore.QDateTime.fromString(r['created_utc'],QtCore.Qt.DateFormat.ISODateWithMs)
             if not stamp.isValid():stamp=QtCore.QDateTime.fromString(r['created_utc'],QtCore.Qt.DateFormat.ISODate)
             date=stamp.toTimeZone(QtCore.QTimeZone(b'America/Los_Angeles')).toString('yyyy-MM-dd HH:mm:ss')
-            values=(r['name'],date,r['material'],str(r['zone']),str(r['target']),r['tx'],r['ty'],r['thickness'],r['model'],r['propagation'],status)
+            values=(r['name'],date,r['material'],str(r['zone']),str(r['target']),r['tx'],r['ty'],r['thickness'],r['model'],r.get('channeling_model','single').title()+' Channeling / '+r['propagation'],status)
             for j,value in enumerate(values):
                 item=QtWidgets.QTableWidgetItem();item.setData(QtCore.Qt.ItemDataRole.DisplayRole,value)
                 if j==0:item.setData(QtCore.Qt.ItemDataRole.UserRole,r['id'])
@@ -155,8 +157,8 @@ class ProjectWorkspace:
     def display_saved_result(self,result,record=None):
         self.emcd_result=result;self.selected_record=record
         for i,view in ((1,self.maps_view),(2,self.eels_view),(5,self.diffraction_view),(6,self.overview_view)):
-            self.tabs.setTabEnabled(i,i!=6 or len(result['methods'])==2);view.set_result(result)
-        self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(1);self.emcd_stale()
+            self.tabs.setTabEnabled(i,(i!=6 or len(result['methods'])==2) and (i!=1 or bool(result['maps'])));view.set_result(result)
+        self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale()
         sources=source_status(result);warnings=result.get('project_warnings',[])
         self.statusBar().showMessage('Viewing completed saved data; no recalculation. '+(' '.join(warnings))+' '+('Source unavailable/mismatched for rerun.' if any(not s['verified'] for s in sources.values()) else ''))
     def io_operation(self,operation,completed):
@@ -244,6 +246,10 @@ class ProjectWorkspace:
                 with QtCore.QSignalBlocker(widget):widget.setText(value)
             for widget,index in ((self.model_box,0 if c.model=='xmcd' else 1),(self.propagation_box,['bloch','fft-multislice','both'].index(c.propagation))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
+            for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),(self.energy_scope,('full','edges').index(c.energy_scope))):
+                with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
+            for widget,checked in ((self.row_projection,c.systematic_row),(self.angular_maps,c.angular_maps)):
+                with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.mdff_stack.setCurrentIndex(self.model_box.currentIndex())
             with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setCurrentIndex(self.memory_budget.findData(c.memory_budget_mib))
             values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial or .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)

@@ -15,7 +15,7 @@ FIELDS={'Magnetic odd':'I_mag','Magnetic paired EMCD':'D_mag','Nonmagnetic paire
 
 
 def identity(label,r,method):
-    s=r['settings'];return f'{label} | {s.thickness:g} nm | tilt ({s.tilt[0]:+.4f},{s.tilt[1]:+.4f}) mrad | {r["config"].model} | {method}'
+    s=r['settings'];return f'{label} | {s.thickness:g} nm | tilt ({s.tilt[0]:+.4f},{s.tilt[1]:+.4f}) mrad | {r["config"].model} | {r["config"].channeling_model.title()} Channeling | {method}'
 
 
 def map_compatibility(a,b,edge,field):
@@ -39,7 +39,7 @@ def map_compatibility(a,b,edge,field):
     if field.startswith('D_'):
         if ac.centers!=bc.centers or ac.radius!=bc.radius or ac.subpixels!=bc.subpixels:reasons.append('Paired detector supports/integration differ; intrinsic intensity maps may still be compared.')
     if field=='D_corrected' and ac.window!=bc.window:reasons.append('Post-edge window definitions differ.')
-    if field not in a['maps'][edge] or field not in b['maps'][edge]:reasons.append('Requested map is unavailable for one result.')
+    if field not in a['maps'].get(edge,{}) or field not in b['maps'].get(edge,{}):reasons.append('Requested map is unavailable for one result.')
     return not reasons,list(dict.fromkeys(reasons))
 
 
@@ -53,7 +53,7 @@ def scalar_rows(entries,display=None):
             row=dict(row,run=identity(label,r,name),edge=edge,A_raw_plus_sum=row['D_raw']/denominator if denominator>floor else None,
                 A_corrected_sigma=row['D_corrected']/sigma if row['D_corrected'] is not None and sigma>floor else None,
                 relative_detectability_proxy=abs(row['D_mag'])/np.sqrt(sigma) if sigma>floor else None,
-                proxy_definition='|D_mag|/sqrt(Sigma_ref), relative units, not calibrated SNR or cross-model ratio',
+                proxy_definition='|D_mag|/sqrt(N_A+N_B), arbitrary-scale detectability proxy, not experimental SNR; compare only consistent intensity scales and sampling',
                 bw_ms_coherence_relative=r.get('comparison',{}).get('coherence',{}).get('l2_relative'))
             try:
                 ref=entries[min(display.reference,len(entries)-1)][1] if display.scope=='shared' else None
@@ -101,13 +101,13 @@ def draw_saved_comparison(fig,entries,edge='L3',field='I_mag',spectral='D_mag',z
         else:axes[2].text(.02,.1,'Result 2 ZA outside: '+str(second_za),transform=axes[2].transAxes,fontsize=7)
         # Difference has common reciprocal coordinates. Both run-specific ZA
         # markers remain explicit in their own side-by-side physical panels.
-        axes[2].set(xlabel='qx (cycles/A)',ylabel='qy (cycles/A)',aspect='equal',title='Result 1 - Result 2\n'+('Actual units; no matching factor' if display.map_mode=='raw' else 'Percentage-point difference'))
+        axes[2].set(xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)',aspect='equal',title='Result 1 - Result 2\n'+('Actual units; no matching factor' if display.map_mode=='raw' else 'Percentage-point difference'))
     else:
         axes[2].text(.02,.9,'Direct subtraction disabled\n'+'\n'.join(reasons or ['Select two results']),va='top',wrap=True,fontsize=9,transform=axes[2].transAxes);axes[2].set_axis_off()
     for index,(label,r,name) in enumerate(entries):
         s,meta=normalized[index];keys=('I_A_plus','I_B_plus') if spectral=='A/B +M' else (spectral,)
         for j,key in enumerate(keys):
-            if key in s:ax.plot(r['spectra']['energy_ev'],s[key],color='C'+str(j if len(keys)>1 else 0),ls=('-','--','-.',':')[index%4],label=identity(label,r,name)+' | '+key,lw=1.1)
+            if key in s:ax.plot(r['spectra']['energy_ev'],s[key],color='C'+str(j if len(keys)>1 else 0),ls='None' if len(r['spectra']['energy_ev'])==2 else ('-','--','-.',':')[index%4],marker='o' if len(r['spectra']['energy_ev'])==2 else None,label=identity(label,r,name)+' | '+key,lw=1.1)
         for e in (r['config'].l3,r['config'].l2):ax.axvline(e,color='.5',ls=':',lw=.6)
         if r['metadata']['alpha'] is not None:ax.axvspan(*r['config'].window,color='gold',alpha=.08)
     if zoom!='Full spectrum' and entries:
@@ -115,6 +115,7 @@ def draw_saved_comparison(fig,entries,edge='L3',field='I_mag',spectral='D_mag',z
     ax.set(xlabel='Native energy loss (eV); no shifts or interpolation',ylabel=normalized[0][1]['units'] if normalized else 'Relative intensity (a.u.)');ax.legend(fontsize=7,ncols=1);ax.grid(alpha=.15)
     mixed=len({r['config'].model for _,r,_ in entries})>1 or any('normalization' in reason or 'Intensity unit' in reason for reason in reasons)
     warning='QUALITATIVE overlay: native model/normalization scales differ; no absolute intensity ratio.' if mixed else ('Original values; separate run-specific geometry; no peak normalization.' if display.mode=='raw' else 'Derived percentages; original arrays unchanged.')
+    if len({r['config'].channeling_model for _,r,_ in entries})>1:warning+=' Physical-model comparison: Single versus Double Channeling; not a BW/MS solver error.'
     notes='; '.join(dict.fromkeys(m.get('warning','') for _,m in normalized if m.get('warning')))
     if display.mode!='raw':warning+=' '+normalized[0][1]['units']+' | '+(notes or 'Shared reference: '+normalized[0][1]['reference_run'])
     fig.suptitle(edge+' | '+field+' | Saved-result comparison\n'+warning,fontsize=10)

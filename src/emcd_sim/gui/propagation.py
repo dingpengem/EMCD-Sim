@@ -12,34 +12,53 @@ METHOD_NAMES={'bloch':'Bloch-wave','fft-multislice':'FFT Multislice','difference
 
 def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True):
     if cfg.propagation not in ('bloch','fft-multislice','both'):raise ValueError('Unknown propagation method')
-    if hkl is None:hkl=geometry(structure,settings)[2]
+    if cfg.channeling_model not in ('single','double'):raise ValueError('Unknown channeling model')
+    if hkl is None:hkl=geometry(structure,settings,systematic_row=cfg.systematic_row)[2]
     n=len(hkl);pixels=cfg.grid**2;mesh=cfg.fft_grid**2
-    pair=16*pixels*n*n/2**20;dense=4*pair
+    pair=16*(pixels if cfg.angular_maps else min(pixels,64))*n*n/2**20;dense=4*pair
     info=dict(bw_beams=n,fft_harmonics=0,potential_nonzero_harmonics=0,single_complex_pair_mib=pair,dense_working_estimate_mib=dense,
         fft_storage_working_mib=0.,coherence_working_mib=16*cfg.depth*n*n/2**20,propagation=cfg.propagation,
         fft_grid=cfg.fft_grid,slice_step_nm=cfg.slice_step,depth_nodes=cfg.depth)
     if cfg.propagation!='bloch':
-        if settings.zone!=(0,1,7):raise ValueError('FFT EMCD currently supports verified FCC Ni [017] only. Choose Bloch-wave for this orientation; no automatic fallback.')
+        if settings.zone!=(0,1,7) and not (settings.zone==(0,0,1) and cfg.systematic_row):raise ValueError('FFT EMCD supports verified Ni [017] or the explicit [001] (200) systematic row; no automatic fallback.')
         from .emcd_forward import material_reason
         reason=material_reason(structure)
         if reason:raise ValueError(reason)
         if not isinstance(cfg.fft_grid,int) or not 12<=cfg.fft_grid<=128 or cfg.fft_grid%2:raise ValueError('FFT grid must be even, 12–128')
         if not np.isfinite(cfg.slice_step) or not .001<=cfg.slice_step<=1:raise ValueError('Maximum slice step must be 0.001–1 nm')
         if int(np.ceil(settings.thickness/(cfg.depth-1)/cfg.slice_step))*(cfg.depth-1)>200000:raise ValueError('Requested FFT propagation exceeds 200000 split steps; increase slice step or reduce thickness explicitly')
-        geo=Ni017Geometry()
-        if not np.allclose(orientation(structure.atoms.cell.array,settings.zone),geo.frame,atol=1e-14):raise ValueError('FFT and BW orientation frames differ')
-        harmonics,g=geo.harmonics(cfg.fft_grid,max(settings.beam_cutoff,settings.potential_cutoff))
+        geo=Ni017Geometry() if settings.zone==(0,1,7) else None
+        if geo is not None:
+            if not np.allclose(orientation(structure.atoms.cell.array,settings.zone),geo.frame,atol=1e-14):raise ValueError('FFT and BW orientation frames differ')
+            harmonics,g=geo.harmonics(cfg.fft_grid,max(settings.beam_cutoff,settings.potential_cutoff))
+        else:
+            if max(settings.beam_cutoff,settings.potential_cutoff)>=(cfg.fft_grid//2-1)*2/3.524:raise ValueError('Beam/potential support reaches unsafe FFT Nyquist boundary')
+            v=np.rint(np.fft.fftfreq(cfg.fft_grid)*cfg.fft_grid).astype(int);x,y=np.meshgrid(v,v,indexing='ij')
+            harmonics=np.stack((2*x,2*y,np.zeros_like(x)),axis=-1).reshape(-1,3);g=harmonics[:,:2]/3.524
         lookup={tuple(h):i for i,h in enumerate(harmonics)}
         if len(lookup)!=mesh or any(tuple(h) not in lookup for h in hkl):raise ValueError('FFT mesh does not contain the exact ordered common hkl basis')
-        actual=geometry(structure,settings)[3]
+        actual=geometry(structure,settings,systematic_row=cfg.systematic_row)[3]
         if not np.allclose(g[[lookup[tuple(h)] for h in hkl]],actual,atol=1e-13):raise ValueError('FFT and BW reciprocal coordinates differ')
-        allowed=np.array([geo.crystal.is_allowed(tuple(h)) for h in harmonics])
+        allowed=np.array([geo.crystal.is_allowed(tuple(h)) for h in harmonics]) if geo is not None else harmonics[:,1]==0
         count=int(np.sum(allowed & (np.linalg.norm(g,axis=1)<=settings.potential_cutoff) & np.any(harmonics!=0,axis=1)))
         info.update(fft_harmonics=mesh,potential_nonzero_harmonics=count,fft_storage_working_mib=(24*cfg.depth+160)*mesh/2**20,
-            projected_geometry='Ni017Geometry; FFT(m,n) -> cubic (m,7n,-n); actual [017] cell and FCC extinctions; same IAM, B and Fourier cutoff as BW')
+            projected_geometry='Actual oriented Ni [017] full 2D, or explicitly selected [001] (200) systematic row; exact common hkl, IAM, B and Fourier cutoff as BW')
     methods=2 if cfg.propagation=='both' else 1
     info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20
     info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+info['retained_results_working_mib']
+    if cfg.channeling_model=='double':
+        from .channeling import worker_count
+        bw_dense=80*n**4/2**20
+        bw_work=bw_dense+(128*(n*n+cfg.depth*(2*n+12))+144*pixels)/2**20+8
+        samples=cfg.fft_grid if cfg.systematic_row else mesh
+        ms_dense=96*32*n*n/2**20
+        ms_work=ms_dense+(64*cfg.depth*samples+192*32*samples+32*32*9+64*len(structure.atoms)*n*n)/2**20+8
+        engines=[];densities=[]
+        if cfg.propagation in ('bloch','both'):engines.append(worker_count(n,'bloch')*bw_work);densities.append(bw_dense)
+        if cfg.propagation in ('fft-multislice','both'):engines.append(worker_count(n,'fft-multislice')*ms_work);densities.append(ms_dense)
+        dense=max(densities);info['dense_working_estimate_mib']=dense
+        info['estimated_working_mib']=max(engines)+info['retained_results_working_mib']+info['fft_storage_working_mib']
+        info['detector_workers']={k:worker_count(n,k) for k in ('bloch','fft-multislice')}
     info['memory_note']='Dense arrays plus FFT/depth storage, retained method results and coordinate/work arrays. Total process estimate adds current RSS, concurrent reservations, 25% allocation margin and 128 MiB reserve. Conservative estimate, not guaranteed peak RSS.'
     if check_memory:
         from .memory_budget import assess_memory
@@ -52,6 +71,18 @@ def propagate(elastic,settings,cfg,z,stage):
     if cfg.propagation in ('bloch','both'):
         stage('Running Bloch-wave propagation');waves['bloch']=elastic.amplitudes(z)
     if cfg.propagation in ('fft-multislice','both'):
+        if cfg.channeling_model=='double' or cfg.systematic_row:
+            from .channeling import fft_geometry,incident_fields
+            stage('Running incoming FFT propagation in the matched projected potential')
+            grid=fft_geometry(elastic,settings,cfg)
+            incoming=incident_fields(grid,settings.thickness,depth_steps=cfg.depth,slice_step_nm=cfg.slice_step)
+            psi=incoming[0][:,grid.indices(elastic.beams.hkl)];waves['fft-multislice']=psi
+            total=np.sum(abs(incoming[0])**2,axis=1);outside=total-np.sum(abs(psi)**2,axis=1)
+            extra=dict(beam_hkl=grid.hkl,reciprocal_gxy=grid.g,exit_intensity=abs(incoming[0][-1])**2,
+                total_norm=total,excluded_intensity=outside,_prepared=(grid,incoming),
+                summary=dict(norm_error=float(abs(total-1).max()),max_excluded_population=float(outside.max()),exit_excluded_population=float(outside[-1]),
+                    projected_norm_exit=float(np.sum(abs(psi[-1])**2)),renormalized=False,phase_convention='raw FFT coefficients; no conjugation or fitted factor'))
+            return waves,extra
         stage('Running FFT multislice propagation in actual [017] projected potential')
         fft=fft_multislice_ni(z,acceleration_kv=settings.voltage,tilt_mrad_xy=settings.tilt,grid_points=cfg.fft_grid,
             slice_step_nm=cfg.slice_step,potential_cutoff_inv_angstrom=settings.potential_cutoff,b_factor_angstrom2=settings.b_factor,
@@ -87,8 +118,10 @@ def compare_methods(methods,fft):
     for key in ('I_A_plus','I_B_plus','D_mag','D_nonmag','D_raw','D_corrected'):
         if key in b['spectra'] and key in m['spectra']:out['spectra'][key]=error_pair(b['spectra'][key],m['spectra'][key],intensity_floor*np.sqrt(len(b['spectra'][key])))
     for edge in ('L3','L2'):
-        scale=max(np.linalg.norm(r['maps'][edge]['I_nonmag']) for r in (b,m))
-        maps={key:error_pair(b['maps'][edge][key],m['maps'][edge][key],1e-10*scale) for key in ('I_mag','I_nonmag','I_plus')}
+        maps={}
+        if all(edge in r['maps'] for r in (b,m)):
+            scale=max(np.linalg.norm(r['maps'][edge]['I_nonmag']) for r in (b,m))
+            maps={key:error_pair(b['maps'][edge][key],m['maps'][edge][key],1e-10*scale) for key in ('I_mag','I_nonmag','I_plus')}
         scalars={}
         for key in ('D_mag','D_nonmag','D_raw','D_corrected','A_mag','A_nonmag','Sigma_ref','alpha'):
             x,y=bm[edge][key],mm[edge][key]

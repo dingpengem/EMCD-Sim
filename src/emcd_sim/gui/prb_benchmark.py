@@ -8,7 +8,7 @@ from ..geometry import electron_wavelength_angstrom
 
 DEFINITION = '100 * (I_A_plus - I_B_plus) / (I_A_plus + I_B_plus); raw +M detectors; no factor 2, peak scaling or post-edge correction'
 LIMITATION = ('PRB-compatible normalization does not imply full physical equivalence to Rusz et al. (2007). '
-              'The current EMCD-Sim uses an approximate MDFF and may omit outgoing-electron channeling and other effects included in the reference theory.')
+              'The MDFF remains approximate. Single Channeling omits outgoing propagation; Double includes it within the retained projected-potential model.')
 REFERENCE = ('Rusz, Rubino and Schattschneider, PRB 75, 214425 (2007), Fig. 5(c): fcc Ni, '
              'near [001], G=(200), two-beam systematic row; opposite top/bottom Thales positions. '
              'Optimal thickness about 6–10 nm; roughly 18% is a visual literature estimate, not a required result. '
@@ -71,7 +71,7 @@ def benchmark_readout(result, *, selection='l3-peak', energy_ev=None, windows=No
     md = result.get('metadata', {})
     wavelength = electron_wavelength_angstrom(settings.voltage)
     condition = f'nominal {list(settings.zone)}, target {list(settings.target)}, absolute tilt ({settings.tilt[0]:+.8f}, {settings.tilt[1]:+.8f}) mrad'
-    mismatches = ['Approximate MDFF and entrance-only ionization; reference theory is not fully reproduced.',
+    mismatches = [f'Approximate MDFF, {cfg.channeling_model.title()} Channeling; reference theory is not fully reproduced.',
                   'Reference electron-energy/collection settings have not been matched; finite circular apertures are averaged.']
     if tuple(settings.zone) != (0, 0, 1):
         mismatches.insert(0, f'Current nominal {list(settings.zone)} is not the reference [001] systematic-row vicinity; equivalence is not assumed.')
@@ -134,6 +134,7 @@ def benchmark_readout(result, *, selection='l3-peak', energy_ev=None, windows=No
         if not np.isfinite(energy) or not e[0] <= energy <= e[-1]:
             raise ValueError('Selected benchmark energy must lie inside the saved native energy range.')
         index = int(np.argmin(abs(e-energy)))
+        if len(e)==2 and abs(e[index]-energy)>1e-7:raise ValueError('Requested energy was not calculated; only the two saved native edge samples are available.')
         record['requested_energy_ev'] = energy
         record['energy_selection_definition'] = 'Nearest original saved sample to requested energy; no interpolation or maximization; lower energy at a tie'
     else:

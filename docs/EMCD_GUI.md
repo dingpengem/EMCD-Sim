@@ -1,5 +1,97 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
+## Current development: Single and Double Channeling
+
+The development branch adds **Channeling Model** alongside **Propagation
+Method**. Single Channeling retains the existing entrance-only approximation.
+Double Channeling uses the actual incoming/outgoing BW or independent FFT
+solver, including the outgoing electron's post-loss energy. **Both** runs both
+solvers with the same selected model; it does not substitute one model for
+another. Old projects lacking a channeling-model field load as Single.
+
+The verified FFT geometries are full-2D FCC Ni [017] and the explicitly selected
+[001] (200) systematic-row approximation. The row checkbox is an explicit
+physical approximation; it is never applied to [017]. The Results Browser,
+saved project and numerical metadata identify the model and solver. Comparisons
+of Single and Double are physical-model comparisons, distinct from BW/MS
+numerical discrepancies.
+
+**Spectral coverage** distinguishes an actual native energy-resolved spectrum
+from a calculation at only the selected L3/L2 energies. The latter contains
+two samples, not a reconstructed white-line shape. Disabling **Calculate angular
+maps** evaluates only nonzero fractional-detector support on the unchanged
+grid; it does not coarsen the grid or change the apertures, MDFF, beams,
+precision or propagation. The result records that angular maps are unavailable.
+
+RAM budgets remain 512, 1024, 2048 (default), 4096 and 8192 MiB. Admission checks
+estimate total process peak separately from the dense kernel, including
+concurrent detector workers, retained results and available physical RAM.
+Rejected jobs explain the limit; they do not silently change settings.
+
+The [final 200 kV benchmark](DOUBLE_CHANNELING_FINAL_200KV.md) documents the
+validated profile, native energy convention, component definitions and limits
+of representative numerical convergence. The milestone screenshots and
+historical workflows below describe their original versions; they do not imply
+a new Windows executable or release for this development update.
+
+### Primary spectra and exports
+
+The default EELS figure has two panels. The upper panel shows **Detector A/B
+EELS at +M**, on their original shared arbitrary-unit scale. The lower panel
+shows signed **Magnetic** and **Nonmagnetic** components. Its only primary
+display selector is:
+
+- **Raw EMCD (a.u.)**: D_mag = M_A−M_B and D_nonmag = N_A−N_B.
+- **Relative EMCD (%)**: 100 D_mag/(N_A+N_B) and
+  100 D_nonmag/(N_A+N_B), using the same denominator.
+
+Raw is the initial display. Switching modes changes presentation only. No
+detector or component gets independent peak scaling; raw and percentage values
+never share a vertical axis. Undefined percentages remain NaN. The separate
+compact **PRB** readout uses raw +M difference/sum at the recorded L3/L2
+evaluation energies. It is not replaced by magnetic-only asymmetry.
+
+Expand **Advanced Diagnostics — legacy displays** for the four reversal
+spectra, post-edge correction/residual/bias, optional legacy peak scaling and
+energy-lock benchmark controls. These explicitly selected legacy displays
+override the primary view. Post-edge correction is not intrinsic magnetic
+recovery. A two-sample result cannot supply an uncalculated energy, a white-line
+peak, or a continuous EELS curve; available samples are plotted as points.
+
+Default angular figures show magnetic and nonmagnetic **mirrored point-pair**
+components on one common signed color scale. The numerator is the component at
+(qx,qy) minus its value at (qx,−qy), divided by the sum of the two reversal-even
+angular densities. These are angular point-pair percentages, distinct from
+the finite-aperture detector-integrated spectral components. Local magnetic
+fractions, raw angular intensities and physical-aperture paired/corrected maps
+retain their separate definitions in Advanced Diagnostics. The existing 000,
+actual ZA, hkl indexing, Thales circle and detector overlays remain.
+
+**Beam cutoff |g|max (Å⁻¹)** selects included elastic beams; its approximate
+angular equivalent λ|g|max is shown at the selected voltage and is not the
+EELS collection angle. **Potential Fourier cutoff |g−g′|max (Å⁻¹)** selects
+elastic couplings via U_(g−g′) or V_(g−g′), with |g−g′| ≤ cutoff. It is not an
+ionization momentum-transfer, detector-range or excitation-error cutoff.
+Crystallographic g=1/d is numerically the old cycles/Å convention: stored
+parameters and internal required angular-wavevector conversions are unchanged.
+
+Default completed-result export writes one checksummed project bundle with
+PNG/SVG figures and CSV/NPZ numerical data. Per-method CSV and NPZ spectra retain
+all original reversal intensities, signed raw components, common denominator,
+both component percentages and PRB percentages **in either display mode**.
+Metadata records solver, channeling model, MDFF/source hash, native energies,
+geometry, numerical settings and calculation commit. Large arrays are stored
+once under explicit method prefixes. Redundant independently normalized figures
+and BW/MS difference maps are not default exports; advanced derived exports
+remain available. Zoom, maximize/restore and saved-project viewing remain.
+
+The saved-results scalar comparison retains |D_mag|/sqrt(N_A+N_B), labelled an
+**arbitrary-scale detectability proxy, not experimental SNR**. Compare only
+consistent intensity scales and sampling. No arbitrary units are converted to
+electron counts. Physical shot-noise SNR requires dose, efficiency, energy-bin
+width, background and other noise calibration; four independent reversal
+measurements require variance propagation through their magnetic-odd estimator.
+
 For current use, start with [Windows installation](INSTALL_WINDOWS.md),
 [Quick Start](QUICK_START.md) and the [complete User Manual](USER_GUIDE.md).
 [Stage G readiness](STAGE_G_RELEASE_READINESS.md) reviews the accepted Stage F

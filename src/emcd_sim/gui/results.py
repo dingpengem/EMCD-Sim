@@ -11,6 +11,7 @@ from .normalization_controls import NormalizationControls
 
 
 def draw_maps(fig,result,edge,method=None,field=None,display=None):
+    if display is None and field is None:return draw_component_maps(fig,result,edge,method)
     display=display or DisplaySettings()
     original=result
     all_results=list(result.get('methods',{}).values()) or [result]
@@ -51,7 +52,7 @@ def draw_maps(fig,result,edge,method=None,field=None,display=None):
         ax.plot(*target,'s',mfc='none',mec='crimson',ms=8,mew=1)
         ax.set_title(title,fontsize=9);bar=fig.colorbar(im,ax=ax,shrink=.7,pad=.02);bar.set_label(meta['units'],fontsize=7);bar.ax.tick_params(labelsize=7)
     e=cfg.l3 if edge=='L3' else cfg.l2
-    solver_label='BW-MS numerical solver difference' if method=='difference' else method+' entrance channeling'
+    solver_label='BW-MS numerical solver difference' if method=='difference' else method+' '+cfg.channeling_model.title()+' Channeling'
     fig.suptitle(f'{edge}: {e:.3f} eV | {solver_label} | '+('Relative intensity (a.u.)' if display.map_mode=='raw' else ('Local magnetic fraction (%)' if display.map_mode=='local' else 'Paired angular asymmetry (%)'))+f'\n'+('XMCD-effective, native axis' if cfg.model=='xmcd' else 'Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni'),fontsize=11)
 
     fig._emcd_display_metadata=dict(kind='angular',map_mode=display.map_mode,fields=display_meta,shared_color_scale=display.shared_scale,masked_color='#c8c8c8',note='No integrated-peak scaling of angular densities.')
@@ -67,7 +68,7 @@ def method_result(result,method):
     return dict(b,maps=maps,method='difference',metadata=metadata)
 
 
-def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None):
+def _draw_eels_diagnostics(fig,result,zoom='Full spectrum',method=None,display=None):
     display=display or DisplaySettings()
     fig.clear();cfg=result['config'];axes=fig.subplots(3,1,sharex=True)
     methods=result.get('methods',{result.get('method','bloch'):result});method=method or result.get('method','bloch')
@@ -84,7 +85,7 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None):
         for name,r in chosen.items():
             s,meta=lookup[name];e=r['spectra']['energy_ev']
             for i,(key,label) in enumerate(curves):
-                if key in s:lines.extend(ax.plot(e,s[key],label=name+': '+label,lw=1.1,ls='--' if name=='fft-multislice' else '-',color='C'+str(i)))
+                if key in s:lines.extend(ax.plot(e,s[key],label=name+': '+label,lw=1.1,ls='None' if len(e)==2 else ('--' if name=='fft-multislice' else '-'),marker='o' if len(e)==2 else None,color='C'+str(i)))
         for energy in (cfg.l3,cfg.l2):ax.axvline(energy,color='.5',ls=':',lw=.7)
         if any(r['metadata']['alpha'] is not None for r in chosen.values()):ax.axvspan(*cfg.window,color='gold',alpha=.2)
         ax.axhline(0,color='.7',lw=.5);ax.set_ylabel(units,fontsize=8);ax.grid(alpha=.15)
@@ -93,12 +94,70 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None):
         legend=ax.legend(fontsize=7,ncols=2,loc='upper right')
         for proxy,line in zip(legend.get_lines(),lines):proxy.set_picker(5);legends.append((proxy,line))
     axes[-1].set_xlabel('Native energy loss (eV)' if cfg.model=='xmcd' else 'Atomic model energy loss (eV)')
-    axes[-1].set_xlim((e[0],e[-1]) if zoom=='Full spectrum' else ((cfg.l3-5,cfg.l3+5) if zoom=='L3 zoom' else (cfg.l2-5,cfg.l2+5)))
+    axes[-1].set_xlim((e[0],e[-1]) if zoom not in ('L3 zoom','L2 zoom') else ((cfg.l3-5,cfg.l3+5) if zoom=='L3 zoom' else (cfg.l2-5,cfg.l2+5)))
     factors=', '.join(name+' alpha='+('%.9g'%r['metadata']['alpha'] if r['metadata']['alpha'] is not None else 'disabled') for name,r in chosen.items())
     note='; '.join(dict.fromkeys(meta.get('warning','') for _,meta in normalized if meta.get('warning')))
-    fig.suptitle(units+' | '+factors+'\n'+(note or 'Common reference; corrected = processed magnetic + residual even; solid BW / dashed MS'),fontsize=10)
+    fig.suptitle(cfg.channeling_model.title()+' Channeling | '+units+' | '+factors+'\n'+('Selected L3/L2 samples only; full EELS not calculated.' if len(e)==2 else (note or 'Common reference; corrected = processed magnetic + residual even; solid BW / dashed MS')),fontsize=10)
     fig._emcd_display_metadata=dict(kind='spectra',normalization=[meta for _,meta in normalized],zoom=zoom)
     return legends
+
+
+def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,component_mode='raw',diagnostics=False):
+    """Two primary panels; legacy normalization is an explicit diagnostic."""
+    if diagnostics or display is not None:return _draw_eels_diagnostics(fig,result,zoom,method,display)
+    from .component_display import components,readouts
+    fig.clear();axes=fig.subplots(2,1,sharex=True);cfg=result['config'];legends=[];records=[]
+    methods=result.get('methods',{result.get('method','bloch'):result});method=method or result.get('method','bloch')
+    chosen=methods if method=='overlay' else {method:methods[method]}
+    for name,r in chosen.items():
+        s=r['spectra'];e=s['energy_ev'];points=len(e)==2
+        style=dict(ls='None' if points else ('--' if name=='fft-multislice' else '-'),marker='o' if points else None,lw=1.3)
+        labels=(name+': ') if len(chosen)>1 else ''
+        for key,label,color in (('I_A_plus','Detector A','C0'),('I_B_plus','Detector B','C1')):
+            axes[0].plot(e,s[key],label=labels+label,color=color,**style)
+        curves,meta=components(s,component_mode)
+        for (label,v),color in zip(curves.items(),('C3','C0')):axes[1].plot(e,v,label=labels+label,color=color,**style)
+        rows,_=readouts(r);records.append(dict(method=name,channeling_model=cfg.channeling_model,**meta,prb_readouts=rows))
+    axes[0].set_ylabel('EELS intensity (a.u.)');axes[1].set_ylabel(meta['units']);axes[1].axhline(0,color='.45',lw=.7)
+    axes[1].set_xlabel('Native energy loss (eV)')
+    for ax in axes:
+        ax.grid(alpha=.15);ax.legend(fontsize=8,loc='upper right')
+        for v in (cfg.l3,cfg.l2):ax.axvline(v,color='.6',ls=':',lw=.6)
+    limits=(cfg.l3-5,cfg.l3+5) if zoom=='L3 zoom' else (cfg.l2-5,cfg.l2+5) if zoom=='L2 zoom' else (float(e[0]),float(e[-1]))
+    axes[-1].set_xlim(limits)
+    title=f'{cfg.channeling_model.title()} Channeling | {method} | Ni {list(result["settings"].zone)}, {result["settings"].thickness:g} nm'
+    if points:title+='\nSelected native L3/L2 samples only; full EELS spectrum not calculated'
+    fig.suptitle(title,fontsize=11)
+    fig._emcd_display_metadata=dict(kind='primary spectra',component_mode=component_mode,records=records,
+        eels='Original +M detector A/B intensities, shared arbitrary-unit scale; no background or peak scaling',
+        spectral_coverage='selected samples only' if points else 'actual energy-resolved calculation',
+        prb='Separate raw +M difference/sum scalar benchmark; not the magnetic-only percentage')
+    return legends
+
+
+def draw_component_maps(fig,result,edge,method=None):
+    from .component_display import mirrored_angular_components
+    fig.clear();method=method or result.get('method','bloch')
+    methods=result.get('methods',{result.get('method','bloch'):result})
+    r=methods.get(method,next(iter(methods.values())))
+    if edge not in r['maps']:
+        fig.subplots().text(.1,.5,'Angular maps were not calculated for this result');return
+    values,meta=mirrored_angular_components(r,edge)
+    if method=='difference':
+        bv,_=mirrored_angular_components(methods['bloch'],edge);mv,_=mirrored_angular_components(methods['fft-multislice'],edge)
+        values={k:bv[k]-mv[k] for k in bv};meta=dict(meta,units='BW−MS difference (percentage points)')
+    pools=[v for m in methods.values() for ed in m['maps'] for v in mirrored_angular_components(m,ed)[0].values()]
+    if method=='difference':pools=list(values.values())
+    limit=max([float(abs(v[np.isfinite(v)]).max()) for v in pools if np.isfinite(v).any()]+[1e-30])
+    axes=fig.subplots(1,2);dq=r['qx'][0,1]-r['qx'][0,0];h=r['config'].halfwidth+dq/2;extent=(-h,h,-h,h)
+    for ax,(label,v) in zip(axes,values.items()):
+        im=ax.imshow(v,origin='lower',extent=extent,cmap=colormaps['RdBu_r'].with_extremes(bad='#c8c8c8'),vmin=-limit,vmax=limit)
+        decorate_reciprocal_map(ax,r['model'],extent,target_hkl=r['settings'].target,zone_axis=r['settings'].zone)
+        ax.plot(*r['model'].elastic.crystal.g_vector(r['settings'].target)[:2],'s',mfc='none',mec='crimson',ms=8)
+        ax.set_title(label+' mirrored angular component',fontsize=10);fig.colorbar(im,ax=ax,shrink=.7).set_label(meta['units'])
+    e=r['config'].l3 if edge=='L3' else r['config'].l2
+    fig.suptitle(f'{r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\nPoint pairs (qx,qy)/(qx,−qy); not finite-aperture integrated A/B asymmetry',fontsize=10)
+    fig._emcd_display_metadata=dict(kind='primary angular components',edge=edge,method=method,**meta,shared_color_scale=True)
 
 
 def draw_diffraction(fig,result,method=None,depth_average=False):
@@ -111,11 +170,15 @@ def draw_diffraction(fig,result,method=None,depth_average=False):
     scatter=ax.scatter(g[:,0],g[:,1],s=25+500*abs(value)/max(float(abs(value).max()),1e-30),c=value,cmap='RdBu_r' if signed else 'viridis',vmin=-vmax if signed else 0,vmax=vmax)
     decorate_reciprocal_map(ax,result['model'],(-limit,limit,-limit,limit),target_hkl=result['settings'].target,zone_axis=result['settings'].zone)
     ax.plot(*result['model'].elastic.crystal.g_vector(result['settings'].target)[:2],'s',mfc='none',mec='crimson',ms=8)
-    ax.set_title(method+' | '+('depth average diag(C)' if depth_average else 'exit elastic intensity')+'\nExact common hkl basis; excluded FFT intensity reported separately; spot area is visualization only')
+    ax.set_title(result['config'].channeling_model.title()+' Channeling | '+method+' | incoming '+('depth average diag(C)' if depth_average else 'exit elastic intensity')+'\nExact common hkl basis; excluded FFT intensity reported separately; spot area is visualization only')
     fig.colorbar(scatter,ax=ax,shrink=.8)
 
 
 def draw_comparison(fig,result,display=None):
+    if not result['maps']:
+        draw_eels(fig,result,method='overlay')
+        fig.suptitle(fig._suptitle.get_text()+'\nBW/MS spectra; incoming coherence diagnostics are reported separately',fontsize=10)
+        return
     display=display or DisplaySettings()
     fig.clear()
     if fig.get_layout_engine() is None:fig.set_layout_engine('constrained')
@@ -139,12 +202,13 @@ def draw_comparison(fig,result,display=None):
         ax.set_title(title+' | '+('a.u.' if map_mode=='raw' else 'local %'),fontsize=9);fig.colorbar(im,ax=ax,shrink=.65).set_label('Relative intensity (a.u.)' if map_mode=='raw' else 'Local magnetic fraction (%)',fontsize=7)
     for ax,key,title in zip(axes[1],('I_A_plus','D_mag','D_raw'),('Full detector A +M EELS','Intrinsic magnetic A-B','Raw / corrected A-B')):
         for name,r in methods.items():
-            s,meta=lookup[name];ax.plot(r['spectra']['energy_ev'],s[key],ls='-' if name=='bloch' else '--',label=name,lw=1.1)
-            if key=='D_raw' and 'D_corrected' in s:ax.plot(r['spectra']['energy_ev'],s['D_corrected'],ls=':' if name=='bloch' else '-.',label=name+' corrected',lw=1)
+            s,meta=lookup[name];points=len(r['spectra']['energy_ev'])==2
+            ax.plot(r['spectra']['energy_ev'],s[key],ls='None' if points else ('-' if name=='bloch' else '--'),marker='o' if points else None,label=name,lw=1.1)
+            if key=='D_raw' and 'D_corrected' in s:ax.plot(r['spectra']['energy_ev'],s['D_corrected'],ls='None' if points else (':' if name=='bloch' else '-.'),marker='x' if points else None,label=name+' corrected',lw=1)
         ax.set(title=title,xlabel='Energy loss (eV)',ylabel=next(iter(lookup.values()))[1]['units']);ax.legend(fontsize=7);ax.grid(alpha=.15)
     fig._emcd_display_metadata=dict(kind='BW/MS comparison',spectra=[meta for _,meta in normalized],map_mode=map_mode,solver_errors='Original raw arrays; never independently peak-normalized')
     diag=result['comparison'];fig.suptitle('Independent BW / FFT MS | '+cfg.model+' | '+str(result['settings'].zone)+', '+str(result['settings'].thickness)+' nm\nCoherence relative error %.3g; FFT norm error %.3g. Fixed potential cutoff: agreement is not physical convergence.'%(diag['coherence']['l2_relative'],diag['fft']['norm_error']),fontsize=11)
-    fig.suptitle(fig._suptitle.get_text()+'\n'+normalized[0][1]['units']+' | reference '+normalized[0][1]['reference_run']+' '+normalized[0][1]['reference_method'],fontsize=10)
+    fig.suptitle(cfg.channeling_model.title()+' Channeling | '+fig._suptitle.get_text()+'\n'+normalized[0][1]['units']+' | reference '+normalized[0][1]['reference_run']+' '+normalized[0][1]['reference_method'],fontsize=10)
 
 
 class ResultsView(QtWidgets.QWidget):
@@ -156,13 +220,22 @@ class ResultsView(QtWidgets.QWidget):
         self.choice.setVisible(kind!='comparison');self.method.setVisible(kind!='comparison')
         self.field=QtWidgets.QComboBox();self.field.addItem('All six fields',None)
         for title,key in [('Magnetic odd','I_mag'),('Magnetic paired','D_mag'),('Nonmagnetic paired','D_nonmag'),('Nonmagnetic even','I_nonmag'),('Total +M','I_plus'),('Raw paired A-B','D_raw'),('Corrected paired A-B','D_corrected'),('Residual even','D_nonmag_residual')]:self.field.addItem(title,key)
-        self.field.setVisible(kind=='maps');row.addWidget(self.field);self.field.currentTextChanged.connect(self.redraw)
+        self.field.setVisible(kind=='maps');self.field.currentTextChanged.connect(self.redraw)
+        self.component_mode=QtWidgets.QComboBox()
+        from .component_display import MODES
+        for key,title in MODES.items():self.component_mode.addItem(title,key)
+        self.component_mode.setVisible(kind=='eels');row.addWidget(self.component_mode);self.component_mode.currentIndexChanged.connect(self.redraw)
         maximize=QtWidgets.QPushButton('Maximize / restore results');row.addWidget(maximize);maximize.clicked.connect(self.maximize)
-        self.normalization=NormalizationControls(self,maps=kind=='maps');self.normalization.setVisible(kind!='diffraction');layout.addWidget(self.normalization);self.normalization.changed.connect(self.redraw)
+        self.advanced=QtWidgets.QGroupBox('Advanced Diagnostics — legacy displays');self.advanced.setCheckable(True);self.advanced.setChecked(False);layout.addWidget(self.advanced)
+        self.advanced_body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(self.advanced);outer.addWidget(self.advanced_body);self.advanced_body.hide();advanced_layout=QtWidgets.QVBoxLayout(self.advanced_body)
+        self.advanced.toggled.connect(self.advanced_body.setVisible);self.advanced.toggled.connect(self.redraw);self.advanced.setVisible(kind!='diffraction')
+        self.normalization=NormalizationControls(self,maps=kind=='maps');self.normalization.setVisible(kind!='diffraction');advanced_layout.addWidget(self.normalization);self.normalization.changed.connect(self.redraw)
+        advanced_layout.addWidget(self.field)
         self.display_note=QtWidgets.QLabel();self.display_note.setWordWrap(True);layout.addWidget(self.display_note)
         if kind=='eels':
             from .prb_controls import PRBBenchmarkControls
-            self.prb_benchmark=PRBBenchmarkControls(self);layout.addWidget(self.prb_benchmark)
+            self.prb_readout=QtWidgets.QLabel();self.prb_readout.setWordWrap(True);layout.addWidget(self.prb_readout)
+            self.prb_benchmark=PRBBenchmarkControls(self);advanced_layout.addWidget(self.prb_benchmark)
             self.prb_benchmark.changed.connect(self.update_prb_metadata)
         export=QtWidgets.QPushButton('Export derived NPZ/CSV + metadata');export.setVisible(kind!='diffraction');layout.addWidget(export);export.clicked.connect(self.export_derived)
         self.figure=Figure(layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure)
@@ -184,22 +257,28 @@ class ResultsView(QtWidgets.QWidget):
         if len(options)==2:options.append('difference' if self.kind in ('maps','diffraction') else 'overlay')
         self.method.blockSignals(True);self.method.clear()
         for key in options:self.method.addItem(METHOD_NAMES.get(key,'BW / MS overlay'),key)
-        if self.kind=='eels' and len(options)>1:self.method.setCurrentIndex(len(options)-1)
+        if self.kind=='eels':self.choice.setItemText(0,'Selected L3/L2 samples' if len(result['spectra']['energy_ev'])==2 else 'Full spectrum')
         self.method.blockSignals(False);self.redraw()
     def redraw(self,*_):
         if self.result is None:return
         method=self.method.currentData() or self.result.get('method','bloch')
         display=self.normalization.settings()
+        advanced=self.advanced.isChecked()
+        self.component_mode.setEnabled(not advanced)
         try:
-            if self.kind=='maps':draw_maps(self.figure,self.result,self.choice.currentText(),method,self.field.currentData(),display)
+            if self.kind=='maps':draw_maps(self.figure,self.result,self.choice.currentText(),method,self.field.currentData() if advanced else None,display if advanced else None)
             elif self.kind=='diffraction':draw_diffraction(self.figure,self.result,method,self.choice.currentIndex()==1)
             elif self.kind=='comparison':draw_comparison(self.figure,self.result,display)
-            else:self.proxies=draw_eels(self.figure,self.result,self.choice.currentText(),method,display)
-            self.display_note.setText('Display-only derived quantities. '+('Raw solver discrepancies remain unchanged.' if display.mode!='raw' or display.map_mode!='raw' else 'Raw (a.u.); no rescaling.'))
+            else:self.proxies=draw_eels(self.figure,self.result,self.choice.currentText(),method,display if advanced else None,component_mode=self.component_mode.currentData(),diagnostics=advanced)
+            self.display_note.setText('Display only; simulation arrays unchanged. '+('Advanced legacy normalization overrides the primary view.' if advanced else ('Signed raw components; no curve scaling.' if self.component_mode.currentData()=='raw' else 'Both components share N_A+N_B.')))
         except (ValueError,KeyError) as exc:
             self.figure.clear();self.figure.subplots().text(.05,.6,'Normalization unavailable: '+str(exc),wrap=True);self.display_note.setText(str(exc));self.figure._emcd_display_metadata=dict(unavailable=str(exc),derived_visualization_only=True)
         if self.kind=='eels' and hasattr(self.owner,'comparison'):self.owner.comparison.setPlainText(comparison_text(self.result,display.windows))
         if self.kind=='eels':
+            from .component_display import readouts
+            chosen=self.result.get('methods',{self.result.get('method','bloch'):self.result})
+            names=list(chosen) if method=='overlay' else [method if method in chosen else next(iter(chosen))]
+            self.prb_readout.setText('\n'.join(name+' | '+readouts(chosen[name])[1] for name in names))
             selected=self.result['config'].l2 if self.choice.currentText()=='L2 zoom' else self.result['config'].l3
             self.prb_benchmark.set_context(self.result,method,display.windows,selected)
         self.canvas.draw_idle()
@@ -214,6 +293,10 @@ class ResultsView(QtWidgets.QWidget):
         parent=QtWidgets.QFileDialog.getExistingDirectory(self,'Derived visualization export parent (new folder)')
         if parent and self.result is not None:
             try:
+                if not self.advanced.isChecked():
+                    from .emcd_forward import export_result
+                    export_result(self.result,Path(parent)/datetime.now().strftime('emcd_%Y%m%d_%H%M%S_%f'),component_mode=self.component_mode.currentData())
+                    return
                 from .prb_benchmark import data_origin
                 entries=[(name,dict(r,prb_data_origin=data_origin(self.result),prb_project_path=self.result.get('project_path')),name) for name,r in self.result.get('methods',{self.result.get('method','bloch'):self.result}).items()]
                 options=self.prb_benchmark.options() if self.kind=='eels' else None

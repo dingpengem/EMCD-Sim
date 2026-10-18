@@ -81,12 +81,14 @@ def pack_arrays(result):
     methods=result.get('methods',{result.get('method','bloch'):result});labels=list(methods)
     angular=dict(qx=result['qx'],qy=result['qy'],method_labels=np.asarray(labels))
     meta=result['metadata']
-    spectra=dict(method_labels=np.asarray(labels));diffraction=dict(method_labels=np.asarray(labels),depth_nm=result['depth_nm'],beam_hkl=np.asarray(meta['beam_hkl']),g=np.asarray(meta['g']),frame=np.asarray(meta['frame']),
+    spectra=dict(method_labels=np.asarray(labels),channeling_model=np.array(result['config'].channeling_model));diffraction=dict(method_labels=np.asarray(labels),depth_nm=result['depth_nm'],beam_hkl=np.asarray(meta['beam_hkl']),g=np.asarray(meta['g']),frame=np.asarray(meta['frame']),
         excitation_errors_inv_angstrom=excitation(np.asarray(meta['g']),result['settings'].tilt,result['settings'].voltage),zone_axis_q=np.asarray(meta['za_q']),transmitted_q=np.asarray(meta['transmitted_q']))
     for name,r in methods.items():
         angular.update({name+'__'+edge+'__'+k:v for edge,m in r['maps'].items() for k,v in m.items()})
         angular[name+'__coherence']=r['coherence']
-        spectra.update({name+'__'+k:v for k,v in r['spectra'].items()})
+        from .prb_benchmark import benchmark_spectra
+        sp=dict(r['spectra'],**benchmark_spectra(r['spectra'])[0])
+        spectra.update({name+'__'+k:v for k,v in sp.items()})
         diffraction[name+'__amplitudes']=r['amplitudes']
     angular.update({'weight_'+k:v for k,v in result['weights'].items()})
     fft=result.get('fft',{})
@@ -177,8 +179,8 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             try:created=json.loads((root/'project.json').read_text(encoding='utf-8')).get('created_utc',stamp)
             except (OSError,ValueError):pass
         manifest=dict(schema_version=SCHEMA,complete=True,reproducible_structure=bool(snapshot),created_utc=created,saved_utc=stamp,software_commit=meta.get('software_commit'),
-            model=result['config'].model,methods=list(methods),files=files,arrays=shapes,
-            units=dict(reciprocal='cycles/angstrom',energy='eV',depth='nm',intensity=meta.get('intensity_convention','relative research intensity; model-specific normalization')),
+            model=result['config'].model,channeling_model=result['config'].channeling_model,methods=list(methods),files=files,arrays=shapes,
+            units=dict(reciprocal='Å^-1; crystallographic g=1/d; legacy cycles/angstrom values unchanged',energy='eV',depth='nm',intensity=meta.get('intensity_convention','relative research intensity; model-specific normalization')),
             source_provenance=dict(xmcd_path=result['config'].source if result['config'].model=='xmcd' else None,xmcd_sha256=(meta.get('source_audit',{}).get('sha256') if meta.get('source_audit') else result['config'].source_sha256) if result['config'].model=='xmcd' else None,
                 crystal_path=snapshot.get('source') if snapshot else None,crystal_sha256=snapshot.get('sha256') if snapshot else None),
             limitations=result.get('project_warnings',[]),array_convention='method__edge__field maps(qy,qx); method__field spectra(energy); method__amplitudes(depth,beam); explicit labels; no pickle')
@@ -265,6 +267,9 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
         amps=diffraction.get(name+'__amplitudes',angular.get('amplitudes'));z=diffraction.get('depth_nm',angular.get('depth_nm'))
         if C is None or amps is None or z is None:raise ValueError('Saved result lacks coherence/depth/complex amplitudes')
         if q.shape!=qy.shape or q.ndim!=2 or amps.shape!=(len(z),len(mmeta['beam_hkl'])) or C.shape!=(amps.shape[1],amps.shape[1]):raise ValueError('Saved diffraction/map dimensions are inconsistent')
+        if mmeta.get('angular_maps_calculated',True) is False:
+            if any(fields.values()):raise ValueError('Spectra-only metadata conflicts with saved maps')
+            fields={}
         for edge,m in fields.items():
             if not {'I_plus','I_minus','I_mag','I_nonmag'}<=set(m) or any(v.shape!=q.shape for v in m.values()):raise ValueError('Missing or inconsistent selected-edge maps')
             if any(not np.isfinite(m[key]).all() for key in ('I_plus','I_minus','I_mag','I_nonmag')):raise ValueError('Saved intrinsic maps must be finite')
