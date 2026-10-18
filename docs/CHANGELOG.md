@@ -1,3 +1,26 @@
+# 0.6.0 development - Double-Channeling EMCD Simulation (unpublished)
+
+Planned prerelease: `v0.6.0-beta.1`; no binary, tag or public release yet.
+Double Channeling already shipped in 0.4.5-beta.1. This milestone consolidates
+its incoming/depth-integrated/outgoing BW and FFT framework and full-energy
+EELS/EMCD interpretation within the existing model and convergence limits.
+
+- Unified primary Raw (a.u.) / EMCD Asymmetry (%) controls for spectra and maps.
+- Preserved signed raw magnetic/nonmagnetic differences; total asymmetry is
+  the unchanged +M difference/sum, not a magnetic-only quantity.
+- Retained magnetic-only/even common-denominator components and other legacy
+  diagnostics in Advanced Diagnostics; explicit saved Relative migration.
+- Added descriptive CSV/NPZ sidecars while preserving original project arrays,
+  PRB fields, provenance and original numerical definitions.
+- Prepared source/GUI/build version metadata 0.6.0 without packaging.
+- Focused hand-reference, GUI, geometry, export and compatibility validation:
+  see [validation report](EMCD_V060_VALIDATION.md).
+- Physical solvers, MDFF, apertures, precision, memory and cancellation unchanged.
+  Published 0.4.5-beta.1 remains intact. No global convergence or calibrated
+  intensity/SNR claim is added.
+
+---
+
 # v0.4.5-beta.1 - Windows research Beta
 
 Package version remains `0.4.5`; this is a GitHub Pre-release, not a stable release.

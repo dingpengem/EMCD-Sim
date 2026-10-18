@@ -1,6 +1,9 @@
 # Windows candidate build
 
-Windows only; package version 0.4.5, **EMCD-Sim GUI RC (unreleased)**.
+Prepared source version **0.6.0**, Double-Channeling EMCD Simulation (unpublished).
+No 0.6.0 build has been made. The commands below are for a separately authorized
+future acceptance/packaging milestone. Default labels, archive name and manifest
+version derive from the source package version; the published 0.4.5 ZIP is intact.
 No installer, signing or publication is performed.
 
 From an environment containing the GUI runtime dependencies:

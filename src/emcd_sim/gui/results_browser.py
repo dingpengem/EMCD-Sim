@@ -160,7 +160,10 @@ class ProjectWorkspace:
             self.tabs.setTabEnabled(i,(i!=6 or len(result['methods'])==2) and (i!=1 or bool(result['maps'])));view.set_result(result)
         self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale()
         state=result.get('display_state',{})
+        notes=[]
         if state:
+            from .component_display import migrate_display_state
+            state,notes=migrate_display_state(state)
             view=self.eels_view;prb=view.prb_benchmark
             for widget,value in ((view.component_mode,state.get('component_mode','raw')),(view.method,state.get('method',result['method'])),(prb.selection,state.get('selection','selected'))):
                 index=widget.findData(value)
@@ -169,7 +172,10 @@ class ProjectWorkspace:
             with QtCore.QSignalBlocker(view.choice):view.choice.setCurrentText(state.get('zoom',view.choice.itemText(0)))
             with QtCore.QSignalBlocker(prb.energy):prb.energy.setValue(state.get('energy_ev',result['config'].l3))
             with QtCore.QSignalBlocker(prb.fixed):prb.fixed.setChecked(bool(state.get('locked',False)))
+            view.component_diagnostic.setCurrentIndex(1 if state.get('component_diagnostic')=='relative' else 0)
+            self.maps_view.component_mode.setCurrentIndex(1 if state.get('map_signal_mode')=='asymmetry' else 0)
             view.advanced.setChecked(bool(state.get('advanced',False)));view.redraw()
+            if notes:view.display_note.setText(' '.join(notes))
         sources=source_status(result);warnings=result.get('project_warnings',[])
         self.statusBar().showMessage('Viewing completed saved data; no recalculation. '+(' '.join(warnings))+' '+('Source unavailable/mismatched for rerun.' if any(not s['verified'] for s in sources.values()) else ''))
     def io_operation(self,operation,completed):
@@ -204,7 +210,7 @@ class ProjectWorkspace:
         if self.emcd_result is None:self.error('Select a completed result first.');return
         r=self.emcd_result;origin_record=self.selected_record
         view=self.eels_view;prb=view.prb_benchmark
-        r['display_state']=dict(component_mode=view.component_mode.currentData(),method=view.method.currentData(),zoom=view.choice.currentText(),
+        r['display_state']=dict(signal_display_schema=2,component_diagnostic=view.component_diagnostic.currentData(),map_signal_mode=self.maps_view.component_mode.currentData(),component_mode=view.component_mode.currentData(),method=view.method.currentData(),zoom=view.choice.currentText(),
             selection=prb.selection.currentData(),energy_ev=prb.energy.value(),locked=prb.fixed.isChecked(),advanced=view.advanced.isChecked())
         def saved(root):
             # Display registration identity is separate from the hashed data.

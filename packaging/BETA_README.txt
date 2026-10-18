@@ -1,4 +1,6 @@
-EMCD-Sim 0.4.5 Beta Release Candidate (unpublished, unsigned)
+EMCD-Sim 0.6.0 Beta - Double-Channeling EMCD Simulation (unpublished)
+Prepared documentation only; no 0.6.0 executable has been built.
+Double Channeling already existed in published 0.4.5-beta.1.
 
 Extract the complete folder. Run EMCD-Sim.exe; keep _internal beside it.
 Python, Conda and WIEN2k are not required to run this application.
@@ -27,9 +29,13 @@ its full finite ZOLZ basis. The separate 213-beam [001] elastic audit is
 not the source of the restricted-row EELS reference.
 
 Upper spectral panel: raw detector A/B EELS on a common arbitrary-unit scale.
-Lower panel: signed magnetic and nonmagnetic differences. Raw/Relative
-switching changes presentation only. Relative components share N_A+N_B.
-PRB dichroism separately uses 100*(A_plus-B_plus)/(A_plus+B_plus).
+Signal Display: Raw (a.u.) / EMCD Asymmetry (%), default Raw.
+Raw lower panel: signed magnetic and nonmagnetic differences.
+Asymmetry lower panel: one total 100*(A_plus-B_plus)/(A_plus+B_plus) curve.
+The total can include nonmagnetic diffraction asymmetry. Advanced magnetic-only
+and nonmagnetic percentages share N_A+N_B. Display switching preserves physics.
+Maps use actual mirrored points, not detector-integrated percentages.
+Old Relative preferences migrate to explicitly labeled advanced components.
 Post-edge correction is an advanced diagnostic, not intrinsic magnetic EMCD.
 Two-energy saved results remain discrete samples, not fabricated spectra.
 CSV/NPZ exports retain raw and percentage values in either display mode.

@@ -7,8 +7,13 @@ from pathlib import Path
 from emcd_sim import __version__
 
 
-def test_version_matches_public_release():
-    assert __version__ == "0.4.5"
+def test_version_matches_source_metadata():
+    import tomllib
+    from emcd_sim.gui.runtime import build_info, LABEL
+    project = Path(__file__).resolve().parents[1]/'pyproject.toml'
+    assert __version__ == '0.6.0' == tomllib.loads(project.read_text(encoding='utf-8'))['project']['version']
+    assert build_info()['application_version'] == __version__
+    assert __version__ in LABEL and 'unpublished' in LABEL
 
 
 def test_module_entrypoint_writes_outputs_into_path_with_spaces(tmp_path):

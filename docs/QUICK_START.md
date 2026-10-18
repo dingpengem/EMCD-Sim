@@ -3,9 +3,15 @@
 This is a short reading guide, not a promise of total calculation time.
 For installation details see [Install on Windows](INSTALL_WINDOWS.md); for
 interpretation and other workflows see the [User Manual](USER_GUIDE.md).
-This guide describes the **0.4.5 Windows research Beta**.
+**0.6.0 source development (unpublished):** this guide describes the new
+Raw / EMCD Asymmetry controls. Double Channeling was already present in 0.4.5;
+0.6.0 consolidates it and improves interpretation. The current Windows ZIP
+remains 0.4.5; use the [version-pinned guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/QUICK_START.md)
+for its older controls. No 0.6.0 executable has been built.
 
-## 1. Extract and open
+
+
+## 1. Published Windows download / development source
 
 Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1) and download
 `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`. Verify the checksum in
@@ -13,6 +19,10 @@ the installation guide and **Extract All**. In the extracted `EMCD-Sim`
 folder, double-click `EMCD-Sim.exe`. Keep `_internal` beside it. No Python,
 Conda, VS Code or WIEN2k installation is required. Initialization can take
 tens of seconds. Do not run inside the ZIP.
+
+For 0.6.0 development, launch `python -m emcd_sim.gui` from your installed
+source environment (`python -m pip install -e ".[gui]"`). The extraction
+instructions above apply only to the published 0.4.5 binary.
 
 ## 2. Preview the default Ni reference
 
@@ -64,14 +74,20 @@ distinguish current inputs from the completed-run snapshot.
 
 ## 4. Read maps and EELS
 
-- In **EMCD Angular Maps**, choose **L3** or **L2**. **Magnetic odd** is the
+- In **EMCD Angular Maps**, choose **L3** or **L2**. The default **Raw (a.u.)**
+  shows paired magnetic/nonmagnetic differences; **EMCD Asymmetry (%)** shows
+  one total mirrored-point difference/sum map. Intrinsic intensity maps are
+  in Advanced Diagnostics. Never average pixel percentages to obtain detector
+  asymmetry: integrate original A/B intensities first.
+- In Advanced Diagnostics, **Magnetic odd** is the
   reversal-odd signal; **Nonmagnetic even** is reversal-even intensity.
   Raw and corrected paired A−B maps are different observables.
 - In **Virtual Detector EELS**, the upper panel shows +M A/B EELS on the
   original shared intensity scale. The lower panel shows signed magnetic and
-  nonmagnetic components. Select **Raw EMCD (a.u.)** or **Relative EMCD (%)**;
-  both relative components share N_A+N_B. PRB difference/sum is a separate
-  readout. Choose **Full spectrum**, **L3 zoom** or **L2 zoom**.
+  nonmagnetic components in **Raw (a.u.)**. Select **EMCD Asymmetry (%)** for
+  one total signed 100*(A_plus-B_plus)/(A_plus+B_plus) curve. This can include
+  nonmagnetic diffraction imbalance. The **EMCD Asymmetry** scalar group retains
+  L3/L2, evaluation energy and energy lock. Choose **Full spectrum**, **L3 zoom** or **L2 zoom**.
 - **Advanced Diagnostics** retains four reversal spectra, post-edge correction
   and optional legacy peak normalization. Corrected contrast is not intrinsic
   magnetic EMCD. Two-energy saved results remain points, not white-line curves.
@@ -83,10 +99,14 @@ distinguish current inputs from the completed-run snapshot.
 
 ![Current Double BW/MS relative components](images/gui/beta_rc/double_both_relative.png)
 
-Actual accepted Beta BW/MS Double comparison at a manageable dispatch-test
+Historical 0.4.5 accepted Beta BW/MS Double comparison at a manageable dispatch-test
 profile, not a production convergence benchmark. The lower panel uses the
 common nonmagnetic sum for both signed components; it is not peak-normalized.
 Post-edge-corrected A−B is **not automatically intrinsic magnetic EMCD**.
+
+For the current 0.6.0 figures and exact definitions see the
+[signal guide](USER_GUIDE.md#signal-definitions-in-060). Use **Maximize / restore
+results** and the plot scrollbars when the result pane is narrow at 150% scaling.
 
 ## 5. Save and reopen
 

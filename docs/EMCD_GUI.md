@@ -1,8 +1,14 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
-## Current 0.4.5 research Beta: Single and Double Channeling
+## 0.6.0 source development: Single and Double Channeling
 
-The Windows Beta provides **Channeling Model** alongside **Propagation
+**0.6.0 source development (unpublished):** this guide describes the new
+Raw / EMCD Asymmetry controls. Double Channeling was already present in 0.4.5;
+0.6.0 consolidates it and improves interpretation. The current Windows ZIP
+remains 0.4.5; use the [version-pinned guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/QUICK_START.md)
+for its older controls. No 0.6.0 executable has been built.
+
+The source GUI provides **Channeling Model** alongside **Propagation
 Method**. Single Channeling retains the existing entrance-only approximation.
 Double Channeling uses the actual incoming/outgoing BW or independent FFT
 solver, including the outgoing electron's post-loss energy. **Both** runs both
@@ -59,36 +65,26 @@ for the accepted cancellation-fixed executable and source provenance.
 
 ### Primary spectra and exports
 
-The default EELS figure has two panels. The upper panel shows **Detector A/B
-EELS at +M**, on their original shared arbitrary-unit scale. The lower panel
-shows signed **Magnetic** and **Nonmagnetic** components. Its only primary
-display selector is:
+The primary EELS and angular selectors each offer **Raw (a.u.)** and
+**EMCD Asymmetry (%)**, default Raw. EELS retains original +M A/B spectra above;
+Raw displays D_mag and D_nonmag below, while total Asymmetry displays exactly
+one 100*(A_plus-B_plus)/(A_plus+B_plus) curve. The renamed **EMCD Asymmetry**
+scalar group retains native L3/L2 readouts, evaluation energy and lock.
 
-- **Raw EMCD (a.u.)**: D_mag = M_A−M_B and D_nonmag = N_A−N_B.
-- **Relative EMCD (%)**: 100 D_mag/(N_A+N_B) and
-  100 D_nonmag/(N_A+N_B), using the same denominator.
+Raw maps show M(q)-M(q') and N(q)-N(q') on one zero-centered signed scale.
+Total map Asymmetry uses the +M difference divided by the +M sum at actual
+validated (qx,qy)/(qx,-qy) samples. Invalid denominators remain NaN; mirror
+validation includes physical aperture matching and saved coordinate support.
+000, actual ZA, hkl, target, Thales circle and A/B outlines are retained.
+These are point-pair densities, not finite-aperture EELS. Integrate intensities
+before taking a detector ratio; never average percentage pixels.
 
-Raw is the initial display. Switching modes changes presentation only. No
-detector or component gets independent peak scaling; raw and percentage values
-never share a vertical axis. Undefined percentages remain NaN. The separate
-compact **PRB** readout uses raw +M difference/sum at the recorded L3/L2
-evaluation energies. It is not replaced by magnetic-only asymmetry.
-
-Expand **Advanced Diagnostics — legacy displays** for the four reversal
-spectra, post-edge correction/residual/bias, optional legacy peak scaling and
-energy-lock benchmark controls. These explicitly selected legacy displays
-override the primary view. Post-edge correction is not intrinsic magnetic
-recovery. A two-sample result cannot supply an uncalculated energy, a white-line
-peak, or a continuous EELS curve; available samples are plotted as points.
-
-Default angular figures show magnetic and nonmagnetic **mirrored point-pair**
-components on one common signed color scale. The numerator is the component at
-(qx,qy) minus its value at (qx,−qy), divided by the sum of the two reversal-even
-angular densities. These are angular point-pair percentages, distinct from
-the finite-aperture detector-integrated spectral components. Local magnetic
-fractions, raw angular intensities and physical-aperture paired/corrected maps
-retain their separate definitions in Advanced Diagnostics. The existing 000,
-actual ZA, hkl indexing, Thales circle and detector overlays remain.
+Advanced Diagnostics retains the former Relative components explicitly as
+**Magnetic-only / Nonmagnetic Asymmetry (%)**, with common N_A+N_B denominator,
+plus reversal spectra, corrected/residual signals, legacy peak scaling,
+intrinsic/local maps and BW/MS comparisons. The total primary ratio can include
+nonmagnetic diffraction imbalance and must not be labelled purely magnetic.
+See the [full equations and compatibility rules](USER_GUIDE.md#signal-definitions-in-060).
 
 **Beam cutoff |g|max (Å⁻¹)** selects included elastic beams; its approximate
 angular equivalent λ|g|max is shown at the selected voltage and is not the
@@ -101,7 +97,11 @@ parameters and internal required angular-wavevector conversions are unchanged.
 Default completed-result export writes one checksummed project bundle with
 PNG/SVG figures and CSV/NPZ numerical data. Per-method CSV and NPZ spectra retain
 all original reversal intensities, signed raw components, common denominator,
-both component percentages and PRB percentages **in either display mode**.
+both component percentages and legacy PRB percentages **in either display mode**.
+Supplemental `signal_display.npz`, `*_signal_display.csv` and
+`figure_display.json` add explicit total/magnetic/even aliases and denominators,
+without changing original project key sets. Old Relative preferences migrate
+to the explicit advanced component view, never to total Asymmetry.
 Metadata records solver, channeling model, MDFF/source hash, native energies,
 geometry, numerical settings and calculation commit. Large arrays are stored
 once under explicit method prefixes. Redundant independently normalized figures
@@ -126,7 +126,7 @@ The desktop is now a **persistent scientific workspace**: save complete
 projects, reopen numerical results without recomputation, browse previous runs,
 compare saved conditions and restore inputs for an explicit new calculation.
 Stage A-C geometry, MDFF and independent BW/FFT physics are retained. Package
-version remains 0.4.5. Stage D added persistence; Stage E/F later added the
+historical version was 0.4.5; current development is 0.6.0. Stage D added persistence; Stage E/F later added the
 portable Windows candidate and percentage visualization described below.
 
 ![Actual Windows Results Browser and saved two-tilt comparison](images/gui/stage_d_windows.png)
@@ -1047,7 +1047,7 @@ reference case is numerical zero. The full-range L2 feature uses this same L3
 denominator. Normal EELS/map tabs provide the controls.
 See [Stage F acceptance](EMCD_GUI_STAGE_F_ACCEPTANCE.md) for values and scope.
 
-## PRB 2007 benchmark readout
+## Historical PRB 2007 benchmark readout (pre-0.6 terminology)
 
 The calculation controls also provide an **Estimated process memory budget**:
 512, 1024, 2048 (default), 4096 or 8192 MiB. This replaces the fixed 512 MiB
@@ -1069,7 +1069,7 @@ Budget selection is stored with project settings. Older settings without this
 field use the 2048 MiB default; 512 MiB remains selectable and now constrains
 the estimated total process peak, rather than only dense kernel storage.
 
-Virtual Detector EELS now includes **PRB 2007 Benchmark**, a post-processing
+Earlier Virtual Detector EELS included **PRB 2007 Benchmark**, a post-processing
 readout independent of Raw, Asymmetry and EELS Peak display settings. Its signed
 primary percentage is exactly
 

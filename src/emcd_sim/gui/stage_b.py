@@ -242,5 +242,5 @@ class StageB:
         path=QtWidgets.QFileDialog.getExistingDirectory(self,'Export completed EMCD result (new subfolder)')
         if not path:return
         try:
-            root=Path(path)/('emcd_'+datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f'));export_result(self.emcd_result,root,component_mode=self.eels_view.component_mode.currentData());self.statusBar().showMessage('Exported completed run: '+str(root))
+            root=Path(path)/('emcd_'+datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f'));export_result(self.emcd_result,root,component_mode=self.eels_view.component_mode.currentData(),map_signal_mode=self.maps_view.component_mode.currentData());self.statusBar().showMessage('Exported completed run: '+str(root))
         except Exception as exc:self.error(str(exc))
