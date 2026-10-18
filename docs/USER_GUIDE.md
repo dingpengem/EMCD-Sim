@@ -1,10 +1,11 @@
 # EMCD-Sim Desktop User Manual
 
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
-This manual describes the complete current GUI on `feat/emcd-desktop-gui`,
-not separate Stage A–F products. The reviewed Windows candidate is the
-unreleased Stage F RC; [Stage G readiness](STAGE_G_RELEASE_READINESS.md)
-records what has actually been tested.
+This manual describes the current GUI on `feat/atomic-3d-multislice`.
+The local 0.4.5 Beta RC is unpublished; the
+[Windows Beta acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md)
+records the exact build and tested scope. Stage E/F screenshots below are
+historical illustrations, not evidence for the current binary.
 
 ## What the application calculates
 
@@ -12,7 +13,9 @@ EMCD-Sim combines elastic incident-wave diffraction with a core-loss
 ionization tensor, integrating contributions from depths through the foil.
 It produces selected-energy magnetic/even/total angular intensities and
 full-energy virtual-detector EELS, for both magnetization states. Bloch-wave
-(BW) and the verified FFT multislice (MS) use the same ionization contraction.
+(BW) and the independent FFT multislice (MS) support Single and Double
+Channeling. Single retains entrance-only propagation; Double includes actual
+post-ionization outgoing propagation at the reduced electron energy.
 Elastic diffraction, core-loss intensity and detector A−B contrast are
 different quantities: a bright elastic spot is not itself an EMCD spectrum.
 
@@ -212,9 +215,15 @@ their relative intensity units are not an absolute cross-model calibration.
 Select **Bloch-wave**, **FFT Multislice** or **Both (BW / MS comparison)**.
 BW evolves amplitudes in a finite diffraction basis; MS alternates real-space
 potential and reciprocal-space propagation in the oriented projected IAM.
-Both integrate ionization throughout foil depth using a common tensor and
-fractional physical aperture weights. Neither propagates the outgoing
-post-ionization electron. FFT is verified here only for FCC Ni [017].
+Choose **Channeling Model → Single Channeling / Double Channeling** separately
+from the solver. Both integrate localized ionization throughout foil depth,
+retaining complex tensor interference and fractional physical apertures.
+Double also propagates the outgoing electron at E_incident minus the actual
+energy loss. Both runs independent BW/MS calculations for the selected model;
+it never substitutes Single spectra for Double. FFT supports FCC Ni [017]
+and the explicitly selected [001] (200) systematic-row approximation.
+The [001] checkbox excludes off-row support; [017] retains its full finite
+ZOLZ disk. Exact Bragg alignment does not establish physical two-beam isolation.
 
 | Control | Meaning and care |
 | --- | --- |
@@ -229,9 +238,16 @@ post-ionization electron. FFT is verified here only for FCC Ni [017].
 | Energy sampling points | Saved spectral sampling, with selected edge points additionally included; default 241 can yield 243 saved energies. |
 
 **Calculation Information** reports current/saved settings and memory estimates.
-The dense working guard is 512 MiB and the combined estimate is limited to
-1024 MiB; estimates are not full process RAM. Lower sampling explicitly when
-blocked, and record the change. Do not enlarge every setting simultaneously.
+Select a process-memory budget of **512, 1024, 2048 (default), 4096 or
+8192 MiB**. Admission includes current process RSS, concurrent allocations,
+retained arrays, 25% allocation margin and a 128 MiB reserve. It separately
+reports the dense kernel and rejects estimates above either the selected
+budget or 50% of currently available RAM. Parameters are never silently reduced.
+The estimate is conservative, not a measured peak-memory guarantee.
+The validated Ni reference profile uses beam 4.6 Å⁻¹, potential Fourier
+cutoff 6.2 Å⁻¹, FFT 48, 257 depth nodes, maximum step 0.04 nm and
+float64/complex128. These are reference settings, not mandatory GUI defaults.
+Both reciprocal cutoffs use crystallographic g=1/d, without an extra 2π.
 Good agreement of BW/MS amplitudes, coherence, elastic intensities, EELS and
 maps checks numerical propagation at matched settings. It does not establish
 physical Fourier-cutoff convergence, full DFT accuracy or absolute calibration.
@@ -242,6 +258,13 @@ Reused native Stage E capture at 150% scaling. Numerical solver discrepancy
 values always refer to original arrays, regardless of display normalization.
 
 ## Read angular maps
+
+The primary view shows magnetic and nonmagnetic **mirrored point-pair**
+components on a common signed scale. These percentages compare (qx,qy) with
+(qx,-qy); they are distinct from finite-aperture integrated spectral EMCD.
+Expand Advanced Diagnostics for the raw/even/total and paired/corrected fields
+described below. The actual ZA, transmitted beam, hkl, Thales circle and physical
+A/B apertures retain their saved geometry in either solver/model.
 
 Choose **EMCD Angular Maps**, L3/L2, a method (or BW−MS numerical difference)
 and a field. **All six fields** provides the default multi-panel view.
@@ -277,8 +300,18 @@ standard pair, not an artificial reflected signal outside the actual support.
 
 **Virtual Detector EELS** offers Full spectrum, L3 zoom, L2 zoom and the
 available BW/MS/overlay choices. Legend picking toggles individual curves.
-The panels separate original detector spectra, magnetic/even differences,
-and raw/corrected/processed/residual quantities.
+The default has two panels: original +M detector A/B EELS on one arbitrary-unit
+scale above, and signed Magnetic/Nonmagnetic components below. Its
+**Raw EMCD (a.u.) / Relative EMCD (%)** selector changes presentation only.
+Relative components share N_A+N_B; neither detector nor component is
+independently peak-normalized. The separate PRB readout uses
+100*(I_A_plus-I_B_plus)/(I_A_plus+I_B_plus). Its denominator differs from
+the component denominator when M_A+M_B is nonzero, even if D_nonmag=0.
+Expand **Advanced Diagnostics** for reversal spectra, post-edge correction,
+processed/residual signals and optional legacy peak normalization.
+Selected two-energy results remain points; a calculated partial native-range
+grid is labelled as a subset. Full spectra evaluate the actual tensor and
+outgoing propagation at every saved energy, not a fitted two-point shape.
 
 For detector J=A or B:
 
@@ -316,7 +349,10 @@ post-edge correction. These raw-unit curves remain available in the current GUI.
 
 ## Interpret percentages
 
-Set **Intensity Display** in the EELS or saved-comparison viewer:
+The primary spectral selector offers Raw and Relative with the definitions
+above; PRB remains a separate scalar benchmark. The following **Intensity
+Display** modes remain available in **Advanced Diagnostics** and saved-run
+comparisons. They are optional legacy displays, not additional primary modes:
 
 | Mode | Denominator for a signed difference D |
 | --- | --- |
@@ -345,7 +381,7 @@ selected shared run peak; **Per-run peak reference** is explicit. Incompatible
 models/source normalizations/units cannot share a quantitative peak. Qualitative
 independent overlays retain warnings and do not bypass map-difference gates.
 
-At selected native reference energies the saved BW magnetic peak contrasts
+In the historical Stage F saved profile, the BW magnetic peak contrasts
 are **−0.37556% (L3, P_L3=0.2508784247)** and **+0.61516% (L2,
 P_L2=0.1662582163)**. They are simulated relative contrasts, not measured Ni
 EMCD. The L3 energy-dependent asymmetry is instead about **−0.37966%**.
@@ -382,7 +418,11 @@ Percentage normalization changes only the displayed derived quantities. It does 
 **File → Save Project As...** chooses a parent and a new project folder name.
 **Save Project** updates a selected existing project; a new condition should
 normally have a new name. Replacing an existing project through Save As asks
-for confirmation. Keep each project folder complete:
+for explicit confirmation. Spectral Raw/Relative mode, view/method selection,
+selected PRB energy and its lock are saved in an optional checksummed
+`display_state.json`. Legacy projects without it still load. These are
+presentation settings and never rescale saved scientific arrays.
+Keep each project folder complete:
 
 ```text
 Ni017_reference/
@@ -461,9 +501,12 @@ different mistilts is a physical-condition comparison, not a solver error.
   NPZ/CSV** in a saved comparison, writes a **new** export folder. It includes
   derived spectra, scalar percentages, original raw spectra/maps/coordinates/
   weights, and normalization metadata JSON. Undefined values remain NaN.
-- **Export completed EMCD / EELS...** is the original complete numerical
-  export, separate from the versioned Save Project folder and derived display
-  exports. Save a project when you need complete reopening support.
+- **Export completed EMCD / EELS...** writes one checksummed project bundle,
+  per-method CSV and PNG/SVG spectral/map figures. CSV/NPZ retain all four
+  reversal spectra, raw differences, common denominators, magnetic/nonmagnetic
+  percentages and PRB values in either Raw or Relative display mode.
+  No independent detector peak normalization or redundant default difference
+  figure is added. Advanced derived exports retain their explicit definitions.
 
 PNG is convenient for previews; SVG preserves vector lines/text for editing
 and publication preparation. Always verify font sizes and complete axes.
@@ -476,18 +519,25 @@ scales in a scientific caption; reciprocal indices alone are insufficient.
 
 ## Scientific limitations and responsible interpretation
 
-The elastic field uses a **projected independent-atom potential**, with
-**entrance-only depth-integrated ionization**. There is **no outgoing
-channeling**, **no full double-channeling EMCD**, and **no atom-layer-resolved
-3D multislice**. The XMCD-effective tensor is not a complete complex DFT-derived
+The elastic field uses a **projected independent-atom potential**. Single is
+entrance-only; Double includes incoming, depth-distributed ionization and
+reduced-energy outgoing channeling. The GUI has **no atomic-3D electrostatic
+multislice**. Longitudinal transfer varies with loss energy but remains frozen
+across branches; no new branch/angular correction is included.
+The XMCD-effective tensor is not a complete complex DFT-derived
 MDFF; the atomic-ionization model is non-DFT. Absolute experimental cross
 sections/dose are uncalibrated, and native WIEN2k energies are not absolute
-experimental calibration. Current GUI FFT support is verified for FCC Ni
-[017] only. Physical Fourier-potential-cutoff convergence remains unresolved.
+experimental calibration. Current GUI FFT support covers FCC Ni [017] and
+the explicit [001] row model. Representative numerical controls do not
+establish convergence at every thickness, geometry or energy. Full-[001]
+elastic off-row scattering is substantial in the tested geometry; its saved
+row-restricted EMCD is not a full-ZOLZ [001] prediction. See the
+[full-spectrum](DOUBLE_CHANNELING_FULL_SPECTRA.md) and
+[geometry](NI_TWO_BEAM_GEOMETRY_COMPARISON.md) reports for the numerical scope.
 Neither arbitrary CIF import nor good BW/MS agreement establishes quantitative
 experimental EMCD. Keep raw, intrinsic magnetic, even imbalance, corrected,
 asymmetry and peak-normalized signals distinct.
 
 See [physics](PHYSICS.md), [GUI technical reference](EMCD_GUI.md),
 [installation troubleshooting](INSTALL_WINDOWS.md#troubleshooting) and
-[release-readiness status](STAGE_G_RELEASE_READINESS.md) for further detail.
+[Beta acceptance status](WINDOWS_BETA_RELEASE_ACCEPTANCE.md) for further detail.

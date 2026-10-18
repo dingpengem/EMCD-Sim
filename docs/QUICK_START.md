@@ -7,7 +7,7 @@ The application is an unreleased research candidate.
 
 ## 1. Extract and open
 
-Obtain the reviewed `EMCD-Sim-Stage-F-Windows-RC.zip` from the maintainer;
+Obtain the reviewed `EMCD-Sim-0.4.5-Beta-RC-Windows.zip` from the maintainer;
 there is currently **no published binary download**. Verify the checksum in
 the installation guide and **Extract All**. In the extracted `EMCD-Sim`
 folder, double-click `EMCD-Sim.exe`. Keep `_internal` beside it. No Python,
@@ -46,7 +46,10 @@ distinguish current inputs from the completed-run snapshot.
 4. For the supplied example, retain eta=beta=1 and check **I declare M axis,
    RP/LP convention and edge assignments**. Bundled numerical data have no
    companion audit; the declaration is deliberately not automatic.
-5. Choose **Propagation Method → Bloch-wave**. Leave the default numerical
+5. Choose **Channeling Model → Single Channeling** for entrance-only, or
+   **Double Channeling** for incoming and reduced-energy outgoing propagation.
+   Choose **Propagation Method → Bloch-wave**, **FFT Multislice**, or **Both**.
+   Leave the default numerical
    settings. For corrected curves, explicitly check **Enable post-edge A/B
    correction** and retain its separate `878–882 eV` window. Validation of an
    unaudited source can leave correction off; do not mistake that for failure.
@@ -58,16 +61,19 @@ distinguish current inputs from the completed-run snapshot.
 - In **EMCD Angular Maps**, choose **L3** or **L2**. **Magnetic odd** is the
   reversal-odd signal; **Nonmagnetic even** is reversal-even intensity.
   Raw and corrected paired A−B maps are different observables.
-- In **Virtual Detector EELS**, inspect the A/B, +M/−M spectra, magnetic and
-  even differences. Choose **L3 zoom** or **L2 zoom** to inspect an edge.
-- Set **Intensity Display → EELS Peak (%)**. **Auto** uses a fixed L3 peak
-  for Full spectrum/L3 zoom and a fixed L2 peak for L2 zoom. The denominator
-  is the maximum of the summed even A+B EELS in that window, not each curve's
-  own maximum. Explicit L3/L2 choices override Auto.
-- The saved reference gives BW magnetic peak contrasts about **−0.37556% at
-  L3** and **+0.61516% at L2**, each using its own edge reference. These are
-  simulated relative contrasts, not measurements. Full spectrum with the
-  L3 reference uses that same L3 denominator for its L2 feature.
+- In **Virtual Detector EELS**, the upper panel shows +M A/B EELS on the
+  original shared intensity scale. The lower panel shows signed magnetic and
+  nonmagnetic components. Select **Raw EMCD (a.u.)** or **Relative EMCD (%)**;
+  both relative components share N_A+N_B. PRB difference/sum is a separate
+  readout. Choose **Full spectrum**, **L3 zoom** or **L2 zoom**.
+- **Advanced Diagnostics** retains four reversal spectra, post-edge correction
+  and optional legacy peak normalization. Corrected contrast is not intrinsic
+  magnetic EMCD. Two-energy saved results remain points, not white-line curves.
+- The locked production benchmark uses **831.4778 / 848.698 eV**, distinct
+  from the auto-audit L3 extremum **831.271 eV**. At the validated [001] row,
+  8 nm Double profile the PRB values are -13.2278% / +22.4154%; these are
+  model-specific calculated percentages, not expected results for every GUI
+  default. See the [full-spectrum report](DOUBLE_CHANNELING_FULL_SPECTRA.md).
 
 ![Saved Ni percentage displays](images/gui/stage_f_emcd_percentage.png)
 
@@ -93,12 +99,14 @@ Post-edge-corrected A−B is **not automatically intrinsic magnetic EMCD**.
 
 Next: use the [manual's mistilt comparison](USER_GUIDE.md#compare-two-conditions)
 and export tutorials. Check [release readiness](STAGE_G_RELEASE_READINESS.md)
-for the candidate's acceptance and pending checks.
+for historical checks, and [Beta acceptance](WINDOWS_BETA_RELEASE_ACCEPTANCE.md)
+for the current candidate.
 
 ## Limits to keep with your figures
 
-Projected IAM; entrance-only depth-integrated ionization; no outgoing or
-full double channeling; no atom-layer-resolved 3D multislice. The XMCD-effective
+Projected IAM; Single entrance-only or Double incoming/outgoing channeling;
+no atomic-3D electrostatic multislice; branch-frozen longitudinal transfer.
+The XMCD-effective
 tensor is not a full complex DFT MDFF; the atomic model is non-DFT. There is no
 absolute experimental cross-section or native-energy calibration. GUI FFT is
 verified only for FCC Ni [017], not arbitrary CIFs. Physical Fourier-potential

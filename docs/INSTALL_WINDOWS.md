@@ -2,7 +2,7 @@
 
 For a first calculation, continue with [Quick Start](QUICK_START.md). The
 [User Manual](USER_GUIDE.md) explains the science and controls. This is an
-unreleased research application; read the [readiness report](STAGE_G_RELEASE_READINESS.md)
+unreleased research application; read the [Beta acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md)
 before using it for a research comparison.
 
 ## Recommended: portable Windows application
@@ -12,14 +12,14 @@ or WIEN2k to be installed.** WIEN2k is a separate electronic-structure program,
 not a GUI runtime dependency. This application does not install or provide a
 complete DFT calculation environment.
 
-The reviewed candidate is **EMCD-Sim GUI Stage F RC (unreleased)**, package
-version **0.4.5**, built from `618789717303cbea246cdb0fbccfe6a44040ecb7`.
-Stage G reviews this existing candidate without rebuilding it.
+The current local candidate is **EMCD-Sim 0.4.5 Beta RC (unreleased)**,
+built from `4a5f88fc6f6b03c8f7bba6bff2f2e8b647b9165b`. Older Stage F
+candidates are preserved separately and are not the current build.
 
-1. Obtain `EMCD-Sim-Stage-F-Windows-RC.zip` from the project maintainer through
+1. Obtain `EMCD-Sim-0.4.5-Beta-RC-Windows.zip` from the project maintainer through
    a trusted project-provided transfer location. **It is currently a local
    review artifact, not a published GitHub download.** On the build machine it
-   is `build/windows-stage-f/EMCD-Sim-Stage-F-Windows-RC.zip`. There is no public
+   is `build/windows-beta-rc-20261018/EMCD-Sim-0.4.5-Beta-RC-Windows.zip`. There is no public
    binary download URL to follow yet; request the reviewed archive from the maintainer.
 2. Download/copy the ZIP and verify its SHA256 below.
 3. Right-click it in File Explorer, choose **Extract All**, and select a folder
@@ -37,8 +37,8 @@ Stage G reviews this existing candidate without rebuilding it.
 
 5. Double-click **EMCD-Sim.exe**. Do not launch inside the ZIP or copy only the
    EXE elsewhere. There is no MSI or installer to run.
-6. Allow initialization to finish. Previous development-host launches took
-   about 24–43 seconds; this is an observation, not a timeout guarantee.
+6. Allow initialization to finish; startup time depends on the host and is
+   not a fixed timeout guarantee. Do not repeatedly start duplicate instances.
 7. Confirm the FCC Ni interface: **Nominal zone [uvw]** `0 1 7`, **Target (hkl)**
    `2 0 0`, indexed reciprocal geometry and physical A/B circles. Startup shows
    geometry; click **Preview diffraction** for calculated elastic intensities.
@@ -47,16 +47,19 @@ Stage G reviews this existing candidate without rebuilding it.
 
 ### Verify the archive
 
-The final candidate under review is the accepted Stage F archive, unchanged:
+The current Beta archive SHA256 is recorded in the
+[acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md) and its sibling
+`SHA256SUMS.txt`. The application's own `SHA256SUMS.txt` lists individual
+runtime files. The current Beta ZIP SHA256 is:
 
 ```text
-523cc3a087a92b4dc7aa790daeefca3399dbe35d0974ad78c7cbb4913cda9ca8
+0c1eaec31dd09a4eed75b1500e02ef5baf86910d2aa1a5a9b9d15e3670533751
 ```
 
 For example, in PowerShell:
 
 ```powershell
-Get-FileHash "$HOME\Downloads\EMCD-Sim-Stage-F-Windows-RC.zip" -Algorithm SHA256
+Get-FileHash "$HOME\Downloads\EMCD-Sim-0.4.5-Beta-RC-Windows.zip" -Algorithm SHA256
 ```
 
 Substitute the actual download path. A checksum match confirms the archive
@@ -97,9 +100,10 @@ There is no automatic upload.
 
 The x64 candidate was tested on **Windows 11 Enterprise, build 26200.9457**,
 Intel Core i7-1365U, approximately 31.58 GiB host RAM, at 150% display scaling.
-The archive is **108,541,536 bytes** (about 104 MiB); the extracted application
-has **608 files**, **261,851,292 bytes** (about 250 MiB). Keep additional space
-for projects and exports.
+The current Beta archive size, extracted file count and checksums are in the
+[Beta acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md). Earlier Stage F
+sizes are not measurements of this new build. Keep additional space for
+projects and exports.
 
 Earlier accepted default workloads peaked near **297 MiB process working
 set** and took roughly 49–119 seconds for XMCD BW/MS/Both; timing varied
@@ -117,7 +121,7 @@ equivalent to a second Windows installation or a clean VM.
 ## Advanced: run from Python source
 
 Obtain the source repository from [dingpengem/EMCD-Sim](https://github.com/dingpengem/EMCD-Sim).
-The current GUI is on `feat/emcd-desktop-gui`; it has not been merged or
+The current GUI is on `feat/atomic-3d-multislice`; it has not been merged or
 released. Record the commit you use. The local path below is an example,
 not a required installation location.
 
@@ -163,20 +167,23 @@ candidate, not for users running from source. Neither route requires WIEN2k.
 | CIF import fails | Use **Load CIF…**, inspect the error and supplied cell/occupancies. A periodic nonsingular cell is required; compare with a known conventional Ni CIF. Structure import is separate from supported scattering. |
 | Missing/invalid XMCD | In **D. MDFF Model**, use **Browse XMCD...**, then **Validate source / native features**. A valid five-column source and explicit convention declaration are required. Select the bundled example or the original matching input. |
 | Unsupported crystal for EMCD | Reciprocal indexing can be available even when IAM/MDFF support is absent. Current MDFF calculations require the verified conventional FCC Ni cell, a=3.524 Å. Do not reinterpret another element as Ni. |
-| Multislice unavailable | Current verified FFT support is FCC Ni [017]. Use that geometry or explicitly choose **Bloch-wave** where supported. There is no silent method fallback. FFT grids must be even and contain the common basis. |
+| Multislice unavailable | Verified FFT support is FCC Ni [017] or the explicit [001] (200) systematic-row approximation. There is no silent fallback. FFT grids must be even and contain the exact common basis. |
 | Project will not reopen | Select the project folder containing `project.json`, retain all companion files, and check completeness/checksum errors. Use **Import Existing Result** only for legacy B/C exports. Restore a complete backup rather than editing checksums. |
 | Saved data viewable but Run disabled | Viewing needs saved arrays; rerunning also needs original source provenance. Use **Results → Locate Original Source...** and **Use These Settings**. Same filename is insufficient: the SHA256 must match. |
 | Cannot write output | Choose a writable user folder and a new export/project name; avoid protected installation directories and disconnected drives. Check disk space and log errors. |
-| Slow / memory-heavy simulation | Check **Calculation Information** and the memory estimate. Start with the tutorial defaults, use **Cancel** if needed, and change one numerical setting at a time. Estimates are not total peak RAM. |
+| Slow / memory-heavy simulation | Check the separate dense-kernel and estimated process-peak values. Budgets are 512/1024/2048(default)/4096/8192 MiB, with a 50%-of-available-RAM guard. Estimates are not measured peaks. Settings are never silently reduced. |
 | Clipped layout at high DPI | Use **Maximize / restore results** or **Maximize / restore viewer**, scroll the canvas/input panel, collapse unused input sections, or use **View → Restore Default Layout**. Export the figure for its complete scientific panels. |
 
 ## Scientific scope
 
-This is a projected independent-atom potential with entrance-only,
-depth-integrated ionization: no outgoing channeling, full double channeling,
-or atom-layer-resolved 3D multislice. XMCD constrains an effective tensor,
+This uses projected IAM potentials. Single is entrance-only; Double includes
+incoming, depth-distributed ionization and reduced-energy outgoing channeling.
+The GUI does not implement atomic-3D electrostatic multislice. Longitudinal
+transfer remains branch-frozen. XMCD constrains an effective tensor,
 not a complete complex DFT MDFF; the atomic model is non-DFT. Absolute cross
 sections and the native WIEN2k energy axis are not experimentally calibrated.
-GUI FFT support is verified only for FCC Ni [017]. Physical potential
-Fourier-cutoff convergence remains unresolved. BW/MS agreement does not
-establish that convergence or quantitative EMCD for arbitrary CIF structures.
+GUI FFT supports [017] and the explicit [001] row approximation; these are
+distinct physical bases. Representative convergence controls do not establish
+convergence at every thickness, geometry or energy, or quantitative
+experimental EMCD for arbitrary CIF structures. Absolute intensities are
+arbitrary units, without electron-count/SNR calibration.
