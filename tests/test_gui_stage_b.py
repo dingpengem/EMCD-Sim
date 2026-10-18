@@ -94,7 +94,7 @@ class ForwardTests(unittest.TestCase):
 class WorkerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    def setUp(self):self.w=MainWindow();self.w.error=lambda s:None
+    def setUp(self):self.w=MainWindow(workspace=Path('outputs')/('stage_b_worker_'+uuid.uuid4().hex));self.w.declaration.setChecked(True);self.w.error=lambda s:None
     def tearDown(self):
         if self.w.busy:self.w.cancel();self.w.worker.wait(5000);self.app.processEvents()
         self.w.close();self.app.processEvents()

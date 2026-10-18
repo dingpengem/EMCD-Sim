@@ -106,7 +106,7 @@ class ZGUIStageCTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         if not hasattr(PropagationTests,'result'):PropagationTests.setUpClass()
-    def setUp(self):self.w=MainWindow();self.w.error=lambda s:None
+    def setUp(self):self.w=MainWindow(workspace=Path('outputs')/('stage_c_worker_'+uuid.uuid4().hex));self.w.declaration.setChecked(True);self.w.error=lambda s:None
     def tearDown(self):
         if self.w.busy:self.w.cancel();self.w.worker.wait(10000);self.app.processEvents()
         self.w.close();self.app.processEvents()

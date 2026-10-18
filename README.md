@@ -14,7 +14,7 @@ models and virtual-detector EELS/EMCD analysis.
 
 **0.4.5 Beta · Windows x64 · portable ZIP · no separate Python or Conda required.**
 
-[Windows Beta release and download information](docs/RELEASE_0_4_5_BETA.md)
+[Download Windows Beta v0.4.5-beta.1](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1)
 
 Download `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`
 (**108,689,021 bytes; 103.65 MiB**). Verify its SHA256, use **Extract All**,

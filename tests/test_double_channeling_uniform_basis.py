@@ -30,6 +30,7 @@ def test_completed_case_reused_without_solver_or_modification(monkeypatch):
     assert data['raw'].dtype==np.float64
 
 
+@pytest.mark.skipif(not Path('outputs/gui_stage_d/windows_20261016/reference_project/project.json').is_file(), reason='Requires the original local reference project; not distributed')
 def test_exact_fft_beam_support_and_larger_basis_memory():
     rows=run.support()
     assert all(r['matched_support'] for r in rows)

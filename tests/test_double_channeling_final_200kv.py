@@ -19,6 +19,7 @@ def test_zero_thickness_has_zero_raw_and_undefined_percentages():
                 assert np.isnan(obs[key]).all()
 
 
+@pytest.mark.skipif(not Path('outputs/gui_stage_d/windows_20261016/reference_project/project.json').is_file(), reason='Requires the original local reference project; not distributed')
 def test_exact_existing_case_never_restarted(monkeypatch):
     def forbidden(*args,**kwargs):raise AssertionError('Completed engine restarted')
     monkeypatch.setattr(run.study,'engine',forbidden)

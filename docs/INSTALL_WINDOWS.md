@@ -17,7 +17,7 @@ built from `9937d3b820e4225fdf06b7f3ed33c7083d0f35ea`. Older Stage F
 candidates and the original Beta RC are preserved separately and are not the current build.
 See the [cancellation acceptance report](DOUBLE_CHANNELING_CANCELLATION.md) for the replacement.
 
-1. Open the [Windows Beta release information](RELEASE_0_4_5_BETA.md) and
+1. Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1) and
    download `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip` from its
    GitHub release assets. The retained RC filename identifies the exact
    tested archive; the distributed bytes were not rebuilt or repacked.

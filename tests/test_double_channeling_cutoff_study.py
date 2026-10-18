@@ -8,6 +8,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 import ni_double_channeling_cutoff_study as run
 
 
+@pytest.mark.skipif(not Path('outputs/gui_stage_d/windows_20261016/reference_project/project.json').is_file(), reason='Requires the original local reference project; not distributed')
 def test_context_preserves_geometry_tensor_and_detector():
     for zone in ('001','017'):
         old=run.base.context(zone)
@@ -22,6 +23,7 @@ def test_context_preserves_geometry_tensor_and_detector():
         if zone=='017':assert all(h[1]+7*h[2]==0 for h in enlarged['hkl'])
 
 
+@pytest.mark.skipif(not Path('outputs/gui_stage_d/windows_20261016/reference_project/project.json').is_file(), reason='Requires the original local reference project; not distributed')
 def test_ladder_has_actual_fft_support_and_rejects_insufficient_mesh():
     c=run.context('017',6.2,4.6)
     grid=run.ProjectedNiFFT.build(c['model'].elastic,grid_points=48,potential_cutoff=6.2,projected_geometry=c['projected_geometry'])

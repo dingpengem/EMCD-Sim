@@ -22,7 +22,7 @@ def result():
     am, bm = a.copy(), b.copy()
     am[7], bm[7] = 3., 3.    # Reversal-even maximum differs from +M maximum.
     config = SimpleNamespace(l3=108., l2=122., centers=((.25, .25), (.25, -.25)), radius=.08,
-                             model='xmcd', source_sha256='source', magnetization=(0, 0, 1), eta=1., beta=1.)
+                             model='xmcd', channeling_model='single', source_sha256='source', magnetization=(0, 0, 1), eta=1., beta=1.)
     settings = SimpleNamespace(zone=(0, 1, 7), target=(2, 0, 0), tilt=(-7., 0.), voltage=200., thickness=30.)
     return dict(spectra=dict(energy_ev=e, I_A_plus=a, I_B_plus=b, I_A_minus=am, I_B_minus=bm),
                 config=config, settings=settings, method='bloch', metadata=dict(beam_hkl=[[2, 0, 0]], g=[[.5, 0]]))

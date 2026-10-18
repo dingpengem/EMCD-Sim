@@ -7,7 +7,7 @@ This guide describes the **0.4.5 Windows research Beta**.
 
 ## 1. Extract and open
 
-Open the [Windows Beta release information](RELEASE_0_4_5_BETA.md) and download
+Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1) and download
 `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`. Verify the checksum in
 the installation guide and **Extract All**. In the extracted `EMCD-Sim`
 folder, double-click `EMCD-Sim.exe`. Keep `_internal` beside it. No Python,

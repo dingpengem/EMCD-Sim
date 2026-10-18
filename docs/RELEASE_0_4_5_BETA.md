@@ -3,10 +3,12 @@
 Release tag: **v0.4.5-beta.1**. Package metadata remains **0.4.5**.
 This is a research **Pre-release**, not a stable production release.
 
-Publication status: prepared for the authorized merge and publication.
-The final verified public links and exact merge/tag metadata are recorded
-below after GitHub publication. Do not confuse local acceptance with a
-published downloadable release.
+**Publication succeeded:** [GitHub Windows Beta Pre-release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1).
+
+[Download the Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.4.5-beta.1/EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip) -
+[SHA256SUMS.txt](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.4.5-beta.1/SHA256SUMS.txt) -
+[Build manifest](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.4.5-beta.1/build_manifest.json) -
+[Publication provenance](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.4.5-beta.1/release_provenance.json).
 
 ## Install and learn
 
@@ -41,6 +43,8 @@ existing research scan workflows.
 
 | Item | Value |
 | --- | --- |
+| Main publication merge / annotated tag commit | `4185080dfb76c5dcce051b43511969caf9181548` |
+| Validated development merge input | `71b068d8eedfc566ad626fe2634ae8d7c61527ac` |
 | Accepted binary build source | `9937d3b820e4225fdf06b7f3ed33c7083d0f35ea` |
 | Scientific/full-spectrum acceptance milestone | `7dd90fcac948fe0b8922e7b7d3571261631c4672` |
 | Final cancellation acceptance documentation | `6f6362d7da544324159942ecf1808be88a195dac` |
@@ -119,5 +123,35 @@ distinct observables.
 
 ## Publication verification
 
-Pending the authorized main merge, annotated tag, prerelease and public-asset
-download verification. Existing history and old tags will be preserved.
+**PASS:** merged main and development commits were pushed without force;
+`v0.4.5-beta.1` is an annotated tag on the publication merge above. The public
+GitHub release is `prerelease=true`, `draft=false`, and was created with
+`make_latest=false`. Its four release assets are uploaded. A fresh public
+unauthenticated ZIP download is exactly **108,689,021 bytes**, with SHA256
+matching the accepted local archive. ZIP CRC, complete folder structure and
+all extracted-manifest file hashes pass. The README download link resolves to
+that actual release; installation, quick start and manual remain linked on main.
+
+The tag is preserved on the exact publication merge. Subsequent main commits
+record verified public URLs and repair CI/test-only portability issues; they
+do not alter runtime, resources, package version or binary bytes. Existing
+main history and the old `v0.4.5` tag were retained. Local user-owned modified
+source data and untracked research scripts were excluded from commits.
+
+The existing Ni map-generation workflow skipped the main publication merge
+and tag, so release publication did not regenerate main's scientific examples.
+A normal development-branch push triggered its preexisting branch workflow,
+creating example-only commit `096f87aabda947d9c185819654359cf5eef113e5` after the
+validated development merge input. That automated example commit was not
+merged into the Beta tag; it was retained on the remote development branch.
+
+Initial automatic cross-platform CI exposed unavailable local-only reference
+projects/WIEN2k audit companions, stale version/PRB/GUI fixtures and missing
+Linux EGL libraries. Repairs are confined to tests and CI: explicit skips
+for absent local inputs, current fixture fields and explicit convention
+handling, isolated test workspaces, and Linux Qt runtime libraries. Numerical
+thresholds and physical algorithms were not changed. Focused affected checks
+are recorded locally in `outputs/beta_release_publish/`; this is not a new
+production physics validation or a combined replacement test count.
+
+Final automatic CI status is recorded after the post-publication commit is checked.

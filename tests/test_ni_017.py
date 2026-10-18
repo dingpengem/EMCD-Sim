@@ -1,5 +1,6 @@
 """Actual [017] geometry, cubic magnetization, native edges and matched elasticity."""
 import unittest
+from pathlib import Path
 import numpy as np
 from emcd_sim.ni_017_geometry import Ni017Geometry,rotated_tensor,energy_audit
 from emcd_sim.ni_710_geometry import Ni710Geometry
@@ -36,6 +37,7 @@ class Ni017Tests(unittest.TestCase):
             np.testing.assert_allclose((p+n)/2,np.einsum('ia,eab,jb->eij',R,c.real,R),atol=1e-14)
             np.testing.assert_allclose((p-n)/2,np.einsum('ia,eab,jb->eij',R,1j*c.imag,R),atol=1e-14)
 
+    @unittest.skipUnless(all(Path(SOURCE).with_suffix('.'+suffix).is_file() for suffix in ('raw1','raw2','broad1','broad2','rawxmcd','inso','injoint','inc')), 'Requires original local WIEN2k audit companions; not distributed')
     def test_verified_native_edges(self):
         a=energy_audit(SOURCE)
         self.assertEqual(a['selected_magnetic_energies_ev'],dict(L3=831.271,L2=848.698))

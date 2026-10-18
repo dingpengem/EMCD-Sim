@@ -41,6 +41,7 @@ class HighMistiltTests(unittest.TestCase):
         u,hh,gg=_projected_ni_potential(32,200,0,2.2,projected_geometry=GEO)
         np.testing.assert_allclose(u,u[:,(-np.arange(32))%32],atol=1e-12)
 
+    @unittest.skipUnless(all(Path(SOURCE).with_suffix('.'+suffix).is_file() for suffix in ('raw1','raw2','broad1','broad2','rawxmcd','inso','injoint','inc')), 'Requires original local WIEN2k audit companions; not distributed')
     def test_even_mirror_full_contraction_and_map_eels(self):
         cfg=replace(Config(),energy_points=83,detector_grid=9,depth_steps=12,thickness_nm=2.)
         energy,selected,*_=setup(SOURCE,cfg);results=[]
@@ -51,6 +52,7 @@ class HighMistiltTests(unittest.TestCase):
         np.testing.assert_allclose(results[0]['D_nonmag'],-results[1]['D_nonmag'],atol=1e-12)
         for s in results:np.testing.assert_allclose(s['D_raw'],s['D_mag']+s['D_nonmag'],atol=1e-14)
 
+    @unittest.skipUnless(all(Path(SOURCE).with_suffix('.'+suffix).is_file() for suffix in ('raw1','raw2','broad1','broad2','rawxmcd','inso','injoint','inc')), 'Requires original local WIEN2k audit companions; not distributed')
     def test_validated_resume_npz_and_source_rejection(self):
         cfg=replace(Config(),energy_points=83,detector_grid=9,depth_steps=9,thickness_nm=1.)
         # Windows sandbox ACLs do not support tempfile's private mode=0700 directory.

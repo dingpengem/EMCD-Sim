@@ -1,5 +1,7 @@
 """Focused full-benchmark extensions, preserving validated channeling conventions."""
 from dataclasses import replace
+from pathlib import Path
+import pytest
 import numpy as np
 from numpy.testing import assert_allclose
 from emcd_sim.double_channeling import equivalent_site_phases,double_channeling_response
@@ -93,6 +95,7 @@ def test_detector_thread_batches_preserve_complex_response():
     finally:sys.path.remove(str(scripts))
 
 
+@pytest.mark.skipif(not Path('outputs/gui_stage_d/windows_20261016/reference_project/project.json').is_file(), reason='Requires the original local reference project; not distributed')
 def test_larger_systematic_row_is_not_limited_by_parent_gui_preview():
     import sys
     from pathlib import Path
