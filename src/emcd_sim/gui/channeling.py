@@ -1,7 +1,7 @@
 """GUI adapters to the existing channeling kernels; no scattering model here."""
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
-from ..double_channeling import double_channeling_response, intensities_from_response
+from ..double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch
 from ..multislice_double_channeling import ProjectedNiFFT, incident_fields, multislice_double_channeling_response
 from ..ni_017_geometry import Ni017Geometry
 from ..single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix
@@ -18,7 +18,7 @@ def worker_count(n,method):
     return min(4,max(1,int(1200/(dense+40)))) if method=='bloch' else 4
 
 
-def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared_incoming=None):
+def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared_incoming=None,*,energy_checkpoint=None):
     """Full maps or explicitly requested detector-only evaluation on the same grid.
 
     Detector-only skips exactly zero-weight pixels. Fractional weights and all
@@ -40,11 +40,21 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
         sign=np.ones((len(points),3));sign[points[:,1]<0,1]=-1
     else:query=points
     n=len(elastic.beams.hkl);workers=worker_count(n,method)
+    incoming_bw=prepare_incoming_bloch(elastic,settings.thickness,cfg.depth) if cfg.channeling_model=='double' and method=='bloch' else None
     selected={int(np.argmin(abs(energy-v))):edge for edge,v in (('L3',cfg.l3),('L2',cfg.l2))}
     diagnostics=[]
     for ie,e in enumerate(energy):
         if cancelled():raise Cancelled()
         stage(f'{method} {cfg.channeling_model}: energy {ie+1}/{len(energy)} ({e:.4f} eV)')
+        cached=energy_checkpoint(float(e),None) if energy_checkpoint is not None else None
+        if cached is not None:
+            raw=np.asarray(cached['raw'])
+            if raw.shape!=(4,) or raw.dtype!=np.float64 or not np.isfinite(raw).all() or np.any(raw<0):raise ValueError('Invalid energy checkpoint detector intensities')
+            for j,key in enumerate(('I_A_plus','I_B_plus','I_A_minus','I_B_minus')):spectra[key][ie]=cached['raw'][j]
+            if cfg.angular_maps and ie in selected:
+                plus,minus=cached['maps']
+                maps[selected[ie]]=dict(I_plus=plus,I_minus=minus,I_mag=(plus-minus)/2,I_nonmag=(plus+minus)/2)
+            continue
         if cfg.channeling_model=='single':
             values=np.empty((2,len(points)))
             for start in range(0,len(points),64):
@@ -58,7 +68,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
                 if method=='bloch':
                     return double_channeling_response(elastic,float(e),batch,settings.thickness,
                         method='analytic' if cfg.systematic_row else 'numerical',depth_steps=cfg.depth,
-                        memory_budget_mib=cfg.memory_budget_mib)
+                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw)
                 grid,incoming=prepared_incoming
                 r,diag=multislice_double_channeling_response(elastic,float(e),batch,settings.thickness,
                     fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
@@ -83,4 +93,8 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
         if cfg.angular_maps and ie in selected:
             plus,minus=values.reshape(2,cfg.grid,cfg.grid)
             maps[selected[ie]]=dict(I_plus=plus,I_minus=minus,I_mag=(plus-minus)/2,I_nonmag=(plus+minus)/2)
+        if energy_checkpoint is not None:
+            compact=dict(raw=np.array([spectra[k][ie] for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')]))
+            if cfg.angular_maps and ie in selected:compact['maps']=values.reshape(2,cfg.grid,cfg.grid)
+            energy_checkpoint(float(e),compact)
     return dict(spectra=spectra,maps=maps,qx=qx,qy=qy,weights=weights,diagnostics=diagnostics)

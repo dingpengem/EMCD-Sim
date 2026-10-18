@@ -115,7 +115,7 @@ def tensors(cfg,energy,R):
     return out
 
 
-def energy_grid(cfg):
+def energy_grid(cfg,requested=None):
     if cfg.model=='xmcd':
         s=load_wien2k_xmcd(cfg.source);lo,hi=s.energy_ev[[0,-1]]
         if cfg.source_sha256 and cfg.source_sha256!=s.source_sha256:raise ValueError('XMCD source changed since validation; validate again')
@@ -125,13 +125,19 @@ def energy_grid(cfg):
     if cfg.energy_scope not in ('full','edges'):raise ValueError('Unknown spectral energy coverage')
     if not 9<=cfg.energy_points<=501 or not 9<=cfg.grid<=193 or not 2<=cfg.depth<=1025 or not 4<=cfg.subpixels<=256:raise ValueError('Numerical sampling exceeds supported GUI bounds')
     if not np.isfinite([cfg.halfwidth,cfg.radius,*np.ravel(cfg.centers),*cfg.window]).all() or min(cfg.halfwidth,cfg.radius)<=0:raise ValueError('Invalid map/detector/window controls')
+    if requested is not None:
+        e=np.asarray(requested,float)
+        if e.ndim!=1 or len(e)<2 or not np.isfinite(e).all() or np.any(np.diff(e)<=0):raise ValueError('Requested energies must be finite, increasing and contain at least two samples')
+        if e[0]<lo or e[-1]>hi:raise ValueError('No MDFF energy extrapolation')
+        if not all(np.any(np.isclose(e,v,rtol=0,atol=1e-9)) for v in (cfg.l3,cfg.l2)):raise ValueError('Requested grid must include the selected native L3/L2 energies')
+        return e.copy()
     return np.array([cfg.l3,cfg.l2]) if cfg.energy_scope=='edges' else np.unique(np.r_[np.linspace(lo,hi,cfg.energy_points),cfg.l3,cfg.l2])
 
 
 class Cancelled(Exception):pass
 
 
-def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False):
+def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,energy_ev=None,energy_checkpoint=None):
     from .propagation import numerical_info
     from .memory_budget import reserve_memory
     info=numerical_info(structure,settings,cfg)
@@ -139,20 +145,20 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
     # GUI arrays here, after admitting the complete estimated working set.
     reserved=info['retained_results_working_mib'] if cfg.channeling_model=='double' else info['estimated_working_mib']
     with reserve_memory(reserved,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
-        result=_calculate(structure,settings,cfg,progress,cancelled)
+        result=_calculate(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,energy_checkpoint=energy_checkpoint)
         result['metadata']['memory_admission']=admission
         for r in result['methods'].values():r['metadata']['memory_admission']=admission
         return result
 
 
-def _calculate(structure,settings,cfg,progress,cancelled):
+def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None):
     def stage(s):
         if cancelled():raise Cancelled()
         progress(s)
     stage('Validating structure and MDFF')
     reason=material_reason(structure)
     if reason:raise ValueError(reason)
-    energy=energy_grid(cfg);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
+    energy=energy_grid(cfg,energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
     if settings.target not in hkl or settings.target==(0,0,0):raise ValueError('Select a nonzero target in the finite diffraction basis')
     memory=64*cfg.grid**2*len(hkl)**2/2**20
     model=replace(nickel_physical_benchmark(),elastic=elastic,detectors={k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),cfg.centers)},chiral_groups=None)
@@ -172,7 +178,8 @@ def _calculate(structure,settings,cfg,progress,cancelled):
         prepared=None
         if cfg.channeling_model=='double' or not cfg.angular_maps:
             from .channeling import contract
-            prepared=contract(model,settings,cfg,method,C,energy,ts,stage,cancelled,prepared_incoming)
+            checkpoint=(lambda e,data:energy_checkpoint(method,e,data)) if energy_checkpoint is not None else None
+            prepared=contract(model,settings,cfg,method,C,energy,ts,stage,cancelled,prepared_incoming,energy_checkpoint=checkpoint)
         methods[method]=_contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,prepared=prepared)
         methods[method]['method']=method
         methods[method]['metadata'].update(solver=method+' '+cfg.channeling_model+' channeling localized single ionization',numerics=info)
@@ -247,6 +254,8 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
         s_target=float(excitation(g[hkl.index(settings.target)],settings.tilt,settings.voltage)),alpha=alpha,correction_reason=correction_reason,pair_reason=pair_reason,
         detector_areas={k:float(w.sum()*(qx[0,1]-qx[0,0])**2) for k,w in weights.items()},integration='fractional',dense_estimate_mib=memory,
         channeling_model=cfg.channeling_model,angular_maps_calculated=cfg.angular_maps,spectral_coverage=cfg.energy_scope,
+        outgoing_energy_ev=(1000*settings.voltage-energy).tolist() if cfg.channeling_model=='double' else None,
+        longitudinal_transfer='q_z=-E_loss/(h*v_in), evaluated at each loss; frozen across branches, not across energy; no new branch or angular corrections',
         systematic_row=cfg.systematic_row,incoming_hkl=[list(h) for h in hkl],outgoing_hkl=[list(h) for h in hkl] if cfg.channeling_model=='double' else None,
         outgoing_energy='incident energy minus actual energy loss' if cfg.channeling_model=='double' else None,
         normalization=dict(raw_components='D_mag=M_A-M_B; D_nonmag=N_A-N_B (a.u.)',components_percent='100 * signed component / (N_A+N_B)',prb='100 * (I_A_plus-I_B_plus)/(I_A_plus+I_B_plus)'),

@@ -10,6 +10,23 @@ from .signal_normalization import DisplaySettings, normalized_spectra, angular_d
 from .normalization_controls import NormalizationControls
 
 
+def geometry_description(result):
+    """Describe the saved basis explicitly; Bragg alignment is not isolation."""
+    settings=result['settings'];cfg=result['config']
+    support='systematic-row-restricted basis' if cfg.systematic_row else 'full finite ZOLZ basis'
+    return (f'Nominal ZA {list(settings.zone)}; tilt ({settings.tilt[0]:.4f}, '
+            f'{settings.tilt[1]:.4f}) mrad; {support}')
+
+
+def spectral_coverage_label(result):
+    e=result['spectra']['energy_ev']
+    if len(e)==2:return 'Selected L3/L2 samples'
+    audit=result['metadata'].get('source_audit') or {}
+    bounds=audit.get('bounds')
+    if bounds is not None and not np.allclose(e[[0,-1]],bounds,rtol=0,atol=1e-9):return 'Calculated energy subset'
+    return 'Full spectrum'
+
+
 def draw_maps(fig,result,edge,method=None,field=None,display=None):
     if display is None and field is None:return draw_component_maps(fig,result,edge,method)
     display=display or DisplaySettings()
@@ -127,10 +144,13 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
     axes[-1].set_xlim(limits)
     title=f'{cfg.channeling_model.title()} Channeling | {method} | Ni {list(result["settings"].zone)}, {result["settings"].thickness:g} nm'
     if points:title+='\nSelected native L3/L2 samples only; full EELS spectrum not calculated'
+    elif spectral_coverage_label(result)=='Calculated energy subset':title+='\nCalculated energy subset; full native range not covered'
+    title+='\n'+geometry_description(result)
     fig.suptitle(title,fontsize=11)
     fig._emcd_display_metadata=dict(kind='primary spectra',component_mode=component_mode,records=records,
         eels='Original +M detector A/B intensities, shared arbitrary-unit scale; no background or peak scaling',
-        spectral_coverage='selected samples only' if points else 'actual energy-resolved calculation',
+        spectral_coverage='selected samples only' if points else spectral_coverage_label(result),
+        geometry=geometry_description(result),
         prb='Separate raw +M difference/sum scalar benchmark; not the magnetic-only percentage')
     return legends
 
@@ -257,7 +277,7 @@ class ResultsView(QtWidgets.QWidget):
         if len(options)==2:options.append('difference' if self.kind in ('maps','diffraction') else 'overlay')
         self.method.blockSignals(True);self.method.clear()
         for key in options:self.method.addItem(METHOD_NAMES.get(key,'BW / MS overlay'),key)
-        if self.kind=='eels':self.choice.setItemText(0,'Selected L3/L2 samples' if len(result['spectra']['energy_ev'])==2 else 'Full spectrum')
+        if self.kind=='eels':self.choice.setItemText(0,spectral_coverage_label(result))
         self.method.blockSignals(False);self.redraw()
     def redraw(self,*_):
         if self.result is None:return

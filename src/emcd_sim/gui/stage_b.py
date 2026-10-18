@@ -68,7 +68,7 @@ class StageB:
         self.number('slice_step','Max slice step (nm)',.04,.001,1,self.emcd_stale)
         label=QtWidgets.QLabel('Verified FFT: Ni [017], or explicit [001] (200) systematic row. Incoming/outgoing beam support is matched in Double Channeling.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
         self.row_projection=QtWidgets.QCheckBox('Explicit [001] (200) systematic-row approximation');self.form.addRow(self.row_projection)
-        self.row_projection.setToolTip('Only for [001]. This explicitly changes the projected elastic model; [017] retains its full 2D basis.')
+        self.row_projection.setToolTip('Only for [001]. Excludes off-row ZOLZ beams and changes the projected elastic model. Exact (200) Bragg alignment does not establish physical two-beam isolation. [017] retains its full finite 2D ZOLZ basis.')
         self.row_projection.toggled.connect(self.refresh)
 
     def numerical_controls(self):

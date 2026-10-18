@@ -43,6 +43,16 @@ def test_raw_and_relative_do_not_peak_scale_or_change_parity():
     np.testing.assert_array_equal(rev['Magnetic'],-raw['Magnetic']);np.testing.assert_array_equal(rev['Nonmagnetic'],raw['Nonmagnetic'])
 
 
+def test_prb_denominator_can_differ_without_reversal_even_contamination():
+    # N_A=N_B=10, but M_A+M_B=2: distinct denominators are intentional.
+    s=dict(I_A_plus=np.array([12.]),I_A_minus=np.array([8.]),
+           I_B_plus=np.array([10.]),I_B_minus=np.array([10.]))
+    curves,_=components(s,'relative');prb,_=benchmark_spectra(s)
+    assert curves['Nonmagnetic'][0]==0
+    assert curves['Magnetic'][0]==pytest.approx(10)
+    assert prb['prb_relative_dichroism_percent'][0]==pytest.approx(100*2/22)
+
+
 @pytest.fixture(scope='module')
 def result():
     return calculate(Structure.nickel(),Settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),
@@ -71,6 +81,16 @@ def test_two_samples_are_points_and_uncomputed_energy_is_rejected(result):
         for line in ax.lines:
             if line.get_label() in ('Detector A','Detector B','Magnetic','Nonmagnetic'):assert line.get_linestyle()=='None'
     with pytest.raises(ValueError,match='not calculated'):benchmark_readout(result,selection='selected',energy_ev=838)
+
+
+def test_actual_five_energy_subset_is_not_labelled_full_native_coverage(result):
+    from emcd_sim.gui.results import spectral_coverage_label
+    cfg=replace(result['config'],propagation='bloch',energy_scope='full',angular_maps=False)
+    subset=calculate(Structure.nickel(),result['settings'],cfg,energy_ev=[826,cfg.l3,833,cfg.l2,850])
+    assert spectral_coverage_label(subset)=='Calculated energy subset'
+    fig=Figure();draw_eels(fig,subset)
+    assert 'full native range not covered' in fig._suptitle.get_text()
+    assert len(fig.axes)==2
 
 
 def test_default_angular_components_preserve_maps_and_share_scale(result):

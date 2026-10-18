@@ -32,6 +32,38 @@ class BlochStates:
         return (np.exp(1j*z[..., None]*self.values)*self.vectors[self.boundary_index].conj()) @ self.vectors.T
 
 
+@dataclass(frozen=True)
+class PreparedBlochIncoming:
+    """Read-only incoming eigensystem/depth fields reused across loss energies.
+
+    Bound to the exact elastic object, thickness and quadrature. Outgoing
+    eigenproblems and Coulomb/MDFF energy dependence are never cached here.
+    """
+    elastic: object
+    thickness_nm: float
+    depth_steps: int
+    states: BlochStates
+    z: np.ndarray
+    fields: np.ndarray
+
+    @property
+    def values(self):return self.states.values
+    @property
+    def vectors(self):return self.states.vectors
+    @property
+    def boundary_index(self):return self.states.boundary_index
+    def ket(self,z):return self.fields if np.array_equal(z,self.z) else self.states.ket(z)
+
+
+def prepare_incoming_bloch(elastic,thickness_nm,depth_steps=257):
+    if not np.isfinite(thickness_nm) or thickness_nm<0 or not isinstance(depth_steps,int) or depth_steps<2:
+        raise ValueError('Finite nonnegative thickness and at least two depth nodes required')
+    states=BlochStates.solve(elastic.hamiltonian_nm_inv(),elastic.beams.hkl.index((0,0,0)))
+    z=np.linspace(0,float(thickness_nm),depth_steps);fields=states.ket(z)
+    for value in (states.values,states.vectors,z,fields):value.setflags(write=False)
+    return PreparedBlochIncoming(elastic,float(thickness_nm),depth_steps,states,z,fields)
+
+
 def dipole_kernel(q_cycles):
     """Cartesian Q/Q², retaining signed longitudinal transfer and angular units."""
     q = 2*np.pi*np.asarray(q_cycles, float)
@@ -116,7 +148,7 @@ def equivalent_site_phases(incoming_hkl,outgoing_hkl,positions):
 
 
 def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoing_beams=None,
-        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True):
+        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None):
     """Detector-resolved integrated Cartesian response (pixels,3,3).
 
     Average over equivalent Ni basis sites, continuous uniform depth density,
@@ -133,7 +165,12 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
     dense = 80*(ni*no)**2/2**20
     working = dense+(128*(ni*no+depth_steps*(ni+no+12))+144*len(q_xy))/2**20+8
     with reserve_memory(working, memory_budget_mib, dense_mib=dense):
-        incoming = BlochStates.solve(elastic.hamiltonian_nm_inv(), elastic.beams.hkl.index((0,0,0)))
+        if prepared_incoming is not None:
+            if (not isinstance(prepared_incoming,PreparedBlochIncoming) or prepared_incoming.elastic is not elastic
+                or prepared_incoming.thickness_nm!=float(thickness_nm) or prepared_incoming.depth_steps!=depth_steps):
+                raise ValueError('Prepared incoming Bloch fields do not match elastic object, thickness or depth grid')
+            incoming=prepared_incoming
+        else:incoming = BlochStates.solve(elastic.hamiltonian_nm_inv(), elastic.beams.hkl.index((0,0,0)))
         delta = np.asarray(elastic.beams.hkl)[:, None, :]-np.asarray(ob.hkl)[None, :, :]
         if not all(s == 'Ni' for s in elastic.crystal.species):
             raise ValueError('Equivalent-site response currently supports Ni only')

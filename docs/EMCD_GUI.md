@@ -9,6 +9,14 @@ solver, including the outgoing electron's post-loss energy. **Both** runs both
 solvers with the same selected model; it does not substitute one model for
 another. Old projects lacking a channeling-model field load as Single.
 
+The [full-spectrum validation](DOUBLE_CHANNELING_FULL_SPECTRA.md) documents
+genuine native-energy Double Channeling spectra. The 200 kV [001] row-reference
+BW/MS comparison checks 242 actual energies over 823.625–882.521 eV; these
+spectra are not reconstructed from the two older benchmark samples. Fresh
+GUI-worker tests also exercise full-range Single/Double spectra with Both
+solvers at a separately documented manageable numerical profile. Production
+sampling and selected-energy controls have distinct validation scopes.
+
 The verified FFT geometries are full-2D FCC Ni [017] and the explicitly selected
 [001] (200) systematic-row approximation. The row checkbox is an explicit
 physical approximation; it is never applied to [017]. The Results Browser,
@@ -16,12 +24,26 @@ saved project and numerical metadata identify the model and solver. Comparisons
 of Single and Double are physical-model comparisons, distinct from BW/MS
 numerical discrepancies.
 
+Spectral figure titles state the nominal zone axis, actual absolute tilt and
+whether the saved basis is systematic-row-restricted or full finite ZOLZ.
+The nominal [001] direction is a major zone axis. Exact (200) Bragg alignment
+does not establish physical two-beam isolation. A row-restricted result cannot
+measure omitted off-row scattering; see the
+[elastic geometry comparison](NI_TWO_BEAM_GEOMETRY_COMPARISON.md). The GUI
+interactive 121-beam preview cap is reported explicitly and does not silently
+truncate a larger requested basis.
+
 **Spectral coverage** distinguishes an actual native energy-resolved spectrum
 from a calculation at only the selected L3/L2 energies. The latter contains
 two samples, not a reconstructed white-line shape. Disabling **Calculate angular
 maps** evaluates only nonzero fractional-detector support on the unchanged
 grid; it does not coarsen the grid or change the apertures, MDFF, beams,
 precision or propagation. The result records that angular maps are unavailable.
+
+Explicit pilot grids covering only part of the saved native source range are
+labelled **Calculated energy subset**, even when they contain more than two
+samples. This label is derived from saved energy coordinates and source bounds;
+displaying a project does not reopen the source or calculate missing samples.
 
 RAM budgets remain 512, 1024, 2048 (default), 4096 and 8192 MiB. Admission checks
 estimate total process peak separately from the dense kernel, including
