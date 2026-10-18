@@ -21,6 +21,8 @@ def main():
     assert source['outcome']==frozen['outcome']=='PASS'
     assert source['completed_solver_fingerprints']==frozen['completed_solver_fingerprints']
     manifest=json.loads((args.build_root/'build_manifest.json').read_text(encoding='utf-8-sig'))
+    for name,expected in manifest['build']['runtime_source_sha256'].items():
+        assert sha(Path('src')/name)==expected,name
     for record in manifest['files']:
         path=args.app_root/record['path']
         assert path.stat().st_size==record['bytes'] and sha(path)==record['sha256'],path

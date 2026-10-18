@@ -7,7 +7,7 @@ The application is an unreleased research candidate.
 
 ## 1. Extract and open
 
-Obtain the reviewed `EMCD-Sim-0.4.5-Beta-RC-Windows.zip` from the maintainer;
+Obtain the reviewed `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip` from the maintainer;
 there is currently **no published binary download**. Verify the checksum in
 the installation guide and **Extract All**. In the extracted `EMCD-Sim`
 folder, double-click `EMCD-Sim.exe`. Keep `_internal` beside it. No Python,

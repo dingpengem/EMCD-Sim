@@ -76,8 +76,13 @@ are more readable than a cramped three-pane window.
    curves, explicitly enable post-edge A/B correction with the 878–882 eV
    window, independently of display peak normalization.
 7. Click **Run EMCD / EELS**. The worker reports stages; **Cancel** requests a
-   safe stop. A failed/cancelled calculation does not replace a completed
-   result. Completion enables maps, EELS and comparison information.
+   cooperative stop and immediately shows **Cancelling...**, then
+   **Calculation cancelled.** when the worker has released its resources.
+   A failed/cancelled calculation does not replace a completed result.
+   After cancellation, change settings or run again normally. Individual
+   native numerical calls must finish before cancellation can be acknowledged;
+   see [measured cancellation acceptance](DOUBLE_CHANNELING_CANCELLATION.md).
+   Completion enables maps, EELS and comparison information.
 8. Inspect L3/L2 and signed metrics, then **File → Save Project As...** into a
    new user research folder. Keep the entire folder.
 

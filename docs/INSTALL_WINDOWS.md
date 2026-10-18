@@ -13,13 +13,14 @@ not a GUI runtime dependency. This application does not install or provide a
 complete DFT calculation environment.
 
 The current local candidate is **EMCD-Sim 0.4.5 Beta RC (unreleased)**,
-built from `4a5f88fc6f6b03c8f7bba6bff2f2e8b647b9165b`. Older Stage F
-candidates are preserved separately and are not the current build.
+built from `9937d3b820e4225fdf06b7f3ed33c7083d0f35ea`. Older Stage F
+candidates and the original Beta RC are preserved separately and are not the current build.
+See the [cancellation acceptance report](DOUBLE_CHANNELING_CANCELLATION.md) for the replacement.
 
-1. Obtain `EMCD-Sim-0.4.5-Beta-RC-Windows.zip` from the project maintainer through
+1. Obtain `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip` from the project maintainer through
    a trusted project-provided transfer location. **It is currently a local
    review artifact, not a published GitHub download.** On the build machine it
-   is `build/windows-beta-rc-20261018/EMCD-Sim-0.4.5-Beta-RC-Windows.zip`. There is no public
+   is `build/windows-beta-rc-cancel-final-20261018/EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`. There is no public
    binary download URL to follow yet; request the reviewed archive from the maintainer.
 2. Download/copy the ZIP and verify its SHA256 below.
 3. Right-click it in File Explorer, choose **Extract All**, and select a folder
@@ -53,13 +54,13 @@ The current Beta archive SHA256 is recorded in the
 runtime files. The current Beta ZIP SHA256 is:
 
 ```text
-0c1eaec31dd09a4eed75b1500e02ef5baf86910d2aa1a5a9b9d15e3670533751
+309438c4a049773a6e99948477c8d52051cd8f1de632a762c795656e6c5a2216
 ```
 
 For example, in PowerShell:
 
 ```powershell
-Get-FileHash "$HOME\Downloads\EMCD-Sim-0.4.5-Beta-RC-Windows.zip" -Algorithm SHA256
+Get-FileHash "$HOME\Downloads\EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip" -Algorithm SHA256
 ```
 
 Substitute the actual download path. A checksum match confirms the archive
