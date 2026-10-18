@@ -23,8 +23,8 @@
   ],
   "beam_count": 2,
   "excitation_error_inv_angstrom": [
-    0.0,
-    0.0
+    -2.784366121052404e-18,
+    -2.784366121052404e-18
   ],
   "elastic_intensity": [
     0.6491269181803698,
