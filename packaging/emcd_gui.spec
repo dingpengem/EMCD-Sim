@@ -15,6 +15,8 @@ info['label']=os.environ.get('EMCD_GUI_BUILD_LABEL',info['label'])
 info.update(build_utc=datetime.now(timezone.utc).isoformat(), reference_sha256=hashlib.sha256(reference.read_bytes()).hexdigest(),
             reference_provenance='Repository tracked five-column Ni example; MIT repository license; no WIEN2k code or companion audit included.')
 info['versions']={name:version(name) for name in ('numpy','scipy','matplotlib','ase','PySide6','pyinstaller')}
+info['application_version']=version('emcd-sim')
+info['runtime_source_sha256']={str(p.relative_to(root/'src')).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in (root/'src/emcd_sim').rglob('*.py')}
 info['gui_source_sha256']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (root/'src/emcd_sim/gui').glob('*.py')}
 (stage / 'build_info.json').write_text(json.dumps(info, indent=2), encoding='utf-8')
 # A venv over Conda needs the base runtime DLL search path explicitly.

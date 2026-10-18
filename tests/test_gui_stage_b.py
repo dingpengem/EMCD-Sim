@@ -88,7 +88,7 @@ class ForwardTests(unittest.TestCase):
         self.assertTrue((folder/'L3_angular_maps.png').exists())
     def test_gates_and_memory(self):
         changed=Structure.nickel();changed.atoms.cell*=1.1;self.assertTrue(material_reason(changed))
-        with self.assertRaisesRegex(ValueError,'512 MiB'):calculate(self.structure,Settings(beam_cutoff=6.5),replace(self.cfg,grid=97))
+        with self.assertRaisesRegex(ValueError,'512 MiB'):calculate(self.structure,Settings(beam_cutoff=6.5),replace(self.cfg,grid=97,memory_budget_mib=512))
 
 
 class WorkerTests(unittest.TestCase):

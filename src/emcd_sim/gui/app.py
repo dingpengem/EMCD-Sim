@@ -14,12 +14,12 @@ from .geometry import (Structure,Settings,indices,geometry,preview,excitation,
 class PreviewWorker(QtCore.QThread):
     result=QtCore.Signal(object)
     failed=QtCore.Signal(str)
-    def __init__(self,structure,settings):
-        super().__init__();self.structure=structure;self.settings=settings
+    def __init__(self,structure,settings,systematic_row=False):
+        super().__init__();self.structure=structure;self.settings=settings;self.systematic_row=systematic_row
     def run(self):
         try:
             if self.isInterruptionRequested():return
-            result=preview(self.structure,self.settings)
+            result=preview(self.structure,self.settings,systematic_row=self.systematic_row)
             if not self.isInterruptionRequested():self.result.emit(result)
         except Exception as exc:self.failed.emit(str(exc))
 
@@ -49,8 +49,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.mode=QtWidgets.QComboBox();self.mode.addItems(['Select reflection','Set projected ZA','Move detector A','Move detector B']);self.form.addRow('Click mode',self.mode)
         self.number('tx','Tilt X (mrad)',-7.116725439974256,-100,100,self.tilt_changed)
         self.number('ty','Tilt Y (mrad)',0,-100,100,self.tilt_changed)
-        self.number('qx','ZA qx (cycles/A)',0,-20,20,self.za_changed)
-        self.number('qy','ZA qy (cycles/A)',0,-20,20,self.za_changed)
+        self.number('qx','ZA qx (Å⁻¹)',0,-20,20,self.za_changed)
+        self.number('qy','ZA qy (Å⁻¹)',0,-20,20,self.za_changed)
         self.step=QtWidgets.QComboBox();self.step.addItems(['0.01','0.1','1']);self.step.setCurrentText('0.1');self.step.currentTextChanged.connect(self.step_changed);self.form.addRow('Tilt step (mrad)',self.step)
         self.lock=QtWidgets.QComboBox();self.lock.addItems(['None','X','Y']);self.form.addRow('Lock for Bragg alignment',self.lock)
         self.align_button=self.button('Align to selected Bragg',self.align)
@@ -64,14 +64,15 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.section('E. Propagation Method')
         self.propagation_controls()
         self.section('F. Calculation Settings')
-        self.number('beam','Beam cutoff (cycles/A)',3.2,.2,6.5,self.refresh)
-        self.number('potential','Potential cutoff (cycles/A)',2.2,.1,6.5,self.refresh)
+        self.number('beam','Beam cutoff |g|max (Å⁻¹)',3.2,.2,6.5,self.refresh)
+        self.number('potential',"Potential Fourier cutoff\n|g−g′|max (Å⁻¹)",2.2,.1,6.5,self.refresh)
+        self.spin['potential'].setToolTip("Maximum reciprocal-vector difference retained for elastic coupling between diffraction beams, |g−g′| ≤ cutoff. Coupling uses U_(g−g′) or V_(g−g′). Not the ionization momentum-transfer cutoff, EELS detector range, excitation-error threshold or beam radius. Crystallographic g=1/d; stored values unchanged, no 2π conversion.")
         self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
         self.numerical_controls()
         self.section('Virtual detectors')
         self.show_detectors=QtWidgets.QCheckBox('Show physical A/B apertures');self.show_detectors.setChecked(True);self.show_detectors.toggled.connect(self.refresh);self.form.addRow(self.show_detectors)
-        for key,label,val in [('ax','A qx',0),('ay','A qy',0),('bx','B qx',0),('by','B qy',0)]:self.number(key,label+' (cycles/A)',val,-20,20,self.detectors_changed)
-        self.number('radius','Radius (cycles/A)',.0908059024,.001,2,self.refresh)
+        for key,label,val in [('ax','A qx',0),('ay','A qy',0),('bx','B qx',0),('by','B qy',0)]:self.number(key,label+' (Å⁻¹)',val,-20,20,self.detectors_changed)
+        self.number('radius','Radius (Å⁻¹)',.0908059024,.001,2,self.refresh)
         self.button('Restore Thales A/B',self.restore_detectors)
         self.pair_label=QtWidgets.QLabel();self.pair_label.setWordWrap(True);self.form.addRow(self.pair_label)
         self.section('G. Output Settings',False)
@@ -140,13 +141,16 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
     def refresh(self,*_,fit=False):
         if not hasattr(self,'canvas'):return
         try:
-            s=self.settings();self.current=geometry(self.structure,s);self.drawn_settings=s;crystal,R,hkl,g,microscope=self.current
+            s=self.settings();self.current=geometry(self.structure,s,systematic_row=self.row_projection.isChecked());self.drawn_settings=s;crystal,R,hkl,g,microscope=self.current
+            from ..geometry import electron_wavelength_angstrom
+            angle=1000*electron_wavelength_angstrom(s.voltage)*s.beam_cutoff
+            self.spin['beam'].setToolTip(f'Maximum reciprocal-space radius of included elastic diffraction beams. g=1/d, Å⁻¹; no 2π conversion. Approximate angular equivalent λ|g|max = {angle:.4f} mrad at {s.voltage:g} kV. This is not the EELS detector collection limit.')
             target_valid=s.target in hkl and s.target!=(0,0,0)
             supported=not self.structure.elastic_reason and target_valid
             self.run_button.setEnabled(supported and not self.busy);self.align_button.setEnabled(target_valid and not self.busy)
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'Ni IAM BW elastic preview supported.'))
             old_limits=(self.ax.get_xlim(),self.ax.get_ylim()) if self.ax.has_data() else ((-1.3,1.3),(-1.3,1.3))
-            self.ax.clear();fresh=self.last_result is not None and self.last_result['settings']==asdict(s) and self.last_result['source']==self.structure.source and self.last_result['source_sha256']==self.structure.sha256
+            self.ax.clear();fresh=self.last_result is not None and self.last_result['settings']==asdict(s) and self.last_result.get('systematic_row',False)==self.row_projection.isChecked() and self.last_result['source']==self.structure.source and self.last_result['source_sha256']==self.structure.sha256
             self.tabs.setTabText(0,'Diffraction (current)' if fresh else 'Diffraction (last preview)')
             if fresh:
                 intensity=self.last_result['intensity'];self.ax.scatter(g[:,0],g[:,1],s=20+550*intensity,c=intensity,cmap='viridis',vmin=0,vmax=1,edgecolors='black',linewidths=.5)
@@ -160,17 +164,18 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
                 self.ax.add_patch(Circle(gg/2,np.linalg.norm(gg)/2,fill=False,color='teal',ls=':',label='Thales (000)—target'))
                 error=float(excitation(gg,s.tilt,s.voltage));j=hkl.index(s.target)
                 value=f'{self.last_result["intensity"][j]:.7g}' if fresh else 'not calculated for current inputs'
-                self.selection.setText(f'Target {s.target}: q=({gg[0]:.6f}, {gg[1]:.6f}) cycles/A; |g|={np.linalg.norm(gg):.6f}\ns={error:+.9g} 1/A; exit intensity={value}\nZA=({za[0]:.6f}, {za[1]:.6f}) cycles/A; tilt=({s.tilt[0]:.8f}, {s.tilt[1]:.8f}) mrad')
+                self.selection.setText(f'Target {s.target}: q=({gg[0]:.6f}, {gg[1]:.6f}) Å⁻¹; |g|={np.linalg.norm(gg):.6f}\ns={error:+.9g} 1/A; exit intensity={value}\nZA=({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; tilt=({s.tilt[0]:.8f}, {s.tilt[1]:.8f}) mrad')
             else:self.selection.setText('Target is not a nonzero reflection in this oriented basis. Click a valid spot or enter its hkl; no intensity is calculated.')
             if self.show_detectors.isChecked():
                 for name,p in zip(('A','B'),self.detectors):
                     self.ax.add_patch(Circle(p,self.spin['radius'].value(),fill=False,color='purple',ls='-' if name=='A' else '--'));self.ax.annotate(name,p,xytext=(6,-10),textcoords='offset points')
             self.pair_label.setText('Exact y-mirrored A/B pair.' if np.allclose(self.detectors[0],[self.detectors[1,0],-self.detectors[1,1]],atol=1e-9,rtol=0) else 'Manual / non-y-mirrored A/B pair. Mirrored-map analysis will require validation.')
             limits=((-s.beam_cutoff-.2,s.beam_cutoff+.2),)*2 if fit else old_limits
-            self.ax.set(xlim=limits[0],ylim=limits[1],aspect='equal',xlabel='qx (cycles/A)',ylabel='qy (cycles/A)',title='Elastic diffraction — exit intensities' if fresh else 'Current reciprocal geometry — no current intensities')
+            self.ax.set(xlim=limits[0],ylim=limits[1],aspect='equal',xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)',title='Elastic diffraction — exit intensities' if fresh else 'Current reciprocal geometry — no current intensities')
             self.ax.legend(fontsize=7,loc='upper right');self.canvas.draw_idle()
-            self.info.setPlainText(self.structure.description()+f'\n\nNominal zone: {s.zone}\nR crystal-to-local:\n{R}\nIncluded beams: {len(hkl)} (full radial cutoff)\n'
-                f'Current tilt: {s.tilt} mrad\nZA: {za} cycles/A\nSelected target: {s.target}\n'
+            support='explicit (200) systematic row' if self.row_projection.isChecked() else 'full radial ZOLZ cutoff'
+            self.info.setPlainText(self.structure.description()+f'\n\nNominal zone: {s.zone}\nR crystal-to-local:\n{R}\nIncluded beams: {len(hkl)} ({support})\n'
+                f'Current tilt: {s.tilt} mrad\nZA: {za} Å⁻¹\nSelected target: {s.target}\n'
                 'Stage C: BW / verified [017] FFT entrance-channeling EMCD/EELS through explicit Run EMCD / EELS.\nNi projected ZOLZ IAM; no outgoing channeling, absorption/TDS or physical CBED disks.\n'
                 + ('Current inputs match last completed preview.' if fresh else 'Inputs differ from last preview, or no preview exists. Right diffraction table is the last completed result.')
                 +f'\nCompleted previews this session: {len(self.history)}')
@@ -202,16 +207,17 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
     def align(self):
         try:
-            s=self.settings();_,_,hkl,g,_=geometry(self.structure,s);self.set_tilt(align_bragg(g[hkl.index(s.target)],s.tilt,s.voltage,self.lock.currentText()))
+            s=self.settings();_,_,hkl,g,_=geometry(self.structure,s,systematic_row=self.row_projection.isChecked());self.set_tilt(align_bragg(g[hkl.index(s.target)],s.tilt,s.voltage,self.lock.currentText()))
         except Exception as exc:self.error(str(exc))
     def reset_reference(self):
+        with QtCore.QSignalBlocker(self.row_projection):self.row_projection.setChecked(False)
         self.zone.setText('0 1 7');self.target.setText('2 0 0');self.set_tilt((0,0));self.lock.setCurrentText('Y');self.align();self.restore_detectors()
     def sync_detectors(self):self.set_values(dict(ax=self.detectors[0,0],ay=self.detectors[0,1],bx=self.detectors[1,0],by=self.detectors[1,1]))
     def detectors_changed(self,*_):
         self.detectors=np.array([[self.spin['ax'].value(),self.spin['ay'].value()],[self.spin['bx'].value(),self.spin['by'].value()]]);self.refresh()
     def restore_detectors(self):
         try:
-            s=self.settings();_,_,hkl,g,_=geometry(self.structure,s);gg=g[hkl.index(s.target)];perp=np.array([-gg[1],gg[0]])
+            s=self.settings();_,_,hkl,g,_=geometry(self.structure,s,systematic_row=self.row_projection.isChecked());gg=g[hkl.index(s.target)];perp=np.array([-gg[1],gg[0]])
             self.detectors=np.array([gg/2+perp/2,gg/2-perp/2]);self.sync_detectors();self.refresh()
         except Exception as exc:self.statusBar().showMessage(str(exc))
 
@@ -226,14 +232,14 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         text=QtWidgets.QPlainTextEdit(self.structure.description());text.setReadOnly(True);layout.addWidget(text);dialog.show();self.dialogs.append(dialog)
     def start_preview(self):
         if self.busy:return
-        try:s=self.settings();actual=geometry(self.structure,s)
+        try:s=self.settings();actual=geometry(self.structure,s,systematic_row=self.row_projection.isChecked())
         except Exception as exc:self.error(str(exc));return
         if self.structure.elastic_reason:self.error(self.structure.elastic_reason);return
         if s.target not in actual[2] or s.target==(0,0,0):self.error('Select a valid nonzero target');return
         self.refresh()
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0);self.emcd_button.setEnabled(False)
         self.statusBar().showMessage('Preparing crystal / selecting basis / running Bloch-wave elastic preview…')
-        self.worker=PreviewWorker(Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings),s)
+        self.worker=PreviewWorker(Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings),s,self.row_projection.isChecked())
         self.worker.result.connect(self.completed);self.worker.failed.connect(self.preview_failed);self.worker.finished.connect(self.finished);self.worker.start()
     def completed(self,result):
         if self.worker.isInterruptionRequested():return
@@ -249,7 +255,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         elif self.run_outcome=='failed':self.statusBar().showMessage('Preview failed; no new result was registered.')
     def preview_failed(self,message):self.run_outcome='failed';self.error(message)
     def cancel(self):
-        if self.worker:self.worker.requestInterruption();self.statusBar().showMessage('Cancellation requested; waiting for the current numerical stage to finish…')
+        if self.busy and self.worker:
+            self.worker.requestInterruption();self.statusBar().showMessage('Cancelling...')
     def closeEvent(self,event):
         if self.busy:self.cancel();event.ignore();return
         self.store_ui_preferences()
@@ -286,12 +293,25 @@ def main():
     parser.add_argument('--rc-acceptance', type=Path, help='Run real native RC acceptance into a new directory')
     parser.add_argument('--rc-source', type=Path, help='External audited Ni source for acceptance')
     parser.add_argument('--rc-reopen', action='store_true', help='Reopen RC projects in a new process without calculations')
+    parser.add_argument('--cancellation-acceptance',type=Path,help='Run focused real-worker cancellation acceptance into a new directory')
+    parser.add_argument('--cancellation-source',type=Path,help='Explicit external XMCD source for cancellation acceptance')
     parser.add_argument('--stage-f-acceptance',type=Path,help='Validate normalized visualization from saved projects; no solvers')
     parser.add_argument('--stage-f-project',type=Path)
     parser.add_argument('--stage-f-comparison',type=Path)
+    parser.add_argument('--beta-acceptance',type=Path,help='Run sequential Beta RC widget/worker acceptance in a new folder')
+    parser.add_argument('--beta-source',type=Path,help='Explicit external scientific source for matched acceptance')
+    parser.add_argument('--beta-production',type=Path,help='Existing full-spectrum reference folders; never bundled')
     args=parser.parse_args()
     from .runtime import configure_logging, LABEL, build_info
     configure_logging()
+    if args.cancellation_acceptance:
+        if not args.cancellation_source:parser.error('Cancellation acceptance requires an explicit source')
+        from .cancellation_acceptance import run
+        return run(args.cancellation_acceptance,args.cancellation_source)
+    if args.beta_acceptance:
+        if not args.beta_source or not args.beta_production:parser.error('Beta acceptance requires source and saved production paths')
+        from .beta_acceptance import run
+        return run(args.beta_acceptance,args.beta_source,args.beta_production)
     if args.stage_f_acceptance:
         if not args.stage_f_project or not args.stage_f_comparison:parser.error('Stage F needs both saved project folders')
         from .stage_f_acceptance import run

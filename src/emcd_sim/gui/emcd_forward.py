@@ -70,6 +70,11 @@ class ForwardSettings:
     propagation: str='bloch'
     fft_grid: int=32
     slice_step: float=.04
+    memory_budget_mib: int=2048
+    channeling_model: str='single'
+    energy_scope: str='full'
+    angular_maps: bool=True
+    systematic_row: bool=False
 
 
 def material_reason(structure):
@@ -110,46 +115,83 @@ def tensors(cfg,energy,R):
     return out
 
 
-def energy_grid(cfg):
+def energy_grid(cfg,requested=None):
     if cfg.model=='xmcd':
         s=load_wien2k_xmcd(cfg.source);lo,hi=s.energy_ev[[0,-1]]
         if cfg.source_sha256 and cfg.source_sha256!=s.source_sha256:raise ValueError('XMCD source changed since validation; validate again')
     else:lo,hi=cfg.atomic.l3_ev-10,cfg.atomic.l2_ev+10
     if not lo<=cfg.l3<cfg.l2<=hi:raise ValueError('Selected L3/L2 must be ordered inside the native model energy range')
-    if not 9<=cfg.energy_points<=501 or not 9<=cfg.grid<=97 or not 2<=cfg.depth<=256 or not 4<=cfg.subpixels<=256:raise ValueError('Numerical sampling exceeds supported GUI bounds')
+    if cfg.channeling_model not in ('single','double'):raise ValueError('Unknown channeling model; no automatic substitution')
+    if cfg.energy_scope not in ('full','edges'):raise ValueError('Unknown spectral energy coverage')
+    if not 9<=cfg.energy_points<=501 or not 9<=cfg.grid<=193 or not 2<=cfg.depth<=1025 or not 4<=cfg.subpixels<=256:raise ValueError('Numerical sampling exceeds supported GUI bounds')
     if not np.isfinite([cfg.halfwidth,cfg.radius,*np.ravel(cfg.centers),*cfg.window]).all() or min(cfg.halfwidth,cfg.radius)<=0:raise ValueError('Invalid map/detector/window controls')
-    return np.unique(np.r_[np.linspace(lo,hi,cfg.energy_points),cfg.l3,cfg.l2])
+    if requested is not None:
+        e=np.asarray(requested,float)
+        if e.ndim!=1 or len(e)<2 or not np.isfinite(e).all() or np.any(np.diff(e)<=0):raise ValueError('Requested energies must be finite, increasing and contain at least two samples')
+        if e[0]<lo or e[-1]>hi:raise ValueError('No MDFF energy extrapolation')
+        if not all(np.any(np.isclose(e,v,rtol=0,atol=1e-9)) for v in (cfg.l3,cfg.l2)):raise ValueError('Requested grid must include the selected native L3/L2 energies')
+        return e.copy()
+    return np.array([cfg.l3,cfg.l2]) if cfg.energy_scope=='edges' else np.unique(np.r_[np.linspace(lo,hi,cfg.energy_points),cfg.l3,cfg.l2])
 
 
-class Cancelled(Exception):pass
+from ..cancellation import Cancelled, check_cancelled
 
 
-def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False):
+def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,energy_ev=None,energy_checkpoint=None):
+    check_cancelled(cancelled)
+    from .propagation import numerical_info
+    from .memory_budget import reserve_memory
+    info=numerical_info(structure,settings,cfg)
+    check_cancelled(cancelled)
+    # Double kernels make their own concurrent reservations. Reserve retained
+    # GUI arrays here, after admitting the complete estimated working set.
+    reserved=info['retained_results_working_mib'] if cfg.channeling_model=='double' else info['estimated_working_mib']
+    with reserve_memory(reserved,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
+        result=_calculate(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,energy_checkpoint=energy_checkpoint)
+        check_cancelled(cancelled)
+        result['metadata']['memory_admission']=admission
+        for r in result['methods'].values():r['metadata']['memory_admission']=admission
+        return result
+
+
+def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None):
     def stage(s):
         if cancelled():raise Cancelled()
         progress(s)
     stage('Validating structure and MDFF')
     reason=material_reason(structure)
     if reason:raise ValueError(reason)
-    energy=energy_grid(cfg);elastic=elastic_model(structure,settings);_,R,hkl,g,_=geometry(structure,settings)
+    energy=energy_grid(cfg,energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
     if settings.target not in hkl or settings.target==(0,0,0):raise ValueError('Select a nonzero target in the finite diffraction basis')
     memory=64*cfg.grid**2*len(hkl)**2/2**20
-    if memory>512:raise ValueError(f'Dense contraction estimate {memory:.1f} MiB exceeds 512 MiB. Lower grid or beam cutoff explicitly.')
     model=replace(nickel_physical_benchmark(),elastic=elastic,detectors={k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),cfg.centers)},chiral_groups=None)
     # Direct integration requires full physical aperture coverage as well.
     if any(max(abs(np.asarray(p)))+cfg.radius>cfg.halfwidth for p in cfg.centers):raise ValueError('Map halfwidth must fully cover both physical detector apertures')
     from .propagation import propagate, compare_methods, numerical_info
-    info=numerical_info(structure,settings,cfg,hkl=hkl)
+    info=numerical_info(structure,settings,cfg,hkl=hkl,check_memory=False)
+    memory=info['dense_working_estimate_mib']
     stage('Generating common +M and -M tensors');ts=tensors(cfg,energy,R)
     z=np.linspace(0,settings.thickness,cfg.depth)
-    waves,fft_info=propagate(elastic,settings,cfg,z,stage)
-    methods={}
-    for method,psi in waves.items():
+    methods={};fft_info={}
+    # Finish one solver before preparing the next: cancellation in BW must
+    # prevent even the incoming MS propagation from starting in Both mode.
+    solvers=('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,)
+    for method in solvers:
+        stage('Preparing '+method+' propagation')
+        waves,method_fft=propagate(elastic,settings,replace(cfg,propagation=method),z,stage,cancelled=cancelled)
+        prepared_incoming=method_fft.pop('_prepared',None)
+        if method_fft:fft_info=method_fft
+        psi=waves[method]
         stage('Constructing '+method+' depth coherence');C=coherence_from_amplitudes(z,psi)
         stage('Calculating '+method+' EELS and EMCD')
-        methods[method]=_contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled)
+        prepared=None
+        if cfg.channeling_model=='double' or not cfg.angular_maps:
+            from .channeling import contract
+            checkpoint=(lambda e,data:energy_checkpoint(method,e,data)) if energy_checkpoint is not None else None
+            prepared=contract(model,settings,cfg,method,C,energy,ts,stage,cancelled,prepared_incoming,energy_checkpoint=checkpoint)
+        methods[method]=_contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,prepared=prepared)
         methods[method]['method']=method
-        methods[method]['metadata'].update(solver=method+' depth-integrated entrance-only localized single ionization',numerics=info)
+        methods[method]['metadata'].update(solver=method+' '+cfg.channeling_model+' channeling localized single ionization',numerics=info)
         if method=='fft-multislice':methods[method]['metadata']['fft']=fft_info['summary']
     stage('Comparing independent BW/MS propagations')
     comparison=compare_methods(methods,fft_info)
@@ -165,7 +207,7 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
     return result
 
 
-def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled):
+def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,*,prepared=None):
     """Stage B EELS/parity/post-edge implementation, shared by both coherences."""
     spectra={k:np.empty(len(energy)) for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')};maps={};qx=qy=None
     opts=dict(thickness_nm=settings.thickness,grid_size=cfg.grid,map_halfwidth_q=cfg.halfwidth,integration_mode='fractional',aperture_subpixels=cfg.subpixels)
@@ -173,7 +215,7 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
     # expensive elastic propagation is reused across all states and energies.
     stage('Computing energy-resolved EELS and fractional detector integrals')
     indices={int(np.argmin(abs(energy-v))):edge for edge,v in (('L3',cfg.l3),('L2',cfg.l2))}
-    for i,e in enumerate(energy):
+    for i,e in enumerate(energy if prepared is None else []):
         if cancelled():raise Cancelled()
         selected=[]
         for sign,t in zip(('plus','minus'),ts):
@@ -182,11 +224,17 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
             for d in ('A','B'):spectra['I_'+d+'_'+sign][i]=r.chiral_spectrum(d)[0]
             if i in indices:selected.append(r.nonmag_map_at_l3+r.magnetic_map_at_l3)
         if i in indices:maps[indices[i]]=dict(I_plus=selected[0],I_minus=selected[1],I_mag=(selected[0]-selected[1])/2,I_nonmag=(selected[0]+selected[1])/2)
-    qx,qy=r.qx_angstrom_inv,r.qy_angstrom_inv
+    if prepared is None:
+        qx,qy=r.qx_angstrom_inv,r.qy_angstrom_inv;weights=r.detector_weights
+        if not cfg.angular_maps:maps={}
+    else:
+        spectra,maps,qx,qy,weights=[prepared[k] for k in ('spectra','maps','qx','qy','weights')]
     stage('Computing L3/L2 map decomposition and post-edge diagnostics')
     ap,bp,am,bm=[spectra[k] for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')]
     na,nb,ma,mb=(ap+am)/2,(bp+bm)/2,(ap-am)/2,(bp-bm)/2
     spectra.update(energy_ev=energy,N_A=na,N_B=nb,M_A=ma,M_B=mb,D_mag=ma-mb,D_nonmag=na-nb,D_raw=ap-bp,Sigma_ref=na+nb)
+    from .prb_benchmark import benchmark_spectra
+    spectra.update(benchmark_spectra(spectra)[0])
     alpha=None;correction_reason='Correction disabled by user.'
     if cfg.correction:
         try:
@@ -213,14 +261,22 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
         reversal='XMCD: eta reversed in crystal frame; atomic: swap spin holes and reverse exchange at transition level, fixed core-SOC amplitudes; then R T R^T',
         za_q=za_from_tilt(settings.tilt,settings.voltage).tolist(),transmitted_q=[0.,0.],wavelength_angstrom=electron_wavelength_angstrom(settings.voltage),
         s_target=float(excitation(g[hkl.index(settings.target)],settings.tilt,settings.voltage)),alpha=alpha,correction_reason=correction_reason,pair_reason=pair_reason,
-        detector_areas={k:float(w.sum()*(qx[0,1]-qx[0,0])**2) for k,w in r.detector_weights.items()},integration='fractional',dense_estimate_mib=memory,
+        detector_areas={k:float(w.sum()*(qx[0,1]-qx[0,0])**2) for k,w in weights.items()},integration='fractional',dense_estimate_mib=memory,
+        channeling_model=cfg.channeling_model,angular_maps_calculated=cfg.angular_maps,spectral_coverage=cfg.energy_scope,
+        outgoing_energy_ev=(1000*settings.voltage-energy).tolist() if cfg.channeling_model=='double' else None,
+        longitudinal_transfer='q_z=-E_loss/(h*v_in), evaluated at each loss; frozen across branches, not across energy; no new branch or angular corrections',
+        systematic_row=cfg.systematic_row,incoming_hkl=[list(h) for h in hkl],outgoing_hkl=[list(h) for h in hkl] if cfg.channeling_model=='double' else None,
+        outgoing_energy='incident energy minus actual energy loss' if cfg.channeling_model=='double' else None,
+        normalization=dict(raw_components='D_mag=M_A-M_B; D_nonmag=N_A-N_B (a.u.)',components_percent='100 * signed component / (N_A+N_B)',prb='100 * (I_A_plus-I_B_plus)/(I_A_plus+I_B_plus)'),
+        precision='float64/complex128',reciprocal_convention='g=1/d, Å^-1; legacy cycles/Å values unchanged',
+        detector_evaluation='Full angular grid' if cfg.angular_maps else 'Only nonzero fractional-aperture support on the unchanged grid; angular maps not calculated',
         solver='Bloch-wave depth-integrated entrance-only localized single ionization',software_commit=commit,software_worktree_dirty=dirty,
         implementation_sha256=build['implementation_sha256'],
         python=platform.python_version(),numpy=np.__version__,
         intensity_convention=('XMCD-effective; transverse source-maximum normalization; relative scattering units' if cfg.model=='xmcd' else 'Atomic length-gauge A^2/eV tensor; relative scattering units; no absolute cross-section calibration'),
-        limitations='Projected IAM; no outgoing/double channeling; XMCD-effective is not full DFT MDFF; atomic non-DFT not quantitative Ni; relative units, no absolute cross section; physical-potential cutoff convergence unresolved.')
+        limitations='Projected IAM; '+('entrance-only, no outgoing channeling; ' if cfg.channeling_model=='single' else 'incoming and post-loss outgoing channeling; ')+ 'XMCD-effective is not full DFT MDFF; atomic non-DFT not quantitative Ni; arbitrary intensity units, no electron-count calibration; representative convergence controls do not certify all configurations.')
     stage('Preparing result visualizations')
-    return dict(metadata=meta,model=model,settings=settings,config=cfg,maps=maps,spectra=spectra,qx=qx,qy=qy,weights=r.detector_weights,coherence=C,depth_nm=z,amplitudes=psi)
+    return dict(metadata=meta,model=model,settings=settings,config=cfg,maps=maps,spectra=spectra,qx=qx,qy=qy,weights=weights,coherence=C,depth_nm=z,amplitudes=psi)
 
 
 def metrics(result):
@@ -249,8 +305,33 @@ def _export_single(result,path):
     fig=Figure(figsize=(11,9),layout='constrained');draw_eels(fig,result);fig.savefig(root/'virtual_detector_eels.png',dpi=150)
 
 
-def export_result(result,path):
-    """Keep Stage B primary arrays; add explicitly labeled method exports."""
-    _export_single(result,path)
-    from .propagation import export_comparison
-    export_comparison(result,Path(path),_export_single)
+def export_result(result,path,*,component_mode='raw',advanced=False):
+    """One numerical bundle; raw and percentage spectra survive every display."""
+    if advanced:
+        _export_single(result,path)
+        from .propagation import export_comparison
+        export_comparison(result,Path(path),_export_single)
+        return
+    import csv
+    from matplotlib.figure import Figure
+    from .project_io import save_project
+    from .results import draw_eels,draw_maps
+    from .prb_benchmark import benchmark_spectra
+    from .component_display import MODES
+    if component_mode not in MODES:raise ValueError('Unknown EMCD display mode')
+    root=save_project(result,path)
+    methods=result.get('methods',{result.get('method','bloch'):result})
+    for name,r in methods.items():
+        spectra=dict(r['spectra'],**benchmark_spectra(r['spectra'])[0]);keys=list(spectra)
+        with (root/(name+'_spectra.csv')).open('w',newline='',encoding='utf-8') as f:
+            writer=csv.writer(f);writer.writerow(['solver','channeling_model']+keys)
+            writer.writerows((name,r['config'].channeling_model,*values) for values in zip(*(spectra[k] for k in keys)))
+        prefix='' if name==result.get('method','bloch') else name+'_'
+        fig=Figure(figsize=(10,7),layout='constrained');draw_eels(fig,r,component_mode=component_mode)
+        for ext in ('png','svg'):fig.savefig(root/(prefix+'virtual_detector_eels.'+ext),dpi=170)
+        for edge in r['maps']:
+            fig=Figure(figsize=(11,5),layout='constrained');draw_maps(fig,r,edge)
+            for ext in ('png','svg'):fig.savefig(root/(prefix+edge+'_angular_maps.'+ext),dpi=170)
+    (root/'figure_display.json').write_text(json.dumps(dict(component_mode=component_mode,
+        note='Display only. CSV/NPZ retain signed raw components, both relative percentages, raw reversal spectra and denominators.',
+        prb='Separate raw +M difference/sum; no factor two or post-edge correction'),indent=2)+'\n',encoding='utf-8')

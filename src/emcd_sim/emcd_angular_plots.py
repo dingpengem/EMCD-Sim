@@ -36,10 +36,10 @@ def decorate_reciprocal_map(ax, model, extent, *, target_hkl=(2,0,0), zone_axis=
         ax.plot(*za,marker='*',ms=10,color='gold',mec='black',mew=.7,ls='',label=f'ZA [{zone}]')
         ax.annotate(f'ZA [{zone}]',za,xytext=(5,6),textcoords='offset points',fontsize=7,path_effects=stroke)
     else:
-        ax.text(.02,.02,f'ZA [{zone}] = ({za[0]:.3f}, {za[1]:.3f}) cycles/A\n(outside view)',
+        ax.text(.02,.02,f'ZA [{zone}] = ({za[0]:.3f}, {za[1]:.3f}) Å⁻¹\n(outside view)',
                 transform=ax.transAxes,fontsize=7,bbox=dict(facecolor='white',alpha=.8,edgecolor='none'))
     ax.legend(loc='upper right',fontsize=6,framealpha=.8)
-    ax.set(xlabel='qx (cycles/A)',ylabel='qy (cycles/A)',aspect='equal',
+    ax.set(xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)',aspect='equal',
            xlim=extent[:2],ylim=extent[2:])
 
 
@@ -76,7 +76,7 @@ def draw_coordinate_markers(ax, markers):
         ax.annotate('ZA [001]',za,xytext=offset,textcoords='offset points',fontsize=7,
             path_effects=[withStroke(linewidth=1.5,foreground='white')],zorder=11)
     else:
-        ax.text(.02,.03,f'ZA [001] outside view\nq=({za[0]:+.5f}, {za[1]:+.5f}) cycles/A',
+        ax.text(.02,.03,f'ZA [001] outside view\nq=({za[0]:+.5f}, {za[1]:+.5f}) Å⁻¹',
             transform=ax.transAxes,fontsize=7,bbox=dict(facecolor='white',alpha=.85,edgecolor='none'),zorder=11)
     ax.legend(handles=[Line2D([],[],marker='+',ms=6,color='black',ls='none',label='Transmitted (000)'),
         Line2D([],[],**style,label='ZA [001]')],loc='upper left',fontsize=6,framealpha=.85)
@@ -160,7 +160,7 @@ def plot_angular_comparison(result, output):
                 group=name in (('A',) if condition=='near-2bc' else ('RU','LD'))
                 ax.add_patch(Circle(d['center_q_xy'],d['radius_q'],fill=False,ec='black',ls='-' if group else '--',lw=.8,path_effects=[withStroke(linewidth=2,foreground='white')]))
                 ax.annotate(name,d['center_q_xy'],ha='center',va='center',fontsize=7,path_effects=[withStroke(linewidth=1.4,foreground='white')])
-            ax.set(xlabel='qx (cycles/A)',ylabel='qy (cycles/A)',aspect='equal')
+            ax.set(xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)',aspect='equal')
             draw_coordinate_markers(ax,markers[condition])
         title=lambda text:condition+' | '+text+'\n'+LABEL
         for j,edge in enumerate(('L3','L2')):

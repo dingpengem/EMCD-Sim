@@ -10,7 +10,7 @@ import platform
 import subprocess
 import sys
 
-LABEL = 'EMCD-Sim GUI RC (unreleased)'
+LABEL = 'EMCD-Sim Beta RC (unreleased)'
 
 
 def resource_root():

@@ -1,5 +1,23 @@
 # Physics, definitions, and validation status
 
+## Current Windows Beta scope
+
+The 0.4.5 research Beta supports genuine **Single and Double Channeling** with
+independent BW/MS implementations, oriented Ni [017] and explicit [001]
+systematic-row references. Double includes outgoing propagation at post-loss
+energy. Read the [current manual](USER_GUIDE.md),
+[full-spectrum model](DOUBLE_CHANNELING_FULL_SPECTRA.md) and
+[release scope](RELEASE_0_4_5_BETA.md). The MDFF remains XMCD-constrained and
+approximate; projected-potential, branch-frozen-transfer and absolute-calibration
+limitations remain. These are numerical model validations, not claims of
+general experimental predictivity.
+
+## Historical v0.2 entrance-only definitions
+
+The remainder records the original solver and its subsequent legacy updates.
+Its statements about absent orientation/outgoing propagation apply to those
+historical paths, not the current Double-Channeling GUI.
+
 **Status: v0.2 research-stage, *physical Ni elastic entrance propagation* with illustrative magnetic/ELNES scattering; NOT a predictive quantitative EMCD solver.**
 
 ## 1. Coordinate conventions

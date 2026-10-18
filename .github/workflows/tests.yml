@@ -9,18 +9,24 @@ jobs:
   tests:
     name: ${{ matrix.os }} / Python 3.11
     runs-on: ${{ matrix.os }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: pip
       - name: Install package and test requirements
-        run: python -m pip install -e ".[dev]"
+        run: python -m pip install -e ".[dev,gui]"
       - name: Run focused regression tests
         run: python -m pytest -q
       - name: Smoke-test CLI and output paths

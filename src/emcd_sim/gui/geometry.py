@@ -88,7 +88,7 @@ class Settings:
     b_factor: float=0.
 
 
-def geometry(structure,settings):
+def geometry(structure,settings,*,systematic_row=False):
     if not np.isfinite([*settings.tilt,settings.voltage,settings.thickness,settings.beam_cutoff,settings.potential_cutoff,settings.b_factor]).all():raise ValueError('Settings must be finite')
     if min(settings.voltage,settings.thickness,settings.beam_cutoff,settings.potential_cutoff)<=0 or settings.b_factor<0:raise ValueError('Positive voltage, thickness and cutoffs, and nonnegative B are required')
     cell=structure.atoms.cell.array;R=orientation(cell,settings.zone)
@@ -97,7 +97,9 @@ def geometry(structure,settings):
     bounds=np.ceil(settings.beam_cutoff*np.linalg.norm(cell,axis=1)).astype(int)
     if np.prod(2*bounds+1)>500000:raise ValueError('Cell/cutoff search too large for interactive preview; lower the beam cutoff.')
     items=[];has_factors=not structure.elastic_reason
+    if systematic_row and settings.zone!=(0,0,1):raise ValueError('The explicit (200) systematic row requires Ni [001]')
     for h in product(*(range(-v,v+1) for v in bounds)):
+        if systematic_row and (h[1] or h[2]):continue
         if np.dot(h,settings.zone)!=0:continue
         g=crystal.g_vector(h);length=np.linalg.norm(g)
         if length>settings.beam_cutoff+1e-10:continue
@@ -110,9 +112,9 @@ def geometry(structure,settings):
     return crystal,R,hkl,g,microscope
 
 
-def elastic_model(structure,settings):
+def elastic_model(structure,settings,*,systematic_row=False):
     if structure.elastic_reason:raise ValueError(structure.elastic_reason)
-    crystal,R,hkl,g,microscope=geometry(structure,settings)
+    crystal,R,hkl,g,microscope=geometry(structure,settings,systematic_row=systematic_row)
     potential=FourierCutoffPotential(IndependentAtomPotential(crystal,debye_waller_b_angstrom2=settings.b_factor),settings.potential_cutoff)
     return PhysicalElasticModel(crystal,microscope,BeamSet(hkl),potential)
 
@@ -138,9 +140,9 @@ def align_bragg(g,tilt,voltage,lock='None'):
     return result
 
 
-def preview(structure,settings):
-    model=elastic_model(structure,settings);z=np.array([0.,settings.thickness]);psi=model.amplitudes(z)
+def preview(structure,settings,*,systematic_row=False):
+    model=elastic_model(structure,settings,systematic_row=systematic_row);z=np.array([0.,settings.thickness]);psi=model.amplitudes(z)
     return dict(settings=asdict(settings),beam_hkl=np.array(model.beams.hkl),g=model.reciprocal_vectors_xy,
         s=excitation_errors_angstrom_inv(model),depth_nm=z,amplitudes=psi,intensity=abs(psi[-1])**2,
-        frame=orientation(structure.atoms.cell.array,settings.zone),source=structure.source,
+        frame=orientation(structure.atoms.cell.array,settings.zone),source=structure.source,systematic_row=systematic_row,
         source_sha256=structure.sha256,structure_description=structure.description(),model='Ni IAM, finite oriented ZOLZ BW; elastic only, no absorption/TDS or physical CBED disks')

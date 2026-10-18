@@ -1,5 +1,120 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
+## Current 0.4.5 research Beta: Single and Double Channeling
+
+The Windows Beta provides **Channeling Model** alongside **Propagation
+Method**. Single Channeling retains the existing entrance-only approximation.
+Double Channeling uses the actual incoming/outgoing BW or independent FFT
+solver, including the outgoing electron's post-loss energy. **Both** runs both
+solvers with the same selected model; it does not substitute one model for
+another. Old projects lacking a channeling-model field load as Single.
+
+The [full-spectrum validation](DOUBLE_CHANNELING_FULL_SPECTRA.md) documents
+genuine native-energy Double Channeling spectra. The 200 kV [001] row-reference
+BW/MS comparison checks 242 actual energies over 823.625–882.521 eV; these
+spectra are not reconstructed from the two older benchmark samples. Fresh
+GUI-worker tests also exercise full-range Single/Double spectra with Both
+solvers at a separately documented manageable numerical profile. Production
+sampling and selected-energy controls have distinct validation scopes.
+
+The verified FFT geometries are full-2D FCC Ni [017] and the explicitly selected
+[001] (200) systematic-row approximation. The row checkbox is an explicit
+physical approximation; it is never applied to [017]. The Results Browser,
+saved project and numerical metadata identify the model and solver. Comparisons
+of Single and Double are physical-model comparisons, distinct from BW/MS
+numerical discrepancies.
+
+Spectral figure titles state the nominal zone axis, actual absolute tilt and
+whether the saved basis is systematic-row-restricted or full finite ZOLZ.
+The nominal [001] direction is a major zone axis. Exact (200) Bragg alignment
+does not establish physical two-beam isolation. A row-restricted result cannot
+measure omitted off-row scattering; see the
+[elastic geometry comparison](NI_TWO_BEAM_GEOMETRY_COMPARISON.md). The GUI
+interactive 121-beam preview cap is reported explicitly and does not silently
+truncate a larger requested basis.
+
+**Spectral coverage** distinguishes an actual native energy-resolved spectrum
+from a calculation at only the selected L3/L2 energies. The latter contains
+two samples, not a reconstructed white-line shape. Disabling **Calculate angular
+maps** evaluates only nonzero fractional-detector support on the unchanged
+grid; it does not coarsen the grid or change the apertures, MDFF, beams,
+precision or propagation. The result records that angular maps are unavailable.
+
+Explicit pilot grids covering only part of the saved native source range are
+labelled **Calculated energy subset**, even when they contain more than two
+samples. This label is derived from saved energy coordinates and source bounds;
+displaying a project does not reopen the source or calculate missing samples.
+
+RAM budgets remain 512, 1024, 2048 (default), 4096 and 8192 MiB. Admission checks
+estimate total process peak separately from the dense kernel, including
+concurrent detector workers, retained results and available physical RAM.
+Rejected jobs explain the limit; they do not silently change settings.
+
+The [final 200 kV benchmark](DOUBLE_CHANNELING_FINAL_200KV.md) documents the
+validated profile, native energy convention, component definitions and limits
+of representative numerical convergence. The milestone screenshots and
+historical workflows below describe their original versions; they are not the
+current release acceptance. Use the [Beta release notes](RELEASE_0_4_5_BETA.md)
+for the accepted cancellation-fixed executable and source provenance.
+
+### Primary spectra and exports
+
+The default EELS figure has two panels. The upper panel shows **Detector A/B
+EELS at +M**, on their original shared arbitrary-unit scale. The lower panel
+shows signed **Magnetic** and **Nonmagnetic** components. Its only primary
+display selector is:
+
+- **Raw EMCD (a.u.)**: D_mag = M_A−M_B and D_nonmag = N_A−N_B.
+- **Relative EMCD (%)**: 100 D_mag/(N_A+N_B) and
+  100 D_nonmag/(N_A+N_B), using the same denominator.
+
+Raw is the initial display. Switching modes changes presentation only. No
+detector or component gets independent peak scaling; raw and percentage values
+never share a vertical axis. Undefined percentages remain NaN. The separate
+compact **PRB** readout uses raw +M difference/sum at the recorded L3/L2
+evaluation energies. It is not replaced by magnetic-only asymmetry.
+
+Expand **Advanced Diagnostics — legacy displays** for the four reversal
+spectra, post-edge correction/residual/bias, optional legacy peak scaling and
+energy-lock benchmark controls. These explicitly selected legacy displays
+override the primary view. Post-edge correction is not intrinsic magnetic
+recovery. A two-sample result cannot supply an uncalculated energy, a white-line
+peak, or a continuous EELS curve; available samples are plotted as points.
+
+Default angular figures show magnetic and nonmagnetic **mirrored point-pair**
+components on one common signed color scale. The numerator is the component at
+(qx,qy) minus its value at (qx,−qy), divided by the sum of the two reversal-even
+angular densities. These are angular point-pair percentages, distinct from
+the finite-aperture detector-integrated spectral components. Local magnetic
+fractions, raw angular intensities and physical-aperture paired/corrected maps
+retain their separate definitions in Advanced Diagnostics. The existing 000,
+actual ZA, hkl indexing, Thales circle and detector overlays remain.
+
+**Beam cutoff |g|max (Å⁻¹)** selects included elastic beams; its approximate
+angular equivalent λ|g|max is shown at the selected voltage and is not the
+EELS collection angle. **Potential Fourier cutoff |g−g′|max (Å⁻¹)** selects
+elastic couplings via U_(g−g′) or V_(g−g′), with |g−g′| ≤ cutoff. It is not an
+ionization momentum-transfer, detector-range or excitation-error cutoff.
+Crystallographic g=1/d is numerically the old cycles/Å convention: stored
+parameters and internal required angular-wavevector conversions are unchanged.
+
+Default completed-result export writes one checksummed project bundle with
+PNG/SVG figures and CSV/NPZ numerical data. Per-method CSV and NPZ spectra retain
+all original reversal intensities, signed raw components, common denominator,
+both component percentages and PRB percentages **in either display mode**.
+Metadata records solver, channeling model, MDFF/source hash, native energies,
+geometry, numerical settings and calculation commit. Large arrays are stored
+once under explicit method prefixes. Redundant independently normalized figures
+and BW/MS difference maps are not default exports; advanced derived exports
+remain available. Zoom, maximize/restore and saved-project viewing remain.
+
+The saved-results scalar comparison retains |D_mag|/sqrt(N_A+N_B), labelled an
+**arbitrary-scale detectability proxy, not experimental SNR**. Compare only
+consistent intensity scales and sampling. No arbitrary units are converted to
+electron counts. Physical shot-noise SNR requires dose, efficiency, energy-bin
+width, background and other noise calibration; four independent reversal
+measurements require variance propagation through their magnetic-odd estimator.
+
 For current use, start with [Windows installation](INSTALL_WINDOWS.md),
 [Quick Start](QUICK_START.md) and the [complete User Manual](USER_GUIDE.md).
 [Stage G readiness](STAGE_G_RELEASE_READINESS.md) reviews the accepted Stage F
@@ -931,3 +1046,108 @@ with fixed BW L3 peak P=0.2508784247. Grey retains A-only support; the even
 reference case is numerical zero. The full-range L2 feature uses this same L3
 denominator. Normal EELS/map tabs provide the controls.
 See [Stage F acceptance](EMCD_GUI_STAGE_F_ACCEPTANCE.md) for values and scope.
+
+## PRB 2007 benchmark readout
+
+The calculation controls also provide an **Estimated process memory budget**:
+512, 1024, 2048 (default), 4096 or 8192 MiB. This replaces the fixed 512 MiB
+dense-kernel ceiling. Dense-kernel storage is shown separately from estimated
+array storage and total process peak. The latter includes current process RSS
+(including loaded results), FFT/depth and retained method arrays, active
+calculation reservations, 25% allocation headroom and a 128 MiB process reserve.
+Admission requires this estimate to fit both the chosen budget and **50% of
+currently available physical RAM**. These are conservative estimates, not a
+guaranteed RSS bound. Swap is not counted as available RAM.
+
+RAM is read during preflight and again at calculation admission. Concurrent
+EMCD calculations in one process share atomic reservations; the normal GUI
+already runs one worker at a time. Other processes are reflected in available
+RAM, but changes after admission remain possible. Unavailable RAM measurement,
+budget excess or an allocation failure produces an explicit diagnostic;
+sampling, precision and physics parameters are never reduced automatically.
+Budget selection is stored with project settings. Older settings without this
+field use the 2048 MiB default; 512 MiB remains selectable and now constrains
+the estimated total process peak, rather than only dense kernel storage.
+
+Virtual Detector EELS now includes **PRB 2007 Benchmark**, a post-processing
+readout independent of Raw, Asymmetry and EELS Peak display settings. Its signed
+primary percentage is exactly
+
+`100 * (I_A_plus(E) - I_B_plus(E)) / (I_A_plus(E) + I_B_plus(E))`.
+
+Both spectra are the original simulated **+M** arrays, at one common sample.
+There is no factor of two, independent spectrum scaling, white-line division,
+post-edge correction or fitting. Positive means A exceeds B. The denominator
+must satisfy the existing spectral validity policy described above; undefined
+values display explicitly and export as null scalars / NaN curves, never zero.
+
+**L3 white-line peak** defaults to the maximum of the original +M detector
+**sum** inside the configured native L3 window. This differs from the
+reversal-even sum used by EELS Peak display normalization. **Current selected
+energy** evaluates the requested native energy at the nearest saved sample
+(lower sample at a tie), reporting the actual sampled energy. Neither option
+maximizes dichroism or shifts the spectrum to an experimental energy.
+
+For loaded thickness comparisons, select **Keep energy across results**. This
+captures the currently evaluated energy and keeps that requested energy when
+loading another result. The actual sample is reported for each result; compare
+sampling before interpreting a thickness trend. Export each condition at this
+fixed energy. No automatic thickness sweep is added.
+
+Two secondary **diagnostics only** use the original magnetization reversals:
+`N_J=(I_J_plus+I_J_minus)/2` and `M_J=(I_J_plus-I_J_minus)/2`.
+Magnetic-only is `100*(M_A-M_B)/(N_A+N_B)`; nonmagnetic imbalance is
+`100*(N_A-N_B)/(N_A+N_B)`. These have a reversal-even denominator and cannot
+replace the primary raw paired percentage. Raw A-B combines magnetic-odd and
+reversal-even differences. Post-edge-corrected contrast can retain even
+contamination and magnetic processing bias; it is not intrinsic magnetic EMCD.
+
+![PRB benchmark readout from the saved Ni project](images/gui/prb2007_benchmark.png)
+
+Actual Windows widget capture using the existing saved project
+`outputs/gui_stage_d/windows_20261016/reference_project`; no new simulation.
+The default common L3 sample is **831.4778 eV**, selected from the original
++M summed intensity, on the unchanged native WIEN2k axis:
+
+| Solver | Raw PRB (%) | Magnetic-only diagnostic (%) | Even imbalance (%) |
+| --- | ---: | ---: | ---: |
+| Bloch wave | -0.36256678 | -0.36263454 | approximately 0 |
+| FFT multislice | -0.36269676 | -0.36276457 | 0 |
+
+This example is FCC Ni **[017]**, 200 kV, **30 nm**, target (200), absolute
+local tilt (-7.11672544, 0) mrad. A/B centres are
+(0.283768445, +0.283768445) and (0.283768445, -0.283768445) cycles/Angstrom;
+circular aperture radius is 0.0908059024 cycles/Angstrom (paraxial collection
+half-angle 2.27735214 mrad). It uses the XMCD-effective approximate MDFF,
+eta=beta=1, crystal magnetization [001], and the legacy projected 2D IAM
+potential. Selecting **831.271 eV** instead gives -0.37958584% (BW) and
+-0.37972193% (MS), demonstrating why the exact energy must accompany a value.
+Exact Bragg alignment alone does not establish an isolated two-beam wavefield.
+
+[Rusz, Rubino and Schattschneider, PRB 75, 214425 (2007)](https://arxiv.org/abs/0704.1407),
+DOI 10.1103/PhysRevB.75.214425, Figure 5 defines difference over sum. Its Ni
+reference uses the [001] vicinity, a (200) two-beam systematic row and opposite
+Thales-circle positions, with optimal thickness roughly 6-10 nm. Approximately
+18% is a visual estimate from the published curve, not a digitized value or
+test target. The current [017] example is **not** a matched physical
+reproduction. Electron energy, finite collection aperture, diffraction state,
+thickness, source and energy selection must be matched for that claim; neither
+geometry nor eta/beta is adjusted to chase the literature percentage.
+
+> PRB-compatible normalization does not imply full physical equivalence to Rusz et al. (2007). The current EMCD-Sim uses an approximate MDFF and may omit outgoing-electron channeling and other effects included in the reference theory.
+
+Existing absolute-energy calibration, incomplete DFT-derived MDFF, outgoing
+channeling and potential-cutoff convergence caveats remain in force. Arbitrary
+intensities are not absolute experimental cross sections.
+
+The EELS **derived-data export** now adds `prb_2007_benchmark.csv`, per-run
+`runN_prb2007_spectrum.csv`, PRB curves in `derived_and_raw.npz` and a benchmark
+record in `normalization_metadata.json`. Records include signed values,
+requested/actual evaluation energy, definitions and denominator, aperture and
+collection angle, saved diffraction condition, thickness, MDFF/solver, source
+hash, saved/new origin and comparison limitations. Original arrays accompany
+the derived values unchanged; original projects are not rewritten. Figure
+exports include the currently displayed benchmark records in their JSON
+sidecars. The saved-data example and full exports are under
+`outputs/prb2007_benchmark/native/` locally; this documentation includes the
+small preview rather than duplicating numerical project files in Git.

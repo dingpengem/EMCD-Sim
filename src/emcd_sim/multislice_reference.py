@@ -30,6 +30,7 @@ class ElasticFFTResult:
     slice_step_nm: float
     potential_cutoff_inv_angstrom: float
     amplitudes: np.ndarray | None = None  # optional (n_depth,n_grid**2), no renormalization
+    systematic_row_hkl: tuple[int, int, int] | None = None
 
     def intensity_at(self, hkl: tuple[int, int, int]) -> np.ndarray:
         selection = np.all(self.beam_hkl == hkl, axis=1)
@@ -40,7 +41,7 @@ class ElasticFFTResult:
 
 def _projected_ni_potential(
     grid_points: int, acceleration_kv: float, b_factor_angstrom2: float,
-    cutoff_inv_angstrom: float, projected_geometry=None,
+    cutoff_inv_angstrom: float, projected_geometry=None, systematic_row_hkl=None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Return real U(x,y) (nm^-1), hkl indices and reciprocal xy (cycles/Å).
 
@@ -53,6 +54,9 @@ def _projected_ni_potential(
         raise ValueError("potential cutoff must be positive")
     if not np.isfinite(b_factor_angstrom2) or b_factor_angstrom2 < 0:
         raise ValueError("B factor must be finite and nonnegative")
+    row = None if systematic_row_hkl is None else np.asarray(systematic_row_hkl, float)
+    if row is not None and (row.shape != (3,) or not np.isfinite(row).all() or not np.any(row) or np.any(row != np.rint(row))):
+        raise ValueError('Systematic row must be a nonzero three-integer hkl vector')
     crystal = fcc_nickel() if projected_geometry is None else projected_geometry.crystal
     potential = IndependentAtomPotential(crystal, debye_waller_b_angstrom2=b_factor_angstrom2)
     a = float(crystal.lattice_angstrom[0, 0]) if projected_geometry is None else projected_geometry.a_angstrom
@@ -75,6 +79,11 @@ def _projected_ni_potential(
             indices = tuple(int(x) for x in hkl[i*grid_points+j])
             if indices == (0, 0, 0) or np.linalg.norm(g[i*grid_points+j]) > cutoff_inv_angstrom:
                 continue
+            # Explicit publication-style systematic-row APPROXIMATION. This is
+            # a Fourier projection of the IAM potential, not a physical FCC
+            # extinction, an isolated two-beam model, or atomic-3D slicing.
+            if row is not None and np.any(np.cross(indices, row)):
+                continue
             if projected_geometry is not None and not crystal.is_allowed(indices):
                 continue
             fourier[i, j] = prefactor * potential.structure_factor(indices)
@@ -96,6 +105,7 @@ def fft_multislice_ni(
     b_factor_angstrom2: float = 0.,
     return_amplitudes: bool = False,
     projected_geometry=None,
+    systematic_row_hkl=None,
 ) -> ElasticFFTResult:
     """Elastic projected-potential FFT multislice on periodic FCC Ni [001].
 
@@ -105,6 +115,8 @@ def fft_multislice_ni(
     Finite FFT grid and finite Fourier potential cutoff must be converged.
     return_amplitudes retains raw fft2(wave)/N^2 coefficients at the requested
     depths; the default historical intensity output and propagation are unchanged.
+    systematic_row_hkl explicitly retains only potential Fourier components
+    parallel to this row. Default None preserves the complete projected IAM.
     """
     depth = np.asarray(thickness_nm, dtype=float)
     if depth.ndim != 1 or not len(depth) or not np.all(np.isfinite(depth)) or np.any(depth < 0) or np.any(np.diff(depth) <= 0):
@@ -117,7 +129,7 @@ def fft_multislice_ni(
     if tilt.shape != (2,) or not np.all(np.isfinite(tilt)):
         raise ValueError("tilt_mrad_xy must contain two finite numbers")
 
-    u, hkl, g = _projected_ni_potential(grid_points, acceleration_kv, b_factor_angstrom2, potential_cutoff_inv_angstrom,projected_geometry)
+    u, hkl, g = _projected_ni_potential(grid_points, acceleration_kv, b_factor_angstrom2, potential_cutoff_inv_angstrom,projected_geometry,systematic_row_hkl)
     lam = electron_wavelength_angstrom(acceleration_kv)
     ki = tilt*1e-3/lam
     d = (-10*np.pi*lam*(np.sum((g+ki)**2, axis=1)-float(ki @ ki))).reshape(grid_points, grid_points)
@@ -147,4 +159,5 @@ def fft_multislice_ni(
         current_z = float(target)
     norm_error = float(np.max(np.abs(values.sum(axis=1)-1)))
     return ElasticFFTResult(depth, hkl, g, values, norm_error,
-                            grid_points, slice_step_nm, potential_cutoff_inv_angstrom, amplitudes)
+                            grid_points, slice_step_nm, potential_cutoff_inv_angstrom, amplitudes,
+                            None if systematic_row_hkl is None else tuple(int(v) for v in systematic_row_hkl))

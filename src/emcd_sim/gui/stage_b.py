@@ -2,6 +2,7 @@
 from dataclasses import asdict
 from pathlib import Path
 import datetime,json,logging
+import threading,time
 import numpy as np
 from PySide6 import QtCore,QtWidgets
 from matplotlib.figure import Figure
@@ -17,15 +18,28 @@ class EMCDWorker(QtCore.QThread):
     result=QtCore.Signal(object);failed=QtCore.Signal(str);stage=QtCore.Signal(str)
     def __init__(self,structure,settings,config):
         super().__init__();self.structure=structure;self.settings=settings;self.config=config
+        self.cancellation_event=threading.Event();self.cancellation_times={}
+    def requestInterruption(self):
+        # Called directly from the GUI, never queued into this busy thread.
+        self.cancellation_times.setdefault('requested',time.perf_counter())
+        self.cancellation_event.set();super().requestInterruption()
+    def isInterruptionRequested(self):
+        return self.cancellation_event.is_set() or super().isInterruptionRequested()
+    def cancelled(self):
+        requested=self.isInterruptionRequested()
+        if requested:self.cancellation_times.setdefault('acknowledged',time.perf_counter())
+        return requested
     def run(self):
         try:
             logging.getLogger('emcd_sim.gui').info('Calculate method=%s model=%s source=%s sha256=%s', self.config.propagation, self.config.model, self.config.source, self.config.source_sha256)
-            r=calculate(self.structure,self.settings,self.config,self.stage.emit,self.isInterruptionRequested)
-            if not self.isInterruptionRequested():self.result.emit(r)
+            r=calculate(self.structure,self.settings,self.config,self.stage.emit,self.cancelled)
+            if not self.cancelled():self.result.emit(r)
         except Cancelled:pass
         except Exception as exc:
             logging.getLogger('emcd_sim.gui').exception('Calculation failed')
             if not self.isInterruptionRequested():self.failed.emit(str(exc))
+        finally:
+            self.cancellation_times['stopped']=time.perf_counter()
 
 
 class StageB:
@@ -56,6 +70,9 @@ class StageB:
         self.axis.textChanged.connect(self.emcd_stale);self.declaration.toggled.connect(self.emcd_stale);self.source_path.textChanged.connect(self.source_changed);self.radial_override.toggled.connect(self.emcd_stale)
 
     def propagation_controls(self):
+        self.channeling_box=QtWidgets.QComboBox();self.channeling_box.addItems(['Single Channeling','Double Channeling']);self.form.addRow('Channeling Model',self.channeling_box)
+        self.channeling_box.setToolTip('Single: entrance-only. Double: incoming and post-energy-loss outgoing elastic propagation; actual independent BW/MS engines.')
+        self.channeling_box.currentIndexChanged.connect(self.emcd_stale)
         self.propagation_box=QtWidgets.QComboBox();self.propagation_box.addItems(['Bloch-wave','FFT Multislice','Both (BW / MS comparison)']);self.form.addRow('Propagation Method',self.propagation_box)
         self.propagation_box.currentIndexChanged.connect(self.emcd_stale)
         group=QtWidgets.QGroupBox('Multislice numerical settings');group.setCheckable(True);group.setChecked(False)
@@ -63,14 +80,28 @@ class StageB:
         saved=self.form;self.form=QtWidgets.QFormLayout(body)
         box=QtWidgets.QSpinBox();box.setRange(12,128);box.setSingleStep(2);box.setValue(32);self.spin['fft_grid']=box;self.form.addRow('FFT grid (even)',box);box.valueChanged.connect(self.emcd_stale)
         self.number('slice_step','Max slice step (nm)',.04,.001,1,self.emcd_stale)
-        label=QtWidgets.QLabel('Verified FFT orientation: Ni [017] only. Shared depth nodes, beam and potential cutoffs below. No outgoing channeling.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
+        label=QtWidgets.QLabel('Verified FFT: Ni [017], or explicit [001] (200) systematic row. Incoming/outgoing beam support is matched in Double Channeling.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
+        self.row_projection=QtWidgets.QCheckBox('Explicit [001] (200) systematic-row approximation');self.form.addRow(self.row_projection)
+        self.row_projection.setToolTip('Only for [001]. Excludes off-row ZOLZ beams and changes the projected elastic model. Exact (200) Bragg alignment does not establish physical two-beam isolation. [017] retains its full finite 2D ZOLZ basis.')
+        self.row_projection.toggled.connect(self.refresh)
 
     def numerical_controls(self):
-        for key,title,value,lo,hi in [('energy','Energy sampling points',241,9,501),('grid','Detector grid points',33,9,97),('depth','Depth integration nodes',64,2,256),('subpixels','Aperture subpixels',64,4,256)]:
+        for key,title,value,lo,hi in [('energy','Energy sampling points',241,9,501),('grid','Detector grid points',33,9,193),('depth','Depth integration nodes',64,2,1025),('subpixels','Aperture subpixels',64,4,256)]:
             box=QtWidgets.QSpinBox();box.setRange(lo,hi);box.setValue(value);self.spin[key]=box;self.form.addRow(title,box);box.valueChanged.connect(self.emcd_stale)
-        self.number('halfwidth','Map halfwidth (cycles/A)',1,.1,10,self.emcd_stale)
+        self.number('halfwidth','Map halfwidth (Å⁻¹)',1,.1,10,self.emcd_stale)
+        self.energy_scope=QtWidgets.QComboBox();self.energy_scope.addItems(['Full native energy-resolved spectrum','Selected L3/L2 samples only (not full EELS)']);self.form.addRow('Spectral coverage',self.energy_scope);self.energy_scope.currentIndexChanged.connect(self.emcd_stale)
+        self.energy_scope.setToolTip('Full spectra evaluate every displayed energy. Double Channeling angular maps can be expensive. Selected samples are displayed as points, never a fabricated white-line shape. Settings are not reduced automatically.')
+        self.angular_maps=QtWidgets.QCheckBox('Calculate angular maps');self.angular_maps.setChecked(True);self.form.addRow(self.angular_maps);self.angular_maps.toggled.connect(self.emcd_stale)
+        self.angular_maps.setToolTip('When off, evaluate only nonzero fractional-detector support on the unchanged reciprocal grid. No grid, precision or physical parameter is reduced.')
+        saved_form=self.form;group=QtWidgets.QGroupBox('Advanced post-edge diagnostics');group.setCheckable(True);group.setChecked(False);body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(group);outer.addWidget(body);self.form.addRow(group);body.hide();group.toggled.connect(body.setVisible);self.form=QtWidgets.QFormLayout(body)
         self.correction=QtWidgets.QCheckBox('Enable post-edge A/B correction');self.correction.setChecked(True);self.form.addRow(self.correction);self.correction.toggled.connect(self.emcd_stale)
         self.number('window_lo','Window start (eV)',878,1,10000,self.emcd_stale);self.number('window_hi','Window end (eV)',882,1,10000,self.emcd_stale)
+        self.form=saved_form
+        from .memory_budget import BUDGETS_MIB,DEFAULT_BUDGET_MIB
+        self.memory_budget=QtWidgets.QComboBox()
+        for budget in BUDGETS_MIB:self.memory_budget.addItem(f'{budget} MiB',budget)
+        self.memory_budget.setCurrentIndex(BUDGETS_MIB.index(DEFAULT_BUDGET_MIB));self.memory_budget.currentIndexChanged.connect(self.emcd_stale)
+        self.form.addRow('Estimated process memory budget',self.memory_budget)
         self.memory_label=QtWidgets.QLabel();self.memory_label.setWordWrap(True);self.form.addRow(self.memory_label)
 
     def setup_stage_b(self):
@@ -113,7 +144,7 @@ class StageB:
         mode='xmcd' if self.model_box.currentIndex()==0 else 'atomic';axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')
         if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):raise ValueError('Validate the current XMCD source first')
-        return ForwardSettings(propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+        return ForwardSettings(channeling_model=('single','double')[self.channeling_box.currentIndex()],energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
@@ -128,7 +159,7 @@ class StageB:
             if cfg.model=='atomic' and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
             from .propagation import numerical_info
             info=numerical_info(self.structure,s,cfg)
-            self.memory_label.setText(f"{info['bw_beams']} common BW beams; {info['fft_harmonics']} FFT harmonics ({info['potential_nonzero_harmonics']} nonzero potential).\nSingle pair {info['single_complex_pair_mib']:.1f} MiB; dense working {info['dense_working_estimate_mib']:.1f} / 512 MiB; estimated arrays {info['estimated_working_mib']:.1f} MiB. Not total peak process memory.")
+            self.memory_label.setText(f"{info['bw_beams']} common BW beams; {info['fft_harmonics']} FFT harmonics. Dense kernel {info['dense_working_estimate_mib']:.1f} MiB; estimated arrays {info['estimated_working_mib']:.1f} MiB.\nEstimated process peak {info['estimated_process_peak_mib']:.1f} / {cfg.memory_budget_mib} MiB; available RAM {info['available_ram_mib']:.1f} MiB (50% allowed). Includes RSS, allocation margin and active calculations; not a guaranteed peak.")
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
             structure_matches=self.emcd_result is not None and self.emcd_result['metadata']['structure']==self.structure.description()
             if self.emcd_result and self.emcd_result.get('structure_snapshot'):
@@ -141,10 +172,10 @@ class StageB:
                 config_matches=old==new
             fresh=self.emcd_result is not None and self.emcd_result['settings']==s and config_matches and structure_matches
             reason=reason or self.input_source_reason()
-        except Exception as exc:reason=reason or str(exc);fresh=False
+        except Exception as exc:reason=reason or str(exc);fresh=False;self.memory_label.setText('Calculation unavailable: '+str(exc))
         self.emcd_button.setEnabled(not reason and not self.busy);self.emcd_button.setToolTip(reason or 'Run the selected incoming-wave propagation and shared EMCD/EELS contraction')
         if self.emcd_result:
-            text='Completed-run geometry and spectra; inputs match.' if fresh else 'STALE RESULT — Viewing saved result — current inputs differ. Showing completed-run geometry and spectra.'
+            text=self.emcd_result['config'].channeling_model.title()+' Channeling | '+('Completed-run geometry and spectra; inputs match.' if fresh else 'STALE RESULT — current inputs differ; showing saved geometry and spectra.')
             for view in (self.maps_view,self.eels_view,self.diffraction_view,self.overview_view):view.label.setText(text)
         current_marker='\n\nCurrent EMCD propagation:';saved_marker='\n\nCompleted EMCD run (snapshot):'
         base=self.info.toPlainText().split(current_marker)[0].split(saved_marker)[0]
@@ -185,23 +216,31 @@ class StageB:
             structure=Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings)
         except Exception as exc:self.error(str(exc));return
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.emcd_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0)
-        self.worker=EMCDWorker(structure,s,cfg);self.worker.stage.connect(self.statusBar().showMessage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.preview_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
+        self.worker=EMCDWorker(structure,s,cfg);self.worker.stage.connect(self.emcd_stage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.emcd_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
+    def emcd_stage(self,message):
+        # Queued progress from before Cancel must not hide the pending request.
+        if not self.worker.isInterruptionRequested():self.statusBar().showMessage(message)
+    def emcd_failed(self,message):
+        if not self.worker.isInterruptionRequested():self.preview_failed(message)
     def emcd_completed(self,result):
         if self.worker.isInterruptionRequested():return
         self.emcd_result=result;self.run_outcome='completed'
         self.register_completed(result)
         for i,view in ((1,self.maps_view),(2,self.eels_view)):
-            self.tabs.setTabEnabled(i,True);view.set_result(result)
+            self.tabs.setTabEnabled(i,i!=1 or bool(result['maps']));view.set_result(result)
         for i,view in ((5,self.diffraction_view),(6,self.overview_view)):
             self.tabs.setTabEnabled(i,i==5 or len(result.get('methods',{}))==2);view.set_result(result)
         self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale();self.emcd_ready.emit()
     def emcd_finished(self):
         self.finished();self.emcd_stale()
-        self.statusBar().showMessage('EMCD '+('cancelled; no cancelled result registered.' if self.worker.isInterruptionRequested() else ('completed.' if self.run_outcome=='completed' else 'failed; no new result registered.')))
+        if self.worker.isInterruptionRequested():
+            self.run_outcome='cancelled';self.worker.cancellation_times['idle']=time.perf_counter()
+            self.statusBar().showMessage('Calculation cancelled.')
+        else:self.statusBar().showMessage('EMCD '+('completed.' if self.run_outcome=='completed' else 'failed; no new result registered.'))
     def save_emcd(self):
         if self.emcd_result is None:self.error('Run EMCD/EELS successfully first.');return
         path=QtWidgets.QFileDialog.getExistingDirectory(self,'Export completed EMCD result (new subfolder)')
         if not path:return
         try:
-            root=Path(path)/('emcd_'+datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f'));export_result(self.emcd_result,root);self.statusBar().showMessage('Exported completed run: '+str(root))
+            root=Path(path)/('emcd_'+datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f'));export_result(self.emcd_result,root,component_mode=self.eels_view.component_mode.currentData());self.statusBar().showMessage('Exported completed run: '+str(root))
         except Exception as exc:self.error(str(exc))
