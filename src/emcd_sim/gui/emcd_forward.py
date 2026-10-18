@@ -172,10 +172,16 @@ def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy
     memory=info['dense_working_estimate_mib']
     stage('Generating common +M and -M tensors');ts=tensors(cfg,energy,R)
     z=np.linspace(0,settings.thickness,cfg.depth)
-    waves,fft_info=propagate(elastic,settings,cfg,z,stage,cancelled=cancelled)
-    prepared_incoming=fft_info.pop('_prepared',None)
-    methods={}
-    for method,psi in waves.items():
+    methods={};fft_info={}
+    # Finish one solver before preparing the next: cancellation in BW must
+    # prevent even the incoming MS propagation from starting in Both mode.
+    solvers=('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,)
+    for method in solvers:
+        stage('Preparing '+method+' propagation')
+        waves,method_fft=propagate(elastic,settings,replace(cfg,propagation=method),z,stage,cancelled=cancelled)
+        prepared_incoming=method_fft.pop('_prepared',None)
+        if method_fft:fft_info=method_fft
+        psi=waves[method]
         stage('Constructing '+method+' depth coherence');C=coherence_from_amplitudes(z,psi)
         stage('Calculating '+method+' EELS and EMCD')
         prepared=None

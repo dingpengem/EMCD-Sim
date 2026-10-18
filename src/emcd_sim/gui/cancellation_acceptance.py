@@ -54,7 +54,7 @@ def run(output,source):
         for name,solver,target,controlled in cases:
             w.propagation_box.setCurrentIndex(['bloch','fft-multislice','both'].index(solver))
             w.channeling_box.setCurrentIndex(0 if target=='single' else 1)
-            entered=threading.Event();lock=threading.Lock();second=[];tick_start=len(ticks)
+            entered=threading.Event();lock=threading.Lock();second=[];incoming_ms=[];tick_start=len(ticks)
             def work_boundary():
                 with lock:
                     first=not entered.is_set();entered.set()
@@ -73,6 +73,9 @@ def run(output,source):
                 original_ms=channeling.multislice_double_channeling_response
                 def ms_response(*a,**kw):second.append(True);return original_ms(*a,**kw)
                 stack.enter_context(patch.object(channeling,'multislice_double_channeling_response',ms_response))
+                original_grid=channeling.fft_geometry
+                def fft_geometry(*a,**kw):incoming_ms.append(True);return original_grid(*a,**kw)
+                stack.enter_context(patch.object(channeling,'fft_geometry',fft_geometry))
                 if target=='completion':
                     original=stage_b.calculate
                     def complete(*a,**kw):
@@ -100,7 +103,7 @@ def run(output,source):
             check(not memory_budget._reservations,name+' memory cleanup')
             check(not report['errors'],name+' no failure dialog')
             check(w.inputs.isEnabled() and not w.cancel_button.isEnabled(),name+' controls restored')
-            if name=='both_first':check(not second,'Second Double solver must not start')
+            if name=='both_first':check(not second and not incoming_ms,'Second solver including incoming MS must not start')
             active_ticks=[v for v in ticks[tick_start:] if t['requested']<=v<=t['idle']]
             if controlled:check(len(active_ticks)>=2,name+' GUI timer responsive')
             report['cases'][name]=dict(outcome='PASS',controlled=controlled,times=t,

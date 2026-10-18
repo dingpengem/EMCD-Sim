@@ -64,6 +64,17 @@ def test_incoming_slice_cancel(elastic):
     assert calls==12
 
 
+def test_both_cancellation_prevents_incoming_ms():
+    from emcd_sim.gui import channeling
+    event=threading.Event();original=bw.depth_response
+    def depth(*a,**kw):event.set();return original(*a,**kw)
+    cfg=ForwardSettings(axis_declared=True,channeling_model='double',propagation='both',
+        energy_scope='edges',angular_maps=False,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
+    with patch.object(bw,'depth_response',depth),patch.object(channeling,'fft_geometry') as fft:
+        with pytest.raises(Cancelled):calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),cfg,cancelled=event.is_set)
+    fft.assert_not_called()
+
+
 @pytest.mark.parametrize('solver',['bloch','fft-multislice','both'])
 def test_full_spectrum_unchanged(solver):
     oldbw=reference_module('src/emcd_sim/double_channeling.py','emcd_sim._baseline_bw')

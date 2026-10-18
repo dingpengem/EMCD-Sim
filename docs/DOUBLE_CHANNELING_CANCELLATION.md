@@ -32,9 +32,9 @@ Checkpoints cover energy and detector batches, BW pixels, incoming setup,
 analytical/numerical depth-contraction boundaries, MS incoming/outgoing slices,
 ionization depths and site contractions. All active pool tasks observe the
 same event and unwind their memory reservations before the GUI returns idle.
-Pending pool calls reject work at entry. Both-mode cancellation prevents the
-second inelastic solver from starting. Previously prepared incoming fields
-are discarded, not published. Arithmetic, summation ordering, precision,
+Pending pool calls reject work at entry. Both mode now completes BW before preparing incoming MS fields, so cancellation
+prevents the second solver from starting at all. Prepared fields from the
+active solver are discarded, not published. Arithmetic, summation ordering, precision,
 cutoffs, grids, tensor and normalization are unchanged.
 
 The GUI shows `Cancelling...` immediately, ignores old queued progress and
@@ -46,7 +46,7 @@ semantics; cancellation is checked before writing a newly completed energy.
 Previously valid checkpoints are not removed.
 
 Source validation at native Windows 150% scaling passes. The final source
-run's worst request-to-idle latency was **0.4701 s**; an earlier source run's
+run's worst request-to-idle latency was **0.6073 s**; an earlier source run's
 worst was **0.7435 s**. Controlled runs insert a reproducible **180 ms** work
 block at a real kernel boundary, then request Cancel through the actual
 button. Uninstrumented BW and MS cases also run. These are explicitly small
@@ -55,7 +55,7 @@ package/dispatch profiles, not new converged production benchmarks: Ni [017],
 subpixels16, 11 actual full-range energy samples including locked anchors.
 
 Covered cases: BW full-spectrum depth work, MS outgoing propagation, MS
-ionization depth, Both before MS contraction, late completion, repeated Cancel,
+ionization depth, Both before any incoming MS setup, late completion, repeated Cancel,
 Single Channeling, uninstrumented BW and MS, queued result after worker exit,
 restart, browser integrity, saved-project integrity and memory-reservation
 cleanup. A 10 ms GUI timer continues ticking during controlled cancellation.
@@ -63,7 +63,7 @@ Request, acknowledgement, worker-stop and GUI-idle monotonic timestamps are
 saved per case. The queued-result race deliberately withholds GUI event
 processing and is excluded from latency claims.
 
-Focused tests: **41 unique tests pass** (7 new kernel/regression tests and
+Focused tests: **42 unique tests pass** (8 new kernel/regression tests and
 34 existing GUI/double/full-energy/component tests). A final affected subset
 of 16 tests also passes after adding incoming-setup checks. Initial new-test
 fixture errors (missing [017] FFT orientation and invalid five-sample GUI
@@ -72,9 +72,10 @@ small-profile spectra/maps are **bitwise identical** to baseline kernels for
 BW/MS/Both, including raw intensities, decomposition and PRB percentages.
 No production thickness or voltage scans were rerun.
 
-Evidence: `outputs/cancellation_acceptance/source_final/acceptance.json`,
+Evidence: `outputs/cancellation_acceptance/source_sequential/acceptance.json`,
 `kernel_tests.xml`, `focused_regression.xml` and
-`final_kernel_checkpoint_tests.xml`. Completed BW/MS project arrays and source
+`final_kernel_checkpoint_tests.xml`, `final_focused_regression.xml` and
+`both_sequential_test.xml`. Completed BW/MS project arrays and source
 hashes are retained there for exact frozen comparison. Generated datasets are
 local acceptance artifacts, not committed reference replacements.
 

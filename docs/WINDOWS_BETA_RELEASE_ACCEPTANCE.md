@@ -1,5 +1,13 @@
 # Windows Beta Release Acceptance
 
+**Cancellation follow-up:** the original package documented below predates the
+Double-Channeling cancellation fix. Its previous cancellation check requested
+Cancel immediately after startup and did not establish responsiveness inside
+long numerical stages. It must not be treated as cancellation-certified.
+See [Double-Channeling cancellation acceptance](DOUBLE_CHANNELING_CANCELLATION.md)
+for the replacement candidate, measured active-work tests and current package
+status. The original artifacts and their checksums below remain historical.
+
 **Decision: READY FOR BETA RELEASE**, as a local, unsigned research Beta RC.
 No push, public release or tag was created. Independent clean-machine acceptance
 is **NOT TESTED**; this decision covers the development-host tests below.
