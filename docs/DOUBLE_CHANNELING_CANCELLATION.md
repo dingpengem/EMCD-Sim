@@ -1,5 +1,8 @@
 # Double-channeling cancellation
 
+This historical acceptance record preceded publication. The verified public
+Beta and current source/CI limitations are in the [release report](RELEASE_0_4_5_BETA.md).
+
 ## Root cause (inspection before changes)
 
 At baseline `7bebdce4303bc7d517e826c9e0c91e8418f3f55b`, Cancel is

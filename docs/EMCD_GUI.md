@@ -935,9 +935,9 @@ physical Fourier-potential cutoff convergence remain. Browser persistence and
 visually good comparisons do not add physical validation. Stage D did not
 include executable packaging or a new solver.
 
-## Windows release candidate (Stage E)
+## Historical Windows release candidate (Stage E)
 
-The portable one-folder candidate is **unreleased**, with package version
+The Stage E portable one-folder candidate was **unreleased**, with package version
 0.4.5. Extract the entire ZIP, keep `_internal` beside `EMCD-Sim.exe`, and
 launch the EXE without Conda activation. Do not run directly inside the ZIP.
 See [acceptance and limitations](EMCD_WINDOWS_RC_ACCEPTANCE.md) and

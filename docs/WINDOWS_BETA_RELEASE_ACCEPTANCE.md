@@ -1,5 +1,8 @@
 # Windows Beta Release Acceptance
 
+This historical acceptance record preceded publication. The verified public
+Beta and current source/CI limitations are in the [release report](RELEASE_0_4_5_BETA.md).
+
 **Cancellation follow-up:** the original package documented below predates the
 Double-Channeling cancellation fix. Its previous cancellation check requested
 Cancel immediately after startup and did not establish responsiveness inside

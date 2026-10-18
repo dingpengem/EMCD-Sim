@@ -101,6 +101,8 @@ or experimental SNR.
   [001] (200) systematic-row calculations.
 - Testing used a Windows development host at native 150% scaling.
   **Independent clean-machine validation: NOT TESTED.** The executable is unsigned.
+  Windows source CI passes; unresolved Linux shutdown and macOS RAM-adapter
+  source-CI issues are recorded in the [release report](docs/RELEASE_0_4_5_BETA.md).
 
 Read the [complete limitations](docs/USER_GUIDE.md#scientific-limitations-and-responsible-interpretation)
 and [release validation scope](docs/RELEASE_0_4_5_BETA.md) before research use.

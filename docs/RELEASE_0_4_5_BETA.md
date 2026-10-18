@@ -154,4 +154,23 @@ thresholds and physical algorithms were not changed. Focused affected checks
 are recorded locally in `outputs/beta_release_publish/`; this is not a new
 production physics validation or a combined replacement test count.
 
-Final automatic CI status is recorded after the post-publication commit is checked.
+Automatic CI on post-publication test/documentation commit
+`bc05316b180599c89410423d6574fdede24c5f77`:
+
+| Platform | Outcome | Evidence |
+| --- | --- | --- |
+| Windows source tests and CLI smoke | PASS | 341 passed, 49 skipped; job completed successfully |
+| Linux source suite | FAIL | 341 passed, 49 skipped, then native-extension `bool_dealloc` abort during interpreter finalization (exit 134) |
+| macOS guarded channeling workflows | FAIL | Available-RAM adapter attempts `/proc/meminfo`, unavailable on macOS; calculations fail closed |
+
+[Automatic CI run](https://github.com/dingpengem/EMCD-Sim/actions/runs/39159953271).
+Windows source CI is additional evidence, not an independent clean-machine
+frozen-EXE test. Linux/macOS source portability is unresolved; this release
+ships a tested **Windows x64** binary only. No non-Windows success is claimed,
+no failed check was hidden or threshold relaxed, and no new runtime adapter
+or GUI change was introduced to force a green matrix. These remaining issues
+require separate platform-focused work. Publication/download verification is
+complete; full cross-platform source CI is not green.
+
+The final main documentation update records these results and public links;
+it contains no runtime/resource changes and does not move the release tag.

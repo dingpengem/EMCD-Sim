@@ -1,7 +1,7 @@
 # Install EMCD-Sim on Windows
 
 For a first calculation, continue with [Quick Start](QUICK_START.md). The
-[User Manual](USER_GUIDE.md) explains the science and controls. This is an
+[User Manual](USER_GUIDE.md) explains the science and controls. This is a
 research Beta; read the [release notes](RELEASE_0_4_5_BETA.md) and [Beta acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md)
 before using it for a research comparison.
 
@@ -116,7 +116,9 @@ Other Windows versions, ARM/32-bit systems and native 100%/125% display settings
 have not been validated for this binary. A fresh extraction launched outside
 the repository with Python/Conda removed from PATH passed on the same host.
 **NOT TESTED — independent clean-machine validation pending.** This is not
-equivalent to a second Windows installation or a clean VM.
+equivalent to a second Windows installation or a clean VM. Linux/macOS source
+CI has unresolved platform issues documented in the release report; this
+distribution is Windows x64 only.
 
 ## Advanced: run from Python source
 
