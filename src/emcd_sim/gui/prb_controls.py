@@ -7,7 +7,7 @@ class PRBBenchmarkControls(QtWidgets.QGroupBox):
     changed = QtCore.Signal()
 
     def __init__(self, parent=None):
-        super().__init__('PRB 2007 Benchmark', parent)
+        super().__init__('EMCD Asymmetry', parent)
         self.result = None
         self.records = []
         self.errors = []
@@ -89,25 +89,18 @@ class PRBBenchmarkControls(QtWidgets.QGroupBox):
         fmt = lambda value: 'undefined' if value is None else f'{value:+.4f} %'
         for name, result in chosen.items():
             try:
+                from .component_display import readouts
+                lines.append(name+' | '+readouts(result)[1])
                 record = benchmark_readout(result, windows=self.windows, **self.options())
                 record['solver'] = name
                 self.records.append(record)
                 energy = record['evaluation_energy_ev']
-                lines.append(f'{name}: {record["selected_edge"]} relative dichroism: {fmt(record["prb_relative_dichroism_percent"])}; '
-                             +('evaluation energy undefined' if energy is None else f'E={energy:.6f} eV'))
-                lines.append('Diagnostics only: magnetic '+fmt(record['magnetic_only_percent'])+'; even imbalance '+fmt(record['nonmagnetic_imbalance_percent']))
+                same=energy is not None and any(abs(energy-v)<1e-9 for v in (result['config'].l3,result['config'].l2))
+                lines.append('Evaluation: '+('undefined' if energy is None else f'{energy:.6f} eV')+('' if same else '; EMCD Asymmetry '+fmt(record['prb_relative_dichroism_percent'])))
                 if record['undefined_reason']:
                     lines.append('Undefined: '+record['undefined_reason'])
             except (ValueError, KeyError) as exc:
                 self.errors.append(dict(solver=name, undefined_reason=str(exc)))
                 lines.append(name+': undefined — '+str(exc))
-        if self.records:
-            r = self.records[0]
-            lines.extend([f'Thickness: {r["thickness_nm"]:.1f} nm | {r["accelerating_voltage_kv"]:g} kV',
-                          'Diffraction condition: '+r['diffraction_condition'],
-                          f'Detector A/B: {r["detector_centres_cycles_per_angstrom"]} Å⁻¹; radius {r["aperture_radius_cycles_per_angstrom"]:.7g} Å⁻¹',
-                          'Comparison: normalization only; not a physical Figure 5 reproduction.'])
-            if tuple(r['nominal_zone_axis']) != (0, 0, 1):
-                lines.append('Geometry mismatch: current '+str(r['nominal_zone_axis'])+' versus literature [001] systematic-row vicinity.')
         self.summary.setText('\n'.join(lines) or 'No compatible original detector spectra.')
         self.changed.emit()

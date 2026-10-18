@@ -27,8 +27,8 @@ def spectral_coverage_label(result):
     return 'Full spectrum'
 
 
-def draw_maps(fig,result,edge,method=None,field=None,display=None):
-    if display is None and field is None:return draw_component_maps(fig,result,edge,method)
+def draw_maps(fig,result,edge,method=None,field=None,display=None,*,signal_mode='raw'):
+    if display is None and field is None:return draw_component_maps(fig,result,edge,method,signal_mode)
     display=display or DisplaySettings()
     original=result
     all_results=list(result.get('methods',{}).values()) or [result]
@@ -43,7 +43,7 @@ def draw_maps(fig,result,edge,method=None,field=None,display=None):
         title=dict(zip(keys,titles)).get(field,field);keys=(field,);titles=(title,)
     if display.map_mode=='local' and field is None:keys=('I_mag',);titles=('Local magnetic fraction',)
     elif display.map_mode=='paired' and field is None:
-        keys=('D_mag','D_nonmag','D_raw','D_corrected','D_mag_processed','D_nonmag_residual');titles=('Magnetic paired asymmetry','Nonmagnetic paired asymmetry','Raw paired asymmetry','Corrected paired asymmetry','Processed magnetic asymmetry','Residual even asymmetry')
+        keys=('D_mag','D_nonmag','D_raw','D_corrected','D_mag_processed','D_nonmag_residual');titles=('Magnetic-only paired asymmetry','Nonmagnetic paired asymmetry','Raw paired asymmetry','Corrected paired asymmetry','Processed magnetic asymmetry','Residual even asymmetry')
     axes=np.asarray(fig.subplots(2,3) if len(keys)>1 else [fig.subplots()])
     display_meta=[]
     for ax,key,title in zip(axes.flat,keys,titles):
@@ -133,7 +133,10 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
         for key,label,color in (('I_A_plus','Detector A','C0'),('I_B_plus','Detector B','C1')):
             axes[0].plot(e,s[key],label=labels+label,color=color,**style)
         curves,meta=components(s,component_mode)
-        for (label,v),color in zip(curves.items(),('C3','C0')):axes[1].plot(e,v,label=labels+label,color=color,**style)
+        for label,v in curves.items():
+            color={'Magnetic':'C3','Nonmagnetic':'C0','EMCD Asymmetry':'C2'}[label]
+            shown=({'Magnetic':'Magnetic-only Asymmetry','Nonmagnetic':'Nonmagnetic Asymmetry'}[label] if component_mode=='relative' else label)
+            axes[1].plot(e,v,label=labels+shown,color=color,**style)
         rows,_=readouts(r);records.append(dict(method=name,channeling_model=cfg.channeling_model,**meta,prb_readouts=rows))
     axes[0].set_ylabel('EELS intensity (a.u.)');axes[1].set_ylabel(meta['units']);axes[1].axhline(0,color='.45',lw=.7)
     axes[1].set_xlabel('Native energy loss (eV)')
@@ -142,10 +145,12 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
         for v in (cfg.l3,cfg.l2):ax.axvline(v,color='.6',ls=':',lw=.6)
     limits=(cfg.l3-5,cfg.l3+5) if zoom=='L3 zoom' else (cfg.l2-5,cfg.l2+5) if zoom=='L2 zoom' else (float(e[0]),float(e[-1]))
     axes[-1].set_xlim(limits)
-    title=f'{cfg.channeling_model.title()} Channeling | {method} | Ni {list(result["settings"].zone)}, {result["settings"].thickness:g} nm'
+    from .component_display import MODES
+    title=f'{MODES.get(component_mode, "Magnetic-only / Nonmagnetic Asymmetry diagnostics")} | {cfg.channeling_model.title()} Channeling | {method} | Ni {list(result["settings"].zone)}, {result["settings"].thickness:g} nm'
     if points:title+='\nSelected native L3/L2 samples only; full EELS spectrum not calculated'
     elif spectral_coverage_label(result)=='Calculated energy subset':title+='\nCalculated energy subset; full native range not covered'
     title+='\n'+geometry_description(result)
+    title+='\n'+zoom+'; actual native energy samples'
     fig.suptitle(title,fontsize=11)
     fig._emcd_display_metadata=dict(kind='primary spectra',component_mode=component_mode,records=records,
         eels='Original +M detector A/B intensities, shared arbitrary-unit scale; no background or peak scaling',
@@ -155,28 +160,36 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
     return legends
 
 
-def draw_component_maps(fig,result,edge,method=None):
-    from .component_display import mirrored_angular_components
+def draw_component_maps(fig,result,edge,method=None,signal_mode='raw'):
+    from .component_display import primary_angular,MODES
     fig.clear();method=method or result.get('method','bloch')
     methods=result.get('methods',{result.get('method','bloch'):result})
     r=methods.get(method,next(iter(methods.values())))
-    if edge not in r['maps']:
-        fig.subplots().text(.1,.5,'Angular maps were not calculated for this result');return
-    values,meta=mirrored_angular_components(r,edge)
-    if method=='difference':
-        bv,_=mirrored_angular_components(methods['bloch'],edge);mv,_=mirrored_angular_components(methods['fft-multislice'],edge)
-        values={k:bv[k]-mv[k] for k in bv};meta=dict(meta,units='BW−MS difference (percentage points)')
-    pools=[v for m in methods.values() for ed in m['maps'] for v in mirrored_angular_components(m,ed)[0].values()]
-    if method=='difference':pools=list(values.values())
+    try:
+        values,meta=primary_angular(r,edge,signal_mode)
+        if method=='difference':
+            bv,_=primary_angular(methods['bloch'],edge,signal_mode);mv,_=primary_angular(methods['fft-multislice'],edge,signal_mode)
+            values={k:bv[k]-mv[k] for k in bv};meta=dict(meta,units='BW-MS difference ('+('a.u.' if signal_mode=='raw' else 'percentage points')+')')
+        pools=[v for m in methods.values() for ed in m['maps'] for v in primary_angular(m,ed,signal_mode)[0].values()]
+        if method=='difference':pools=list(values.values())
+    except (ValueError,KeyError) as exc:
+        fig.subplots().text(.05,.5,'Paired angular display unavailable: '+str(exc),wrap=True)
+        fig._emcd_display_metadata=dict(unavailable=str(exc),derived_visualization_only=True)
+        return
     limit=max([float(abs(v[np.isfinite(v)]).max()) for v in pools if np.isfinite(v).any()]+[1e-30])
-    axes=fig.subplots(1,2);dq=r['qx'][0,1]-r['qx'][0,0];h=r['config'].halfwidth+dq/2;extent=(-h,h,-h,h)
+    axes=np.atleast_1d(fig.subplots(1,len(values)));qx,qy=r['qx'],r['qy']
+    dx=qx[0,1]-qx[0,0];dy=qy[1,0]-qy[0,0]
+    extent=(qx[0,0]-dx/2,qx[0,-1]+dx/2,qy[0,0]-dy/2,qy[-1,0]+dy/2)
     for ax,(label,v) in zip(axes,values.items()):
         im=ax.imshow(v,origin='lower',extent=extent,cmap=colormaps['RdBu_r'].with_extremes(bad='#c8c8c8'),vmin=-limit,vmax=limit)
         decorate_reciprocal_map(ax,r['model'],extent,target_hkl=r['settings'].target,zone_axis=r['settings'].zone)
         ax.plot(*r['model'].elastic.crystal.g_vector(r['settings'].target)[:2],'s',mfc='none',mec='crimson',ms=8)
-        ax.set_title(label+' mirrored angular component',fontsize=10);fig.colorbar(im,ax=ax,shrink=.7).set_label(meta['units'])
+        ax.set_title(label,fontsize=10)
+        units=(label.replace('paired difference','difference')+' (a.u.)') if signal_mode=='raw' and method!='difference' else meta['units']
+        fig.colorbar(im,ax=ax,shrink=.7).set_label(units)
+        if not np.isfinite(v).any():ax.text(.1,.5,'All pixels undefined / masked',transform=ax.transAxes)
     e=r['config'].l3 if edge=='L3' else r['config'].l2
-    fig.suptitle(f'{r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\nPoint pairs (qx,qy)/(qx,−qy); not finite-aperture integrated A/B asymmetry',fontsize=10)
+    fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\n'+geometry_description(r)+'\nActual mirrored point pairs; not detector-integrated asymmetry',fontsize=10)
     fig._emcd_display_metadata=dict(kind='primary angular components',edge=edge,method=method,**meta,shared_color_scale=True)
 
 
@@ -244,18 +257,20 @@ class ResultsView(QtWidgets.QWidget):
         self.component_mode=QtWidgets.QComboBox()
         from .component_display import MODES
         for key,title in MODES.items():self.component_mode.addItem(title,key)
-        self.component_mode.setVisible(kind=='eels');row.addWidget(self.component_mode);self.component_mode.currentIndexChanged.connect(self.redraw)
+        self.signal_label=QtWidgets.QLabel('Signal Display');self.signal_label.setVisible(kind in ('eels','maps'));row.addWidget(self.signal_label)
+        self.component_mode.setVisible(kind in ('eels','maps'));row.addWidget(self.component_mode);self.component_mode.currentIndexChanged.connect(self.redraw)
         maximize=QtWidgets.QPushButton('Maximize / restore results');row.addWidget(maximize);maximize.clicked.connect(self.maximize)
         self.advanced=QtWidgets.QGroupBox('Advanced Diagnostics — legacy displays');self.advanced.setCheckable(True);self.advanced.setChecked(False);layout.addWidget(self.advanced)
         self.advanced_body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(self.advanced);outer.addWidget(self.advanced_body);self.advanced_body.hide();advanced_layout=QtWidgets.QVBoxLayout(self.advanced_body)
         self.advanced.toggled.connect(self.advanced_body.setVisible);self.advanced.toggled.connect(self.redraw);self.advanced.setVisible(kind!='diffraction')
         self.normalization=NormalizationControls(self,maps=kind=='maps');self.normalization.setVisible(kind!='diffraction');advanced_layout.addWidget(self.normalization);self.normalization.changed.connect(self.redraw)
         advanced_layout.addWidget(self.field)
+        self.component_diagnostic=QtWidgets.QComboBox();self.component_diagnostic.addItem('Legacy diagnostics','legacy');self.component_diagnostic.addItem('Magnetic-only / Nonmagnetic Asymmetry (%)','relative');self.component_diagnostic.setToolTip('Magnetic-reversal-odd detector difference, normalized by reversal-even intensity.');self.component_diagnostic.setVisible(kind=='eels');advanced_layout.addWidget(self.component_diagnostic);self.component_diagnostic.currentIndexChanged.connect(self.redraw)
         self.display_note=QtWidgets.QLabel();self.display_note.setWordWrap(True);layout.addWidget(self.display_note)
         if kind=='eels':
             from .prb_controls import PRBBenchmarkControls
-            self.prb_readout=QtWidgets.QLabel();self.prb_readout.setWordWrap(True);layout.addWidget(self.prb_readout)
-            self.prb_benchmark=PRBBenchmarkControls(self);advanced_layout.addWidget(self.prb_benchmark)
+            self.prb_benchmark=PRBBenchmarkControls(self);layout.addWidget(self.prb_benchmark)
+            self.prb_readout=self.prb_benchmark.summary
             self.prb_benchmark.changed.connect(self.update_prb_metadata)
         export=QtWidgets.QPushButton('Export derived NPZ/CSV + metadata');export.setVisible(kind!='diffraction');layout.addWidget(export);export.clicked.connect(self.export_derived)
         self.figure=Figure(layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure)
@@ -286,19 +301,19 @@ class ResultsView(QtWidgets.QWidget):
         advanced=self.advanced.isChecked()
         self.component_mode.setEnabled(not advanced)
         try:
-            if self.kind=='maps':draw_maps(self.figure,self.result,self.choice.currentText(),method,self.field.currentData() if advanced else None,display if advanced else None)
+            if self.kind=='maps':draw_maps(self.figure,self.result,self.choice.currentText(),method,self.field.currentData() if advanced else None,display if advanced else None,signal_mode=self.component_mode.currentData())
             elif self.kind=='diffraction':draw_diffraction(self.figure,self.result,method,self.choice.currentIndex()==1)
             elif self.kind=='comparison':draw_comparison(self.figure,self.result,display)
-            else:self.proxies=draw_eels(self.figure,self.result,self.choice.currentText(),method,display if advanced else None,component_mode=self.component_mode.currentData(),diagnostics=advanced)
-            self.display_note.setText('Display only; simulation arrays unchanged. '+('Advanced legacy normalization overrides the primary view.' if advanced else ('Signed raw components; no curve scaling.' if self.component_mode.currentData()=='raw' else 'Both components share N_A+N_B.')))
+            else:
+                relative=advanced and self.component_diagnostic.currentData()=='relative'
+                self.proxies=draw_eels(self.figure,self.result,self.choice.currentText(),method,display if advanced and not relative else None,component_mode='relative' if relative else self.component_mode.currentData(),diagnostics=advanced and not relative)
+            from .component_display import TOOLTIPS
+            self.component_mode.setToolTip(TOOLTIPS[self.component_mode.currentData()])
+            self.display_note.setText('Display only; simulation arrays unchanged. '+('Explicit advanced diagnostics.' if advanced else TOOLTIPS[self.component_mode.currentData()]))
         except (ValueError,KeyError) as exc:
             self.figure.clear();self.figure.subplots().text(.05,.6,'Normalization unavailable: '+str(exc),wrap=True);self.display_note.setText(str(exc));self.figure._emcd_display_metadata=dict(unavailable=str(exc),derived_visualization_only=True)
         if self.kind=='eels' and hasattr(self.owner,'comparison'):self.owner.comparison.setPlainText(comparison_text(self.result,display.windows))
         if self.kind=='eels':
-            from .component_display import readouts
-            chosen=self.result.get('methods',{self.result.get('method','bloch'):self.result})
-            names=list(chosen) if method=='overlay' else [method if method in chosen else next(iter(chosen))]
-            self.prb_readout.setText('\n'.join(name+' | '+readouts(chosen[name])[1] for name in names))
             selected=self.result['config'].l2 if self.choice.currentText()=='L2 zoom' else self.result['config'].l3
             self.prb_benchmark.set_context(self.result,method,display.windows,selected)
         self.canvas.draw_idle()
@@ -313,9 +328,9 @@ class ResultsView(QtWidgets.QWidget):
         parent=QtWidgets.QFileDialog.getExistingDirectory(self,'Derived visualization export parent (new folder)')
         if parent and self.result is not None:
             try:
-                if not self.advanced.isChecked():
+                if not self.advanced.isChecked() or (self.kind=='eels' and self.component_diagnostic.currentData()=='relative'):
                     from .emcd_forward import export_result
-                    export_result(self.result,Path(parent)/datetime.now().strftime('emcd_%Y%m%d_%H%M%S_%f'),component_mode=self.component_mode.currentData())
+                    export_result(self.result,Path(parent)/datetime.now().strftime('emcd_%Y%m%d_%H%M%S_%f'),component_mode='relative' if self.advanced.isChecked() and self.kind=='eels' else self.owner.eels_view.component_mode.currentData(),map_signal_mode=self.owner.maps_view.component_mode.currentData())
                     return
                 from .prb_benchmark import data_origin
                 entries=[(name,dict(r,prb_data_origin=data_origin(self.result),prb_project_path=self.result.get('project_path')),name) for name,r in self.result.get('methods',{self.result.get('method','bloch'):self.result}).items()]

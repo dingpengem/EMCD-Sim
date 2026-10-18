@@ -1,14 +1,17 @@
 # Windows candidate build
 
-Windows only; package version 0.4.5, **EMCD-Sim GUI RC (unreleased)**.
-No installer, signing or publication is performed.
+Windows x64 research Beta, package version **0.6.0**. Build the standalone
+Double-Channeling EMCD Simulation in a fresh directory; previous 0.4.5
+artifacts must remain untouched. Labels, archive names and manifests derive
+from the source package version. Publication requires the release acceptance
+gates in [the report](../docs/WINDOWS_V060_BETA_ACCEPTANCE.md).
 
 From an environment containing the GUI runtime dependencies:
 
 ```powershell
 python -m venv --system-site-packages build/windows-rc/venv
 build/windows-rc/venv/Scripts/python.exe -m pip install pyinstaller==6.22.3
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -BuildRoot build/windows-v060-beta-rc -ArchiveName EMCD-Sim-0.6.0-Beta-Windows.zip
 ```
 
 The separate build venv shares scientific packages without modifying them.
@@ -48,11 +51,11 @@ Stage F uses the same specification in a fresh location:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1
 ```
 
-Defaults are `build/windows-stage-f/dist/EMCD-Sim/` and
+Historical Stage F defaults were `build/windows-stage-f/dist/EMCD-Sim/` and
 `build/windows-stage-f/EMCD-Sim-Stage-F-Windows-RC.zip`, labeled
 `EMCD-Sim GUI Stage F RC (unreleased)`. Existing distributions are refused;
 use `-BuildRoot` and `-BuildLabel` for a new candidate. Stage E remains untouched.
-Package version is unchanged.
+The current release workflow uses the separate v0.6.0 directory above.
 
 Display-only acceptance reopens existing projects, guards forward calls and
 exports derived figures/data (fresh output paths required):

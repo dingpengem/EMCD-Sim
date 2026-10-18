@@ -69,17 +69,19 @@ def test_primary_two_panels_preserve_raw_eels_and_component_signs(result):
         np.testing.assert_array_equal(next(l for l in fig.axes[0].lines if l.get_label()=='Detector B').get_ydata(),s['I_B_plus'])
         np.testing.assert_array_equal(next(l for l in fig.axes[1].lines if l.get_label()=='Magnetic').get_ydata(),s['D_mag'])
         draw_eels(fig,result,component_mode='relative')
-        np.testing.assert_allclose(next(l for l in fig.axes[1].lines if l.get_label()=='Magnetic').get_ydata(),100*s['D_mag']/s['Sigma_ref'])
-        assert fig.axes[0].get_ylabel()=='EELS intensity (a.u.)' and fig.axes[1].get_ylabel()=='Relative EMCD (%)'
+        np.testing.assert_allclose(next(l for l in fig.axes[1].lines if l.get_label()=='Magnetic-only Asymmetry').get_ydata(),100*s['D_mag']/s['Sigma_ref'])
+        assert fig.axes[0].get_ylabel()=='EELS intensity (a.u.)' and fig.axes[1].get_ylabel()=='Magnetic-only / Nonmagnetic Asymmetry (%)'
     for k in s:np.testing.assert_array_equal(s[k],before[k])
 
 
 def test_two_samples_are_points_and_uncomputed_energy_is_rejected(result):
-    fig=Figure();draw_eels(fig,result)
-    assert 'full EELS spectrum not calculated' in fig._suptitle.get_text()
-    for ax in fig.axes:
-        for line in ax.lines:
-            if line.get_label() in ('Detector A','Detector B','Magnetic','Nonmagnetic'):assert line.get_linestyle()=='None'
+    for mode in ('raw','asymmetry'):
+        fig=Figure();draw_eels(fig,result,component_mode=mode)
+        assert 'full EELS spectrum not calculated' in fig._suptitle.get_text()
+        for ax in fig.axes:
+            for line in ax.lines:
+                if line.get_label() in ('Detector A','Detector B','Magnetic','Nonmagnetic','EMCD Asymmetry'):
+                    assert line.get_linestyle()=='None'
     with pytest.raises(ValueError,match='not calculated'):benchmark_readout(result,selection='selected',energy_ev=838)
 
 
@@ -99,7 +101,7 @@ def test_default_angular_components_preserve_maps_and_share_scale(result):
     panels=[ax for ax in fig.axes if ax.images]
     assert len(panels)==2 and panels[0].images[0].get_clim()==panels[1].images[0].get_clim()
     values,meta=mirrored_angular_components(result,'L3')
-    assert 'not finite-aperture' in fig._suptitle.get_text()
+    assert 'not detector-integrated' in fig._suptitle.get_text()
     assert 'point pairs' in meta['support']
     for edge,m in before.items():
         for k,v in m.items():np.testing.assert_array_equal(v,result['maps'][edge][k])
@@ -131,14 +133,14 @@ def test_gui_toggle_keeps_results_and_legacy_diagnostics(result):
     try:
         w.display_saved_result(result)
         view=w.eels_view;assert not view.advanced.isChecked() and view.advanced_body.isHidden()
-        assert [view.component_mode.itemText(i) for i in range(2)]==['Raw EMCD (a.u.)','Relative EMCD (%)']
+        assert [view.component_mode.itemText(i) for i in range(2)]==['Raw (a.u.)','EMCD Asymmetry (%)']
         source_id=id(result['spectra']['I_A_plus']);before=result['spectra']['I_A_plus'].copy()
         view.component_mode.setCurrentIndex(1);app.processEvents()
-        assert view.figure._emcd_display_metadata['component_mode']=='relative'
+        assert view.figure._emcd_display_metadata['component_mode']=='asymmetry'
         view.component_mode.setCurrentIndex(0);app.processEvents()
         assert id(result['spectra']['I_A_plus'])==source_id
         np.testing.assert_array_equal(result['spectra']['I_A_plus'],before)
-        assert 'PRB' in view.prb_readout.text()
+        assert 'EMCD Asymmetry' in view.prb_readout.text()
         view.advanced.setChecked(True);app.processEvents();assert len(view.figure.axes)==3
         np.testing.assert_allclose(view.figure.axes[-1].get_xlim(),result['spectra']['energy_ev'][[0,-1]])
         assert w.settings().beam_cutoff==3.2 and w.settings().potential_cutoff==2.2
@@ -164,7 +166,7 @@ def test_project_restores_display_and_locked_energy_without_changing_arrays(resu
         loaded=load_project(root/'project');assert 'display_state.json' in loaded['project_manifest']['files']
         view.component_mode.setCurrentIndex(0);p.fixed.setChecked(False)
         with patch('emcd_sim.gui.emcd_forward.calculate',side_effect=AssertionError('Display must not calculate')):w.display_saved_result(loaded)
-        assert view.component_mode.currentData()=='relative' and view.choice.currentText()=='L2 zoom'
+        assert view.component_mode.currentData()=='asymmetry' and view.choice.currentText()=='L2 zoom'
         assert p.fixed.isChecked() and p.energy.value()==result['config'].l2
         for k,v in before.items():np.testing.assert_array_equal(v,loaded['spectra'][k])
     finally:w.close();app.processEvents()

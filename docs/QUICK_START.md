@@ -3,16 +3,29 @@
 This is a short reading guide, not a promise of total calculation time.
 For installation details see [Install on Windows](INSTALL_WINDOWS.md); for
 interpretation and other workflows see the [User Manual](USER_GUIDE.md).
-This guide describes the **0.4.5 Windows research Beta**.
+**0.6.0 Windows research Beta - Double-Channeling EMCD Simulation.**
+The [release acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) identifies the
+build, checksums and tested scope. Double Channeling already existed in 0.4.5;
+0.6.0 consolidates its framework and improves Raw / EMCD Asymmetry interpretation.
+For the preserved old executable use the
+[0.4.5 manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/USER_GUIDE.md).
+
+
+
+
 
 ## 1. Extract and open
 
-Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1) and download
-`EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`. Verify the checksum in
+Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.0-beta.1) and download
+`EMCD-Sim-0.6.0-Beta-Windows.zip`. Verify the checksum in
 the installation guide and **Extract All**. In the extracted `EMCD-Sim`
 folder, double-click `EMCD-Sim.exe`. Keep `_internal` beside it. No Python,
 Conda, VS Code or WIEN2k installation is required. Initialization can take
 tens of seconds. Do not run inside the ZIP.
+
+Developers may instead launch `python -m emcd_sim.gui` from an installed source
+environment (`python -m pip install -e ".[gui]"`). The portable ZIP needs no
+Python environment.
 
 ## 2. Preview the default Ni reference
 
@@ -29,9 +42,9 @@ tens of seconds. Do not run inside the ZIP.
    They differ at this exact-Bragg tilt. The Thales circle has (000)–(200)
    as its diameter. Use **Restore Thales A/B** for the physical apertures.
 
-![Default Ni diffraction and controls](images/gui/beta_rc/startup_150pct.png)
+![Default Ni diffraction and controls](images/gui/v060_release/startup.png)
 
-Actual accepted Beta Windows capture at native 150% scaling, showing the
+Actual accepted 0.6.0 frozen Windows capture at native 150% scaling, showing the
 indexed [017] geometry and physical detector outlines. Labels in **Calculation Information**
 distinguish current inputs from the completed-run snapshot.
 
@@ -64,14 +77,20 @@ distinguish current inputs from the completed-run snapshot.
 
 ## 4. Read maps and EELS
 
-- In **EMCD Angular Maps**, choose **L3** or **L2**. **Magnetic odd** is the
+- In **EMCD Angular Maps**, choose **L3** or **L2**. The default **Raw (a.u.)**
+  shows paired magnetic/nonmagnetic differences; **EMCD Asymmetry (%)** shows
+  one total mirrored-point difference/sum map. Intrinsic intensity maps are
+  in Advanced Diagnostics. Never average pixel percentages to obtain detector
+  asymmetry: integrate original A/B intensities first.
+- In Advanced Diagnostics, **Magnetic odd** is the
   reversal-odd signal; **Nonmagnetic even** is reversal-even intensity.
   Raw and corrected paired A−B maps are different observables.
 - In **Virtual Detector EELS**, the upper panel shows +M A/B EELS on the
   original shared intensity scale. The lower panel shows signed magnetic and
-  nonmagnetic components. Select **Raw EMCD (a.u.)** or **Relative EMCD (%)**;
-  both relative components share N_A+N_B. PRB difference/sum is a separate
-  readout. Choose **Full spectrum**, **L3 zoom** or **L2 zoom**.
+  nonmagnetic components in **Raw (a.u.)**. Select **EMCD Asymmetry (%)** for
+  one total signed 100*(A_plus-B_plus)/(A_plus+B_plus) curve. This can include
+  nonmagnetic diffraction imbalance. The **EMCD Asymmetry** scalar group retains
+  L3/L2, evaluation energy and energy lock. Choose **Full spectrum**, **L3 zoom** or **L2 zoom**.
 - **Advanced Diagnostics** retains four reversal spectra, post-edge correction
   and optional legacy peak normalization. Corrected contrast is not intrinsic
   magnetic EMCD. Two-energy saved results remain points, not white-line curves.
@@ -81,12 +100,17 @@ distinguish current inputs from the completed-run snapshot.
   model-specific calculated percentages, not expected results for every GUI
   default. See the [full-spectrum report](DOUBLE_CHANNELING_FULL_SPECTRA.md).
 
-![Current Double BW/MS relative components](images/gui/beta_rc/double_both_relative.png)
+![0.6.0 total EMCD Asymmetry display](images/gui/v060/eels_asymmetry.png)
 
-Actual accepted Beta BW/MS Double comparison at a manageable dispatch-test
-profile, not a production convergence benchmark. The lower panel uses the
-common nonmagnetic sum for both signed components; it is not peak-normalized.
-Post-edge-corrected A−B is **not automatically intrinsic magnetic EMCD**.
+Actual 0.6.0 figure from the saved small Double BW [017] dispatch profile.
+The top spectra retain their shared raw scale; the lower panel is one total
+A/B asymmetry curve, not the Advanced magnetic-only component. This is an
+interface example, not a production convergence benchmark. Corrected A-B is
+not automatically intrinsic magnetic EMCD.
+
+See the [signal guide](USER_GUIDE.md#signal-definitions-in-060) for exact
+definitions. Use **Maximize / restore results** and the plot scrollbars in a
+narrow pane at 150% scaling.
 
 ## 5. Save and reopen
 

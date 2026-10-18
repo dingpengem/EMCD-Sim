@@ -2,7 +2,7 @@
 
 For a first calculation, continue with [Quick Start](QUICK_START.md). The
 [User Manual](USER_GUIDE.md) explains the science and controls. This is a
-research Beta; read the [release notes](RELEASE_0_4_5_BETA.md) and [Beta acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md)
+research Beta; read the [release notes](RELEASE_0_6_0_BETA.md) and [Beta acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md)
 before using it for a research comparison.
 
 ## Recommended: portable Windows application
@@ -12,15 +12,15 @@ or WIEN2k to be installed.** WIEN2k is a separate electronic-structure program,
 not a GUI runtime dependency. This application does not install or provide a
 complete DFT calculation environment.
 
-The Windows distribution is **EMCD-Sim 0.4.5 Beta**, tagged `v0.4.5-beta.1`,
-built from `9937d3b820e4225fdf06b7f3ed33c7083d0f35ea`. Older Stage F
-candidates and the original Beta RC are preserved separately and are not the current build.
-See the [cancellation acceptance report](DOUBLE_CHANNELING_CANCELLATION.md) for the replacement.
+The Windows distribution is **EMCD-Sim 0.6.0 Beta - Double-Channeling EMCD
+Simulation**, tag `v0.6.0-beta.1`, built from
+`c2caf4247a350e28a38b79cd402954d0c1ab2509`. The older 0.4.5 release is preserved.
+Double Channeling already existed there; 0.6.0 consolidates its scientific
+workflow and unifies Raw / EMCD Asymmetry displays.
 
-1. Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1) and
-   download `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip` from its
-   GitHub release assets. The retained RC filename identifies the exact
-   tested archive; the distributed bytes were not rebuilt or repacked.
+1. Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.0-beta.1) and
+   download `EMCD-Sim-0.6.0-Beta-Windows.zip` from its
+   GitHub release assets. Download the new 0.6.0 archive, not an older RC.
 2. Download/copy the ZIP and verify its SHA256 below.
 3. Right-click it in File Explorer, choose **Extract All**, and select a folder
    you control, for example `C:\Users\YourName\Applications\EMCD-Sim-RC`.
@@ -48,18 +48,18 @@ See the [cancellation acceptance report](DOUBLE_CHANNELING_CANCELLATION.md) for 
 ### Verify the archive
 
 The current Beta archive SHA256 is recorded in the
-[acceptance report](WINDOWS_BETA_RELEASE_ACCEPTANCE.md) and its sibling
+[acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) and its sibling
 `SHA256SUMS.txt`. The application's own `SHA256SUMS.txt` lists individual
 runtime files. The current Beta ZIP SHA256 is:
 
 ```text
-309438c4a049773a6e99948477c8d52051cd8f1de632a762c795656e6c5a2216
+6adda35a3b52ac35a06681a8cf5fca753aae2f03387feda57373c78ad8be2b5e
 ```
 
 For example, in PowerShell:
 
 ```powershell
-Get-FileHash "$HOME\Downloads\EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip" -Algorithm SHA256
+Get-FileHash "$HOME\Downloads\EMCD-Sim-0.6.0-Beta-Windows.zip" -Algorithm SHA256
 ```
 
 Substitute the actual download path. A checksum match confirms the archive

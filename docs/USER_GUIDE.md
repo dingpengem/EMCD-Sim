@@ -1,10 +1,83 @@
 # EMCD-Sim Desktop User Manual
 
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
-This manual describes the **0.4.5 Windows research Beta**, integrated into
-`main`. The [release notes](RELEASE_0_4_5_BETA.md) identify the download,
-binary build source and tested scope. Current Beta captures introduce the
-interface; retained Stage E/F images are explicitly historical illustrations.
+**0.6.0 Windows research Beta - Double-Channeling EMCD Simulation.**
+The [release acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) identifies the
+build, checksums and tested scope. Double Channeling already existed in 0.4.5;
+0.6.0 consolidates its framework and improves Raw / EMCD Asymmetry interpretation.
+For the preserved old executable use the
+[0.4.5 manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/USER_GUIDE.md).
+
+
+
+## Signal definitions in 0.6.0
+
+Both Virtual Detector EELS and EMCD Angular Maps have exactly two primary
+**Signal Display** choices: **Raw (a.u.)** (default) and **EMCD Asymmetry (%)**.
+The upper EELS panel always retains original +M detector A/B intensities on
+one shared scale. Raw displays two signed differences below it; Asymmetry
+replaces those with one total curve. No individual peak normalization,
+factor of two, absolute value or hidden post-edge correction is applied.
+
+For each detector J, N_J=(I_J_plus+I_J_minus)/2 and
+M_J=(I_J_plus-I_J_minus)/2. The definitions are:
+
+| Quantity | Formula | Location |
+| --- | --- | --- |
+| Magnetic raw difference | D_mag=M_A-M_B | Primary Raw |
+| Nonmagnetic raw difference | D_nonmag=N_A-N_B | Primary Raw |
+| Total raw difference | D_raw=I_A_plus-I_B_plus=D_mag+D_nonmag | Advanced/export |
+| EMCD Asymmetry (%) | 100*(I_A_plus-I_B_plus)/(I_A_plus+I_B_plus) | Primary Asymmetry, L3/L2 scalar |
+| Magnetic-only Asymmetry (%) | 100*D_mag/(N_A+N_B) | Advanced Diagnostics |
+| Nonmagnetic Asymmetry (%) | 100*D_nonmag/(N_A+N_B) | Advanced Diagnostics |
+
+The total ratio can include nonmagnetic diffraction asymmetry. Its denominator
+also differs from N_A+N_B when M_A+M_B is nonzero, even if D_nonmag=0.
+The scalar **EMCD Asymmetry** group retains native L3/L2 samples, evaluation
+energy and energy lock. Rusz et al., PRB 75, 214425 (2007), remains the
+historical theoretical reference; matching a normalization does not imply
+complete physical equivalence to that calculation.
+
+Raw angular mode shows M(q)-M(q') and N(q)-N(q') on a common signed,
+zero-centered scale; total angular Asymmetry is
+100*(I_plus(q)-I_plus(q'))/(I_plus(q)+I_plus(q')). Here q'=(qx,-qy) is an
+actual validated saved sample. These are angular intensity densities and
+point-pair percentages, **not detector-integrated EELS**. Integrate the raw
+A/B intensities with physical aperture weights first, then take their ratio;
+do not average percentage pixels. Existing denominator floors are retained:
+invalid/near-zero samples remain NaN. No scientific values are clipped.
+Unavailable mirror support, incompatible grids or unmatched physical A/B
+apertures produce an explanation, not a fabricated reflection. Exact Bragg
+alignment alone does not guarantee mirror geometry. Restricted-row and full
+finite ZOLZ results remain distinct.
+
+Advanced views preserve magnetic-only/even paired asymmetries, intrinsic
+magnetic/nonmagnetic intensities, local magnetic fraction, raw total difference,
+four reversal spectra, corrected contrast, residual even signal, legacy fixed
+peak normalization, detectability proxy and BW/MS difference diagnostics.
+Post-edge correction is a separate observable, not intrinsic magnetic recovery.
+Large percentages alone do not establish detectability. Arbitrary-unit
+intensity has no electron-count calibration; experimental SNR requires dose,
+efficiency, bin width, background and variance propagation for the actual
+measurement estimator. The existing proxy is arbitrary-scale only.
+
+Legacy projects and all original scientific NPZ/CSV keys (including PRB names)
+remain unchanged. Supplemental `signal_display.npz` and per-method
+`*_signal_display.csv` carry explicit descriptive aliases and denominators;
+`figure_display.json` records definitions and selected displays. The new
+`emcd_asymmetry_percent` aliases historical `prb_relative_dichroism_percent`;
+`nonmagnetic_asymmetry_percent` aliases `nonmagnetic_imbalance_percent`.
+Angular aliases use edge-qualified method prefixes and never replace old maps.
+PNG/SVG follow the chosen mode. Sidecars are derived exports, separate from
+the checksummed original project arrays. Exporting never overwrites its source
+project. Source hashes, native energies, geometry and numerical settings remain
+in original provenance.
+
+Old saved Raw preferences remain Raw. Old `relative` preferences open the
+explicit Magnetic-only / Nonmagnetic Asymmetry advanced view with a migration
+notice and Raw as primary; they are never silently interpreted as total
+asymmetry. New display-state schema 2 records separate EELS/map modes and
+preserves energy locking. Presentation changes do not run the solvers.
 
 ## What the application calculates
 
@@ -24,9 +97,9 @@ provides a fully quantitative experimental metallic-Ni cross section.
 
 ## Find your way around
 
-![Actual Windows main interface](images/gui/beta_rc/startup_150pct.png)
+![Actual Windows main interface](images/gui/v060_release/startup.png)
 
-Actual accepted Beta capture at native 150% scaling, showing the current input
+Actual accepted 0.6.0 frozen capture at native 150% scaling, showing the current input
 and diffraction controls. Use this numbered reading order:
 
 1. **Left: Inputs.** Expand/collapse **A. Crystal Structure**, **B. Zone Axis
@@ -263,16 +336,17 @@ values always refer to original arrays, regardless of display normalization.
 
 ## Read angular maps
 
-The primary view shows magnetic and nonmagnetic **mirrored point-pair**
-components on a common signed scale. These percentages compare (qx,qy) with
-(qx,-qy); they are distinct from finite-aperture integrated spectral EMCD.
-Expand Advanced Diagnostics for the raw/even/total and paired/corrected fields
-described below. The actual ZA, transmitted beam, hkl, Thales circle and physical
-A/B apertures retain their saved geometry in either solver/model.
+The default **Raw (a.u.)** view shows magnetic and nonmagnetic mirrored
+point-pair differences on a common signed original-intensity scale. Select
+**EMCD Asymmetry (%)** for one total +M difference/sum map. The saved samples
+at (qx,qy) and (qx,-qy) must be valid mirrors; these are not finite-aperture
+integrated EELS percentages. Read the exact definitions above.
+The actual ZA, transmitted beam, hkl, target, Thales circle and physical A/B
+apertures retain their saved geometry in either solver/model.
 
-Choose **EMCD Angular Maps**, L3/L2, a method (or BW−MS numerical difference)
-and a field. Under **Advanced Diagnostics**, **All six fields** provides the
-legacy multi-panel view; the primary view remains the two component maps.
+Choose L3/L2 and method (or BW-MS numerical difference). Expand
+**Advanced Diagnostics** for intrinsic fields and legacy paired/corrected maps;
+**All six fields** restores the legacy multi-panel view described below.
 
 | Field | Interpretation |
 | --- | --- |
@@ -301,22 +375,30 @@ paired percentages are unavailable with an explanation. Physical integrated
 A/B EELS can still be meaningful. Use **Restore Thales A/B** to restore the
 standard pair, not an artificial reflected signal outside the actual support.
 
+![0.6.0 raw detector spectra and signed components](images/gui/v060/eels_raw.png)
+
+![0.6.0 total EMCD Asymmetry spectrum](images/gui/v060/eels_asymmetry.png)
+
+Actual source-GUI figures from the same saved 2 nm Double BW [017] dispatch
+reference. All native saved samples and intensity scales are retained. This
+small numerical profile illustrates controls, not production convergence.
+
+![0.6.0 raw paired angular differences](images/gui/v060/angular_raw.png)
+
+![0.6.0 total paired angular Asymmetry](images/gui/v060/angular_asymmetry.png)
+
+Actual saved 9x9-grid L3 point-pair maps; block structure reflects the original
+grid, without interpolation. Magnetic and nonmagnetic raw panels share a scale.
+The total percentage panel is a different observable. Physical target (200)
+lies at the edge of this saved field of view; it is not relocated.
+
 ## Read virtual-detector EELS and post-edge correction
 
-**Virtual Detector EELS** offers Full spectrum, L3 zoom, L2 zoom and the
-available BW/MS/overlay choices. Legend picking toggles individual curves.
-The default has two panels: original +M detector A/B EELS on one arbitrary-unit
-scale above, and signed Magnetic/Nonmagnetic components below. Its
-**Raw EMCD (a.u.) / Relative EMCD (%)** selector changes presentation only.
-Relative components share N_A+N_B; neither detector nor component is
-independently peak-normalized. The separate PRB readout uses
-100*(I_A_plus-I_B_plus)/(I_A_plus+I_B_plus). Its denominator differs from
-the component denominator when M_A+M_B is nonzero, even if D_nonmag=0.
-Expand **Advanced Diagnostics** for reversal spectra, post-edge correction,
-processed/residual signals and optional legacy peak normalization.
-Selected two-energy results remain points; a calculated partial native-range
-grid is labelled as a subset. Full spectra evaluate the actual tensor and
-outgoing propagation at every saved energy, not a fitted two-point shape.
+**Virtual Detector EELS** offers Full spectrum, L3 zoom, L2 zoom and
+BW/MS/overlay choices. The primary Raw / EMCD Asymmetry presentation follows
+[the definitions above](#signal-definitions-in-060). Saved two-energy results
+remain points; partial native coverage is labelled a subset. No continuous
+spectrum is invented from selected-energy results.
 
 For detector J=A or B:
 
@@ -352,24 +434,24 @@ whereas changing a **display peak window** only reprocesses saved arrays.
 Actual accepted GUI capture of a genuine saved full-energy Double BW result.
 It preserves native energies and the raw detector intensity scale.
 
-![Current raw magnetic and nonmagnetic components](images/gui/beta_rc/double_both_raw.png)
+![Historical 0.4.5 raw magnetic and nonmagnetic components](images/gui/beta_rc/double_both_raw.png)
 
-![Current relative magnetic and nonmagnetic components](images/gui/beta_rc/double_both_relative.png)
+![Historical 0.4.5 relative magnetic and nonmagnetic components](images/gui/beta_rc/double_both_relative.png)
 
-These actual Beta BW/MS Double captures use the same small dispatch-test
+These historical 0.4.5 Beta BW/MS Double captures use the same small dispatch-test
 profile in Raw and Relative modes. They illustrate signed component definitions,
 not production BW/MS convergence. The shared raw EELS scale above is unchanged;
 the separate PRB readout is not the lower-panel component normalization.
 
-![Current Results Browser after cancellation and restart](images/gui/beta_rc/cancellation_restart.png)
+![Historical 0.4.5 Results Browser after cancellation and restart](images/gui/beta_rc/cancellation_restart.png)
 
 Actual cancellation-fixed frozen GUI after successful restart. Cancelled work
 did not add incomplete browser entries; only completed results are registered.
 
 ## Interpret percentages
 
-The primary spectral selector offers Raw and Relative with the definitions
-above; PRB remains a separate scalar benchmark. The following **Intensity
+The primary spectral selector offers Raw and total EMCD Asymmetry with the
+definitions above; the scalar group uses that same total definition. The following **Intensity
 Display** modes remain available in **Advanced Diagnostics** and saved-run
 comparisons. They are optional legacy displays, not additional primary modes:
 
@@ -523,7 +605,7 @@ different mistilts is a physical-condition comparison, not a solver error.
 - **Export completed EMCD / EELS...** writes one checksummed project bundle,
   per-method CSV and PNG/SVG spectral/map figures. CSV/NPZ retain all four
   reversal spectra, raw differences, common denominators, magnetic/nonmagnetic
-  percentages and PRB values in either Raw or Relative display mode.
+  percentages and PRB values in either primary display mode (legacy component fields retain their definitions).
   No independent detector peak normalization or redundant default difference
   figure is added. Advanced derived exports retain their explicit definitions.
 

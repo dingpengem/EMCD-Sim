@@ -305,7 +305,7 @@ def _export_single(result,path):
     fig=Figure(figsize=(11,9),layout='constrained');draw_eels(fig,result);fig.savefig(root/'virtual_detector_eels.png',dpi=150)
 
 
-def export_result(result,path,*,component_mode='raw',advanced=False):
+def export_result(result,path,*,component_mode='raw',advanced=False,map_signal_mode=None):
     """One numerical bundle; raw and percentage spectra survive every display."""
     if advanced:
         _export_single(result,path)
@@ -317,21 +317,31 @@ def export_result(result,path,*,component_mode='raw',advanced=False):
     from .project_io import save_project
     from .results import draw_eels,draw_maps
     from .prb_benchmark import benchmark_spectra
-    from .component_display import MODES
-    if component_mode not in MODES:raise ValueError('Unknown EMCD display mode')
+    from .component_display import MODES,DEFINITIONS,exported_spectra,exported_angular
+    if component_mode not in (*MODES,'relative'):raise ValueError('Unknown EMCD display mode')
+    map_signal_mode=map_signal_mode or (component_mode if component_mode in MODES else 'raw')
+    if map_signal_mode not in MODES:raise ValueError('Unknown angular signal display')
     root=save_project(result,path)
+    derived={};unavailable={}
     methods=result.get('methods',{result.get('method','bloch'):result})
     for name,r in methods.items():
         spectra=dict(r['spectra'],**benchmark_spectra(r['spectra'])[0]);keys=list(spectra)
         with (root/(name+'_spectra.csv')).open('w',newline='',encoding='utf-8') as f:
             writer=csv.writer(f);writer.writerow(['solver','channeling_model']+keys)
             writer.writerows((name,r['config'].channeling_model,*values) for values in zip(*(spectra[k] for k in keys)))
+        explicit=exported_spectra(r['spectra']);derived.update({name+'__'+k:v for k,v in explicit.items()})
+        with (root/(name+'_signal_display.csv')).open('w',newline='',encoding='utf-8') as f:
+            writer=csv.writer(f);writer.writerow(list(explicit));writer.writerows(zip(*explicit.values()))
         prefix='' if name==result.get('method','bloch') else name+'_'
         fig=Figure(figsize=(10,7),layout='constrained');draw_eels(fig,r,component_mode=component_mode)
         for ext in ('png','svg'):fig.savefig(root/(prefix+'virtual_detector_eels.'+ext),dpi=170)
         for edge in r['maps']:
-            fig=Figure(figsize=(11,5),layout='constrained');draw_maps(fig,r,edge)
+            fig=Figure(figsize=(11,5),layout='constrained');draw_maps(fig,r,edge,signal_mode=map_signal_mode)
+            try:derived.update({name+'__'+edge+'__'+k:v for k,v in exported_angular(r,edge).items()})
+            except (ValueError,KeyError) as exc:unavailable[name+'__'+edge]=str(exc)
             for ext in ('png','svg'):fig.savefig(root/(prefix+edge+'_angular_maps.'+ext),dpi=170)
-    (root/'figure_display.json').write_text(json.dumps(dict(component_mode=component_mode,
+    derived['definitions_json']=np.array(json.dumps(DEFINITIONS))
+    np.savez_compressed(root/'signal_display.npz',**derived)
+    (root/'figure_display.json').write_text(json.dumps(dict(component_mode=component_mode,map_signal_mode=map_signal_mode,definitions=DEFINITIONS,unavailable_paired_maps=unavailable,
         note='Display only. CSV/NPZ retain signed raw components, both relative percentages, raw reversal spectra and denominators.',
         prb='Separate raw +M difference/sum; no factor two or post-edge correction'),indent=2)+'\n',encoding='utf-8')
