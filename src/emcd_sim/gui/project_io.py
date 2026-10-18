@@ -156,6 +156,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
         _json(temp/'comparison_metadata.json',dict(method_labels=list(methods),primary_method=result.get('method','bloch'),methods={name:r['metadata'] for name,r in methods.items()},diagnostics=result.get('comparison',{})))
         _json(temp/'input_parameters.json',dict(settings=asdict(result['settings']),mdff=asdict(result['config']),structure_snapshot=snapshot))
         _json(temp/'structure.json',snapshot)
+        if result.get('display_state') is not None:_json(temp/'display_state.json',result['display_state'])
         from .emcd_forward import metrics
         _json(temp/'validity.json',{name:dict(postedge_valid=r['metadata']['alpha'] is not None,
             paired_map_valid={edge:'D_raw' in m for edge,m in r['maps'].items()},available_fields={edge:list(m) for edge,m in r['maps'].items()},
@@ -163,7 +164,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
         if snapshot:
             from ase.io import write
             write(temp/'structure.cif',restore_structure(snapshot).atoms,format='cif')
-        managed=set(ARRAY_FILES)|{'project.json','metadata.json','comparison_metadata.json','input_parameters.json','structure.json','structure.cif','validity.json'}
+        managed=set(ARRAY_FILES)|{'project.json','metadata.json','comparison_metadata.json','input_parameters.json','structure.json','structure.cif','validity.json','display_state.json'}
         if root.exists():
             for child in root.iterdir():
                 if child.name in managed:continue
@@ -292,5 +293,6 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     warnings=list(manifest.get('limitations',[])) if manifest else ['Legacy read-only import: no integrity manifest; only available metadata retained.']
     if not snapshot:warnings.append('Missing numeric crystal snapshot: full reproducibility and Use These Settings/rerun are unavailable.')
     result.update(project_path=str(root),project_manifest=manifest,project_warnings=warnings,structure_snapshot=snapshot,read_only_legacy=manifest is None)
+    if manifest and 'display_state.json' in manifest['files']:result['display_state']=json.loads((root/'display_state.json').read_text(encoding='utf-8'))
     check('Saved results ready; no physical recalculation')
     return result

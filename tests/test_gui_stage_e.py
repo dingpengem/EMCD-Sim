@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from uuid import uuid4
 from unittest.mock import patch
 from emcd_sim.gui import runtime
 
@@ -14,12 +15,12 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(runtime.reference_source().name, 'Ni_fm.xmcd')
 
     def test_frozen_resources_and_no_git(self):
-        with tempfile.TemporaryDirectory() as folder:
-            expected=dict(commit='fixed-build',implementation_sha256={},build_utc='2026-10-16')
-            (Path(folder)/'build_info.json').write_text(json.dumps(expected))
-            with patch.object(runtime.sys,'frozen',True,create=True), patch.object(runtime.sys,'_MEIPASS',folder,create=True), patch.object(runtime.subprocess,'check_output',side_effect=AssertionError('runtime Git')):
-                self.assertEqual(runtime.build_info(),expected)
-                self.assertEqual(runtime.reference_source(),Path(folder)/'data/wien2k_ni/Ni_fm.xmcd')
+        folder=Path('outputs')/('runtime_resources_'+uuid4().hex);folder.mkdir(parents=True)
+        expected=dict(commit='fixed-build',implementation_sha256={},build_utc='2026-10-16')
+        (folder/'build_info.json').write_text(json.dumps(expected))
+        with patch.object(runtime.sys,'frozen',True,create=True), patch.object(runtime.sys,'_MEIPASS',str(folder),create=True), patch.object(runtime.subprocess,'check_output',side_effect=AssertionError('runtime Git')):
+            self.assertEqual(runtime.build_info(),expected)
+            self.assertEqual(runtime.reference_source(),folder/'data/wien2k_ni/Ni_fm.xmcd')
 
     def test_missing_git(self):
         with patch.object(runtime.subprocess,'check_output',side_effect=FileNotFoundError):

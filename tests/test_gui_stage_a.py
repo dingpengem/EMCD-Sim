@@ -88,8 +88,8 @@ class InteractionTests(unittest.TestCase):
 
     def test_cancel_does_not_register_completed_physics(self):
         entered=threading.Event();release=threading.Event();w=self.window
-        def slow_preview(structure,settings):
-            entered.set();release.wait(5);return preview(structure,settings)
+        def slow_preview(structure,settings,**kwargs):
+            entered.set();release.wait(5);return preview(structure,settings,**kwargs)
         with patch('emcd_sim.gui.app.preview',slow_preview):
             w.start_preview();self.assertTrue(entered.wait(5));self.assertFalse(w.inputs.isEnabled())
             w.cancel();release.set();self.assertTrue(w.worker.wait(5000));self.app.processEvents()

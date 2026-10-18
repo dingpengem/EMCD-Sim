@@ -295,9 +295,16 @@ def main():
     parser.add_argument('--stage-f-acceptance',type=Path,help='Validate normalized visualization from saved projects; no solvers')
     parser.add_argument('--stage-f-project',type=Path)
     parser.add_argument('--stage-f-comparison',type=Path)
+    parser.add_argument('--beta-acceptance',type=Path,help='Run sequential Beta RC widget/worker acceptance in a new folder')
+    parser.add_argument('--beta-source',type=Path,help='Explicit external scientific source for matched acceptance')
+    parser.add_argument('--beta-production',type=Path,help='Existing full-spectrum reference folders; never bundled')
     args=parser.parse_args()
     from .runtime import configure_logging, LABEL, build_info
     configure_logging()
+    if args.beta_acceptance:
+        if not args.beta_source or not args.beta_production:parser.error('Beta acceptance requires source and saved production paths')
+        from .beta_acceptance import run
+        return run(args.beta_acceptance,args.beta_source,args.beta_production)
     if args.stage_f_acceptance:
         if not args.stage_f_project or not args.stage_f_comparison:parser.error('Stage F needs both saved project folders')
         from .stage_f_acceptance import run

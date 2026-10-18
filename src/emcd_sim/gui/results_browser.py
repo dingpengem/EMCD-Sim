@@ -159,6 +159,17 @@ class ProjectWorkspace:
         for i,view in ((1,self.maps_view),(2,self.eels_view),(5,self.diffraction_view),(6,self.overview_view)):
             self.tabs.setTabEnabled(i,(i!=6 or len(result['methods'])==2) and (i!=1 or bool(result['maps'])));view.set_result(result)
         self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale()
+        state=result.get('display_state',{})
+        if state:
+            view=self.eels_view;prb=view.prb_benchmark
+            for widget,value in ((view.component_mode,state.get('component_mode','raw')),(view.method,state.get('method',result['method'])),(prb.selection,state.get('selection','selected'))):
+                index=widget.findData(value)
+                if index>=0:
+                    with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
+            with QtCore.QSignalBlocker(view.choice):view.choice.setCurrentText(state.get('zoom',view.choice.itemText(0)))
+            with QtCore.QSignalBlocker(prb.energy):prb.energy.setValue(state.get('energy_ev',result['config'].l3))
+            with QtCore.QSignalBlocker(prb.fixed):prb.fixed.setChecked(bool(state.get('locked',False)))
+            view.advanced.setChecked(bool(state.get('advanced',False)));view.redraw()
         sources=source_status(result);warnings=result.get('project_warnings',[])
         self.statusBar().showMessage('Viewing completed saved data; no recalculation. '+(' '.join(warnings))+' '+('Source unavailable/mismatched for rerun.' if any(not s['verified'] for s in sources.values()) else ''))
     def io_operation(self,operation,completed):
@@ -192,6 +203,9 @@ class ProjectWorkspace:
     def save_to_path(self,path,replace_existing=False):
         if self.emcd_result is None:self.error('Select a completed result first.');return
         r=self.emcd_result;origin_record=self.selected_record
+        view=self.eels_view;prb=view.prb_benchmark
+        r['display_state']=dict(component_mode=view.component_mode.currentData(),method=view.method.currentData(),zoom=view.choice.currentText(),
+            selection=prb.selection.currentData(),energy_ev=prb.energy.value(),locked=prb.fixed.isChecked(),advanced=view.advanced.isChecked())
         def saved(root):
             # Display registration identity is separate from the hashed data.
             old=origin_record

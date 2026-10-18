@@ -91,9 +91,9 @@ class PropagationTests(unittest.TestCase):
         for f,name in zip(figs,('bloch','fft-multislice','difference')):draw_maps(f,r,'L3',name,field='I_mag')
         self.assertEqual(figs[0].axes[0].images[0].get_clim(),figs[1].axes[0].images[0].get_clim())
         np.testing.assert_array_equal(figs[2].axes[0].images[0].get_array(),r['methods']['bloch']['maps']['L3']['I_mag']-r['methods']['fft-multislice']['maps']['L3']['I_mag'])
-        draw_eels(figs[0],r,method='overlay');self.assertEqual(len([x for x in figs[0].axes[0].lines if 'A +M' in x.get_label()]),2)
+        draw_eels(figs[0],r,method='overlay');self.assertEqual(len([x for x in figs[0].axes[0].lines if 'Detector A' in x.get_label()]),2)
         draw_diffraction(figs[1],r,'fft-multislice',True)
-        root=Path('outputs')/('gui_c_export_'+uuid.uuid4().hex);export_result(r,root)
+        root=Path('outputs')/('gui_c_export_'+uuid.uuid4().hex);export_result(r,root,advanced=True)
         for name in ('angular_maps','virtual_detector_eels','diffraction_pattern'):
             with np.load(root/(name+'.npz'),allow_pickle=False) as f:
                 self.assertEqual(f['method_labels'].tolist(),['bloch','fft-multislice'])
@@ -116,6 +116,7 @@ class ZGUIStageCTests(unittest.TestCase):
         r=PropagationTests.result;w.emcd_result=r
         for view in (w.maps_view,w.eels_view,w.diffraction_view,w.overview_view):view.set_result(r)
         self.assertEqual(w.maps_view.method.count(),3);w.maps_view.method.setCurrentIndex(2);self.assertEqual(w.maps_view.method.currentData(),'difference')
+        self.assertEqual(w.eels_view.method.currentData(),'bloch');w.eels_view.method.setCurrentIndex(2)
         self.assertEqual(w.eels_view.method.currentData(),'overlay');w.diffraction_view.choice.setCurrentIndex(1)
         w.spin['grid'].setValue(17);w.zone.setText('0 0 1');w.refresh();self.assertFalse(w.emcd_button.isEnabled());self.assertIn('017',w.emcd_button.toolTip())
         w.propagation_box.setCurrentIndex(0);self.assertTrue(w.emcd_button.isEnabled())

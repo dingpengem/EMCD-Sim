@@ -144,3 +144,27 @@ def test_gui_toggle_keeps_results_and_legacy_diagnostics(result):
         assert w.settings().beam_cutoff==3.2 and w.settings().potential_cutoff==2.2
         assert 'g=1/d' in w.spin['beam'].toolTip() and 'ionization' in w.spin['potential'].toolTip()
     finally:w.close();app.processEvents()
+
+
+def test_project_restores_display_and_locked_energy_without_changing_arrays(result):
+    import time,json
+    from PySide6 import QtWidgets
+    from emcd_sim.gui.app import MainWindow
+    from emcd_sim.gui.project_io import load_project
+    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    root=Path('outputs')/('display_state_'+uuid4().hex);w=MainWindow(workspace=root/'workspace')
+    before={k:v.copy() for k,v in result['spectra'].items()}
+    try:
+        w.display_saved_result(result);view=w.eels_view;p=view.prb_benchmark
+        view.component_mode.setCurrentIndex(1);view.choice.setCurrentText('L2 zoom')
+        p.selection.setCurrentIndex(1);p.energy.setValue(result['config'].l2);p.fixed.setChecked(True)
+        w.save_to_path(root/'project');deadline=time.monotonic()+20
+        while w.busy and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
+        assert not w.busy and w.run_outcome=='completed'
+        loaded=load_project(root/'project');assert 'display_state.json' in loaded['project_manifest']['files']
+        view.component_mode.setCurrentIndex(0);p.fixed.setChecked(False)
+        with patch('emcd_sim.gui.emcd_forward.calculate',side_effect=AssertionError('Display must not calculate')):w.display_saved_result(loaded)
+        assert view.component_mode.currentData()=='relative' and view.choice.currentText()=='L2 zoom'
+        assert p.fixed.isChecked() and p.energy.value()==result['config'].l2
+        for k,v in before.items():np.testing.assert_array_equal(v,loaded['spectra'][k])
+    finally:w.close();app.processEvents()
