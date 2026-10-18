@@ -3,26 +3,29 @@
 This is a short reading guide, not a promise of total calculation time.
 For installation details see [Install on Windows](INSTALL_WINDOWS.md); for
 interpretation and other workflows see the [User Manual](USER_GUIDE.md).
-**0.6.0 source development (unpublished):** this guide describes the new
-Raw / EMCD Asymmetry controls. Double Channeling was already present in 0.4.5;
-0.6.0 consolidates it and improves interpretation. The current Windows ZIP
-remains 0.4.5; use the [version-pinned guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/QUICK_START.md)
-for its older controls. No 0.6.0 executable has been built.
+**0.6.0 Windows research Beta - Double-Channeling EMCD Simulation.**
+The [release acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) identifies the
+build, checksums and tested scope. Double Channeling already existed in 0.4.5;
+0.6.0 consolidates its framework and improves Raw / EMCD Asymmetry interpretation.
+For the preserved old executable use the
+[0.4.5 manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/USER_GUIDE.md).
 
 
 
-## 1. Published Windows download / development source
 
-Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1) and download
-`EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`. Verify the checksum in
+
+## 1. Extract and open
+
+Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.0-beta.1) and download
+`EMCD-Sim-0.6.0-Beta-Windows.zip`. Verify the checksum in
 the installation guide and **Extract All**. In the extracted `EMCD-Sim`
 folder, double-click `EMCD-Sim.exe`. Keep `_internal` beside it. No Python,
 Conda, VS Code or WIEN2k installation is required. Initialization can take
 tens of seconds. Do not run inside the ZIP.
 
-For 0.6.0 development, launch `python -m emcd_sim.gui` from your installed
-source environment (`python -m pip install -e ".[gui]"`). The extraction
-instructions above apply only to the published 0.4.5 binary.
+Developers may instead launch `python -m emcd_sim.gui` from an installed source
+environment (`python -m pip install -e ".[gui]"`). The portable ZIP needs no
+Python environment.
 
 ## 2. Preview the default Ni reference
 
@@ -39,9 +42,9 @@ instructions above apply only to the published 0.4.5 binary.
    They differ at this exact-Bragg tilt. The Thales circle has (000)–(200)
    as its diameter. Use **Restore Thales A/B** for the physical apertures.
 
-![Default Ni diffraction and controls](images/gui/beta_rc/startup_150pct.png)
+![Default Ni diffraction and controls](images/gui/v060_release/startup.png)
 
-Actual accepted Beta Windows capture at native 150% scaling, showing the
+Actual accepted 0.6.0 frozen Windows capture at native 150% scaling, showing the
 indexed [017] geometry and physical detector outlines. Labels in **Calculation Information**
 distinguish current inputs from the completed-run snapshot.
 
@@ -97,16 +100,17 @@ distinguish current inputs from the completed-run snapshot.
   model-specific calculated percentages, not expected results for every GUI
   default. See the [full-spectrum report](DOUBLE_CHANNELING_FULL_SPECTRA.md).
 
-![Current Double BW/MS relative components](images/gui/beta_rc/double_both_relative.png)
+![0.6.0 total EMCD Asymmetry display](images/gui/v060/eels_asymmetry.png)
 
-Historical 0.4.5 accepted Beta BW/MS Double comparison at a manageable dispatch-test
-profile, not a production convergence benchmark. The lower panel uses the
-common nonmagnetic sum for both signed components; it is not peak-normalized.
-Post-edge-corrected A−B is **not automatically intrinsic magnetic EMCD**.
+Actual 0.6.0 figure from the saved small Double BW [017] dispatch profile.
+The top spectra retain their shared raw scale; the lower panel is one total
+A/B asymmetry curve, not the Advanced magnetic-only component. This is an
+interface example, not a production convergence benchmark. Corrected A-B is
+not automatically intrinsic magnetic EMCD.
 
-For the current 0.6.0 figures and exact definitions see the
-[signal guide](USER_GUIDE.md#signal-definitions-in-060). Use **Maximize / restore
-results** and the plot scrollbars when the result pane is narrow at 150% scaling.
+See the [signal guide](USER_GUIDE.md#signal-definitions-in-060) for exact
+definitions. Use **Maximize / restore results** and the plot scrollbars in a
+narrow pane at 150% scaling.
 
 ## 5. Save and reopen
 

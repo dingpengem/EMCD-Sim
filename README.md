@@ -7,81 +7,59 @@ models and virtual-detector EELS/EMCD analysis.
 **Start here:** [Windows installation](docs/INSTALL_WINDOWS.md) ·
 [Quick Start](docs/QUICK_START.md) · [Complete User Manual](docs/USER_GUIDE.md) ·
 [GUI technical reference](docs/EMCD_GUI.md) ·
-[Beta release notes](docs/RELEASE_0_4_5_BETA.md) ·
+[Beta release notes](docs/RELEASE_0_6_0_BETA.md) ·
 [Scientific limitations](#known-limitations).
 
-## 0.6.0 development: Double-Channeling EMCD Simulation
+## EMCD-Sim 0.6.0 Beta - Double-Channeling EMCD Simulation
 
-**Unpublished source development; planned prerelease `v0.6.0-beta.1`.**
-This milestone consolidates the genuine Double-Channeling framework already
-shipped in **0.4.5-beta.1** and refines scientific interpretation of its
-full-energy EELS/EMCD. It does not introduce Double Channeling for the first
-time. Single is entrance-only; Double includes incoming elastic propagation,
-depth-distributed ionization and reduced-energy outgoing propagation, with
-independent BW and FFT multislice implementations and complex MDFF coherence.
-The physical solvers and numerical settings are unchanged.
+This Windows research prerelease consolidates the genuine Double-Channeling
+framework already shipped in **0.4.5-beta.1**. It improves full-energy Ni
+EELS/EMCD analysis and interpretation; it does not introduce Double Channeling
+for the first time or change the physical solvers.
 
-Both primary views now offer **Signal Display: Raw (a.u.) / EMCD Asymmetry (%)**,
-defaulting to Raw. Raw retains signed magnetic and nonmagnetic differences;
-EMCD Asymmetry shows one total +M A/B difference-over-sum signal. Magnetic-only
-and nonmagnetic relative components remain in Advanced Diagnostics. See the
-[signal definitions](docs/USER_GUIDE.md#signal-definitions-in-060) and
-[focused validation](docs/EMCD_V060_VALIDATION.md).
+[Windows Beta v0.6.0-beta.1](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.0-beta.1) -
+[Download portable ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.6.0-beta.1/EMCD-Sim-0.6.0-Beta-Windows.zip) -
+[Acceptance and provenance](docs/WINDOWS_V060_BETA_ACCEPTANCE.md) -
+[Release notes](docs/RELEASE_0_6_0_BETA.md).
 
-The published Windows download below remains 0.4.5. There is no 0.6.0 binary,
-tag or release from this task. For that executable use the
-[0.4.5 Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/QUICK_START.md)
-and [0.4.5 manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/USER_GUIDE.md).
-The current source manuals describe 0.6.0; older screenshots are marked historical.
-
-## Windows Beta download
-
-**0.4.5 Beta · Windows x64 · portable ZIP · no separate Python or Conda required.**
-
-[Download Windows Beta v0.4.5-beta.1](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1)
-
-Download `EMCD-Sim-0.4.5-Beta-RC-Cancellation-Fix-Windows.zip`
-(**108,689,021 bytes; 103.65 MiB**). Verify its SHA256, use **Extract All**,
-keep `EMCD-Sim.exe` and `_internal` together, then launch `EMCD-Sim.exe`.
-This is a portable folder, not an MSI installer. The executable is unsigned;
-verify its origin and follow institutional security policies.
+**Windows x64; no separate Python, Conda or WIEN2k required.** Download
+`EMCD-Sim-0.6.0-Beta-Windows.zip`, verify SHA256, Extract All, keep
+`EMCD-Sim.exe` and `_internal` together and launch the EXE. It is unsigned;
+follow institutional security policies. This is a **Pre-release**, not stable
+production software. Independent clean-machine validation is **NOT TESTED**.
 
 ```text
-309438c4a049773a6e99948477c8d52051cd8f1de632a762c795656e6c5a2216
+6adda35a3b52ac35a06681a8cf5fca753aae2f03387feda57373c78ad8be2b5e
 ```
 
-The distributed binary is the cancellation-fixed, accepted build from
-`9937d3b820e4225fdf06b7f3ed33c7083d0f35ea`. Its release tag includes later
-documentation and merge history; the executable is reused unchanged.
-The distributed binary package metadata remains `0.4.5`; the GitHub release is a **Pre-release**.
+The build source is `c2caf4247a350e28a38b79cd402954d0c1ab2509`; final release
+documentation and merge history can be newer than the executable. The older
+[0.4.5 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.4.5-beta.1)
+and its assets remain intact.
 
-## Published 0.4.5 Windows application capabilities
+- Single (entrance-only) and Double Channeling, with independent BW, FFT
+  Multislice and matched Both comparisons. Double includes incoming elastic
+  propagation, depth-distributed ionization and post-loss outgoing propagation.
+- Full-energy Ni L3/L2 EELS, four reversal spectra, signed raw magnetic and
+  nonmagnetic differences, fractional physical-aperture integration.
+- **Signal Display: Raw (a.u.) / EMCD Asymmetry (%)** in EELS and angular maps,
+  default Raw. Total asymmetry is `100*(A_plus-B_plus)/(A_plus+B_plus)` and can
+  contain nonmagnetic diffraction imbalance. Advanced magnetic-only/even
+  asymmetries retain their common reversal-even denominator.
+- Actual mirrored angular samples, signed colors, invalid values retained as
+  NaN; physical 000/ZA/hkl/Thales/aperture overlays. Point-pair percentages are
+  not integrated detector EELS: integrate raw intensities before taking a ratio.
+- Advanced reversal, post-edge/residual, intrinsic/local and BW/MS diagnostics;
+  Browser, checksummed projects, PNG/SVG and compatible CSV/NPZ exports.
+- Configurable memory budgets and cooperative cancellation preserving the last
+  completed result. No automatic reduction of scientific settings.
 
-- Bloch-wave and independent FFT multislice propagation; **Single Channeling**,
-  **Double Channeling**, or matched **Both** solver comparisons.
-- Crystal/CIF loading, oriented diffraction and hkl indexing, zone-axis/Bragg
-  alignment, excitation errors, physical A/B apertures and Thales circles.
-- Energy-resolved Ni L3/L2 EELS, magnetization reversal, magnetic/nonmagnetic
-  components and angular maps with shared fractional-aperture integration.
-- **Raw EMCD (a.u.) / Relative EMCD (%)** display and a separate PRB-style
-  relative-dichroism benchmark. Display switching preserves raw arrays.
-- Project save/open, Results Browser, PNG/SVG figures and CSV/NPZ numerical
-  exports; configurable memory budgets and cooperative cancellation.
-- Interactive thickness/mistilt conditions and saved-condition comparisons;
-  the repository also supplies dedicated research scan scripts.
+![0.6.0 raw detector EELS and signed components](docs/images/gui/v060/eels_raw.png)
 
-Double Channeling includes incoming elastic propagation, ionization integrated
-through specimen depth, outgoing propagation at the post-loss electron energy
-and complex magnetic MDFF interference. It is an explicit scattering model,
-not an empirical correction factor. Single Channeling retains the legacy
-entrance-only outgoing approximation.
-
-![Actual accepted Double-Channeling full-energy GUI](docs/images/gui/beta_rc/full_double_spectrum_150pct.png)
-
-Historical 0.4.5 Windows capture of a saved genuine full-energy Double BW result at
-native 150% scaling. See the manual for Raw/Relative components and the
-[cancellation report](docs/DOUBLE_CHANNELING_CANCELLATION.md) for the final
-package's measured active-work tests. No results are fabricated for screenshots.
+Actual figure from the saved small Double BW [017] dispatch reference; original
+units/native samples are retained. This illustrates presentation, not production
+convergence. See the [manual](docs/USER_GUIDE.md#signal-definitions-in-060) for
+total versus magnetic-only asymmetry and [validation](docs/EMCD_V060_VALIDATION.md).
 
 ## Validated Ni examples
 
@@ -125,8 +103,8 @@ or experimental SNR.
   [001] (200) systematic-row calculations.
 - Testing used a Windows development host at native 150% scaling.
   **Independent clean-machine validation: NOT TESTED.** The executable is unsigned.
-  Windows source CI passes; unresolved Linux shutdown and macOS RAM-adapter
-  source-CI issues are recorded in the [release report](docs/RELEASE_0_4_5_BETA.md).
+  Non-Windows CI limitations (Linux native shutdown abort and macOS RAM adapter)
+  are recorded separately in the [0.6.0 acceptance report](docs/WINDOWS_V060_BETA_ACCEPTANCE.md).
 
 Read the [complete limitations](docs/USER_GUIDE.md#scientific-limitations-and-responsible-interpretation)
 and [release validation scope](docs/RELEASE_0_4_5_BETA.md) before research use.
@@ -160,7 +138,7 @@ Double-Channeling GUI. Their results and original assumptions are preserved.
 
 ## Historical oriented research: oriented Ni [017] EMCD / X-Y mistilt study (post-v0.4.5)
 
-The **`main` branch now includes the completed Ni [710] and Ni [017] oriented projected-IAM benchmarks and the 43-orientation Ni [017] high-mistilt X/Y survey**. Published package metadata remains **v0.4.5**. The current development source prepares **0.6.0**, without publishing a release.
+The **`main` branch now includes the completed Ni [710] and Ni [017] oriented projected-IAM benchmarks and the 43-orientation Ni [017] high-mistilt X/Y survey**. The original v0.4.5-era research record is retained below; the current Windows research Beta is **0.6.0**.
 
 **Start here: [Ni [017] case-study guide — native WIEN2k L3/L2 edge assignment, minor-zone / (200) exact Bragg, mistilt coordinates and which figures to inspect](docs/NI_017_CASE_STUDY_GUIDE.md).** Detailed numerical results: [Ni [017] high-mistilt technical report](docs/NI_017_HIGH_MISTILT_XY.md) and [Ni [017] oriented diffraction report](docs/NI_017_MINORZONE.md).
 
@@ -191,7 +169,7 @@ python -m emcd_sim.ni_017_high_mistilt_xy --scan all --plot-only
 
 Independent, modular **electron magnetic circular dichroism (EMCD)** simulation project, initially benchmarked on ferromagnetic **FCC Ni**. 
 
-> **Packaged release version: v0.4.5; current `main` includes subsequent [017] research-stage implementations, still not quantitative Ni EMCD.** The default elastic channel uses a **Ni scattering-factor-derived multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
+> **Historical v0.4.5-era note: packaged release version was v0.4.5; then-current `main` includes subsequent [017] research-stage implementations, still not quantitative Ni EMCD.** The default elastic channel uses a **Ni scattering-factor-derived multi-beam Bloch-wave propagator**. The **inelastic Ni L₂,₃ spectra and outgoing channeling are still qualitative/incomplete**; do not interpret this as a quantitatively validated EMCD calculation. See [physical elastic derivation](docs/PHYSICAL_ELASTIC.md) and [physics limitations](docs/PHYSICS.md).
 
 
 ## WIEN2k Ni XMCD-constrained effective MDFF (v0.4.5)

@@ -1,6 +1,7 @@
-# 0.6.0 development - Double-Channeling EMCD Simulation (unpublished)
+# v0.6.0-beta.1 - Double-Channeling EMCD Simulation
 
-Planned prerelease: `v0.6.0-beta.1`; no binary, tag or public release yet.
+Windows research prerelease; application/package version **0.6.0**.
+See [acceptance and provenance](WINDOWS_V060_BETA_ACCEPTANCE.md).
 Double Channeling already shipped in 0.4.5-beta.1. This milestone consolidates
 its incoming/depth-integrated/outgoing BW and FFT framework and full-energy
 EELS/EMCD interpretation within the existing model and convergence limits.
@@ -12,7 +13,8 @@ EELS/EMCD interpretation within the existing model and convergence limits.
   diagnostics in Advanced Diagnostics; explicit saved Relative migration.
 - Added descriptive CSV/NPZ sidecars while preserving original project arrays,
   PRB fields, provenance and original numerical definitions.
-- Prepared source/GUI/build version metadata 0.6.0 without packaging.
+- Added a fresh Windows x64 standalone build with source/frozen acceptance,
+  manifest, checksums and original-array comparison.
 - Focused hand-reference, GUI, geometry, export and compatibility validation:
   see [validation report](EMCD_V060_VALIDATION.md).
 - Physical solvers, MDFF, apertures, precision, memory and cancellation unchanged.

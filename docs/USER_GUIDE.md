@@ -1,11 +1,14 @@
 # EMCD-Sim Desktop User Manual
 
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
-**0.6.0 source development (unpublished):** this manual describes the new
-Raw / EMCD Asymmetry controls. Double Channeling was already present in 0.4.5;
-0.6.0 consolidates it and improves interpretation. The current Windows ZIP
-remains 0.4.5; use the [version-pinned manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/USER_GUIDE.md)
-for its older controls. No 0.6.0 executable has been built.
+**0.6.0 Windows research Beta - Double-Channeling EMCD Simulation.**
+The [release acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) identifies the
+build, checksums and tested scope. Double Channeling already existed in 0.4.5;
+0.6.0 consolidates its framework and improves Raw / EMCD Asymmetry interpretation.
+For the preserved old executable use the
+[0.4.5 manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/USER_GUIDE.md).
+
+
 
 ## Signal definitions in 0.6.0
 
@@ -94,9 +97,9 @@ provides a fully quantitative experimental metallic-Ni cross section.
 
 ## Find your way around
 
-![Actual Windows main interface](images/gui/beta_rc/startup_150pct.png)
+![Actual Windows main interface](images/gui/v060_release/startup.png)
 
-Actual accepted Beta capture at native 150% scaling, showing the current input
+Actual accepted 0.6.0 frozen capture at native 150% scaling, showing the current input
 and diffraction controls. Use this numbered reading order:
 
 1. **Left: Inputs.** Expand/collapse **A. Crystal Structure**, **B. Zone Axis

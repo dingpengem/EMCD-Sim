@@ -1,12 +1,15 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
-## 0.6.0 source development: Single and Double Channeling
+## 0.6.0 Windows Beta: Single and Double Channeling
 
-**0.6.0 source development (unpublished):** this guide describes the new
-Raw / EMCD Asymmetry controls. Double Channeling was already present in 0.4.5;
-0.6.0 consolidates it and improves interpretation. The current Windows ZIP
-remains 0.4.5; use the [version-pinned guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/QUICK_START.md)
-for its older controls. No 0.6.0 executable has been built.
+**0.6.0 Windows research Beta - Double-Channeling EMCD Simulation.**
+The [release acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) identifies the
+build, checksums and tested scope. Double Channeling already existed in 0.4.5;
+0.6.0 consolidates its framework and improves Raw / EMCD Asymmetry interpretation.
+For the preserved old executable use the
+[0.4.5 manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/USER_GUIDE.md).
+
+
 
 The source GUI provides **Channeling Model** alongside **Propagation
 Method**. Single Channeling retains the existing entrance-only approximation.
@@ -60,8 +63,17 @@ The [final 200 kV benchmark](DOUBLE_CHANNELING_FINAL_200KV.md) documents the
 validated profile, native energy convention, component definitions and limits
 of representative numerical convergence. The milestone screenshots and
 historical workflows below describe their original versions; they are not the
-current release acceptance. Use the [Beta release notes](RELEASE_0_4_5_BETA.md)
-for the accepted cancellation-fixed executable and source provenance.
+current release acceptance. Use the [0.6.0 release notes](RELEASE_0_6_0_BETA.md)
+and [Windows acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) for the current
+executable and provenance. The preserved [0.4.5 notes](RELEASE_0_4_5_BETA.md)
+identify the earlier cancellation-fixed build.
+
+![0.6.0 extracted Windows angular Asymmetry display](images/gui/v060_release/double_both_maps_asymmetry.png)
+
+Actual 150% frozen capture of the small Ni [017] Double dispatch profile.
+The map is a total mirrored-point asymmetry, not finite-aperture EELS or
+purely magnetic response. Use scrollbars for full axes in a limited-height
+window; complete exported figures and equations are in the User Manual.
 
 ### Primary spectra and exports
 
