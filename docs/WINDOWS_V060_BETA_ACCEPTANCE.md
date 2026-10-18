@@ -190,3 +190,41 @@ detectability proxy are not experimental counts or SNR. Corrected contrast is
 not intrinsic magnetic recovery. This release adds no global convergence or
 thickness/voltage optimum claim. The executable is unsigned; independent
 clean-machine and non-Windows acceptance remain outside the certified scope.
+
+## Post-publication verification (completed)
+
+**READY AND PUBLISHED.** Public GitHub release ID `416771569` is
+marked Pre-release (`prerelease=true`, `draft=false`). The annotated
+`v0.6.0-beta.1` tag targets the intended merge commit
+`10065f2c048c631fe66479ff8795ed2fae15f9eb`; pushed main includes that merge.
+Release acceptance documentation commit: `d23ded6`; original signal
+implementation: `94ea025455a18ff77f0a54e6dcf596ce0803a6cc`.
+
+The actual public ZIP was downloaded in full: **108,697,224 bytes**. Its
+SHA256 is identical to the local validated candidate:
+
+```text
+6adda35a3b52ac35a06681a8cf5fca753aae2f03387feda57373c78ad8be2b5e
+```
+
+All four public asset sizes/digests match their local files. The public
+README, installation filename, Raw/Asymmetry manual and all six current
+frozen screenshot paths were checked at the release commit. The old 0.4.5
+release ID, asset IDs/sizes/digests and annotated tag target are unchanged.
+No user-owned Ni companion data was added to git or the release archive.
+Local machine-readable evidence: `outputs/v060_release/publication_verification.json`.
+
+Actual release-commit [CI run 39176489525](https://github.com/dingpengem/EMCD-Sim/actions/runs/39176489525):
+
+| Platform | Result | Details |
+| --- | --- | --- |
+| Windows / Python 3.11 | PASS | 353 passed, 49 skipped, 30 warnings; CLI smoke/output checks completed |
+| Linux / Python 3.11 | FAIL | 353 passed, 49 skipped, then native `bool_dealloc` interpreter-shutdown abort, exit 134 |
+| macOS / Python 3.11 | FAIL | 47 failed, 263 passed, 49 skipped, 43 errors; unavailable `/proc/meminfo` RAM adapter and cascading fixture failures |
+
+The overall cross-platform workflow is **failed**, not green. Those known
+portability failures are explicitly outside this Windows-only Beta's certified
+scope; they were not relaxed, masked or represented as successful. Windows
+CI and the separate 107 focused local acceptance tests overlap in coverage
+and are not additive unique test counts. A later documentation-only main
+commit records these observations without changing the tagged binary/source.
