@@ -1,5 +1,15 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
+## Development audit: numerical-control dependencies
+
+The post-v0.6.1 source UI separates solver controls in Panel E from shared settings in Panel F. This is **not included in the published v0.6.1-beta.1 ZIP** and does not change its version, physics or assets. See the [parameter table and depth treatment](USER_GUIDE.md#development-source-shared-and-solver-specific-settings) for actual control labels and classifications.
+
+The audited flow is `app.py` / `stage_b.py` → `Settings` / `ForwardSettings` → `geometry.elastic_model` / `propagation.propagate` → coherence and `channeling.contract` / shared tensor contraction → `emcd_forward` result metadata and `project_io` configuration serialization. Beam cutoff defines `geometry`'s ordered common hkl basis. The same basis is passed to BW and the MS projection/MDFF response, while FFT harmonics may extend beyond it. Potential cutoff and B feed both elastic models. FFT grid/slice step feed MS only; depth, energy, angular grid and fractional-aperture sampling are shared with the path-specific meaning documented in the manual. Post-edge controls operate on derived spectra; budget controls admission and the estimate is diagnostic.
+
+`F. Shared Calculation Settings` has Elastic Potential and Beam Support, Inelastic and Angular Sampling, and Computational Resources groups. MS-only controls hide/disable in BW and reappear with their stored values in MS/Both. No BW-only parameters were invented. Solver switches also refresh the existing memory assessment; they do not reduce settings, change fallback semantics or rewrite saved projects.
+
+Focused configuration tests compare complete default/custom `Settings` and `ForwardSettings` against the exact released GUI, exercise all solver transitions, visibility, resources, invalid MS geometry, serialization and restored saved data, with propagation forbidden. Solver, MDFF, potential, memory-estimator and project-serialization implementations remain unchanged. The focused configuration/preset/memory run passed **23 tests** (0 failures/skips, 20.59 s). No scientific scan or Windows rebuild is part of this UI update.
+
 ## v0.6.1-beta.1 Windows Beta
 
 Use the [current User Manual](USER_GUIDE.md), [installation guide](INSTALL_WINDOWS.md), [release notes](RELEASE_NOTES_0_6_1_BETA_1.md) and [acceptance report](V061_BETA_ACCEPTANCE.md). Full-field maps use actual saved mirrored reciprocal points with nearest-sample rendering and actual grid/spacing metadata. **Angular Map Resolution** provides Quick Preview 33, Standard 97 (default), High 193 and odd Custom grids. **Estimated process memory budget** defaults to 2048 MiB, with 512/1024/2048/4096/8192 choices and available-RAM checks. High is not guaranteed to fit 2048 MiB. FFT grid and aperture boundary subpixels are independent of the shared angular/EELS grid. New Project resets 97/2048; explicit saved settings are preserved.

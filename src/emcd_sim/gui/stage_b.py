@@ -76,16 +76,44 @@ class StageB:
         self.propagation_box=QtWidgets.QComboBox();self.propagation_box.addItems(['Bloch-wave','FFT Multislice','Both (BW / MS comparison)']);self.form.addRow('Propagation Method',self.propagation_box)
         self.propagation_box.currentIndexChanged.connect(self.emcd_stale)
         group=QtWidgets.QGroupBox('Multislice numerical settings');group.setCheckable(True);group.setChecked(False)
+        self.ms_settings_group=group
         body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(group);outer.addWidget(body);self.form.addRow(group);body.setVisible(False);group.toggled.connect(body.setVisible)
         saved=self.form;self.form=QtWidgets.QFormLayout(body)
         box=QtWidgets.QSpinBox();box.setRange(12,128);box.setSingleStep(2);box.setValue(32);self.spin['fft_grid']=box;self.form.addRow('FFT grid (even)',box);box.valueChanged.connect(self.emcd_stale)
         self.number('slice_step','Max slice step (nm)',.04,.001,1,self.emcd_stale)
+        box.setToolTip('MS-only propagation mesh and reciprocal harmonic support; not the angular/detector q grid. Must contain the exact common retained beam basis.')
+        self.spin['slice_step'].setToolTip('MS-only maximum split-step distance between requested depth planes. Depth integration nodes and angular sampling remain separate controls.')
         label=QtWidgets.QLabel('Verified FFT: Ni [017], or explicit [001] (200) systematic row. Incoming/outgoing beam support is matched in Double Channeling.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
+        self.solver_note=QtWidgets.QLabel();self.solver_note.setWordWrap(True);self.form.addRow(self.solver_note)
+        self.sync_solver_controls()
+
+    def sync_solver_controls(self):
+        """Presentation only: retain every existing numerical value."""
+        ms=self.propagation_box.currentIndex()!=0
+        self.ms_settings_group.setVisible(ms);self.ms_settings_group.setEnabled(ms)
+        self.solver_note.setText('FFT controls apply to MS propagation. Common beam support, potential and depth sampling are in Panel F.' if ms else
+            'No additional BW-only numerical controls. Common beam support, potential and depth sampling are in Panel F; MS settings are retained while hidden.')
+
+    def shared_group(self,title):
+        group=QtWidgets.QGroupBox(title);self.form.addRow(group)
+        self.form=QtWidgets.QFormLayout(group)
+        return group
+
+    def numerical_controls(self):
+        shared_form=self.form
+        self.shared_elastic_group=self.shared_group('Elastic Potential and Beam Support')
+        self.number('beam','Beam / MDFF basis cutoff (Å⁻¹)',3.2,.2,6.5,self.refresh)
+        self.spin['beam'].setToolTip('Shared retained basis: BW uses these elastic beams; MS uses the same ordered beams for diffraction/MDFF contraction. Additional FFT harmonics may participate in MS propagation. This is not a BW-only cutoff.')
+        self.number('potential','Potential Fourier cutoff\n|g−g′|max (Å⁻¹)',2.2,.1,6.5,self.refresh)
+        self.spin['potential'].setToolTip('Shared elastic potential Fourier support for BW and MS: U_(g−g′), |g−g′| ≤ cutoff. Distinct from beam radius, ionization momentum transfer and detector extent. Crystallographic g=1/d; no extra 2π.')
+        self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
+        self.spin['b'].setToolTip('Shared IAM elastic-potential damping for both BW and MS; not a solver-specific sampling control.')
         self.row_projection=QtWidgets.QCheckBox('Explicit [001] (200) systematic-row approximation');self.form.addRow(self.row_projection)
         self.row_projection.setToolTip('Only for [001]. Excludes off-row ZOLZ beams and changes the projected elastic model. Exact (200) Bragg alignment does not establish physical two-beam isolation. [017] retains its full finite 2D ZOLZ basis.')
         self.row_projection.toggled.connect(self.refresh)
 
-    def numerical_controls(self):
+        self.form=shared_form
+        self.shared_sampling_group=self.shared_group('Inelastic and Angular Sampling')
         self.angular_resolution=QtWidgets.QComboBox()
         for title,n in [('Quick Preview - 33x33',33),('Standard - 97x97',97),('High Resolution - 193x193',193),('Custom',None)]:
             self.angular_resolution.addItem(title,n)
@@ -94,23 +122,34 @@ class StageB:
         for key,title,value,lo,hi in [('energy','Energy sampling points',241,9,501),('grid','Angular / detector grid points (odd)',97,9,193),('depth','Depth integration nodes',64,2,1025),('subpixels','Aperture boundary subpixels',64,4,256)]:
             box=QtWidgets.QSpinBox();box.setRange(lo,hi);box.setValue(value);self.spin[key]=box;self.form.addRow(title,box);box.valueChanged.connect(self.emcd_stale)
         self.spin['grid'].setSingleStep(2)
+        self.spin['grid'].setToolTip('Actual reciprocal-space q samples shared by angular maps and detector-EELS quadrature. Not the MS FFT propagation mesh; saved arrays are never resampled on display.')
+        self.spin['energy'].setToolTip('Full-spectrum energy sampling, with selected native features included. Selected-edge mode evaluates its locked L3/L2 energies instead; this stored count is retained.')
+        self.spin['depth'].setToolTip('Shared depth sampling: Single uses sampled coherence for BW and MS. BW Double uses an analytic depth response for the explicit systematic row, numerical integration otherwise; samples still support preparation/diagnostics. MS uses depth planes plus propagation substeps bounded by Max slice step.')
+        self.spin['subpixels'].setToolTip('Shared fractional circular-aperture boundary weights. Does not refine the angular intensity field or FFT propagation mesh.')
         self.angular_resolution.currentIndexChanged.connect(self.set_angular_resolution)
         self.spin['grid'].valueChanged.connect(self.sync_angular_resolution)
         self.number('halfwidth','Map halfwidth (Å⁻¹)',1,.1,10,self.emcd_stale)
+        self.spin['halfwidth'].setToolTip('Shared reciprocal q extent for angular maps and detector integration; must contain the physical apertures. Not an elastic-potential cutoff.')
         self.energy_scope=QtWidgets.QComboBox();self.energy_scope.addItems(['Full native energy-resolved spectrum','Selected L3/L2 samples only (not full EELS)']);self.form.addRow('Spectral coverage',self.energy_scope);self.energy_scope.currentIndexChanged.connect(self.emcd_stale)
         self.energy_scope.setToolTip('Full spectra evaluate every displayed energy. Double Channeling angular maps can be expensive. Selected samples are displayed as points, never a fabricated white-line shape. Settings are not reduced automatically.')
         self.angular_maps=QtWidgets.QCheckBox('Calculate angular maps');self.angular_maps.setChecked(True);self.form.addRow(self.angular_maps);self.angular_maps.toggled.connect(self.emcd_stale)
         self.angular_maps.setToolTip('When off, evaluate only nonzero fractional-detector support on the unchanged reciprocal grid. No grid, precision or physical parameter is reduced.')
         saved_form=self.form;group=QtWidgets.QGroupBox('Advanced post-edge diagnostics');group.setCheckable(True);group.setChecked(False);body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(group);outer.addWidget(body);self.form.addRow(group);body.hide();group.toggled.connect(body.setVisible);self.form=QtWidgets.QFormLayout(body)
         self.correction=QtWidgets.QCheckBox('Enable post-edge A/B correction');self.correction.setChecked(True);self.form.addRow(self.correction);self.correction.toggled.connect(self.emcd_stale)
+        self.correction.setToolTip('Derived A/B post-edge scaling and residual diagnostics only; does not change the propagation, MDFF or original raw spectra. Corrected contrast is not intrinsically magnetic.')
         self.number('window_lo','Window start (eV)',878,1,10000,self.emcd_stale);self.number('window_hi','Window end (eV)',882,1,10000,self.emcd_stale)
         self.form=saved_form
+        self.form=shared_form
+        self.shared_resources_group=self.shared_group('Computational Resources')
         from .memory_budget import BUDGETS_MIB,DEFAULT_BUDGET_MIB
         self.memory_budget=QtWidgets.QComboBox()
         for budget in BUDGETS_MIB:self.memory_budget.addItem(f'{budget} MiB',budget)
         self.memory_budget.setCurrentIndex(BUDGETS_MIB.index(DEFAULT_BUDGET_MIB));self.memory_budget.currentIndexChanged.connect(self.emcd_stale)
         self.form.addRow('Estimated process memory budget',self.memory_budget)
+        self.memory_budget.setToolTip('Shared maximum estimated working-memory allowance, not a required allocation. Checks available RAM and estimated process peak; never changes scientific settings to fit.')
         self.memory_label=QtWidgets.QLabel();self.memory_label.setWordWrap(True);self.form.addRow(self.memory_label)
+        self.memory_label.setToolTip('Diagnostic estimate for the selected solver(s), common basis, sampling and current RAM. The budget controls admission, never an automatic parameter reduction.')
+        self.form=shared_form
 
     def set_angular_resolution(self,*_):
         n=self.angular_resolution.currentData()
@@ -169,6 +208,7 @@ class StageB:
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
 
     def emcd_stale(self,*_):
+        self.sync_solver_controls()
         if not hasattr(self,'emcd_button') or getattr(self,'_restoring',False):return
         reason=material_reason(self.structure);cfg=None;info=None
         try:
@@ -177,7 +217,7 @@ class StageB:
             if cfg.model=='atomic' and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
             from .propagation import numerical_info
             info=numerical_info(self.structure,s,cfg)
-            self.memory_label.setText(f"{info['bw_beams']} common BW beams; {info['fft_harmonics']} FFT harmonics. Dense kernel {info['dense_working_estimate_mib']:.1f} MiB; estimated arrays {info['estimated_working_mib']:.1f} MiB.\nEstimated process peak {info['estimated_process_peak_mib']:.1f} / {cfg.memory_budget_mib} MiB; available RAM {info['available_ram_mib']:.1f} MiB (50% allowed). Includes RSS, allocation margin and active calculations; not a guaranteed peak.")
+            self.memory_label.setText(f"{info['bw_beams']} common retained beams / MDFF basis; {info['fft_harmonics']} FFT harmonics. Dense kernel {info['dense_working_estimate_mib']:.1f} MiB; estimated arrays {info['estimated_working_mib']:.1f} MiB.\nEstimated process peak {info['estimated_process_peak_mib']:.1f} / {cfg.memory_budget_mib} MiB; available RAM {info['available_ram_mib']:.1f} MiB (50% allowed). Includes RSS, allocation margin and active calculations; not a guaranteed peak.")
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
             structure_matches=self.emcd_result is not None and self.emcd_result['metadata']['structure']==self.structure.description()
             if self.emcd_result and self.emcd_result.get('structure_snapshot'):

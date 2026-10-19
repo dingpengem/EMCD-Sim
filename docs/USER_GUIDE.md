@@ -325,6 +325,36 @@ because their electronic populations, spectral assumptions and conventions
 differ. Successful execution is not experimental validation of either model;
 their relative intensity units are not an absolute cross-model calibration.
 
+## Development source: shared and solver-specific settings
+
+This UI organization is the next **source development update after v0.6.1-beta.1**. No Windows binary is rebuilt, no version changes, and the published ZIP retains its original Panel F layout. Configuration keys, physical defaults and numerical values are unchanged. Panel E remains **E. Propagation Method**; Panel F becomes **F. Shared Calculation Settings**.
+
+Panel E retains **Channeling Model** (Single/Double) and **Propagation Method** (Bloch-wave / FFT Multislice / Both). **Multislice numerical settings** appears and is enabled only for MS or Both; expand it for **FFT grid (even)** and **Max slice step (nm)**. BW currently has no additional BW-only numerical controls. Switching solver changes visibility and admission estimates, not stored settings. Hidden FFT values survive switching and saved-project restoration; invalid MS geometries still fail rather than falling back to BW.
+
+Panel F groups existing controls into **Elastic Potential and Beam Support**, **Inelastic and Angular Sampling**, and **Computational Resources**. The explicit [001] systematic-row checkbox moves into shared elastic settings because it changes both the retained basis and projected potential. It remains inappropriate for [017]. Physical A/B detector positions and radius remain in **Virtual detectors**.
+
+| Actual control | Classification and effect |
+| --- | --- |
+| Channeling Model / Propagation Method | Shared model/solver selection, not sampling; Both runs the independent engines for the same selected model. |
+| Beam / MDFF basis cutoff (Å⁻¹) | Shared support: BW retained elastic basis and MS common diffraction/MDFF basis. MS propagation may retain additional FFT harmonics; projection does not renormalize away their population. |
+| Potential Fourier cutoff / Debye–Waller B (A²) | Shared projected-IAM Fourier support and damping, used by both solvers. Potential support is not the beam radius or EELS collection limit. |
+| Explicit [001] (200) systematic-row approximation | Shared physical approximation, not a BW-only numerical option. Excludes off-row basis/potential support in the supported [001] path. |
+| Depth integration nodes | Shared sampling with path-dependent use; see the depth explanation below. |
+| FFT grid (even) / Max slice step (nm) | **MS-only** propagation mesh/harmonic support and maximum split-step distance; not angular q resolution or a BW substep. |
+| Spectral coverage / Energy sampling points | Shared energy sampling. Full mode uses the stored count plus locked native features; selected-edge mode uses the two locked energies while retaining the count for later full-mode use. |
+| Angular Map Resolution / Angular / detector grid points (odd) / Map halfwidth (Å⁻¹) | Shared actual q samples/extent for angular maps and detector-EELS quadrature. Presets map to the same serialized `grid` key. |
+| Aperture boundary subpixels | Shared fractional circular-aperture boundary integration, not FFT refinement or new intensity samples. |
+| Calculate angular maps | Shared evaluation support: full q field or nonzero detector support on the same unchanged q grid. Not merely image interpolation. |
+| Advanced post-edge diagnostics / Enable post-edge A/B correction / Window start/end | Derived diagnostics/postprocessing: affects corrected/residual contrasts, not propagation, MDFF or original raw detector states. |
+| Estimated process memory budget | Shared execution/admission resource, **not a physical-model parameter or required allocation**; stored unchanged and checked against current available RAM. |
+| Memory estimate and solver explanation | Diagnostics-only presentation; estimates reflect the currently selected engines, basis/sampling, retained allocations and RAM. |
+
+No current Panel E/F parameter is genuinely BW-only. The physical-model and angular/integration categories affect both engines; memory admission is a separate shared-resource category rather than a scattering parameter. Only FFT mesh and maximum slice step are MS-only. GUI defaults remain beam 3.2 cycles/Å, potential 2.2 cycles/Å, B = 0, 64 depth nodes, FFT 32, maximum step 0.04 nm, energy count 241, halfwidth 1 cycle/Å, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. Production reference settings are not substituted as defaults.
+
+**Depth treatment:** BW evaluates elastic amplitudes analytically at the requested planes, but the GUI's Single-channeling coherence is formed by trapezoidal integration of those samples. MS Single likewise integrates sampled coherence, with propagation subdivided between planes according to the maximum slice step. BW Double uses analytic depth response for the explicit systematic row and numerical depth integration for the general path (including full [017]); the node count still supports preparation, stored amplitudes/coherence, diagnostics and memory estimates in the analytic path. MS Double samples incoming/outgoing/inelastic depth contributions and uses MS substeps. Therefore depth nodes must not be labeled universally analytic for BW or exclusively MS-specific.
+
+Values flow through unchanged `Settings` / `ForwardSettings` keys to the existing geometry/potential, propagation, coherence/MDFF contraction and saved metadata. The current-to-saved mapping and `settings_from_dict` / `config_from_dict` schemas do not change. Opening saved data does not run propagation; **Use These Settings** restores the original values and applicable-control visibility separately.
+
 ## Bloch-wave, FFT Multislice and numerical settings
 
 Select **Bloch-wave**, **FFT Multislice** or **Both (BW / MS comparison)**.
@@ -342,7 +372,7 @@ ZOLZ disk. Exact Bragg alignment does not establish physical two-beam isolation.
 
 | Control | Meaning and care |
 | --- | --- |
-| Beam cutoff (cycles/A) | Finite BW/common diffraction basis, not a two-beam restriction. Increasing it also enlarges the inelastic contraction. |
+| Beam / MDFF basis cutoff (Å⁻¹) | Shared retained BW and MS/MDFF basis, not a two-beam restriction. MS may propagate additional FFT harmonics. Increasing the common basis also enlarges the inelastic contraction. |
 | Potential cutoff (cycles/A) | Fourier harmonics of the elastic projected IAM potential. It is a separate physical/numerical convergence question. |
 | Debye–Waller B (A²) | The existing potential damping parameter; record any change. |
 | Multislice numerical settings → FFT grid (even) | Real/reciprocal sampling mesh, default 32. Must include the exact common hkl basis; even 12–128 is the supported control range. |

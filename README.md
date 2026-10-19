@@ -61,6 +61,10 @@ Select and validate the bundled five-column XMCD source, inspect its native ener
 
 ## GUI workflow
 
+**Development source update:** the next GUI change separates MS-only FFT/slice controls from shared beam/MDFF support, potential, depth, angular sampling and resource limits. See the [parameter-role table](docs/USER_GUIDE.md#development-source-shared-and-solver-specific-settings). This local source update does not change the published v0.6.1-beta.1 binary or physical defaults.
+
+
+
 1. Set structure, zone/target, voltage, thickness, absolute incident tilt and diffraction settings.
 2. Choose the MDFF and crystal-frame magnetization, then Single/Double and BW/MS/Both.
 3. Configure angular grid, independent FFT mesh, aperture boundary subpixels, physical detectors and memory budget.

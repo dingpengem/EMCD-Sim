@@ -63,11 +63,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.mdff_controls()
         self.section('E. Propagation Method')
         self.propagation_controls()
-        self.section('F. Calculation Settings')
-        self.number('beam','Beam cutoff |g|max (Å⁻¹)',3.2,.2,6.5,self.refresh)
-        self.number('potential',"Potential Fourier cutoff\n|g−g′|max (Å⁻¹)",2.2,.1,6.5,self.refresh)
-        self.spin['potential'].setToolTip("Maximum reciprocal-vector difference retained for elastic coupling between diffraction beams, |g−g′| ≤ cutoff. Coupling uses U_(g−g′) or V_(g−g′). Not the ionization momentum-transfer cutoff, EELS detector range, excitation-error threshold or beam radius. Crystallographic g=1/d; stored values unchanged, no 2π conversion.")
-        self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
+        self.section('F. Shared Calculation Settings')
         self.numerical_controls()
         self.section('Virtual detectors')
         self.show_detectors=QtWidgets.QCheckBox('Show physical A/B apertures');self.show_detectors.setChecked(True);self.show_detectors.toggled.connect(self.refresh);self.form.addRow(self.show_detectors)
@@ -144,7 +140,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             s=self.settings();self.current=geometry(self.structure,s,systematic_row=self.row_projection.isChecked());self.drawn_settings=s;crystal,R,hkl,g,microscope=self.current
             from ..geometry import electron_wavelength_angstrom
             angle=1000*electron_wavelength_angstrom(s.voltage)*s.beam_cutoff
-            self.spin['beam'].setToolTip(f'Maximum reciprocal-space radius of included elastic diffraction beams. g=1/d, Å⁻¹; no 2π conversion. Approximate angular equivalent λ|g|max = {angle:.4f} mrad at {s.voltage:g} kV. This is not the EELS detector collection limit.')
+            self.spin['beam'].setToolTip(f'Shared beam / MDFF basis cutoff: retained elastic beams in BW; common diffraction/MDFF beams in MS. Additional FFT harmonics may participate in MS propagation. g=1/d, Å⁻¹; no 2π conversion. Approximate angular equivalent λ|g|max = {angle:.4f} mrad at {s.voltage:g} kV. Not the EELS detector collection limit.')
             target_valid=s.target in hkl and s.target!=(0,0,0)
             supported=not self.structure.elastic_reason and target_valid
             self.run_button.setEnabled(supported and not self.busy);self.align_button.setEnabled(target_valid and not self.busy)
