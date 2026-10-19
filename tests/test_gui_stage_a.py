@@ -62,7 +62,11 @@ class GeometryTests(unittest.TestCase):
 class InteractionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    def setUp(self):self.window=MainWindow();self.window.show();self.app.processEvents()
+    def setUp(self):
+        # Persisted desktop layout must not move a synthetic test click outside
+        # the canvas. Each interaction test starts with its own preferences.
+        self.window=MainWindow(workspace=Path('outputs')/('gui_stage_a_'+uuid.uuid4().hex))
+        self.window.show();self.app.processEvents()
     def tearDown(self):
         if self.window.busy:self.window.cancel();self.window.worker.wait(5000);self.app.processEvents()
         self.window.close();self.app.processEvents()

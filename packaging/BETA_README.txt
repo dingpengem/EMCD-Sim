@@ -1,4 +1,4 @@
-EMCD-Sim 0.6.0 Beta - Double-Channeling EMCD Simulation
+EMCD-Sim 0.6.1-beta.1 local candidate - Double-Channeling EMCD Simulation
 Windows x64 research prerelease candidate; unsigned.
 Check the release acceptance report for the validated distribution and scope.
 Double Channeling already existed in published 0.4.5-beta.1.

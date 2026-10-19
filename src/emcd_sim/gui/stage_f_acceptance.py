@@ -13,6 +13,72 @@ from .project_io import load_project
 from .runtime import build_info
 
 
+def release_controls(window, app):
+    """Exercise the actual release widgets without starting a worker."""
+    assert window.spin['grid'].value()==97 and window.memory_budget.currentData()==2048
+    independent=tuple(window.spin[k].value() for k in ('fft_grid','subpixels','halfwidth'))
+    for i,n in enumerate((33,97,193)):
+        window.angular_resolution.setCurrentIndex(i)
+        assert window.spin['grid'].value()==n
+        assert independent==tuple(window.spin[k].value() for k in ('fft_grid','subpixels','halfwidth'))
+    window.spin['grid'].setValue(65)
+    assert window.angular_resolution.currentText()=='Custom'
+    window.memory_budget.setCurrentIndex(window.memory_budget.findData(512))
+    window.new_project()
+    assert window.spin['grid'].value()==97 and window.memory_budget.currentData()==2048
+    # Show the same provenance text as the application's About action.
+    from .runtime import LABEL
+    box=QtWidgets.QMessageBox(window);box.setWindowTitle(LABEL)
+    box.setText(json.dumps(build_info(),indent=2));box.show();app.processEvents()
+    assert build_info()['application_version'] in box.text()
+    box.close()
+    return dict(presets=[33,97,193],custom=65,new_project_grid=97,
+        new_project_memory_mib=2048,independent_fft_subpixels=True,about_provenance=True)
+
+
+def release_saved_checks(window,result,output):
+    """Check full-field rendering and a copied invalid-pixel fixture."""
+    from dataclasses import replace
+    from .component_display import primary_angular,components
+    from .results import draw_maps
+    original=fingerprints(result);checks={}
+    window.emcd_result=dict(result,config=replace(result['config'],grid=33,memory_budget_mib=512))
+    window.use_result_settings()
+    assert window.memory_budget.currentData()==512 and window.spin['grid'].value()==33
+    for name,r in result['methods'].items():
+        values,meta=primary_angular(r,'L3','asymmetry');v=next(iter(values.values()))
+        ap=r['maps']['L3']['I_plus'];den=ap+ap[::-1]
+        valid=np.isfinite(v)
+        np.testing.assert_allclose(v[valid],100*(ap-ap[::-1])[valid]/den[valid])
+        assert v.shape==r['qx'].shape and np.count_nonzero(valid)==v.size
+        for mode in ('raw','relative','asymmetry'):components(r['spectra'],mode)
+        fig=Figure(figsize=(10,7),layout='constrained');draw_maps(fig,r,'L3',signal_mode='asymmetry')
+        info=fig._emcd_display_metadata
+        assert info['angular_grid_shape']==list(ap.shape) and info['display_interpolation']=='nearest'
+        images=[im for ax in fig.axes for im in ax.images]
+        assert images and all(im.get_interpolation()=='nearest' for im in images)
+        np.testing.assert_allclose(np.ma.filled(images[0].get_array(),np.nan),v,equal_nan=True)
+        # Change only an in-memory copy; original saved arrays remain untouched.
+        maps={e:dict(fields) for e,fields in r['maps'].items()}
+        maps['L3']=dict(maps['L3'],I_plus=ap.copy(),I_minus=r['maps']['L3']['I_minus'].copy())
+        maps['L3']['I_plus'][0,0]=0
+        maps['L3']['I_plus'][-1,0]=0
+        copied=dict(r,maps=maps)
+        masked,_=primary_angular(copied,'L3','asymmetry')
+        a=next(iter(masked.values()));assert np.isnan(a[0,0]) and np.isnan(a[-1,0])
+        maps['L3']['I_plus'][0,0]=np.nan
+        try:primary_angular(copied,'L3','asymmetry')
+        except ValueError:pass
+        else:raise AssertionError('Incomplete angular data was silently displayed')
+        save_figure(fig,output/(name+'_actual_grid.png'))
+        checks[name]=dict(shape=list(ap.shape),valid_samples=int(valid.sum()),nearest=True,
+            mirror_formula=True,invalid_pair_mask=True,raw_relative_immutable=True,
+            channeling_model=r['config'].channeling_model,spacing=info['q_spacing_inv_angstrom'])
+    assert fingerprints(result)==original
+    window.emcd_result=result
+    return dict(saved_512_compatible=True,methods=checks,eels_not_angular_integral=True)
+
+
 FORWARD_PATHS=('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni',
     'emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.emcd_forward.tensors','emcd_sim.gui.propagation.propagate',
     'emcd_sim.gui.emcd_forward.run_tensor_with_coherence','emcd_sim.single_channeling_tensor.run_tensor_with_coherence',
@@ -37,6 +103,7 @@ def run(output,project,comparison):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([]);w=MainWindow(workspace=output/'workspace');w.resize(1700,1050);w.show()
     report=dict(build=build_info(),forward_calls=0,project=str(project),comparison=str(comparison));guards=ExitStack();mocks=[]
     for name in FORWARD_PATHS:mocks.append(guards.enter_context(patch(name,side_effect=AssertionError('Forward calculation forbidden during Stage F'))))
+    report['release_controls']=release_controls(w,app)
     def fail(message):
         report['error']=message;(output/'failure.json').write_text(json.dumps(report,indent=2));app.exit(2)
     sys.excepthook=lambda typ,value,tb:fail(''.join(traceback.format_exception(typ,value,tb)));w.error=fail
@@ -49,6 +116,7 @@ def run(output,project,comparison):
     def inspect():
         if w.busy:QtCore.QTimer.singleShot(100,inspect);return
         r=w.emcd_result;report['original_arrays']=fingerprints(r);second=load_project(comparison)
+        report['release_saved_checks']=release_saved_checks(w,r,output)
         w.browser.registry.register(second,comparison,'+1 mrad x mistilt');w.browser.refresh()
         methods=list(r['methods']);report['methods']=methods;report['metrics']={name:percentage_metrics(m) for name,m in r['methods'].items()}
         eels=w.eels_view;maps=w.maps_view

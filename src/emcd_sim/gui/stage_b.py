@@ -86,8 +86,16 @@ class StageB:
         self.row_projection.toggled.connect(self.refresh)
 
     def numerical_controls(self):
-        for key,title,value,lo,hi in [('energy','Energy sampling points',241,9,501),('grid','Detector grid points',33,9,193),('depth','Depth integration nodes',64,2,1025),('subpixels','Aperture subpixels',64,4,256)]:
+        self.angular_resolution=QtWidgets.QComboBox()
+        for title,n in [('Quick Preview - 33x33',33),('Standard - 97x97',97),('High Resolution - 193x193',193),('Custom',None)]:
+            self.angular_resolution.addItem(title,n)
+        self.angular_resolution.setCurrentIndex(1);self.form.addRow('Angular Map Resolution',self.angular_resolution)
+        self.angular_resolution.setToolTip('Actual calculated q samples. Uses the shared angular / detector EELS grid; FFT mesh and aperture subpixels stay unchanged.')
+        for key,title,value,lo,hi in [('energy','Energy sampling points',241,9,501),('grid','Angular / detector grid points (odd)',97,9,193),('depth','Depth integration nodes',64,2,1025),('subpixels','Aperture boundary subpixels',64,4,256)]:
             box=QtWidgets.QSpinBox();box.setRange(lo,hi);box.setValue(value);self.spin[key]=box;self.form.addRow(title,box);box.valueChanged.connect(self.emcd_stale)
+        self.spin['grid'].setSingleStep(2)
+        self.angular_resolution.currentIndexChanged.connect(self.set_angular_resolution)
+        self.spin['grid'].valueChanged.connect(self.sync_angular_resolution)
         self.number('halfwidth','Map halfwidth (Å⁻¹)',1,.1,10,self.emcd_stale)
         self.energy_scope=QtWidgets.QComboBox();self.energy_scope.addItems(['Full native energy-resolved spectrum','Selected L3/L2 samples only (not full EELS)']);self.form.addRow('Spectral coverage',self.energy_scope);self.energy_scope.currentIndexChanged.connect(self.emcd_stale)
         self.energy_scope.setToolTip('Full spectra evaluate every displayed energy. Double Channeling angular maps can be expensive. Selected samples are displayed as points, never a fabricated white-line shape. Settings are not reduced automatically.')
@@ -103,6 +111,15 @@ class StageB:
         self.memory_budget.setCurrentIndex(BUDGETS_MIB.index(DEFAULT_BUDGET_MIB));self.memory_budget.currentIndexChanged.connect(self.emcd_stale)
         self.form.addRow('Estimated process memory budget',self.memory_budget)
         self.memory_label=QtWidgets.QLabel();self.memory_label.setWordWrap(True);self.form.addRow(self.memory_label)
+
+    def set_angular_resolution(self,*_):
+        n=self.angular_resolution.currentData()
+        if n is not None:self.spin['grid'].setValue(n)
+
+    def sync_angular_resolution(self,*_):
+        n=self.spin['grid'].value();index=self.angular_resolution.findData(n)
+        with QtCore.QSignalBlocker(self.angular_resolution):
+            self.angular_resolution.setCurrentIndex(index if index>=0 else 3)
 
     def setup_stage_b(self):
         self.setWindowTitle('EMCD-Sim Desktop — Stage C: BW / FFT multislice EMCD / EELS')
@@ -140,6 +157,7 @@ class StageB:
         self.emcd_stale()
 
     def forward_settings(self):
+        if self.spin['grid'].value()%2==0:raise ValueError('Choose an odd angular / detector grid size so qy=0 is sampled exactly.')
         atomic=NiLocalConfig(**{k:self.spin['atomic_'+k].value() for k in asdict(NiLocalConfig())})
         mode='xmcd' if self.model_box.currentIndex()==0 else 'atomic';axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')

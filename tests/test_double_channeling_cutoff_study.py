@@ -63,5 +63,20 @@ def test_scheduler_only_change_reuses_completed_case_without_propagation(monkeyp
     before=run.base.digest(path)
     def forbidden(*args,**kwargs):raise AssertionError('Completed propagation restarted')
     monkeypatch.setattr(run,'engine',forbidden)
-    _,data,_=run.run_case('001',8.,cutoff=2.2,which='bw')
-    assert data['raw'].shape==(2,2,4) and run.base.digest(path)==before
+    # Historical byte hashes predate optional cancellation/prepared-wave hooks.
+    # Keep the old loader strict; independently verify the audited default path.
+    import json
+    import ni_emcd_complete_thickness as scan
+    original=run.base.cached;expected={}
+    def capture(p,params,calculate):
+        expected.update(params)
+        return original(p,params,calculate)
+    monkeypatch.setattr(run.base,'cached',capture)
+    with pytest.raises(ValueError,match='Checkpoint provenance mismatch'):
+        run.run_case('001',8.,cutoff=2.2,which='bw')
+    with np.load(path,allow_pickle=False) as data:
+        aliases,_=scan.implementation_audit()
+        expected['study_script_sha256']=run.PHYSICS_HASH
+        assert scan.compatible(json.loads(str(data['parameters_json'])),json.loads(scan.encode(expected)),aliases)
+        assert data['raw'].shape==(2,2,4)
+    assert run.base.digest(path)==before

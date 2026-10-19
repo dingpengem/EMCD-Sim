@@ -659,3 +659,19 @@ calculates Single and Double jointly, saves atomically and releases temporary
 fields. Use the completion/progress files to distinguish a complete curve
 from an unfinished scan. No full-energy EELS, voltage scan or GUI scan framework
 is added. Large numerical outputs remain local.
+
+
+### Local v0.6.1-beta.1 candidate
+
+Full-field angular maps use physical qy-reflected point pairs independently of detector overlays. Total asymmetry can contain reversal-even diffraction. Detector-integrated EELS remains a separate observable. See [200 kV scientific audit](NI_EMCD_THICKNESS_SCIENTIFIC_ANALYSIS.md) for raw magnetic intensity, contamination, explicit denominator definitions and the full saved thickness study. Original checkpoints are not bundled.
+# Angular-map resolution update
+
+New calculations default to **Standard 97 x 97** and **2048 MiB**. Quick Preview
+33 x 33, High 193 x 193 and odd Custom sizes remain available. The angular grid
+currently shares detector-EELS quadrature; it is separate from the multislice
+FFT grid and circular-aperture boundary subpixels. Saved maps show their actual
+dimensions and spacing; larger PNG/SVG exports do not add calculated samples.
+Saved explicit memory budgets are preserved; New Project resets the budget.
+See [sampling and memory guidance](ANGULAR_MAP_RESOLUTION.md), including runtime
+limits and why High can be rejected under 2048 MiB. These controls are included
+in the fresh local candidate described in [release acceptance](V061_BETA_ACCEPTANCE.md).

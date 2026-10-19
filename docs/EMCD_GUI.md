@@ -1167,3 +1167,8 @@ exports include the currently displayed benchmark records in their JSON
 sidecars. The saved-data example and full exports are under
 `outputs/prb2007_benchmark/native/` locally; this documentation includes the
 small preview rather than duplicating numerical project files in Git.
+
+
+### Local v0.6.1-beta.1 candidate
+
+Full-field angular maps use physical qy-reflected point pairs independently of detector overlays. Total asymmetry can contain reversal-even diffraction. Detector-integrated EELS remains a separate observable. See [200 kV scientific audit](NI_EMCD_THICKNESS_SCIENTIFIC_ANALYSIS.md) for raw magnetic intensity, contamination, explicit denominator definitions and the full saved thickness study. Original checkpoints are not bundled.

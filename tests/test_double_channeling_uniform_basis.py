@@ -24,10 +24,22 @@ def test_completed_case_reused_without_solver_or_modification(monkeypatch):
     before=run.study.base.digest(path)
     def forbidden(*args,**kwargs):raise AssertionError('Completed solver restarted')
     monkeypatch.setattr(run.study,'engine',forbidden)
-    actual,data,params=run.case('017',8.,4.6,'ms')
-    assert actual==path and run.study.base.digest(path)==before
+    import ni_emcd_complete_thickness as scan
+    original=run.study.base.cached;params={}
+    def capture(actual,expected,calculate):
+        assert actual==path
+        params.update(expected)
+        return original(actual,expected,calculate)
+    monkeypatch.setattr(run.study.base,'cached',capture)
+    with pytest.raises(ValueError,match='Checkpoint provenance mismatch'):
+        run.case('017',8.,4.6,'ms')
+    with np.load(path,allow_pickle=False) as data:
+        aliases,_=scan.implementation_audit()
+        params['study_script_sha256']=run.study.PHYSICS_HASH
+        assert scan.compatible(json.loads(str(data['parameters_json'])),json.loads(scan.encode(params)),aliases)
+        assert data['raw'].dtype==np.float64
+    assert run.study.base.digest(path)==before
     assert params['hkl']==params['outgoing_hkl']
-    assert data['raw'].dtype==np.float64
 
 
 @pytest.mark.skipif(not Path('outputs/gui_stage_d/windows_20261016/reference_project/project.json').is_file(), reason='Requires the original local reference project; not distributed')

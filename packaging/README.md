@@ -65,3 +65,16 @@ EMCD-Sim.exe --stage-f-acceptance C:/F-validation --stage-f-project C:/saved/ref
 ```
 
 This does not invoke the expensive Stage E physics acceptance.
+## Local v0.6.1-beta.1 candidate
+
+The local candidate and its scope are documented in
+[V061_BETA_ACCEPTANCE.md](../docs/V061_BETA_ACCEPTANCE.md). The existing public
+v0.6.0 assets are preserved. Build into a fresh directory:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -BuildRoot build/windows-v061-beta-final -BuildLabel 'EMCD-Sim v0.6.1-beta.1 local candidate' -ArchiveName EMCD-Sim-0.6.1-beta.1-Windows-RC.zip
+```
+
+Package version `0.6.1b1` uses PEP 440 prerelease notation. Verify archived
+content and saved-data native GUI acceptance with
+`python scripts/verify_v061_candidate.py`. This does not calculate spectra.

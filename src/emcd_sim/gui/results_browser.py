@@ -236,6 +236,10 @@ class ProjectWorkspace:
     def new_project(self):
         if self.busy:return
         self.clear_selected();self.input_source_requirements=[];self.default_structure()
+        from .memory_budget import DEFAULT_BUDGET_MIB
+        self.memory_budget.setCurrentIndex(self.memory_budget.findData(DEFAULT_BUDGET_MIB))
+        self.spin['grid'].setValue(97)
+        self.sync_angular_resolution()
     def clear_selected(self):
         if self.busy:return
         self.selected_record=None;self.emcd_result=None;self.browser.table.clearSelection()
@@ -274,6 +278,7 @@ class ProjectWorkspace:
             with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setCurrentIndex(self.memory_budget.findData(c.memory_budget_mib))
             values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial or .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
             values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()});self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()
+            self.sync_angular_resolution()
             for widget,checked in ((self.correction,c.correction),(self.radial_override,c.radial is not None),(self.declaration,c.axis_declared)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.source_info=None;self.validated_path=None

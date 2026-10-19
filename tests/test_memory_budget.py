@@ -25,7 +25,7 @@ def test_supported_budgets_and_512_compatibility(budget):
 
 
 def test_larger_dense_kernel_admitted_only_with_larger_budget():
-    cfg = ForwardSettings(propagation='bloch')
+    cfg = ForwardSettings(propagation='bloch',grid=33)
     assert cfg.memory_budget_mib == config_from_dict({}).memory_budget_mib == 2048
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         info = numerical_info(Structure.nickel(), Settings(), cfg, hkl=tuple(range(100)))

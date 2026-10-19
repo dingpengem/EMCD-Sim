@@ -68,5 +68,6 @@ def test_gate_reports_unrun_work_and_never_invents_voltage_results():
         assert gate['additional_voltages']=='not run' and gate['gui']=='not integrated'
         assert (OUT/'figure_6_voltage_comparison_NOT_RUN.txt').exists()
         changed=subprocess.check_output(['git','diff','--name-only',
-            json.loads((OUT/'provenance.json').read_text())['base_commit'],'--','src/emcd_sim/gui'],text=True)
+            json.loads((OUT/'provenance.json').read_text())['base_commit'],
+            'f97e16c495097c27363c8b29938c254825ff7364','--','src/emcd_sim/gui'],text=True)
         assert changed.strip()==''

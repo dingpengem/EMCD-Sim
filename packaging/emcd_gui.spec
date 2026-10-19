@@ -1,5 +1,5 @@
 from pathlib import Path
-import json, subprocess, hashlib, sys, os
+import json, subprocess, hashlib, sys, os, platform
 from importlib.metadata import distribution, version
 from datetime import datetime, timezone
 
@@ -15,6 +15,8 @@ info['label']=os.environ.get('EMCD_GUI_BUILD_LABEL',info['label'])
 info.update(build_utc=datetime.now(timezone.utc).isoformat(), reference_sha256=hashlib.sha256(reference.read_bytes()).hexdigest(),
             reference_provenance='Repository tracked five-column Ni example; MIT repository license; no WIEN2k code or companion audit included.')
 info['versions']={name:version(name) for name in ('numpy','scipy','matplotlib','ase','PySide6','pyinstaller')}
+info['build_environment']=dict(python_version=platform.python_version(),python_executable=sys.executable,
+    python_prefix=sys.prefix,platform=platform.platform())
 from emcd_sim import __version__
 info['application_version']=__version__
 info['runtime_source_sha256']={str(p.relative_to(root/'src')).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in (root/'src/emcd_sim').rglob('*.py')}

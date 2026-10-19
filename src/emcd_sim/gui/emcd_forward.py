@@ -59,7 +59,7 @@ class ForwardSettings:
     sigma: float=.8
     radial: float|None=None
     energy_points: int=241
-    grid: int=33
+    grid: int=97
     depth: int=64
     subpixels: int=64
     halfwidth: float=1.

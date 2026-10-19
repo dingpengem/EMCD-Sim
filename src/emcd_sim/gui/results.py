@@ -181,7 +181,7 @@ def draw_component_maps(fig,result,edge,method=None,signal_mode='raw'):
     dx=qx[0,1]-qx[0,0];dy=qy[1,0]-qy[0,0]
     extent=(qx[0,0]-dx/2,qx[0,-1]+dx/2,qy[0,0]-dy/2,qy[-1,0]+dy/2)
     for ax,(label,v) in zip(axes,values.items()):
-        im=ax.imshow(v,origin='lower',extent=extent,cmap=colormaps['RdBu_r'].with_extremes(bad='#c8c8c8'),vmin=-limit,vmax=limit)
+        im=ax.imshow(v,origin='lower',extent=extent,interpolation='nearest',aspect='equal',cmap=colormaps['RdBu_r'].with_extremes(bad='#c8c8c8'),vmin=-limit,vmax=limit)
         decorate_reciprocal_map(ax,r['model'],extent,target_hkl=r['settings'].target,zone_axis=r['settings'].zone)
         ax.plot(*r['model'].elastic.crystal.g_vector(r['settings'].target)[:2],'s',mfc='none',mec='crimson',ms=8)
         ax.set_title(label,fontsize=10)
@@ -189,8 +189,10 @@ def draw_component_maps(fig,result,edge,method=None,signal_mode='raw'):
         fig.colorbar(im,ax=ax,shrink=.7).set_label(units)
         if not np.isfinite(v).any():ax.text(.1,.5,'All pixels undefined / masked',transform=ax.transAxes)
     e=r['config'].l3 if edge=='L3' else r['config'].l2
-    fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry',fontsize=10)
-    fig._emcd_display_metadata=dict(kind='primary angular components',edge=edge,method=method,**meta,shared_color_scale=True)
+    sampling=f'Angular Grid: {qx.shape[1]} x {qx.shape[0]}; q spacing: {dx:.6g}, {dy:.6g} inverse Angstrom'
+    fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry\n'+sampling,fontsize=10)
+    fig._emcd_display_metadata=dict(kind='primary angular components',edge=edge,method=method,**meta,shared_color_scale=True,
+        angular_grid_shape=list(qx.shape),q_spacing_inv_angstrom=[float(dx),float(dy)],display_interpolation='nearest')
 
 
 def draw_diffraction(fig,result,method=None,depth_average=False):

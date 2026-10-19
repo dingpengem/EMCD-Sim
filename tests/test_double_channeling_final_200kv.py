@@ -23,12 +23,24 @@ def test_zero_thickness_has_zero_raw_and_undefined_percentages():
 def test_exact_existing_case_never_restarted(monkeypatch):
     def forbidden(*args,**kwargs):raise AssertionError('Completed engine restarted')
     monkeypatch.setattr(run.study,'engine',forbidden)
-    path,data,params=run.case('017',30.,'ms')
+    import json
+    import ni_emcd_complete_thickness as scan
+    original=run.study.base.cached;params={}
+    def capture(path,expected,calculate):
+        params.update(expected)
+        return original(path,expected,calculate)
+    monkeypatch.setattr(run.study.base,'cached',capture)
+    with pytest.raises(ValueError,match='Checkpoint provenance mismatch'):
+        run.case('017',30.,'ms')
+    path=run.uniform.ROOT/'checkpoints/017_ms_t030_p6.2_b4.6_o4.6_f48_d257_s0.04.npz'
+    with np.load(path,allow_pickle=False) as data:
+        aliases,_=scan.implementation_audit()
+        assert scan.compatible(json.loads(str(data['parameters_json'])),json.loads(scan.encode(params)),aliases)
+        assert data['raw'].shape==(2,2,4)
     assert path.parent.parent==run.uniform.ROOT
     assert params['settings']['potential_cutoff']==6.2
     assert params['settings']['beam_cutoff']==4.6
     assert params['hkl']==params['outgoing_hkl']
-    assert data['raw'].shape==(2,2,4)
 
 
 def test_sampled_maxima_are_computed_not_hard_coded():
