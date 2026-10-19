@@ -1,124 +1,67 @@
 # Install EMCD-Sim on Windows
 
-For a first calculation, continue with [Quick Start](QUICK_START.md). The
-[User Manual](USER_GUIDE.md) explains the science and controls. This is a
-research Beta; read the [release notes](RELEASE_0_6_0_BETA.md) and [Beta acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md)
-before using it for a research comparison.
+Current package: **EMCD-Sim v0.6.1-beta.1 Windows research Beta**, not a stable release. Continue with [Quick Start](QUICK_START.md), the [User Manual](USER_GUIDE.md), [release notes](RELEASE_NOTES_0_6_1_BETA_1.md) and [acceptance report](V061_BETA_ACCEPTANCE.md).
 
 ## Recommended: portable Windows application
 
-**The standalone Windows application does not require Python, Conda, VS Code
-or WIEN2k to be installed.** WIEN2k is a separate electronic-structure program,
-not a GUI runtime dependency. This application does not install or provide a
-complete DFT calculation environment.
+The package bundles a Python runtime and is intended to work without a separately installed Python, Conda, VS Code or WIEN2k. Same-host standalone tests with development Python removed from PATH passed. **Independent clean-machine installation has NOT been tested.** WIEN2k is not a runtime dependency, and the package does not supply a complete DFT calculation environment.
 
-The Windows distribution is **EMCD-Sim 0.6.0 Beta - Double-Channeling EMCD
-Simulation**, tag `v0.6.0-beta.1`, built from
-`c2caf4247a350e28a38b79cd402954d0c1ab2509`. The older 0.4.5 release is preserved.
-Double Channeling already existed there; 0.6.0 consolidates its scientific
-workflow and unifies Raw / EMCD Asymmetry displays.
-
-1. Open the [GitHub Windows Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.0-beta.1) and
-   download `EMCD-Sim-0.6.0-Beta-Windows.zip` from its
-   GitHub release assets. Download the new 0.6.0 archive, not an older RC.
-2. Download/copy the ZIP and verify its SHA256 below.
-3. Right-click it in File Explorer, choose **Extract All**, and select a folder
-   you control, for example `C:\Users\YourName\Applications\EMCD-Sim-RC`.
-4. Open the extracted `EMCD-Sim` folder. Keep the EXE and `_internal` together:
+1. Open the [GitHub Releases page](https://github.com/dingpengem/EMCD-Sim/releases) and select [v0.6.1-beta.1](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.1).
+2. Download **EMCD-Sim-0.6.1-beta.1-Windows-RC.zip** and **SHA256SUMS.txt** from that release's assets. The validated archive retains its RC filename; it is the selected Beta asset, not GitHub's automatic source-code ZIP.
+3. Verify the archive checksum below.
+4. Right-click the ZIP, choose **Extract All**, and select a normal writable folder, for example `C:/Users/YourName/Applications/EMCD-Sim-0.6.1-beta.1`.
+5. Open the extracted **EMCD-Sim** directory and double-click **EMCD-Sim.exe**. The actual validated ZIP structure is:
 
    ```text
    EMCD-Sim/
        EMCD-Sim.exe
+       README.txt
+       SHA256SUMS.txt
        _internal/
            build_info.json
-           data/
+           data/wien2k_ni/Ni_fm.xmcd
            ...
    ```
 
-5. Double-click **EMCD-Sim.exe**. Do not launch inside the ZIP or copy only the
-   EXE elsewhere. There is no MSI or installer to run.
-6. Allow initialization to finish; startup time depends on the host and is
-   not a fixed timeout guarantee. Do not repeatedly start duplicate instances.
-7. Confirm the FCC Ni interface: **Nominal zone [uvw]** `0 1 7`, **Target (hkl)**
-   `2 0 0`, indexed reciprocal geometry and physical A/B circles. Startup shows
-   geometry; click **Preview diffraction** for calculated elastic intensities.
-8. Optionally create a desktop shortcut to the extracted EXE; leave the
-   complete application folder in place.
+6. Keep all extracted files together. Do not run inside the ZIP, move only the EXE, or remove `_internal`. There is no MSI or system installer.
+7. Let initialization finish before starting another instance. Open **Help → About / build** to inspect package version `0.6.1b1` (PEP 440 spelling of v0.6.1-beta.1), build label and source provenance.
+8. **File → New** resets actual angular sampling to **97 x 97** and the process memory budget to **2048 MiB**. Existing projects retain explicit saved settings. Use [Quick Start](QUICK_START.md) for the Ni [017] reference.
 
 ### Verify the archive
 
-The current Beta archive SHA256 is recorded in the
-[acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) and its sibling
-`SHA256SUMS.txt`. The application's own `SHA256SUMS.txt` lists individual
-runtime files. The current Beta ZIP SHA256 is:
-
-```text
-6adda35a3b52ac35a06681a8cf5fca753aae2f03387feda57373c78ad8be2b5e
-```
-
-For example, in PowerShell:
+In PowerShell, substituting your actual download path:
 
 ```powershell
-Get-FileHash "$HOME\Downloads\EMCD-Sim-0.6.0-Beta-Windows.zip" -Algorithm SHA256
+Get-FileHash "$HOME/Downloads/EMCD-Sim-0.6.1-beta.1-Windows-RC.zip" -Algorithm SHA256
 ```
 
-Substitute the actual download path. A checksum match confirms the archive
-matches this reviewed file, not that it has a digital signature. The candidate
-is **unsigned**. Windows SmartScreen may warn about it. Check its origin and
-checksum and consult your institution's IT policy if blocked; do not disable
-Windows Defender or other system security protections.
+Require an exact match to the release's `SHA256SUMS.txt`:
+
+```text
+9fd5e71437d2c26d4595abb7adde9436e4c333ce18f3a57cf381b0c541bfd94f
+```
+
+Archive size: **108,703,899 bytes**. The external `SHA256SUMS.txt` verifies the ZIP; the extracted file of the same name lists individual application files. The original validated ZIP has not been rebuilt. Build runtime source revision: `e66c97923bd4838188ed03c424dc9973ada55c25`; subsequent accepted commits changed documentation/acceptance metadata only. Exact runtime hashes and dependency versions remain in `_internal/build_info.json`.
+
+A checksum identifies the archive; it is not a digital signature. The package is **unsigned**. If Windows or institutional security blocks it, check the release origin/checksum and consult your IT policy. Do not disable security protections.
 
 ### Projects, workspace and logs
 
-Save projects and exports in your own writable research folders, outside the
-application installation directory. A project is a complete folder, not just
-one NPZ file. Back up that folder and the original external source files.
+Use **File → Save Project As...** to save a complete project in a writable research folder outside the application. Reopen it with **Open Project**, selecting the whole project folder, or **Results Browser → View Selected**. Keep `project.json` and all NPZ/JSON/CIF companions together. Loading saved results does not run the solvers. **Use These Settings** restores inputs separately; rerunning requires the original matching source hash, while viewing arrays does not.
 
-`gui/runtime.py` resolves defaults as follows:
-
-| Data | Default |
+| Data | Default location |
 | --- | --- |
-| Workspace, browser index and UI preferences | `%LOCALAPPDATA%\EMCD-Sim\workspace` |
-| Rotating runtime logs | `%LOCALAPPDATA%\EMCD-Sim\logs\runtime.log` |
-| Advanced workspace override | `EMCD_GUI_WORKSPACE` |
+| Workspace, browser index and preferences | `%LOCALAPPDATA%/EMCD-Sim/workspace` |
+| Runtime logs | `%LOCALAPPDATA%/EMCD-Sim/logs/runtime.log` |
+| Optional workspace override | Environment variable `EMCD_GUI_WORKSPACE` |
 
-If `LOCALAPPDATA` is unavailable, the fallback is the user's home
-`.local\share\EMCD-Sim`. The override changes the workspace, not the log
-directory. It does not relocate already saved projects or copy their inputs.
-For a one-session override:
-
-```powershell
-$env:EMCD_GUI_WORKSPACE = 'D:\EMCD-Projects\workspace'
-& 'C:\Users\YourName\Applications\EMCD-Sim-RC\EMCD-Sim\EMCD-Sim.exe'
-```
-
-Choose an existing writable parent or a location the application can create.
-Logs can contain local input paths and hashes; review them before sharing.
-There is no automatic upload.
+The override changes the workspace, not the log directory or existing saved-project locations. Logs can contain local paths and hashes; review them before sharing. No automatic upload occurs.
 
 ### Tested Windows environment and size
 
-The x64 candidate was tested on **Windows 11 Enterprise, build 26200.9457**,
-Intel Core i7-1365U, approximately 31.58 GiB host RAM, at 150% display scaling.
-The current archive is **108,689,021 bytes (103.65 MiB)**. Provenance and
-checksums are in the [release report](RELEASE_0_4_5_BETA.md). Earlier Stage F
-sizes are not measurements of this new build. Keep additional space for
-projects and exports.
+Local Windows acceptance passed on Windows 11 Enterprise, version 10.0.26200, 64-bit, Intel Core i7-1365U (10 cores / 12 logical processors), approximately 31.58 GiB OS-visible RAM. This host already contains Python/Conda and earlier EMCD-Sim builds. Native frozen saved-project tests cover BW/MS Single/Double, defaults/presets, maps/EELS, projects and exports; detailed scope is in [acceptance](V061_BETA_ACCEPTANCE.md). **Independent clean-machine Windows/VM installation: NOT TESTED.** Signing, SmartScreen reputation and other Windows architectures are not certified.
 
-Earlier accepted default workloads peaked near **297 MiB process working
-set** and took roughly 49–119 seconds for XMCD BW/MS/Both; timing varied
-between runs. Larger grids and beam sets can require substantially more RAM
-and time. These are measurements, **not minimum hardware requirements**.
-The dense contraction has a memory guard; do not bypass it by blindly enlarging
-beam and detector grids. Calculations can take tens of seconds or longer.
-
-Other Windows versions, ARM/32-bit systems and native 100%/125% display settings
-have not been validated for this binary. A fresh extraction launched outside
-the repository with Python/Conda removed from PATH passed on the same host.
-**NOT TESTED — independent clean-machine validation pending.** This is not
-equivalent to a second Windows installation or a clean VM. Linux/macOS source
-CI has unresolved platform issues documented in the release report; this
-distribution is Windows x64 only.
+Memory budgets are 512/1024/**2048 default**/4096/8192 MiB. A budget is a ceiling, not a fixed allocation. Estimated process peak and available RAM are checked independently from the dense kernel. Larger actual angular grids may need more budget, and High 193 is not guaranteed to fit 2048 MiB. The app never silently changes beams, cutoff, grid, energy sampling, depth, slice count or precision to fit. See [resolution guidance](ANGULAR_MAP_RESOLUTION.md); runtime is workload-dependent.
 
 ## Advanced: run from Python source
 

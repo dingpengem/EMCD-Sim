@@ -1,6 +1,6 @@
-﻿# EMCD-Sim v0.6.1-beta.1 local Windows acceptance
+# EMCD-Sim v0.6.1-beta.1 Windows acceptance and provenance
 
-This record concerns a local candidate only. No push, merge, tag or publication is authorized. The public v0.6.0-beta.1 assets remain unchanged. PEP 440 package version: `0.6.1b1`.
+This record documents the validated Windows Beta and its precise acceptance scope. The user subsequently authorized the v0.6.1-beta.1 documentation update, fast-forward integration into main, tag and GitHub prerelease using the unchanged ZIP. This does not authorize a stable/Latest release or a claim of clean-machine validation. Existing v0.6.0-beta.1 assets are preserved. PEP 440 package version: `0.6.1b1`.
 
 | Gate | Status | Evidence |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ This record concerns a local candidate only. No push, merge, tag or publication 
 | Rebuilt executable smoke test | PASSED | Native Windows Qt; saved BW/MS Single and Double; zero solver calls; unchanged arrays/projects |
 | Final local Windows acceptance | PASSED | User approved acceptance; validated EXE running/responding on the recorded local Windows 11 host |
 | Independent clean-machine installation | NOT TESTED | The specified local computer has Python/Conda and prior EMCD-Sim installations |
-| User-approved local release acceptance | PASSED | Scientific, regression, package and local Windows gates pass; independent clean-machine acceptance is not claimed; publication remains manual |
+| User-approved local release acceptance | PASSED | Scientific, regression, package and local Windows gates pass; independent clean-machine acceptance is not claimed; publication is limited to the separately authorized v0.6.1-beta.1 prerelease |
 
 ## Scientific evidence and scope
 
@@ -63,7 +63,7 @@ The user's subsequent instruction specifies execution on the existing local comp
 
 Branch: `feat/full-field-emcd-thickness`. The fresh executable was built from the reviewed runtime code committed as `e66c97923bd4838188ed03c424dc9973ada55c25`, at `2026-10-19T16:04:43.531526+00:00`. The final local commit is a documentation-only amendment of that revision; its runtime source and packaging specification are identical to the build revision. The executable correctly retains the original build commit rather than claiming a later build. See `outputs/v061_final_acceptance/final_git.json` for final HEAD and the complete 34-file change list.
 
-The build records `dirty=true` because unrelated local input/development files were preserved and excluded. All packaged runtime source hashes match the final working source exactly. No production dataset, licensed companion data, temporary watcher, raw-tilt development script or unrelated test was staged. The user-owned modified Ni source remains unchanged. No push, merge, release tag or publication occurred.
+The build records `dirty=true` because unrelated local input/development files were preserved and excluded. All packaged runtime source hashes match the final working source exactly. No production dataset, licensed companion data, temporary watcher, raw-tilt development script or unrelated test was staged. The user-owned modified Ni source remains unchanged. No push, merge, release tag or publication occurred during the original local acceptance; subsequent publication is separately authorized.
 
 Build Python: 3.11.17, `build/windows-rc/venv/Scripts/python.exe`. Recorded dependencies: NumPy 2.4.6, SciPy 1.17.1, Matplotlib 3.11.2, ASE 3.29.0, PySide6 6.12.0, PyInstaller 6.22.3. No dependencies were upgraded for this task.
 
@@ -90,16 +90,12 @@ Verified function coverage comes from the existing source/frozen reports: About/
 
 Independent integrity recheck for this documentation update confirms 426/426 regression passes in the saved XML (zero failures/errors/skips), 204/204 unchanged production checkpoint hashes, and the unchanged ZIP SHA256 `9fd5e71437d2c26d4595abb7adde9436e4c333ce18f3a57cf381b0c541bfd94f`; ZIP CRC also passes. No tests or simulations were rerun and no rebuild was required. Evidence: `outputs/v061_final_acceptance/final_release_integrity.json`.
 
-## Publication actions (prepared, not executed)
+## Authorized publication and reproducibility
 
-The release description is [RELEASE_NOTES_0_6_1_BETA_1.md](RELEASE_NOTES_0_6_1_BETA_1.md). After reviewing the final documentation commit, an authorized publisher can publish this accepted feature-branch revision using:
+The publication task authorizes merging the validated development history into **main**, pushing main, creating annotated tag **v0.6.1-beta.1** at final main HEAD, and publishing a GitHub **prerelease** (not stable/Latest). Preflight found origin/main to be an ancestor of the validated branch, with no existing v0.6.1-beta.1 tag or release. Main must be fetched and rechecked immediately before the fast-forward push; branch protection must be respected. Unrelated local files and production checkpoints must not be staged or changed.
 
-```powershell
-git switch feat/full-field-emcd-thickness
-git log -1 --oneline
-git push origin feat/full-field-emcd-thickness
-git tag -a v0.6.1-beta.1 -m "EMCD-Sim v0.6.1-beta.1 Windows Beta"
-git push origin refs/tags/v0.6.1-beta.1
-```
+The [release notes](RELEASE_NOTES_0_6_1_BETA_1.md), [README](../README.md), [Windows installation](INSTALL_WINDOWS.md) and [User Manual](USER_GUIDE.md) identify the current version, real `EMCD-Sim/EMCD-Sim.exe` archive path, 97-grid/2048-MiB defaults, scientific scope and clean-machine limitation. The runtime source remains identical to build revision `e66c97923bd4838188ed03c424dc9973ada55c25`; subsequent changes concern documentation and acceptance only. The frozen About dialog correctly retains that actual build revision.
 
-Then open the repository's GitHub Releases page and create a release using the existing `v0.6.1-beta.1` tag. Title: `EMCD-Sim v0.6.1-beta.1 — Windows Beta`. Paste the prepared release description, mark it as a prerelease, and attach the unchanged `build/windows-v061-beta-final/EMCD-Sim-0.6.1-beta.1-Windows-RC.zip` plus `build/windows-v061-beta-final/SHA256SUMS.txt`. Review the displayed checksum, scope and scientific limitations before publishing. These actions publish the accepted branch/tag; they do not merge it into main. No GitHub CLI installation is required. No publication command was executed during acceptance finalization.
+The original ZIP (108,703,899 bytes, SHA256 `9fd5e71437d2c26d4595abb7adde9436e4c333ce18f3a57cf381b0c541bfd94f`) and its external `SHA256SUMS.txt` are the only requested release assets. The archive is not rebuilt or modified. The publication audit checks final remote main/tag, release flags, asset downloads/checksum and preserved v0.6.0 metadata; its local machine-readable records are stored separately under `outputs/v061_publication/`. A release tag/source revision can therefore be newer than the binary's recorded runtime build revision without changing the numerical code.
+
+Public release location: [v0.6.1-beta.1](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.1). Release publication does not promote experimental validation, global convergence or independent clean-machine testing to PASSED.

@@ -1,16 +1,17 @@
 # EMCD-Sim Desktop User Manual
 
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
-**0.6.0 Windows research Beta - Double-Channeling EMCD Simulation.**
-The [release acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) identifies the
-build, checksums and tested scope. Double Channeling already existed in 0.4.5;
-0.6.0 consolidates its framework and improves Raw / EMCD Asymmetry interpretation.
+**v0.6.1-beta.1 Windows research Beta.** The [acceptance report](V061_BETA_ACCEPTANCE.md) records the validated executable, unchanged checksum and local test scope. Independent clean-machine installation remains **NOT TESTED**. See [release notes](RELEASE_NOTES_0_6_1_BETA_1.md). Double Channeling already existed in earlier releases; this version adds full-field presentation and actual angular-grid controls without changing the solvers.
 For the preserved old executable use the
 [0.4.5 manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/USER_GUIDE.md).
 
 
 
-## Signal definitions in 0.6.0
+## Signal definitions in 0.6.1
+
+<a id="signal-definitions-in-060"></a>
+
+The legacy link above is retained for older documentation.
 
 Both Virtual Detector EELS and EMCD Angular Maps have exactly two primary
 **Signal Display** choices: **Raw (a.u.)** (default) and **EMCD Asymmetry (%)**.
@@ -128,6 +129,39 @@ Use **Maximize / restore results** to expand the result pane, **Maximize /
 restore viewer** for the center, or **View → Restore Default Layout**. Input
 and plot areas scroll when the window is narrow. Complete exported figures
 are more readable than a cramped three-pane window.
+
+## Validated Ni [017], 8 nm Double example
+
+This reproduces the geometry and physical/numerical profile of the representative angular study with **97 x 97** sampling. It does not run the full thickness scan. The source audit may initially select L3 = 831.271 eV; explicitly set **L3 native feature (eV)** to **831.4778** to match this benchmark. Do not shift the source spectrum.
+
+1. **File → New**, then **FCC Ni default** (fcc Ni, a = 3.524 Å). Set **Nominal zone [uvw]** to `0 1 7`, **Target (hkl)** to `2 0 0`, and **Apply orientation / target**. Set **Voltage (kV)** = 200 and **Thickness (nm)** = 8. **Reset to reference geometry** gives **Tilt X (mrad)** = -7.116725439974256 and **Tilt Y (mrad)** = 0. Exact s200 = 0 is the paraxial Bragg reference; competing beams remain in the full finite 2D basis. Leave **Explicit [001] (200) systematic-row approximation** unchecked.
+2. Under **D. MDFF Model**, choose **XMCD-constrained (WIEN2k)**. Use the bundled `EMCD-Sim/_internal/data/wien2k_ni/Ni_fm.xmcd`, click **Validate source / native features**, set **Crystal Cartesian M axis** = `0 0 1`, eta = beta = 1, L3 = **831.4778 eV**, L2 = **848.698 eV**, and check **I declare M axis, RP/LP convention and edge assignments** after inspecting the convention. Cubic [001] rotates to local `[0,-1/sqrt(50),7/sqrt(50)]`; it is not local [017].
+3. Choose **Channeling Model → Double Channeling**, **Propagation Method → Bloch-wave**, **Spectral coverage → Selected L3/L2 samples only (not full EELS)**, and enable **Calculate angular maps**. Disable **Enable post-edge A/B correction** for these two-energy samples; use full spectra for post-edge diagnostics. Set the controls below explicitly rather than relying on preview defaults.
+
+| Setting | Value |
+| --- | --- |
+| Beam cutoff | 4.6 cycles/Å, incoming/outgoing matched, 59 beams for [017] |
+| Potential cutoff | 6.2 cycles/Å |
+| Debye–Waller B | 0 Å² |
+| Angular Map Resolution | Standard - 97x97 |
+| Map halfwidth | 0.5 cycles/Å |
+| Depth integration nodes | 257 |
+| Aperture boundary subpixels | 64, fractional integration |
+| FFT grid (even), if switching to MS | 48 |
+| Max slice step (nm), if switching to MS | 0.04 |
+| Estimated process memory budget | 2048 MiB; admission still checks actual available RAM |
+| Physical detector A center | (+0.2837684449489217, +0.2837684449489217) cycles/Å |
+| Physical detector B center | (+0.2837684449489217, -0.2837684449489217) cycles/Å |
+| Aperture radius | 0.0908059024 cycles/Å |
+| Optional post-edge A/B correction window | 878–882 eV, a separate observable; use full spectra for post-edge diagnostics |
+
+4. Click **Restore Thales A/B** and confirm detector coordinates/radius. Click **Run EMCD / EELS** once. The budget is a ceiling, not an allocation or promise of admission; a rejection must be resolved explicitly, never by an undocumented physical reduction. MS/Both and full spectra can be substantially slower than this BW selected-energy example.
+5. In **EMCD Angular Maps**, choose L3/L2 and **Signal Display → Raw (a.u.) / EMCD Asymmetry (%)**. All valid saved q samples are displayed; circles do not clip the map. In **Virtual Detector EELS**, selected-energy results remain points. Expand **Advanced Diagnostics** for intrinsic magnetic/even fields or magnetic-only percentages. With Both results, the method selector offers **BW-MS numerical difference**; this numerical difference is not a Single-versus-Double model comparison.
+6. Use **Export current plot PNG / SVG…**, the figure toolbar, **Export derived NPZ/CSV + metadata** or **Export completed EMCD / EELS...** as appropriate. Save the full project folder with **File → Save Project As...** and reopen using **Open Project**. Results Browser **View Selected** loads arrays; **Use These Settings** restores input controls separately. Display changes do not propagate the wavefield.
+
+The tracked/bundled source SHA256 is `4fd517af3e54db94588a76b7a6ed9c2f9a1b745cd8fe52b9fca0f87fc4938db3`; the study file SHA256 is `a0e28ea6423b6c7832bb3cce6d69d71aa59336a221baeee3d2556b49ba501283`. Their difference is the terminal newline, not numerical spectrum values, verified in this release documentation audit. Preserve the actual hash of the file used; do not rewrite provenance to make hashes agree. The 97-grid saved BW reference detector asymmetry is about -13.0591%, while the 193-grid reference is about -13.0601%; this is a case-specific numerical comparison, not a universal expected output.
+
+See [angular convergence](ANGULAR_MAP_CONVERGENCE.md), [complete thickness analysis](NI_EMCD_THICKNESS_SCIENTIFIC_ANALYSIS.md), [Ni case study](NI_017_CASE_STUDY_GUIDE.md) and [acceptance scope](V061_BETA_ACCEPTANCE.md). The older screenshots below show their original verified releases and are not mislabeled as captures of this new preset interface.
 
 ## First simulation: FCC Ni [017], exact (200) Bragg
 
@@ -314,8 +348,8 @@ ZOLZ disk. Exact Bragg alignment does not establish physical two-beam isolation.
 | Multislice numerical settings → FFT grid (even) | Real/reciprocal sampling mesh, default 32. Must include the exact common hkl basis; even 12–128 is the supported control range. |
 | Max slice step (nm) | Maximum propagation substep, default 0.04 nm; distinct from the ionization depth nodes. |
 | Depth integration nodes | Ionization/coherence depth sampling, default 64. |
-| Detector grid points / Map halfwidth | Reciprocal sampling and field of view, defaults 33 and 1 cycle/Å. |
-| Aperture subpixels | Boundary sampling for fractional circular area weights, default 64. It does not refine a spatially varying intensity field itself. |
+| Angular Map Resolution / Angular / detector grid points (odd) / Map halfwidth | Actual reciprocal sampling and field of view: Quick Preview 33, Standard 97 (default), High 193, or odd Custom 9–193; halfwidth defaults to 1 cycle/Å. Shared with detector-EELS quadrature. |
+| Aperture boundary subpixels | Boundary sampling for fractional circular area weights, default 64. It does not refine a spatially varying intensity field itself. |
 | Energy sampling points | Saved spectral sampling, with selected edge points additionally included; default 241 can yield 243 saved energies. |
 
 **Calculation Information** reports current/saved settings and memory estimates.
@@ -661,7 +695,7 @@ from an unfinished scan. No full-energy EELS, voltage scan or GUI scan framework
 is added. Large numerical outputs remain local.
 
 
-### Local v0.6.1-beta.1 candidate
+### v0.6.1-beta.1 acceptance
 
 Full-field angular maps use physical qy-reflected point pairs independently of detector overlays. Total asymmetry can contain reversal-even diffraction. Detector-integrated EELS remains a separate observable. See [200 kV scientific audit](NI_EMCD_THICKNESS_SCIENTIFIC_ANALYSIS.md) for raw magnetic intensity, contamination, explicit denominator definitions and the full saved thickness study. Original checkpoints are not bundled.
 # Angular-map resolution update

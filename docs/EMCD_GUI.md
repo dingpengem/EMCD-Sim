@@ -1,6 +1,13 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
-## 0.6.0 Windows Beta: Single and Double Channeling
+## v0.6.1-beta.1 Windows Beta
+
+Use the [current User Manual](USER_GUIDE.md), [installation guide](INSTALL_WINDOWS.md), [release notes](RELEASE_NOTES_0_6_1_BETA_1.md) and [acceptance report](V061_BETA_ACCEPTANCE.md). Full-field maps use actual saved mirrored reciprocal points with nearest-sample rendering and actual grid/spacing metadata. **Angular Map Resolution** provides Quick Preview 33, Standard 97 (default), High 193 and odd Custom grids. **Estimated process memory budget** defaults to 2048 MiB, with 512/1024/2048/4096/8192 choices and available-RAM checks. High is not guaranteed to fit 2048 MiB. FFT grid and aperture boundary subpixels are independent of the shared angular/EELS grid. New Project resets 97/2048; explicit saved settings are preserved.
+
+The final package supports BW/MS Single/Double, Virtual Detector EELS and Full-field EMCD Angular Maps, with the existing Raw/Asymmetry/Advanced distinctions. Source and frozen saved-project acceptance passed; the 426-test regression and 204-checkpoint audit passed. Independent clean-machine installation remains **NOT TESTED**. The [8 nm Ni [017] tutorial](USER_GUIDE.md#validated-ni-017-8-nm-double-example) specifies all parameters and native energies. Current source GUI control labels are used there; the detailed historical milestone record below is retained with its original captions.
+
+## Historical 0.6.0 Windows Beta: Single and Double Channeling
+
 
 **0.6.0 Windows research Beta - Double-Channeling EMCD Simulation.**
 The [release acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) identifies the
@@ -64,7 +71,7 @@ validated profile, native energy convention, component definitions and limits
 of representative numerical convergence. The milestone screenshots and
 historical workflows below describe their original versions; they are not the
 current release acceptance. Use the [0.6.0 release notes](RELEASE_0_6_0_BETA.md)
-and [Windows acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) for the current
+and [Windows acceptance report](WINDOWS_V060_BETA_ACCEPTANCE.md) for that historical
 executable and provenance. The preserved [0.4.5 notes](RELEASE_0_4_5_BETA.md)
 identify the earlier cancellation-fixed build.
 

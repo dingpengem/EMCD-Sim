@@ -1,6 +1,6 @@
 # Angular sampling and memory defaults
 
-The resolution update is source-only. The existing v0.6.1-beta.1 ZIP and its partial release-acceptance status are unchanged; no rebuild, version change, publication or thickness scan is performed.
+The controls described here are included in the validated v0.6.1-beta.1 Windows ZIP. This document retains the original sampling diagnosis and small-job timing scope; later representative production-profile convergence and final packaging are linked below. Publication reuses the validated ZIP without rebuilding or rerunning simulations.
 
 ## Diagnosis
 
