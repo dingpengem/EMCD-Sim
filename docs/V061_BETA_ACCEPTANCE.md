@@ -10,8 +10,9 @@ This record concerns a local candidate only. No push, merge, tag or publication 
 | Complete regression | PASSED | 426 collected / 426 passed / 0 failed / 0 skipped; 31 warnings; 799.24 s |
 | Fresh Windows packaging | PASSED | Fresh PyInstaller executable; ZIP CRC and every archived file hash verified |
 | Rebuilt executable smoke test | PASSED | Native Windows Qt; saved BW/MS Single and Double; zero solver calls; unchanged arrays/projects |
-| Clean-machine installation | NOT TESTED | Same-host testing cannot establish clean-machine acceptance |
-| Overall release acceptance | PARTIAL | Required local gates pass; clean-machine installation remains untested; ready for optional manual review, not publication |
+| Final local Windows acceptance | PASSED | User approved acceptance; validated EXE running/responding on the recorded local Windows 11 host |
+| Independent clean-machine installation | NOT TESTED | The specified local computer has Python/Conda and prior EMCD-Sim installations |
+| User-approved local release acceptance | PASSED | Scientific, regression, package and local Windows gates pass; independent clean-machine acceptance is not claimed; publication remains manual |
 
 ## Scientific evidence and scope
 
@@ -55,7 +56,7 @@ Final machine-readable evidence is saved in `outputs/v061_final_acceptance/`, in
 
 ## Remaining limitations
 
-Same-host standalone testing does not test clean-machine installation, SmartScreen reputation or signing. Scientific agreement concerns matched sampled profiles, with limited representative basis/potential/FFT/depth checks. Approximate XMCD-constrained MDFF, incomplete DFT transition tensor, projected IAM, longitudinal-transfer approximation, absolute energy calibration and uncalibrated intensity remain. No new voltage scan, experimental validation or absolute EELS calibration is claimed.
+The user's subsequent instruction specifies execution on the existing local computer. This is not an independent clean-machine installation: Python/Conda and earlier EMCD-Sim builds are already present. Clean-machine installation remains NOT TESTED, and SmartScreen reputation and signing are not certified. PASSED applies to the user-approved local Windows release scope. Scientific agreement concerns matched sampled profiles, with limited representative basis/potential/FFT/depth checks. Approximate XMCD-constrained MDFF, incomplete DFT transition tensor, projected IAM, longitudinal-transfer approximation, absolute energy calibration and uncalibrated intensity remain. No new voltage scan, experimental validation or absolute EELS calibration is claimed.
 
 
 ## Final build provenance and local Git state
@@ -72,4 +73,33 @@ Frozen runs emitted a Matplotlib temporary font-cache permission warning and a s
 
 The earlier v0.6.0 ZIP remains SHA256 `6adda35a3b52ac35a06681a8cf5fca753aae2f03387feda57373c78ad8be2b5e`; the earlier v0.6.1 candidate remains `97c8aad8c035995720864ce1ed5b8c24340d4209a08b61755cf75bc6189146bd`.
 
-No unresolved local numerical, regression or package-integrity blocker remains. Overall acceptance stays PARTIAL because a clean Windows machine, installation/security behavior and signing have not been tested. The candidate is ready for optional manual release review under the scientific limitations above.
+No unresolved local numerical, regression or package-integrity blocker remains. User-approved local Windows acceptance is PASSED following the user's confirmation and approval on 2026-10-19. Independent clean-machine acceptance remains NOT TESTED. Publication remains a separate manual action.
+
+## Final local Windows acceptance
+
+Result: **PASSED** for the local Windows scope, approved by the user on 2026-10-19. The user then specified opening/executing the GUI locally on their existing computer. This clarification does not establish a clean-machine test.
+
+Actual environment, inspected on 2026-10-19 at 15:13 EDT:
+
+- Microsoft Windows 11 Enterprise, version 10.0.26200, build 26200, 64-bit.
+- Intel Core i7-1365U, 10 cores / 12 logical processors; 31.58 GiB OS-visible RAM (approximately 32 GiB installed).
+- Python/Conda is installed at `C:/Users/peng863/AppData/Local/miniconda3/envs/emcd-python/`; previous EMCD-Sim builds are present. The earlier standalone smoke tests excluded Python/Conda from PATH, but that is not a clean OS installation.
+- Validated executable: `build/windows-v061-beta-final/dist/EMCD-Sim/EMCD-Sim.exe`, version 0.6.1b1, already running as PID 38332. Its window title reports the Beta version and Windows reports it as responding. The existing window was restored and successfully brought to the foreground; no duplicate instance was launched and no calculation was started, cancelled or interrupted.
+
+Verified function coverage comes from the existing source/frozen reports: About/build provenance, 97 x 97 / 2048 MiB defaults, 33/97/193 and Custom controls, explicit saved 512 MiB compatibility, saved BW/MS Single/Double results, full-field maps and detector overlays, mirrored asymmetry and valid/NaN behavior, raw/percentage immutability, EELS, save/open and PNG/SVG/CSV/NPZ exports. These reports retain zero solver calls and unchanged result/project fingerprints. The present interactive check confirms the running local window; it does not independently repeat that entire checklist or assert completion of the user's current calculations. Evidence: `outputs/v061_final_acceptance/local_windows_environment.json` and the existing `source_double_final`, `frozen_single` and `frozen_double` reports.
+
+Independent integrity recheck for this documentation update confirms 426/426 regression passes in the saved XML (zero failures/errors/skips), 204/204 unchanged production checkpoint hashes, and the unchanged ZIP SHA256 `9fd5e71437d2c26d4595abb7adde9436e4c333ce18f3a57cf381b0c541bfd94f`; ZIP CRC also passes. No tests or simulations were rerun and no rebuild was required. Evidence: `outputs/v061_final_acceptance/final_release_integrity.json`.
+
+## Publication actions (prepared, not executed)
+
+The release description is [RELEASE_NOTES_0_6_1_BETA_1.md](RELEASE_NOTES_0_6_1_BETA_1.md). After reviewing the final documentation commit, an authorized publisher can publish this accepted feature-branch revision using:
+
+```powershell
+git switch feat/full-field-emcd-thickness
+git log -1 --oneline
+git push origin feat/full-field-emcd-thickness
+git tag -a v0.6.1-beta.1 -m "EMCD-Sim v0.6.1-beta.1 Windows Beta"
+git push origin refs/tags/v0.6.1-beta.1
+```
+
+Then open the repository's GitHub Releases page and create a release using the existing `v0.6.1-beta.1` tag. Title: `EMCD-Sim v0.6.1-beta.1 — Windows Beta`. Paste the prepared release description, mark it as a prerelease, and attach the unchanged `build/windows-v061-beta-final/EMCD-Sim-0.6.1-beta.1-Windows-RC.zip` plus `build/windows-v061-beta-final/SHA256SUMS.txt`. Review the displayed checksum, scope and scientific limitations before publishing. These actions publish the accepted branch/tag; they do not merge it into main. No GitHub CLI installation is required. No publication command was executed during acceptance finalization.
