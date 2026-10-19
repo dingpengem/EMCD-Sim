@@ -189,7 +189,7 @@ def draw_component_maps(fig,result,edge,method=None,signal_mode='raw'):
         fig.colorbar(im,ax=ax,shrink=.7).set_label(units)
         if not np.isfinite(v).any():ax.text(.1,.5,'All pixels undefined / masked',transform=ax.transAxes)
     e=r['config'].l3 if edge=='L3' else r['config'].l2
-    fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\n'+geometry_description(r)+'\nActual mirrored point pairs; not detector-integrated asymmetry',fontsize=10)
+    fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry',fontsize=10)
     fig._emcd_display_metadata=dict(kind='primary angular components',edge=edge,method=method,**meta,shared_color_scale=True)
 
 
@@ -310,6 +310,9 @@ class ResultsView(QtWidgets.QWidget):
             from .component_display import TOOLTIPS
             self.component_mode.setToolTip(TOOLTIPS[self.component_mode.currentData()])
             self.display_note.setText('Display only; simulation arrays unchanged. '+('Explicit advanced diagnostics.' if advanced else TOOLTIPS[self.component_mode.currentData()]))
+            if self.kind=='maps' and not advanced:
+                note='Full-field mirrored-point EMCD; actual saved qy-reflected samples, independent of detector outlines. Includes possible nonmagnetic diffraction asymmetry.'
+                self.component_mode.setToolTip(note);self.display_note.setText(note)
         except (ValueError,KeyError) as exc:
             self.figure.clear();self.figure.subplots().text(.05,.6,'Normalization unavailable: '+str(exc),wrap=True);self.display_note.setText(str(exc));self.figure._emcd_display_metadata=dict(unavailable=str(exc),derived_visualization_only=True)
         if self.kind=='eels' and hasattr(self.owner,'comparison'):self.owner.comparison.setPlainText(comparison_text(self.result,display.windows))

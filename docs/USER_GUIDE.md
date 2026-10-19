@@ -46,8 +46,12 @@ point-pair percentages, **not detector-integrated EELS**. Integrate the raw
 A/B intensities with physical aperture weights first, then take their ratio;
 do not average percentage pixels. Existing denominator floors are retained:
 invalid/near-zero samples remain NaN. No scientific values are clipped.
-Unavailable mirror support, incompatible grids or unmatched physical A/B
-apertures produce an explanation, not a fabricated reflection. Exact Bragg
+Unavailable mirror coordinates, incomplete intensity arrays or incompatible
+grids produce an explanation, not a fabricated reflection. Physical A/B
+apertures are overlays only for the primary full-field map: even nonmirrored
+manual detectors do not invalidate its mathematical point pairs. They still
+change the separately integrated detector EELS. Legacy aperture-restricted
+Advanced Diagnostics retain their physical A/B mirror/weight validation. Exact Bragg
 alignment alone does not guarantee mirror geometry. Restricted-row and full
 finite ZOLZ results remain distinct.
 
@@ -336,6 +340,8 @@ values always refer to original arrays, regardless of display normalization.
 
 ## Read angular maps
 
+The primary **Full-field mirrored-point EMCD** display uses the complete
+calculated intensity grid, independently of A/B aperture locations or weights.
 The default **Raw (a.u.)** view shows magnetic and nonmagnetic mirrored
 point-pair differences on a common signed original-intensity scale. Select
 **EMCD Asymmetry (%)** for one total +M difference/sum map. The saved samples
@@ -642,3 +648,14 @@ asymmetry and peak-normalized signals distinct.
 See [physics](PHYSICS.md), [GUI technical reference](EMCD_GUI.md),
 [installation troubleshooting](INSTALL_WINDOWS.md#troubleshooting) and
 [Beta acceptance status](WINDOWS_BETA_RELEASE_ACCEPTANCE.md) for further detail.
+
+## Complete 200 kV thickness workflow
+
+The separate [full-field/thickness study](FULL_FIELD_EMCD_THICKNESS_200KV.md)
+uses fixed native L3/L2 energies and the validated enlarged profile. Run
+`python scripts/ni_emcd_complete_thickness.py` for the read-only checkpoint
+audit/runtime estimate; add `--run` to resume only missing cases. Each MS job
+calculates Single and Double jointly, saves atomically and releases temporary
+fields. Use the completion/progress files to distinguish a complete curve
+from an unfinished scan. No full-energy EELS, voltage scan or GUI scan framework
+is added. Large numerical outputs remain local.

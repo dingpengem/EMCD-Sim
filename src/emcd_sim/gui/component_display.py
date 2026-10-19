@@ -85,7 +85,10 @@ def readouts(result):
 def primary_angular(result,edge,mode='raw'):
     """Actual qy-mirrored samples; not detector-integrated intensities."""
     if mode not in MODES:raise ValueError('Unknown primary angular signal display')
-    validate_pair(result,edge)
+    if not getattr(result['config'],'angular_maps',True) or result.get('metadata',{}).get('angular_maps_calculated') is False:
+        raise ValueError('Full-field angular maps were not calculated')
+    if edge not in result['maps']:
+        raise ValueError('Full-field angular maps are unavailable; genuine angular calculation required')
     qx,qy=np.asarray(result['qx']),np.asarray(result['qy'])
     if (qx.ndim!=2 or qy.shape!=qx.shape or not np.isfinite(qx).all() or not np.isfinite(qy).all()
         or not np.allclose(qx,qx[0:1],rtol=0,atol=1e-13)
@@ -94,15 +97,19 @@ def primary_angular(result,edge,mode='raw'):
         or not np.allclose(np.diff(qx[0]),np.diff(qx[0])[0],rtol=1e-12,atol=1e-13)
         or not np.allclose(np.diff(qy[:,0]),np.diff(qy[:,0])[0],rtol=1e-12,atol=1e-13)):
         raise ValueError('Paired angular display requires the stored regular increasing reciprocal coordinate grid')
+    if not np.allclose(qy,-qy[::-1],rtol=0,atol=1e-13):
+        raise ValueError('Insufficient actual mirrored reciprocal-space support')
     maps=result['maps'][edge];ap=np.asarray(maps['I_plus']);am=np.asarray(maps['I_minus'])
     if ap.shape!=qx.shape or am.shape!=qx.shape:raise ValueError('Angular reversal arrays do not match saved coordinates')
+    if not np.isfinite(ap).all() or not np.isfinite(am).all():
+        raise ValueError('Insufficient complete angular intensity support; genuine full-field calculation required')
     s,mask=reversal_signals(ap,ap[::-1],am,am[::-1],floor=MAP_FLOOR)
     values=({'Magnetic paired difference':s['D_mag'],'Nonmagnetic paired difference':s['D_nonmag']}
         if mode=='raw' else {'EMCD Asymmetry':s['emcd_asymmetry_percent']})
     meta=dict(mode=mode,units='Angular intensity difference (a.u.)' if mode=='raw' else MODES[mode],
         denominator=None if mode=='raw' else 'I_plus(qx,qy,E) + I_plus(qx,-qy,E)',
-        pairing='Actual saved qy reflection; array[::-1]; validated physical A/B apertures',
-        support='Full actual saved angular grid; not finite-aperture integrals',mask=mask,
+        pairing='Actual saved qy reflection; array[::-1]; independent of detector aperture locations',
+        support='Full-field mirrored-point EMCD; full actual saved grid, not finite-aperture integrals',mask=mask,
         derived_visualization_only=True)
     return {k:np.array(v,copy=True) for k,v in values.items()},meta
 

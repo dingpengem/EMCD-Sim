@@ -83,10 +83,14 @@ Raw displays D_mag and D_nonmag below, while total Asymmetry displays exactly
 one 100*(A_plus-B_plus)/(A_plus+B_plus) curve. The renamed **EMCD Asymmetry**
 scalar group retains native L3/L2 readouts, evaluation energy and lock.
 
-Raw maps show M(q)-M(q') and N(q)-N(q') on one zero-centered signed scale.
+Primary **Full-field mirrored-point EMCD** Raw maps show M(q)-M(q') and
+N(q)-N(q') over the complete calculated grid on one zero-centered signed scale.
 Total map Asymmetry uses the +M difference divided by the +M sum at actual
 validated (qx,qy)/(qx,-qy) samples. Invalid denominators remain NaN; mirror
-validation includes physical aperture matching and saved coordinate support.
+validation checks actual saved reciprocal coordinates and complete intensity
+support. Physical detector apertures are independent overlays; nonmirrored
+manual A/B positions do not disable mathematical full-field point pairs.
+Legacy Advanced paired maps still require physical aperture matching.
 000, actual ZA, hkl, target, Thales circle and A/B outlines are retained.
 These are point-pair densities, not finite-aperture EELS. Integrate intensities
 before taking a detector ratio; never average percentage pixels.

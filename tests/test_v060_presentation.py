@@ -79,7 +79,8 @@ def test_mirror_map_hand_reference_and_invalid_denominators(result):
     r=dict(r,maps={'L3':dict(maps,I_plus=plus,I_minus=minus)})
     value,_=primary_angular(r,'L3','asymmetry');assert np.isnan(value['EMCD Asymmetry'][[0,-1],0]).all()
     invalid=dict(result,config=replace(result['config'],centers=((.1,.2),(.2,-.2))))
-    with pytest.raises(ValueError,match='not y mirrors'):primary_angular(invalid,'L3')
+    expected,_=primary_angular(result,'L3');actual,_=primary_angular(invalid,'L3')
+    for key in expected:np.testing.assert_array_equal(expected[key],actual[key])
     invalid=dict(result,qx=result['qx'][:,::-1])
     with pytest.raises(ValueError,match='regular increasing'):primary_angular(invalid,'L3')
 
