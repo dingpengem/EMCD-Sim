@@ -81,7 +81,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         actions=QtWidgets.QHBoxLayout();layout.addLayout(actions)
         self.run_button=QtWidgets.QPushButton('Preview diffraction');self.run_button.clicked.connect(self.start_preview);actions.addWidget(self.run_button)
         self.cancel_button=QtWidgets.QPushButton('Cancel');self.cancel_button.clicked.connect(self.cancel);self.cancel_button.setEnabled(False);actions.addWidget(self.cancel_button)
-        fit=QtWidgets.QPushButton('Show full basis');fit.clicked.connect(lambda:self.refresh(fit=True));actions.addWidget(fit)
+        self._basis_view_limits=None;self._basis_view_geometry=None
+        self.basis_view_button=QtWidgets.QPushButton('Show full basis');self.basis_view_button.clicked.connect(self.toggle_basis_view);actions.addWidget(self.basis_view_button)
         maximum=QtWidgets.QPushButton('Maximize / restore viewer');maximum.clicked.connect(self.maximize_view);actions.addWidget(maximum)
         layout.addWidget(self.canvas,1);self.selection=QtWidgets.QLabel();self.selection.setWordWrap(True);layout.addWidget(self.selection)
         self.progress=QtWidgets.QProgressBar();self.progress.setRange(0,1);self.progress.setValue(0);layout.addWidget(self.progress)
@@ -134,11 +135,38 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             if s.target in self.current[2]:self.restore_detectors()
         except Exception as exc:self.error(str(exc))
 
+    def invalidate_basis_view(self):
+        self._basis_view_limits=None
+        self.basis_view_button.setText('Show full basis')
+
+    def toggle_basis_view(self):
+        """Change only the viewport; pan/zoom and plotting data stay untouched."""
+        if self._basis_view_geometry is None:return
+        if self._basis_view_limits is None:
+            self._basis_view_limits=(self.ax.get_xlim(),self.ax.get_ylim())
+            bound=self.drawn_settings.beam_cutoff+.2
+            limits=((-bound,bound),)*2
+            self.basis_view_button.setText('Restore previous view')
+        else:
+            limits=self._basis_view_limits
+            self.invalidate_basis_view()
+        self.ax.set(xlim=limits[0],ylim=limits[1],aspect='equal')
+        self.canvas.draw_idle()
+
     def refresh(self,*_,fit=False):
         if not hasattr(self,'canvas'):return
         self.resolve_numerical_ui()
         try:
             s=self.settings();self.current=geometry(self.structure,s,systematic_row=self.row_projection.isChecked());self.drawn_settings=s;crystal,R,hkl,g,microscope=self.current
+            # Include marker geometry as well as the reciprocal basis. Intensity-
+            # only refreshes keep the saved viewport; incompatible geometry also
+            # clears Matplotlib's navigation history to prevent stale Home/Back.
+            view_geometry=(s.zone,s.target,s.tilt,s.voltage,s.beam_cutoff,self.row_projection.isChecked(),
+                self.structure.atoms.cell.array.tobytes(),self.structure.atoms.get_scaled_positions().tobytes(),
+                tuple(self.structure.atoms.get_chemical_symbols()),tuple(hkl),g.tobytes())
+            if view_geometry!=self._basis_view_geometry:
+                self.invalidate_basis_view();self.toolbar.update()
+            self._basis_view_geometry=view_geometry;self.basis_view_button.setEnabled(True)
             from ..geometry import electron_wavelength_angstrom
             angle=1000*electron_wavelength_angstrom(s.voltage)*s.beam_cutoff
             self.spin['beam'].setToolTip(f'BW: limits diffraction beams retained in the Bloch-wave eigenproblem and MDFF response. MS: limits retained diffraction beams used for MDFF contraction. Additional FFT harmonics may participate in MS propagation. g=1/d, Å⁻¹; no 2π conversion. Approximate angular equivalent λ|g|max = {angle:.4f} mrad at {s.voltage:g} kV. Not the EELS detector collection limit.')
@@ -178,6 +206,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
                 +f'\nCompleted previews this session: {len(self.history)}')
             self.statusBar().showMessage(f'{len(hkl)} included reciprocal points. '+('Current preview.' if fresh else 'Geometry only; press Preview diffraction explicitly.'))
         except Exception as exc:
+            self.invalidate_basis_view();self._basis_view_geometry=None;self.basis_view_button.setEnabled(False);self.toolbar.update()
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'Ni IAM species supported; geometry needs correction.'))
             self.info.setPlainText(self.structure.description()+'\n\nNo valid current geometry: '+str(exc))
             self.run_button.setEnabled(False);self.align_button.setEnabled(False);self.tabs.setTabText(0,'Diffraction (last preview)');self.ax.clear();self.ax.set_title('Invalid configuration — no current plot');self.canvas.draw_idle();self.selection.setText(str(exc));self.statusBar().showMessage(str(exc))
