@@ -21,10 +21,10 @@ def run(output,project=None,workers=None):
         stages=[],heartbeats=0,start=time.time(),errors=[])
     w.error=report['errors'].append
     w.new_project()
-    assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,3,2)
+    assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,3.2,2.5)
     assert w.spin['grid'].value()==97 and w.memory_budget.currentData()==2048
     assert w.worker_mode.currentIndex()==0 and not w.shared_resources_group.isHidden()
-    report['new_defaults']=dict(voltage=300,beam=3,potential=2,grid=97,memory_budget_mib=2048)
+    report['new_defaults']=dict(voltage=300,beam=3.2,potential=2.5,grid=97,memory_budget_mib=2048)
     if project:
         result=load_project(project);before=fingerprints(result);w.emcd_result=result;w.use_result_settings()
         assert w.settings()==result['settings'] and w.forward_settings()==result['config']
@@ -32,7 +32,9 @@ def run(output,project=None,workers=None):
     else:
         w.declaration.setChecked(True)  # Explicit test declaration, never a source calibration.
     w.propagation_box.setCurrentIndex(0);w.channeling_box.setCurrentIndex(1)
-    w.numerical_mode.setCurrentIndex(1);w.spin['beam'].setValue(3.)
+    w.numerical_mode.setCurrentIndex(1)
+    if project:w.spin['beam'].setValue(3.)  # Retain the explicit historical crash profile.
+    run_cutoffs=(w.settings().beam_cutoff,w.settings().potential_cutoff)
     numeric=w.numerical_snapshot();w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(4)
     assert w.numerical_snapshot()==numeric
     if report['native']['platform']=='win32' and report['native']['threads']!=1:
@@ -41,12 +43,13 @@ def run(output,project=None,workers=None):
         report['parallel_request_blocked']=True;report['blocked_preview']=w.memory_label.text()
         w.spin['beam'].setValue(2.5);assert 'Retained beams: 21' in w.memory_label.text()
         w.spin['beam'].setValue(3.);assert 'Retained beams: 27' in w.memory_label.text()
+        w.spin['beam'].setValue(run_cutoffs[0])
     else:report['parallel_request_blocked']=False
     if workers is None:w.worker_mode.setCurrentIndex(0)
     else:w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(workers)
     w.energy_scope.setCurrentIndex(1);w.angular_maps.setChecked(False)
     report['run_preview']=w.memory_label.text();report['requested_workers']=workers
-    assert w.settings().beam_cutoff==3 and w.settings().potential_cutoff==2
+    assert (w.settings().beam_cutoff,w.settings().potential_cutoff)==run_cutoffs
     w.show();app.processEvents()
     for area in w.findChildren(QtWidgets.QScrollArea):
         if area.widget() is w.inputs:area.ensureWidgetVisible(w.worker_mode)
@@ -68,7 +71,7 @@ def run(output,project=None,workers=None):
             result=w.emcd_result;execution=result['metadata']['execution']
             assert execution['effective_workers']['bloch']==(workers or 1)
             assert execution['native']['threads']==report['native']['threads']==native_backend_info()['threads']
-            assert result['settings'].beam_cutoff==3 and result['settings'].potential_cutoff==2
+            assert (result['settings'].beam_cutoff,result['settings'].potential_cutoff)==run_cutoffs
             before=fingerprints(result);destination=output/'saved_project';save_project(result,destination)
             assert fingerprints(load_project(destination))==before
             export_result(result,output/'exports')

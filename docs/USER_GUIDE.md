@@ -2,7 +2,7 @@
 
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
 
-**Current Windows prerelease: v0.6.1-beta.2.** It includes the worker-safety and GUI/performance developments described below. See [Beta 2 release notes and acceptance](RELEASE_NOTES_0_6_1_BETA_2.md). Beta 1 statements and acceptance below document the preserved historical package. New projects use 300 kV and 3.0/2.0 cycles/Å beam/potential cutoffs; explicitly choose 200 kV for the locked scientific example.
+**Current Windows prerelease: v0.6.1-beta.2.** It includes the worker-safety and GUI/performance developments described below. See [Beta 2 release notes and acceptance](RELEASE_NOTES_0_6_1_BETA_2.md). Beta 1 statements and acceptance below document the preserved historical package. Post-release source projects use 300 kV and 3.2/2.5 cycles/Å beam/potential cutoffs; the published Beta 2 ZIP retains 3.0/2.0. Explicitly choose 200 kV for the locked scientific example.
 
 **Current main and Beta 2** include Automatic / Manual settings, the reversible **Show full basis / Restore previous view** control, energy-dependent angular scheduling and MS Double allocation improvements. They are newer than the unchanged historical Beta 1. See [Beta 2 installation](INSTALL_WINDOWS.md) and the historical [integration record](GUI_PERFORMANCE_INTEGRATION.md). New projects use Automatic, 97 x 97 angular sampling and a 2048 MiB process budget; legacy projects retain explicit saved numerical values in Manual. These convenience and execution changes do not establish convergence for arbitrary parameters.
 **v0.6.1-beta.1 Windows research Beta.** The [acceptance report](V061_BETA_ACCEPTANCE.md) records the validated executable, unchanged checksum and local test scope. Independent clean-machine installation remains **NOT TESTED**. See [release notes](RELEASE_NOTES_0_6_1_BETA_1.md). Double Channeling already existed in earlier releases; this version adds full-field presentation and actual angular-grid controls without changing the solvers.
@@ -365,8 +365,8 @@ Memory estimates and admission failures remain visible. Automatic selection
 does not propagate waves, evaluate MDFF, run trial calculations or establish
 convergence. Pressing Run starts only the requested calculation.
 
-The deterministic `automatic-starting-v2` policy normally uses the development
-starting values: beam 3.0 Å⁻¹, potential 2.0 Å⁻¹, depth 64, maximum MS step
+The deterministic `automatic-starting-v3` policy normally uses the development
+starting values: beam 3.2 Å⁻¹, potential 2.5 Å⁻¹, depth 64, maximum MS step
 0.04 nm, angular grid 97, 64 aperture subpixels, halfwidth 1 Å⁻¹, 241 energy
 samples and 2048 MiB budget. It retains the selected physical geometry, B,
 systematic-row approximation, source, magnetization and detector positions.
@@ -430,7 +430,7 @@ Panel F groups Manual controls into **Elastic Potential and Beam Support**, **In
 | Estimated process memory budget | Shared execution/admission resource, **not a physical-model parameter or required allocation**; stored unchanged and checked against current available RAM. |
 | Memory estimate and solver explanation | Diagnostics-only presentation; estimates reflect the currently selected engines, basis/sampling, retained allocations and RAM. |
 
-The physical-model and angular/integration categories affect both engines; memory admission and worker scheduling are separate resources rather than scattering parameters. Only FFT mesh and maximum slice step are MS-only. New development-project defaults are **300 kV**, beam **3.0 cycles/Å**, potential **2.0 cycles/Å**, B = 0, 64 depth nodes, FFT 32, maximum step 0.04 nm, energy count 241, halfwidth 1 cycle/Å, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. New-project reference alignment follows the selected voltage; loading a saved project preserves its explicit voltage, tilt, cutoffs and sampling. Production reference settings are not substituted as ordinary defaults.
+The physical-model and angular/integration categories affect both engines; memory admission and worker scheduling are separate resources rather than scattering parameters. Only FFT mesh and maximum slice step are MS-only. New development-project defaults are **300 kV**, beam **3.2 cycles/Å**, potential **2.5 cycles/Å**, B = 0, 64 depth nodes, FFT 32, maximum step 0.04 nm, energy count 241, halfwidth 1 cycle/Å, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. New-project reference alignment follows the selected voltage; loading a saved project preserves its explicit voltage, tilt, cutoffs and sampling. Production reference settings are not substituted as ordinary defaults.
 
 ### Parallel Workers and pre-Run risk
 

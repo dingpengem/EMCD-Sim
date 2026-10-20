@@ -235,7 +235,7 @@ class ProjectWorkspace:
         self.save_to_path(target,approved)
     def new_project(self):
         if self.busy:return
-        self.set_values(dict(kv=300,beam=3.0,potential=2.0))
+        self.set_values(dict(kv=300,beam=3.2,potential=2.5))
         self.worker_mode.setCurrentIndex(0);self.worker_count.setValue(1)
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(0)

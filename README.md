@@ -58,6 +58,8 @@ Select and validate the bundled five-column XMCD source, inspect its native ener
 
 ## GUI workflow
 
+**Post-release source defaults:** new projects now use beam cutoff **3.2 Å⁻¹** and potential Fourier cutoff **2.5 Å⁻¹**. Automatic starting settings and New Project use these values; saved projects retain their explicit settings. The published Beta 2 Windows ZIP retains its original 3.0/2.0 defaults until a new build is validated and released.
+
 **Beta 2 worker-safety update:** new projects start at **300 kV**, beam/MDFF cutoff **3.0 Å⁻¹**, potential cutoff **2.0 Å⁻¹**, angular grid **97×97** and **2048 MiB**. Panel F adds independent Automatic/Manual **Parallel Workers**, actual native BLAS threading and a pre-Run resource/risk preview. These are starting settings, not universal convergence or crash guarantees. The old Beta 1 and development ZIPs predate this fix; see the [validation report](docs/BW_PARALLEL_WORKER_SAFETY.md).
 
 **Beta 2 numerical settings:** numerical settings default to Automatic, with a read-only parameter summary and full Manual overrides. Selection uses inexpensive configuration checks, without trial simulations or a guarantee of convergence. MS-only FFT/slice controls remain separate from shared support and sampling. See the [selection policy](docs/USER_GUIDE.md#automatic-and-manual-numerical-settings) and [parameter-role table](docs/USER_GUIDE.md#development-source-shared-and-solver-specific-settings). The historical v0.6.1-beta.1 binary is unchanged.

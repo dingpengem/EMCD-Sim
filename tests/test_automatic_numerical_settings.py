@@ -49,7 +49,7 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
         values,_=resolve_parameters(Structure.nickel(),Settings(),cfg)
         assert values['fft_grid']==minimum
     assert [c.fft_grid for s,c in calls]==list(range(32,min(minimum,128)+1,2))
-    assert all(s.beam_cutoff==3.0 and s.potential_cutoff==2.0 and c.depth==64 and c.slice_step==.04 for s,c in calls)
+    assert all(s.beam_cutoff==3.2 and s.potential_cutoff==2.5 and c.depth==64 and c.slice_step==.04 for s,c in calls)
 
 
 def test_pure_resolution_never_calls_scientific_solvers():
@@ -88,7 +88,7 @@ def test_reference_selection_and_fft_support(method,channel):
 ])
 def test_unmatched_never_claims_convergence(settings,cfg):
     values,meta=resolve_parameters(Structure.nickel(),settings,cfg)
-    assert values['beam']==3.0 and values['potential']==2.0
+    assert values['beam']==3.2 and values['potential']==2.5
     assert 'convergence not established' in meta['status']
 
 
@@ -125,7 +125,7 @@ def test_manual_roundtrip_preserves_physics_and_overrides(window):
     for i in (1,2,0):w.propagation_box.setCurrentIndex(i)
     assert w.numerical_snapshot()==manual
     w.numerical_mode.setCurrentIndex(0)
-    assert w.spin['grid'].value()==97 and w.spin['beam'].value()==3.0
+    assert w.spin['grid'].value()==97 and w.spin['beam'].value()==3.2 and w.spin['potential'].value()==2.5
     w.numerical_mode.setCurrentIndex(1)
     assert w.numerical_snapshot()==manual and w.forward_settings()==cfg
     assert replace(w.settings(),beam_cutoff=physical.beam_cutoff,potential_cutoff=physical.potential_cutoff)==physical

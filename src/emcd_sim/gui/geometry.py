@@ -83,8 +83,8 @@ class Settings:
     tilt: tuple=(round(float(-1000*electron_wavelength_angstrom(300)/3.524),10),0.)
     voltage: float=300.
     thickness: float=30.
-    beam_cutoff: float=3.0
-    potential_cutoff: float=2.0
+    beam_cutoff: float=3.2
+    potential_cutoff: float=2.5
     b_factor: float=0.
 
 

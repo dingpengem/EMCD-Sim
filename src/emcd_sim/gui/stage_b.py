@@ -111,9 +111,9 @@ class StageB(NumericalSettingsUI):
     def numerical_controls(self):
         shared_form=self.form
         self.shared_elastic_group=self.shared_group('Elastic Potential and Beam Support')
-        self.number('beam','Beam / MDFF basis cutoff (Å⁻¹)',3.0,.2,6.5,self.refresh)
+        self.number('beam','Beam / MDFF basis cutoff (Å⁻¹)',3.2,.2,6.5,self.refresh)
         self.spin['beam'].setToolTip('Shared retained basis: BW uses these elastic beams; MS uses the same ordered beams for diffraction/MDFF contraction. Additional FFT harmonics may participate in MS propagation. This is not a BW-only cutoff.')
-        self.number('potential','Potential Fourier cutoff\n|g−g′|max (Å⁻¹)',2.0,.1,6.5,self.refresh)
+        self.number('potential','Potential Fourier cutoff\n|g−g′|max (Å⁻¹)',2.5,.1,6.5,self.refresh)
         self.spin['potential'].setToolTip('BW: limits crystal-potential Fourier components used in diffraction-beam coupling. MS: limits Fourier components used to construct the projected real-space potential. U_(g−g′), |g−g′| ≤ cutoff. Distinct from beam radius, ionization momentum transfer and detector extent. Crystallographic g=1/d; no extra 2π.')
         self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
         self.spin['b'].setToolTip('Shared IAM elastic-potential damping for both BW and MS; not a solver-specific sampling control.')

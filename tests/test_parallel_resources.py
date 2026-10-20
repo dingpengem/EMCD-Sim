@@ -17,7 +17,7 @@ def native(threads=12):
         platform='win32',numpy_version='2.4.6',cpu_count=12,machine='AMD64')
 
 
-def primary():return replace(Settings(),thickness=8,tilt=(-7.11672544,0))
+def primary():return replace(Settings(),thickness=8,tilt=(-7.11672544,0),beam_cutoff=3.,potential_cutoff=2.)
 
 
 @pytest.mark.parametrize('method',['bloch','fft-multislice','both'])
@@ -119,7 +119,7 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
         w=MainWindow(workspace=tmp_path/'workspace')
         try:
             w.model_box.setCurrentIndex(1);w.channeling_box.setCurrentIndex(1)
-            assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,3,2)
+            assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,3.2,2.5)
             assert w.settings()==Settings()
             assert w.spin['grid'].value()==97 and w.memory_budget.currentData()==2048
             assert not w.shared_resources_group.isHidden()
@@ -131,7 +131,7 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
             assert 'Retained beams: 21' in w.memory_label.text()
             w.spin['kv'].setValue(200);assert 'Voltage: 200' in w.memory_label.text()
             w.new_project()
-            assert w.settings().voltage==300 and w.settings().beam_cutoff==3 and w.worker_mode.currentIndex()==0
+            assert w.settings().voltage==300 and w.settings().beam_cutoff==3.2 and w.settings().potential_cutoff==2.5 and w.worker_mode.currentIndex()==0
         finally:w.close();app.processEvents()
 
 
