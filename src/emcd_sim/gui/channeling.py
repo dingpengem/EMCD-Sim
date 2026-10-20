@@ -1,5 +1,7 @@
 """GUI adapters to the existing channeling kernels; no scattering model here."""
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+import sys,threading
 from time import perf_counter
 import numpy as np
 from ..double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch
@@ -14,7 +16,29 @@ def fft_geometry(elastic,settings,cfg):
         projected_geometry=Ni017Geometry() if settings.zone==(0,1,7) else None)
 
 
+_windows_bw_lock=threading.Lock()
+
+
+@contextmanager
+def bw_executor_guard(method,cancelled):
+    """Serialize Windows BW detector executors, including independent requests.
+
+    The Windows NumPy OpenBLAS runtime can access-violate when concurrent
+    outgoing eigh calls use its native thread pool. Do not change global BLAS
+    settings or scientific inputs. Waiting for another request is cancellable.
+    """
+    if method!='bloch' or sys.platform!='win32':
+        yield;return
+    from ..cancellation import check_cancelled
+    while not _windows_bw_lock.acquire(timeout=.05):check_cancelled(cancelled)
+    try:
+        check_cancelled(cancelled)
+        yield
+    finally:_windows_bw_lock.release()
+
+
 def worker_count(n,method):
+    if method=='bloch' and sys.platform=='win32':return 1
     dense=80*n**4/2**20
     return min(4,max(1,int(1200/(dense+40)))) if method=='bloch' else 4
 
@@ -117,8 +141,9 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             batches=([query[i:i+32] for i in range(0,len(query),32)] if method=='fft-multislice'
                      else [a for a in np.array_split(query,min(workers,len(query))) if len(a)])
             start_response=perf_counter()
-            with ThreadPoolExecutor(max_workers=workers) as pool:
-                responses=list(pool.map(response,batches))
+            with bw_executor_guard(method,cancelled):
+                with ThreadPoolExecutor(max_workers=workers) as pool:
+                    responses=list(pool.map(response,batches))
             r=np.concatenate(responses)
             diagnostic.update(outgoing_response_seconds=perf_counter()-start_response,response_batches=len(batches),outgoing_directions=len(query),workers=workers)
             start_contract=perf_counter()

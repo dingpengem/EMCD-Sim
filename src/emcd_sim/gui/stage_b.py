@@ -33,7 +33,12 @@ class EMCDWorker(QtCore.QThread):
     def run(self):
         try:
             logging.getLogger('emcd_sim.gui').info('Calculate method=%s model=%s source=%s sha256=%s', self.config.propagation, self.config.model, self.config.source, self.config.source_sha256)
-            r=calculate(self.structure,self.settings,self.config,self.stage.emit,self.cancelled)
+            logger=logging.getLogger('emcd_sim.gui')
+            logger.info('Calculation inputs settings=%s config=%s',asdict(self.settings),asdict(self.config))
+            def progress(message):
+                logger.info('Calculation stage: %s',message)
+                self.stage.emit(message)
+            r=calculate(self.structure,self.settings,self.config,progress,self.cancelled)
             if not self.cancelled():self.result.emit(r)
         except Cancelled:pass
         except Exception as exc:
