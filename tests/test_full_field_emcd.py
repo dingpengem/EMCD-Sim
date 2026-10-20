@@ -95,11 +95,23 @@ def scan_module():
 
 def test_checkpoint_equivalence_is_audited_and_physical_drift_rejected():
     scan=scan_module();aliases,audit=scan.implementation_audit()
-    assert all(r['default_path_ast_equal'] for r in audit.values())
+    assert all(r['default_path_ast_equal'] or r['validated_buffer_equivalence'] for r in audit.values())
     p=dict(thickness_nm=8,fft_grid=48,depth_steps=257,source_sha256='same')
     assert scan.compatible(p,p,aliases)
     for key,value in [('fft_grid',32),('depth_steps',129),('source_sha256','wrong')]:
         altered=dict(p,**{key:value});assert not scan.compatible(altered,p,aliases)
+
+
+def test_checkpoint_audit_rejects_unknown_optimized_implementation(monkeypatch):
+    scan=scan_module();read=Path.read_bytes
+    def changed(path):
+        data=read(path)
+        if path.as_posix()=='src/emcd_sim/multislice_double_channeling.py':
+            return data+b'\nUNKNOWN_PHYSICS_CHANGE = True\n'
+        return data
+    monkeypatch.setattr(Path,'read_bytes',changed)
+    with pytest.raises(AssertionError,match='Default numerical path changed'):
+        scan.implementation_audit()
 
 
 def test_atomic_compact_checkpoint_preserves_raw_precision(tmp_path):

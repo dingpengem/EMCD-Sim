@@ -114,7 +114,8 @@ class WorkerTests(unittest.TestCase):
         w.spin['tx'].setValue(-8);self.assertIn('STALE',w.eels_view.label.text());self.assertEqual(r['settings'].tilt,Settings().tilt)
 
     def test_real_worker_display_and_detector_recalculation(self):
-        w=self.w;w.set_values(dict(beam=2.2,energy=17,grid=17,depth=12,subpixels=16));w.refresh()
+        w=self.w;w.numerical_mode.setCurrentIndex(1)
+        w.set_values(dict(beam=2.2,energy=17,grid=17,depth=12,subpixels=16));w.refresh()
         w.start_emcd();self.assertTrue(w.worker.wait(15000));self.app.processEvents()
         self.assertEqual(w.run_outcome,'completed');self.assertTrue(w.tabs.isTabEnabled(2))
         old=w.emcd_result['spectra']['I_A_plus'].copy();w.spin['ax'].setValue(.4)

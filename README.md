@@ -14,6 +14,7 @@ EMCD-Sim is a research simulation tool for **electron magnetic circular dichrois
 - Signed magnetic/nonmagnetic decomposition, raw differences, total EMCD Asymmetry and Advanced Diagnostics.
 - Checksummed projects, Results Browser, PNG/SVG figures and CSV/NPZ scientific exports.
 - Checkpointed research thickness workflows, configurable memory admission and cooperative cancellation.
+- Current development source adds Automatic / Manual Numerical Settings, exact detector-support sampling away from selected map energies, and optimized MS Double buffers. Automatic performs configuration checks without trial simulations; convergence still requires numerical validation.
 
 ## Supported physical models
 
@@ -67,11 +68,15 @@ Select and validate the bundled five-column XMCD source, inspect its native ener
 
 1. Set structure, zone/target, voltage, thickness, absolute incident tilt and diffraction settings.
 2. Choose the MDFF and crystal-frame magnetization, then Single/Double and BW/MS/Both.
-3. Configure angular grid, independent FFT mesh, aperture boundary subpixels, physical detectors and memory budget.
+3. Use **Automatic** Numerical Settings, inspect **View Numerical Parameters**, and switch to **Manual (Advanced)** for explicit overrides. Set physical detectors separately. Automatic distinguishes matching reference settings from starting configurations.
 4. View **BW/MS Diffraction**, **Virtual Detector EELS** and **EMCD Angular Maps**. **Signal Display** offers **Raw (a.u.)** or **EMCD Asymmetry (%)**; Advanced Diagnostics retains magnetic-only/even percentages and corrected contrasts.
 5. Save with **File → Save Project As...**. Reopen the complete project folder with **Open Project** or **Results Browser → View Selected**; viewing does not rerun physics. **Use These Settings** restores inputs separately.
 
 **Angular Map Resolution:** Quick Preview 33 x 33, Standard **97 x 97 (default)**, High 193 x 193, or supported odd Custom sizes. It adds actual reciprocal-space samples; it is separate from the FFT propagation mesh and aperture boundary subpixels. Angular maps and detector-EELS quadrature currently share the angular grid.
+
+Full-field maps are evaluated at selected L3/L2 energies. Other requested spectral energies use the exact union of nonzero fractional A/B aperture weights, without interpolation or dropping energies. This applies to BW/MS Single/Double and Both. Private MS Double working buffers reduce allocations without changing precision, propagation or diagnostics. Measured three-energy BW/MS Double times were 23.41→15.35 s and 134.23→80.32 s; later outgoing-field buffer improvements were 40.61→36.61 s at 8 nm and 41.58→37.91 s at 30 nm. These matched 300 kV benchmarks are not full-spectrum or whole-GUI timing guarantees.
+
+The published **v0.6.1-beta.1 ZIP remains unchanged** and predates these improvements. A separate local Windows development build is described in the [integration report](docs/GUI_PERFORMANCE_INTEGRATION.md) and [development installation instructions](docs/INSTALL_WINDOWS.md#local-windows-development-build). It is not a new published release.
 
 **Estimated process memory budget:** 512, 1024, **2048 (default)**, 4096 or 8192 MiB. This is a ceiling, not a reserved allocation. Available RAM and estimated process peak are checked; High does not necessarily fit 2048 MiB. Existing explicit saved settings are preserved; New Project resets angular grid/budget to 97/2048. See [sampling and memory](docs/ANGULAR_MAP_RESOLUTION.md).
 

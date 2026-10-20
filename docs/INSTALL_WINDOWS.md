@@ -119,7 +119,26 @@ candidate, not for users running from source. Neither route requires WIEN2k.
 | Slow / memory-heavy simulation | Check the separate dense-kernel and estimated process-peak values. Budgets are 512/1024/2048(default)/4096/8192 MiB, with a 50%-of-available-RAM guard. Estimates are not measured peaks. Settings are never silently reduced. |
 | Clipped layout at high DPI | Use **Maximize / restore results** or **Maximize / restore viewer**, scroll the canvas/input panel, collapse unused input sections, or use **View → Restore Default Layout**. Export the figure for its complete scientific panels. |
 
-## Scientific scope
+## Local Windows development build
+
+Current main includes newer GUI and execution improvements than the published Beta. The local package is under `build/windows-main-dev/`; its ZIP is named `EMCD-Sim-main-dev-<source-short-SHA>-Windows.zip`. It is not a release asset. Extract the complete ZIP: its top-level directory is `EMCD-Sim`, containing `EMCD-Sim.exe`, `README.txt`, `SHA256SUMS.txt` and `_internal/`. The unarchived executable is `build/windows-main-dev/dist/EMCD-Sim/EMCD-Sim.exe` relative to the repository. Keep all files together.
+
+Check the ZIP against `build/windows-main-dev/SHA256SUMS.txt`. **Help → About / build** and `_internal/build_info.json` identify the exact source commit, build timestamp, dependency versions and development label; `build_manifest.json` beside the ZIP records file hashes. The application version remains `0.6.1b1` and alone does not identify this newer development build.
+
+For current Python source, use `python -m pip install -e ".[gui]"`, then `python -m emcd_sim.gui` from the repository. In either current source or the development EXE:
+
+1. Choose physical conditions, MDFF, magnetization and detectors.
+2. Select BW/MS/Both and Single/Double Channeling.
+3. Keep **Automatic** Numerical Settings; inspect **View Numerical Parameters**.
+4. Switch to **Manual (Advanced)** to edit numerical controls if needed. Legacy projects retain their original values in Manual.
+5. Choose full spectra and/or selected L3/L2 angular maps, then run once.
+6. Inspect Raw/percentage components and save the complete project folder.
+7. Reopen saved projects with **File → Open Project** or Results Browser. Viewing does not calculate new results. Use **Use These Settings** separately to restore inputs.
+8. Export numerical CSV/NPZ and PNG/SVG figures as described in the [User Manual](USER_GUIDE.md#export-figures-and-data).
+
+Automatic uses configuration and FFT-support checks, not trial calculations or a universal convergence guarantee. Full maps are calculated at selected edge energies; all other requested energies retain exact detector-support integration. Full native spectra are neither interpolated nor replaced by two selected energies. Same-host acceptance of this particular build is recorded separately in the [integration report](GUI_PERFORMANCE_INTEGRATION.md); it does not establish independent clean-machine acceptance.
+
+## Scientific scope of both distributions
 
 This uses projected IAM potentials. Single is entrance-only; Double includes
 incoming, depth-distributed ionization and reduced-energy outgoing channeling.

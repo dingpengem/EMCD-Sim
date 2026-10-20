@@ -2,7 +2,7 @@
 from pathlib import Path
 from contextlib import ExitStack
 from unittest.mock import patch
-import hashlib,json,sys,traceback
+import hashlib,json,os,sys,traceback
 import numpy as np
 from PySide6 import QtCore,QtWidgets
 from matplotlib.figure import Figure
@@ -15,6 +15,28 @@ from .runtime import build_info
 
 def release_controls(window, app):
     """Exercise the actual release widgets without starting a worker."""
+    assert window.cancel_button.text()=='Cancel' and not window.cancel_button.isEnabled()
+    assert window.numerical_mode.currentIndex()==0
+    window.model_box.setCurrentIndex(1)
+    for index in (0,1,2):
+        window.propagation_box.setCurrentIndex(index)
+        assert not window._numerical_error
+        assert ('FFT grid' in window.numerical_values.text())==(index!=0)
+    window.numerical_mode.setCurrentIndex(1)
+    window.spin['depth'].setValue(33)
+    manual=window.numerical_snapshot()
+    window.numerical_mode.setCurrentIndex(0)
+    window.numerical_mode.setCurrentIndex(1)
+    assert window.numerical_snapshot()==manual
+    assert not window.ms_settings_group.isHidden()
+    window.propagation_box.setCurrentIndex(0)
+    assert window.ms_settings_group.isHidden()
+    window.ax.set(xlim=(-.3,.7),ylim=(-.2,.8))
+    limits=(window.ax.get_xlim(),window.ax.get_ylim())
+    window.basis_view_button.click()
+    assert window.basis_view_button.text()=='Restore previous view'
+    window.basis_view_button.click()
+    assert (window.ax.get_xlim(),window.ax.get_ylim())==limits
     assert window.spin['grid'].value()==97 and window.memory_budget.currentData()==2048
     independent=tuple(window.spin[k].value() for k in ('fft_grid','subpixels','halfwidth'))
     for i,n in enumerate((33,97,193)):
@@ -25,6 +47,7 @@ def release_controls(window, app):
     assert window.angular_resolution.currentText()=='Custom'
     window.memory_budget.setCurrentIndex(window.memory_budget.findData(512))
     window.new_project()
+    assert window.numerical_mode.currentIndex()==0
     assert window.spin['grid'].value()==97 and window.memory_budget.currentData()==2048
     # Show the same provenance text as the application's About action.
     from .runtime import LABEL
@@ -33,7 +56,9 @@ def release_controls(window, app):
     assert build_info()['application_version'] in box.text()
     box.close()
     return dict(presets=[33,97,193],custom=65,new_project_grid=97,
-        new_project_memory_mib=2048,independent_fft_subpixels=True,about_provenance=True)
+        new_project_memory_mib=2048,independent_fft_subpixels=True,about_provenance=True,
+        automatic_manual_roundtrip=True,method_visibility=True,reversible_basis_view=True,
+        cancellation_control_present=True)
 
 
 def release_saved_checks(window,result,output):
@@ -101,7 +126,8 @@ def run(output,project,comparison):
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
     source_files={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for folder in (project,comparison) for p in Path(folder).iterdir() if p.is_file()}
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([]);w=MainWindow(workspace=output/'workspace');w.resize(1700,1050);w.show()
-    report=dict(build=build_info(),forward_calls=0,project=str(project),comparison=str(comparison));guards=ExitStack();mocks=[]
+    report=dict(build=build_info(),forward_calls=0,project=str(project),comparison=str(comparison),
+        pid=os.getpid(),executable=sys.executable,frozen=bool(getattr(sys,'frozen',False)));guards=ExitStack();mocks=[]
     for name in FORWARD_PATHS:mocks.append(guards.enter_context(patch(name,side_effect=AssertionError('Forward calculation forbidden during Stage F'))))
     report['release_controls']=release_controls(w,app)
     def fail(message):
@@ -116,10 +142,18 @@ def run(output,project,comparison):
     def inspect():
         if w.busy:QtCore.QTimer.singleShot(100,inspect);return
         r=w.emcd_result;report['original_arrays']=fingerprints(r);second=load_project(comparison)
+        from .project_io import save_project
+        saved=output/'reopened_project';save_project(r,saved)
+        assert fingerprints(load_project(saved))==fingerprints(r)
+        report['save_reopen_unchanged']=True
         report['release_saved_checks']=release_saved_checks(w,r,output)
         w.browser.registry.register(second,comparison,'+1 mrad x mistilt');w.browser.refresh()
         methods=list(r['methods']);report['methods']=methods;report['metrics']={name:percentage_metrics(m) for name,m in r['methods'].items()}
         eels=w.eels_view;maps=w.maps_view
+        for view in (eels,maps):
+            for index in range(view.component_mode.count()):
+                view.component_mode.setCurrentIndex(index);view.redraw()
+        report['component_display_modes']=True
         for mode in range(3):
             eels.normalization.mode.setCurrentIndex(mode)
             for zoom in range(3):eels.choice.setCurrentIndex(zoom);eels.redraw()

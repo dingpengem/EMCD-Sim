@@ -1,6 +1,7 @@
 """Strict checkpoint reuse, runtime assessment and sequential two-energy scan.
 
-Uses the accepted benchmark engine unchanged. Single and Double share each
+Uses the accepted benchmark physics, including explicitly audited buffer reuse.
+Single and Double share each
 case's incident preparation; reported historical elapsed times cover both.
 """
 import argparse,ast,csv,hashlib,json,subprocess,time
@@ -51,9 +52,24 @@ def implementation_audit():
         current=Path(path).read_bytes()
         a=WithoutOptionalCancellation().visit(ast.parse(old.decode()))
         b=WithoutOptionalCancellation().visit(ast.parse(current.decode()))
-        assert ast.dump(a)==ast.dump(b),'Default numerical path changed: '+path
+        same=ast.dump(a)==ast.dump(b)
+        buffer_equivalent=False
+        if not same and name=='multislice_double_channeling.py':
+            # Narrow implementation equivalence, not a parameter waiver. These
+            # immutable revisions have bitwise response/map/diagnostic comparisons
+            # at 8/30 nm and strict threaded/adjoint regression tests. Unknown
+            # changes still fail closed, including changes to the optimized code.
+            before=subprocess.check_output(['git','show','39aafb6701f7cf84643c10366afac59401e8d91e:'+path])
+            optimized=subprocess.check_output(['git','show','3a866acb68e8127253104e513e1340baf0cb4a15:'+path])
+            parse=lambda source:ast.dump(WithoutOptionalCancellation().visit(ast.parse(source.decode())))
+            buffer_equivalent=ast.dump(a)==parse(before) and ast.dump(b)==parse(optimized)
+        assert same or buffer_equivalent,'Default numerical path changed: '+path
         aliases[path]={hashlib.sha256(old).hexdigest(),hashlib.sha256(old.replace(b'\n',b'\r\n')).hexdigest(),hashlib.sha256(current).hexdigest()}
-        records[path]=dict(default_path_ast_equal=True,baseline=BASELINE,accepted_sha256=sorted(aliases[path]))
+        if buffer_equivalent:
+            aliases[path].update(hashlib.sha256(source).hexdigest() for source in
+                (before,before.replace(b'\n',b'\r\n'),optimized,optimized.replace(b'\n',b'\r\n')))
+        records[path]=dict(default_path_ast_equal=same,validated_buffer_equivalence=buffer_equivalent,
+            baseline=BASELINE,accepted_sha256=sorted(aliases[path]))
     return aliases,records
 
 

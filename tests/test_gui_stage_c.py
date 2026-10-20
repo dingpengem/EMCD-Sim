@@ -111,7 +111,8 @@ class ZGUIStageCTests(unittest.TestCase):
         if self.w.busy:self.w.cancel();self.w.worker.wait(10000);self.app.processEvents()
         self.w.close();self.app.processEvents()
     def test_method_controls_and_completed_view_switching(self):
-        w=self.w;s=w.settings();self.assertEqual(w.forward_settings().propagation,'bloch');w.propagation_box.setCurrentIndex(2)
+        w=self.w;w.numerical_mode.setCurrentIndex(1)
+        s=w.settings();self.assertEqual(w.forward_settings().propagation,'bloch');w.propagation_box.setCurrentIndex(2)
         self.assertEqual(w.settings(),s);self.assertEqual(w.forward_settings().fft_grid,32)
         r=PropagationTests.result;w.emcd_result=r
         for view in (w.maps_view,w.eels_view,w.diffraction_view,w.overview_view):view.set_result(r)
