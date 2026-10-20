@@ -84,10 +84,56 @@ comparisons are reused; they were not recomputed unnecessarily.
 
 ## Diagnostic executable acceptance
 
-Packaging and frozen-executable acceptance are pending at this source commit.
-The final documentation update will record the exact packaged source SHA, ZIP
-hash, executable path and actual frozen test results. Source tests alone do not
-certify a packaged executable or every possible worker/cutoff combination.
+The new diagnostic executable was built from clean source commit
+`2810e8d9aff4ad4e3e903cdad56de15905d1c082` (embedded `dirty=false`).
+Application version remains 0.6.1b1. Exact executable:
+
+```text
+C:\Users\peng863\EMCD-Sim\build\windows-bw-worker-diagnostic\dist\EMCD-Sim\EMCD-Sim.exe
+```
+
+The sibling archive is `EMCD-Sim-bw-worker-diagnostic-2810e8d-Windows.zip`.
+Its SHA256 is
+`7e7f054ea28475187d58f9c76ad32feab33a227f11355a4b972b9597818e01ae`.
+All 609 distribution files match the manifest and the ZIP CRC check passes.
+Acceptance initially overlapped ZIP compression and locked python311.dll;
+compression was completed after test processes closed, without rebuilding or
+changing the executable. Existing ZIPs were never replaced.
+
+| Actual frozen BW Double run | PID | Detector / native threads | Exit | Heartbeats | Spectral agreement |
+| --- | ---: | --- | ---: | ---: | --- |
+| Saved 300 kV, 8 nm case, Automatic | 7276 | 1 / 12 | 0 | 30 | All 16 arrays bitwise equal to source |
+| Fresh 300 kV, 30 nm defaults, Automatic | 3476 | 1 / 12 | 0 | 36 | All 16 arrays bitwise equal to source |
+| Saved case, Manual four, startup BLAS one | 21736 | 4 / 1 | 0 | 26 | All 16 arrays bitwise equal to source |
+
+Each real selected-edge calculation used beam cutoff 3.0, potential cutoff 2.0,
+97-grid detector support, and unchanged numerical settings. These bounded frozen
+runs intentionally disabled full-field maps; full-field equivalence was tested
+separately in source. Save/reopen, exports, array preservation, unchanged actual
+native thread counts, effective-worker metadata, responsive timer events and
+return to enabled inputs all passed. The matching four-worker/native-12 request
+was blocked before creating a calculation thread. Changing 2.5/3.0 updated the
+preview from 21 to 27 beams. The controls are exercised through actual Qt widgets.
+These automated calculation runs used Qt's offscreen platform; its widget text
+screenshots have missing system-font glyphs and are not visual typography evidence.
+A separate normal Windows Qt startup (PID 11404, exit 0) verified readable native
+rendering and the default 27-beam diffraction preview, without running EMCD.
+
+Local evidence includes `frozen_verification.json`, each `frozen_*/acceptance.json`,
+process exit records, screenshots, exported results and the build manifest.
+Native-fault tracing was enabled; no fatal native exception occurred in these runs.
+The final integrity recheck again confirmed all 204 production checkpoints,
+both old ZIPs, and unchanged numerical core implementations.
+
+The new executable resolves the reproduced execution-policy failure under the
+tested conditions. It does not certify arbitrary material, thickness, beam basis,
+runtime backend, worker count or full-spectrum memory load. Manual two/three
+workers, other native backends and wider parameter combinations remain unverified.
+Memory admission and bounded native stability are distinct from physical numerical
+convergence. No runtime BLAS mutations or universal cutoff safety rule are used.
+The automatic one-worker strategy is the recommended Windows BW Double starting
+policy; four workers require a verified one-thread native runtime and are not
+claimed faster from these GUI/export timings.
 
 The host is Windows 11 Enterprise 10.0.26200, Intel i7-1365U, 12 logical CPUs,
 31.58 GiB RAM, with Python/Conda installed. Local acceptance is not a clean-machine
