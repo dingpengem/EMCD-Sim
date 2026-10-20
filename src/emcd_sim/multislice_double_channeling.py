@@ -57,11 +57,19 @@ class FFTSplitStep:
             self._transmission=np.exp(1j*dz*self.u)
             self._cached_dz=dz
         axes=tuple(range(-self.u.ndim,0))
-        c=c.reshape(c.shape[:-1]+self.shape).copy()
+        c=c.reshape(c.shape[:-1]+self.shape)
+        # Positive step counts immediately produce private FFT outputs. Preserve
+        # copy/ownership semantics for zero steps, without copying every depth
+        # interval's input. No mutable scratch is shared between plans/workers.
+        if not steps:c=c.copy()
         for _ in range(steps):
             check_cancelled(cancelled)
-            wave=np.fft.ifftn(c*self._kinetic,axes=axes)*self.size
-            c=np.fft.fftn(wave*self._transmission,axes=axes)/self.size*self._kinetic
+            wave=np.fft.ifftn(c*self._kinetic,axes=axes)
+            wave*=self.size
+            wave*=self._transmission
+            c=np.fft.fftn(wave,axes=axes)
+            c/=self.size
+            c*=self._kinetic
         check_cancelled(cancelled)
         return c.reshape(c.shape[:-self.u.ndim]+(self.size,))
 
@@ -213,13 +221,16 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         ii,oi=grid.indices(elastic.beams.hkl),grid.indices(ob.hkl)
         keep_i=np.zeros(grid.potential.size,bool);keep_i[ii]=True
         keep_o=np.zeros(grid.potential.size,bool);keep_o[oi]=True
-        delta=np.asarray(ob.hkl)[None,:,:]-np.asarray(elastic.beams.hkl)[:,None,:]
         phases,site_weights=equivalent_site_phases(elastic.beams.hkl,ob.hkl,elastic.crystal.fractional_positions)
         if not len(phases):raise ValueError('At least one localized Ni site required')
         qz=-characteristic_qz_angstrom_inv(energy_ev,elastic.microscope.acceleration_kv)
         response=np.zeros((len(q),3,3),complex)
-        norm_error=float(np.max(abs(np.sum(abs(fields)**2,axis=-1)-1)))
-        incoming_leak=float(np.max(np.sum(abs(fields[:,~keep_i])**2,axis=-1)))
+        incoming_power=abs(fields)**2
+        norm_error=float(np.max(abs(np.sum(incoming_power,axis=-1)-1)))
+        incoming_leak=float(np.max(np.sum(incoming_power[:,~keep_i],axis=-1)))
+        # Keep the same contiguous retained incoming vector at each event, but
+        # gather it once rather than once per depth/site contraction.
+        retained_incoming=np.ascontiguousarray(fields[:,ii])
         outgoing_leak=0.;out_norm=0.
         for start in range(0,len(q),batch_pixels):
             check_cancelled(cancelled)
@@ -231,14 +242,23 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
             check_cancelled(cancelled)
             plan=grid.plan(float(energy_ev),qb,elastic_potential=outgoing_potential)
             reciprocal=np.zeros((nb,plan.size),complex);reciprocal[:,0]=1
+            magnitude=np.empty((nb,plan.size),float)
+            weighted_v=np.empty((nb,3),complex);event=np.empty((nb,3,3),complex)
             for iz in range(depth_steps-1,-1,-1):
                 check_cancelled(cancelled)
+                retained_outgoing=reciprocal[:,oi].conj()
                 for phase,site_weight in zip(phases,site_weights):
                     check_cancelled(cancelled)
-                    v=np.einsum('g,bh,bgha,gh->ba',fields[iz,ii],reciprocal[:,oi].conj(),kernel,phase,optimize=True)
-                    response[sl]+=w[iz]*site_weight*v[:,:,None]*v[:,None,:].conj()
-                out_norm=max(out_norm,float(np.max(abs(np.sum(abs(reciprocal)**2,axis=-1)-1))))
-                outgoing_leak=max(outgoing_leak,float(np.max(np.sum(abs(reciprocal[:,~keep_o])**2,axis=-1))))
+                    v=np.einsum('g,bh,bgha,gh->ba',retained_incoming[iz],retained_outgoing,kernel,phase,optimize=True)
+                    # Preserve scalar multiplication and independent-event
+                    # accumulation order; buffers belong to this batch only.
+                    np.multiply(w[iz]*site_weight,v,out=weighted_v)
+                    np.multiply(weighted_v[:,:,None],v[:,None,:].conj(),out=event)
+                    response[sl]+=event
+                np.absolute(reciprocal,out=magnitude)
+                np.power(magnitude,2,out=magnitude)
+                out_norm=max(out_norm,float(np.max(abs(np.sum(magnitude,axis=-1)-1))))
+                outgoing_leak=max(outgoing_leak,float(np.max(np.sum(magnitude[:,~keep_o],axis=-1))))
                 if iz:reciprocal=plan.advance(reciprocal,n,-dz,cancelled=cancelled)
         check_cancelled(cancelled)
         diagnostics=dict(incoming_norm_error=norm_error,outgoing_norm_error=out_norm,

@@ -129,5 +129,14 @@ def test_solver_configuration_and_physics_unchanged():
     old_forward=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for name in ('energy_grid','tensors','axis_rotation','material_reason'):
         assert ast.dump(find(current_forward,name))==ast.dump(find(old_forward,name))
-    for path in ('src/emcd_sim/gui/propagation.py','src/emcd_sim/gui/project_io.py','src/emcd_sim/double_channeling.py','src/emcd_sim/multislice_double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
+    # MS advance/response buffer reuse is covered by strict baseline comparisons
+    # in test_ms_double_buffers; retain AST guards on its unchanged formulation.
+    path='src/emcd_sim/multislice_double_channeling.py'
+    ms_current=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
+    ms_old=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
+    for name in ('transition_modes','depth_quadrature','propagate_slices','forward_event_amplitudes','incident_fields'):
+        assert ast.dump(find(ms_current,name))==ast.dump(find(ms_old,name))
+    cls=lambda tree:next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='ProjectedNiFFT')
+    assert ast.dump(cls(ms_current))==ast.dump(cls(ms_old))
+    for path in ('src/emcd_sim/gui/propagation.py','src/emcd_sim/gui/project_io.py','src/emcd_sim/double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
         assert Path(path).read_text(encoding='utf-8-sig').replace('\r\n','\n')==subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig').replace('\r\n','\n')

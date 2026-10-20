@@ -19,6 +19,7 @@ from emcd_sim.gui import channeling,emcd_forward as forward
 from emcd_sim.gui.geometry import elastic_model,geometry
 from emcd_sim.gui.project_io import load_project,restore_structure
 from emcd_sim.gui.memory_budget import memory_snapshot
+from emcd_sim.gui import memory_budget
 from emcd_sim.geometry import VirtualDetector
 from emcd_sim.benchmark import nickel_physical_benchmark
 
@@ -56,9 +57,10 @@ class Timings:
         return dict(regions=regions,counts=dict(counts),threads=threads)
 
 
-def instrumented_response(timings):
+def instrumented_response(timings,function=None):
     """Wrap named original AST statements, without replacing their operations."""
-    source=inspect.getsource(ms.multislice_double_channeling_response)
+    function=function or ms.multislice_double_channeling_response
+    source=inspect.getsource(function)
     tree=ast.parse(source);sites=[]
     class Regions(ast.NodeTransformer):
         def visit(self,node):
@@ -70,7 +72,9 @@ def instrumented_response(timings):
                 elif 'transfer' in targets:category='transfer_allocation_and_fill'
                 elif 'phases' in targets:category='equivalent_site_phases'
                 elif 'plan' in targets:category='outgoing_plan'
-                elif targets & {'out_norm','outgoing_leak','norm_error','incoming_leak'}:category='norm_leakage_diagnostics'
+                elif targets & {'out_norm','outgoing_leak','norm_error','incoming_leak','incoming_power','magnitude'}:category='norm_leakage_diagnostics'
+            elif isinstance(node,ast.Expr) and isinstance(node.value,ast.Call) and any(k.arg=='out' and isinstance(k.value,ast.Name) and k.value.id=='magnitude' for k in node.value.keywords):
+                category='norm_leakage_diagnostics'
             elif isinstance(node,ast.For) and isinstance(node.target,ast.Tuple) and any(isinstance(n,ast.Name) and n.id=='phase' for n in node.target.elts):
                 category='depth_cartesian_contraction'
             updated=super().visit(node)
@@ -80,16 +84,16 @@ def instrumented_response(timings):
                 return ast.copy_location(ast.With(items=[ast.withitem(context_expr=context)],body=[updated]),node)
             return updated
     tree=Regions().visit(tree);ast.fix_missing_locations(tree)
-    ast.increment_lineno(tree,ms.multislice_double_channeling_response.__code__.co_firstlineno-1)
-    namespace=dict(vars(ms),_timings=timings)
-    exec(compile(tree,inspect.getsourcefile(ms.multislice_double_channeling_response),'exec'),namespace)
+    ast.increment_lineno(tree,function.__code__.co_firstlineno-1)
+    namespace=dict(function.__globals__,_timings=timings)
+    exec(compile(tree,inspect.getsourcefile(function),'exec'),namespace)
     return namespace['multislice_double_channeling_response'],sites
 
 
 @contextmanager
-def fft_hooks(timings):
+def fft_hooks(timings,implementation=ms):
     """Process-local hooks only while the explicitly requested profile runs."""
-    original_advance=ms.FFTSplitStep.advance
+    original_advance=implementation.FFTSplitStep.advance
     def advance(self,coefficients,steps,dz,**kwargs):
         mode='incoming' if dz>=0 else 'outgoing'
         timings.count(mode+'_advance_calls');timings.count(mode+'_split_steps',steps)
@@ -104,7 +108,7 @@ def fft_hooks(timings):
             timings.count(name+'_input_bytes',np.asarray(a).nbytes)
             with timings.region(name):return fn(a,*args,**kwargs)
         return call
-    with patch.object(ms.FFTSplitStep,'advance',advance),patch.object(np.fft,'fftn',fft_wrapper(np.fft.fftn,'fftn')),patch.object(np.fft,'ifftn',fft_wrapper(np.fft.ifftn,'ifftn')):
+    with patch.object(implementation.FFTSplitStep,'advance',advance),patch.object(np.fft,'fftn',fft_wrapper(np.fft.fftn,'fftn')),patch.object(np.fft,'ifftn',fft_wrapper(np.fft.ifftn,'ifftn')):
         yield
 
 
@@ -112,7 +116,12 @@ class SampleRAM:
     def __enter__(self):
         self.samples=[];self.stop=threading.Event()
         def sample():
-            while not self.stop.is_set():self.samples.append(memory_snapshot()['process_rss_mib']);self.stop.wait(.05)
+            while not self.stop.is_set():
+                # Windows' probe configures a ctypes function signature with
+                # per-call structure types. Use the admission lock so this
+                # optional sampler cannot race concurrent memory checks.
+                with memory_budget._lock:self.samples.append(memory_snapshot()['process_rss_mib'])
+                self.stop.wait(.05)
         self.thread=threading.Thread(target=sample,daemon=True);self.thread.start();return self
     def __exit__(self,*args):self.stop.set();self.thread.join()
 
@@ -144,8 +153,9 @@ def response_args(case,grid,incoming):
         slice_step_nm=c.slice_step,memory_budget_mib=c.memory_budget_mib,prepared_grid=grid,prepared_incoming=incoming)
 
 
-def evaluate_batches(case,query,grid,incoming,workers,*,timings=None,profile=False):
-    response,sites=instrumented_response(timings) if timings else (ms.multislice_double_channeling_response,[])
+def evaluate_batches(case,query,grid,incoming,workers,*,timings=None,profile=False,implementation=ms):
+    function=implementation.multislice_double_channeling_response
+    response,sites=instrumented_response(timings,function) if timings else (function,[])
     kwargs=response_args(case,grid,incoming);s=case['settings'];c=case['cfg'];events=[];profiles=[];lock=threading.Lock()
     batches=[query[i:i+32] for i in range(0,len(query),32)]
     def worker(batch):
@@ -158,7 +168,7 @@ def evaluate_batches(case,query,grid,incoming,workers,*,timings=None,profile=Fal
         finally:
             if prof:prof.disable()
         with lock:
-            events.append(dict(worker=threading.current_thread().name,pixels=len(batch),start=start,end=time.perf_counter(),cpu_seconds=time.thread_time()-cpu))
+            events.append(dict(worker=threading.current_thread().name,pixels=len(batch),start=start,end=time.perf_counter(),cpu_seconds=time.thread_time()-cpu,diagnostics=result[1]))
             if prof:profiles.append(prof)
         return result[0]
     cpu_start=time.process_time();start=time.perf_counter()

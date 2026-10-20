@@ -57,3 +57,14 @@ def test_saved_reference_setup_never_propagates():
         case=p.setup()
     assert case['cfg'].depth==64 and len(case['query'])==7857
     assert case['tensors'][0].energy_ev[0]==case['cfg'].l3
+
+
+def test_optional_ram_sampler_serializes_with_admission(monkeypatch):
+    import threading
+    p=tool();called=threading.Event()
+    def snapshot():
+        assert p.memory_budget._lock._is_owned()
+        called.set();return dict(process_rss_mib=1.)
+    monkeypatch.setattr(p,'memory_snapshot',snapshot)
+    with p.SampleRAM() as ram:assert called.wait(1)
+    assert ram.samples and ram.samples[0]==1.
