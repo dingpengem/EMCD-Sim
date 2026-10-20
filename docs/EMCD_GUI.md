@@ -1,5 +1,33 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
+## Energy-dependent angular scheduling (development source)
+
+`channeling.angular_schedule` computes the original q grid and fractional
+weights once. The shared `contract` adapter selects full support at the locked
+L3/L2 indices when maps are on, and the nonzero A/B weight union otherwise.
+All four Single/Double BW/MS routes now use this scheduler. Propagation kernels,
+incoming reuse, outgoing energy/depth integration, detector batching and the
+existing physical mirror gate are unchanged. Single contracts the actual two
+reversal tensors; it does not infer a reversal state from a fitted sign.
+
+Metadata records `angular_evaluation_policy`, per-energy required/evaluated
+pixels, unique query directions, outgoing batches, cache reuse and response/
+final tensor-contraction wall times. No non-selected angular arrays are saved.
+Raw full-grid reduction length is retained for map requests; the temporary
+zero-filled integration vector is not a fabricated physical map.
+
+Energy callbacks retain their interface and their caller's configuration/hash
+identity checks. Complete compatible raw entries can be reused away from map
+energies. A raw-only selected-edge entry recomputes only that energy to obtain
+the missing full arrays; malformed full maps are rejected. Partial energies
+are never checkpointed. The standalone full-spectrum driver's existing strict
+implementation-hash admission is not bypassed: an old on-disk profile is not
+automatically certified by matching shapes. Saved project schemas remain
+readable without propagation, and the 204 production checkpoints are untouched.
+
+See [user behavior](USER_GUIDE.md#development-source-energy-dependent-angular-sampling)
+and the [measured benchmark and limitations](ENERGY_ANGULAR_SAMPLING_PERFORMANCE.md).
+
 ## Automatic / Manual source update
 
 Panel F now defaults to Automatic with an expandable read-only resolved-value

@@ -2,6 +2,7 @@
 from dataclasses import dataclass, asdict, replace, field
 from pathlib import Path
 import hashlib, json, platform, subprocess
+from time import perf_counter
 import numpy as np
 from .geometry import Structure, Settings, geometry, elastic_model, excitation, za_from_tilt
 from ..benchmark import nickel_physical_benchmark
@@ -178,20 +179,21 @@ def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy
     solvers=('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,)
     for method in solvers:
         stage('Preparing '+method+' propagation')
+        incoming_start=perf_counter()
         waves,method_fft=propagate(elastic,settings,replace(cfg,propagation=method),z,stage,cancelled=cancelled)
+        incoming_seconds=perf_counter()-incoming_start
         prepared_incoming=method_fft.pop('_prepared',None)
         if method_fft:fft_info=method_fft
         psi=waves[method]
         stage('Constructing '+method+' depth coherence');C=coherence_from_amplitudes(z,psi)
         stage('Calculating '+method+' EELS and EMCD')
-        prepared=None
-        if cfg.channeling_model=='double' or not cfg.angular_maps:
-            from .channeling import contract
-            checkpoint=(lambda e,data:energy_checkpoint(method,e,data)) if energy_checkpoint is not None else None
-            prepared=contract(model,settings,cfg,method,C,energy,ts,stage,cancelled,prepared_incoming,energy_checkpoint=checkpoint)
+        from .channeling import contract
+        checkpoint=(lambda e,data:energy_checkpoint(method,e,data)) if energy_checkpoint is not None else None
+        prepared=contract(model,settings,cfg,method,C,energy,ts,stage,cancelled,prepared_incoming,energy_checkpoint=checkpoint)
         methods[method]=_contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,prepared=prepared)
         methods[method]['method']=method
-        methods[method]['metadata'].update(solver=method+' '+cfg.channeling_model+' channeling localized single ionization',numerics=info)
+        methods[method]['metadata'].update(solver=method+' '+cfg.channeling_model+' channeling localized single ionization',numerics=info,
+            incoming_propagation_seconds=incoming_seconds,additional_incoming_preparation_seconds=prepared['incoming_preparation_seconds'])
         if method=='fft-multislice':methods[method]['metadata']['fft']=fft_info['summary']
     stage('Comparing independent BW/MS propagations')
     comparison=compare_methods(methods,fft_info)
@@ -269,7 +271,9 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
         outgoing_energy='incident energy minus actual energy loss' if cfg.channeling_model=='double' else None,
         normalization=dict(raw_components='D_mag=M_A-M_B; D_nonmag=N_A-N_B (a.u.)',components_percent='100 * signed component / (N_A+N_B)',prb='100 * (I_A_plus-I_B_plus)/(I_A_plus+I_B_plus)'),
         precision='float64/complex128',reciprocal_convention='g=1/d, Å^-1; legacy cycles/Å values unchanged',
-        detector_evaluation='Full angular grid' if cfg.angular_maps else 'Only nonzero fractional-aperture support on the unchanged grid; angular maps not calculated',
+        detector_evaluation='Full angular grid at selected L3/L2; nonzero fractional-aperture union at other energies' if cfg.angular_maps else 'Only nonzero fractional-aperture support on the unchanged grid; angular maps not calculated',
+        angular_evaluation_policy=prepared.get('angular_evaluation_policy','legacy_full_grid_per_energy') if prepared is not None else 'legacy_full_grid_per_energy',
+        angular_evaluation=prepared.get('diagnostics',[]) if prepared is not None else [],
         solver='Bloch-wave depth-integrated entrance-only localized single ionization',software_commit=commit,software_worktree_dirty=dirty,
         implementation_sha256=build['implementation_sha256'],
         python=platform.python_version(),numpy=np.__version__,

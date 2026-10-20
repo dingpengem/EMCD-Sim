@@ -7,6 +7,30 @@ For the preserved old executable use the
 
 
 
+## Development source: energy-dependent angular sampling
+
+The source calculation automatically schedules full-field angular evaluation
+only at the selected native L3/L2 energies. All other spectral energies evaluate
+the union of nonzero fractional A/B aperture weights on the **same q grid**.
+Full spectral resolution, raw detector states, magnetic/nonmagnetic components
+and detector-integrated EELS are retained. L3/L2 detector integrals use the
+already computed full-field values, without repeating detector-support work.
+
+| Spectral coverage | Angular maps | Evaluation |
+| --- | --- | --- |
+| Full spectrum | On | Full field at L3/L2; detector-only at all other energies |
+| Full spectrum | Off | Detector-only at all energies |
+| Selected L3/L2 | On | Full field at both selected energies |
+| Selected L3/L2 | Off | Detector-only at both energies |
+
+This applies to BW/MS Single/Double and Both. It skips only unrequested,
+zero-weight pixels; it adds no interpolation or physical-model approximation.
+No non-selected full-field maps are fabricated. Cutoffs, FFT/slice/depth
+settings, precision, energy coordinates and the existing symmetry restrictions
+remain unchanged. Automatic/Manual parameter selection is unchanged. See the
+[bounded performance comparison](ENERGY_ANGULAR_SAMPLING_PERFORMANCE.md).
+This development update is not in the published v0.6.1-beta.1 executable.
+
 ## Signal definitions in 0.6.1
 
 <a id="signal-definitions-in-060"></a>
@@ -397,7 +421,7 @@ Panel F groups Manual controls into **Elastic Potential and Beam Support**, **In
 | Spectral coverage / Energy sampling points | Shared energy sampling. Full mode uses the stored count plus locked native features; selected-edge mode uses the two locked energies while retaining the count for later full-mode use. |
 | Angular Map Resolution / Angular / detector grid points (odd) / Map halfwidth (Å⁻¹) | Shared actual q samples/extent for angular maps and detector-EELS quadrature. Presets map to the same serialized `grid` key. |
 | Aperture boundary subpixels | Shared fractional circular-aperture boundary integration, not FFT refinement or new intensity samples. |
-| Calculate angular maps | Shared evaluation support: full q field or nonzero detector support on the same unchanged q grid. Not merely image interpolation. |
+| Calculate angular maps | Shared evaluation support: full q field at selected L3/L2, nonzero A/B detector-support union elsewhere; when off, detector-only at every energy. The q grid and fractional weights are unchanged. |
 | Advanced post-edge diagnostics / Enable post-edge A/B correction / Window start/end | Derived diagnostics/postprocessing: affects corrected/residual contrasts, not propagation, MDFF or original raw detector states. |
 | Estimated process memory budget | Shared execution/admission resource, **not a physical-model parameter or required allocation**; stored unchanged and checked against current available RAM. |
 | Memory estimate and solver explanation | Diagnostics-only presentation; estimates reflect the currently selected engines, basis/sampling, retained allocations and RAM. |

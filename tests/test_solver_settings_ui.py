@@ -116,10 +116,18 @@ def test_saved_settings_and_arrays_preserved_without_solver(window):
     assert window.forward_settings()==cfg and fingerprints(saved)==before
 
 
-def test_no_numerical_or_serialization_code_changed():
+def test_solver_configuration_and_physics_unchanged():
     current=ast.parse(Path('src/emcd_sim/gui/stage_b.py').read_text(encoding='utf-8-sig'))
     old=ast.parse(subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/stage_b.py']).decode('utf-8-sig'))
     find=lambda tree,name:next(n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef) and n.name==name)
     assert ast.dump(find(current,'forward_settings'))==ast.dump(find(old,'forward_settings'))
-    for path in ('src/emcd_sim/gui/emcd_forward.py','src/emcd_sim/gui/channeling.py','src/emcd_sim/gui/propagation.py','src/emcd_sim/gui/project_io.py'):
+    # The energy-support scheduler is now intentionally in emcd_forward/channeling.
+    # Protect configuration, tensor construction and energy selection independently
+    # of that scheduling change, plus byte-identical propagation/physics modules.
+    path='src/emcd_sim/gui/emcd_forward.py'
+    current_forward=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
+    old_forward=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
+    for name in ('energy_grid','tensors','axis_rotation','material_reason'):
+        assert ast.dump(find(current_forward,name))==ast.dump(find(old_forward,name))
+    for path in ('src/emcd_sim/gui/propagation.py','src/emcd_sim/gui/project_io.py','src/emcd_sim/double_channeling.py','src/emcd_sim/multislice_double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
         assert Path(path).read_text(encoding='utf-8-sig').replace('\r\n','\n')==subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig').replace('\r\n','\n')
