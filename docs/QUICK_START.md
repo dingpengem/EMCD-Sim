@@ -1,10 +1,10 @@
-# EMCD-Sim v0.6.1-beta.1 Windows Quick Start
+# EMCD-Sim v0.6.1-beta.2 Windows Quick Start
 
 Follow [installation](INSTALL_WINDOWS.md) first. This is a selected-energy Ni [017] example, not a timing guarantee or complete physical-convergence claim. See the [full tutorial and settings](USER_GUIDE.md#validated-ni-017-8-nm-double-example), [acceptance](V061_BETA_ACCEPTANCE.md) and [scientific analysis](NI_EMCD_THICKNESS_SCIENTIFIC_ANALYSIS.md).
 
 ## 1. Extract and open
 
-Download `EMCD-Sim-0.6.1-beta.1-Windows-RC.zip` and `SHA256SUMS.txt` from [v0.6.1-beta.1](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.1), verify the checksum and Extract All. Launch **EMCD-Sim/EMCD-Sim.exe** with `_internal` beside it. The package includes its runtime; independent clean-machine validation remains **NOT TESTED**. Do not launch repeated instances while initialization is pending.
+Download `EMCD-Sim-0.6.1-beta.2-Windows.zip` and `SHA256SUMS.txt` from [v0.6.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2), verify the checksum and Extract All. Launch **EMCD-Sim/EMCD-Sim.exe** with `_internal` beside it. The package includes its runtime; independent clean-machine validation remains **NOT TESTED**. Do not launch repeated instances while initialization is pending. New projects start at 300 kV; the scientific example below explicitly uses the historical 200 kV reference. See [Beta 2 notes](RELEASE_NOTES_0_6_1_BETA_2.md).
 
 ## 2. Configure Ni [017], exact (200) Bragg
 

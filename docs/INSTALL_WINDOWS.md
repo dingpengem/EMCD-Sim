@@ -1,6 +1,8 @@
 # Install EMCD-Sim on Windows
 
-Current package: **EMCD-Sim v0.6.1-beta.1 Windows research Beta**, not a stable release. Continue with [Quick Start](QUICK_START.md), the [User Manual](USER_GUIDE.md), [release notes](RELEASE_NOTES_0_6_1_BETA_1.md) and [acceptance report](V061_BETA_ACCEPTANCE.md).
+Current package: **EMCD-Sim v0.6.1-beta.2 Windows research Beta**, not a stable release. Download `EMCD-Sim-0.6.1-beta.2-Windows.zip` and `SHA256SUMS.txt` from the [Beta 2 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2), verify the ZIP hash against that release's checksum file, Extract All, and run `EMCD-Sim/EMCD-Sim.exe` with `_internal` beside it. About reports `0.6.1b2`. New-project defaults are 300 kV, beam/potential cutoffs 3.0/2.0 cycles/Å, 97×97 and 2048 MiB. Windows BW Double uses one detector worker by default; inspect Panel F for actual native threads and resource/risk status. See [Beta 2 notes and acceptance](RELEASE_NOTES_0_6_1_BETA_2.md), [Quick Start](QUICK_START.md) and the [User Manual](USER_GUIDE.md).
+
+The Beta 1 installation/checksum record below is historical and remains unchanged; **do not use its checksum for Beta 2**. General extraction, project, logging and troubleshooting guidance still applies.
 
 ## Recommended: portable Windows application
 

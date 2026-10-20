@@ -2,8 +2,8 @@
 
 EMCD-Sim is a research simulation tool for **electron magnetic circular dichroism (EMCD)** using Bloch-wave (BW) and independent FFT multislice (MS) propagation. It combines dynamical electron diffraction, approximate core-loss scattering tensors and virtual-detector EELS/EMCD analysis, with fcc Ni as the principal validated material.
 
-**Current Windows research prerelease: v0.6.1-beta.1.**
-[Release and download](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.1) · [Windows installation](docs/INSTALL_WINDOWS.md) · [Quick Start](docs/QUICK_START.md) · [User Manual](docs/USER_GUIDE.md) · [Acceptance](docs/V061_BETA_ACCEPTANCE.md).
+**Current Windows research prerelease: v0.6.1-beta.2.**
+[Release and download](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2) · [Windows installation](docs/INSTALL_WINDOWS.md) · [Quick Start](docs/QUICK_START.md) · [User Manual](docs/USER_GUIDE.md) · [Release notes and acceptance](docs/RELEASE_NOTES_0_6_1_BETA_2.md).
 
 ## Main capabilities
 
@@ -26,20 +26,16 @@ The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An 
 
 ### Windows portable application
 
-1. Open [v0.6.1-beta.1 Releases](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.1).
-2. Download [EMCD-Sim-0.6.1-beta.1-Windows-RC.zip](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.6.1-beta.1/EMCD-Sim-0.6.1-beta.1-Windows-RC.zip) and `SHA256SUMS.txt`.
+1. Open [v0.6.1-beta.2 Releases](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2).
+2. Download [EMCD-Sim-0.6.1-beta.2-Windows.zip](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.6.1-beta.2/EMCD-Sim-0.6.1-beta.2-Windows.zip) and `SHA256SUMS.txt`.
 3. Verify SHA256, then **Extract All** into a normal writable folder.
 4. Open the extracted **`EMCD-Sim/EMCD-Sim.exe`**. Keep `_internal` and all other application files beside it; do not run inside the ZIP or copy only the EXE.
 
 ```powershell
-Get-FileHash "$HOME/Downloads/EMCD-Sim-0.6.1-beta.1-Windows-RC.zip" -Algorithm SHA256
+Get-FileHash "$HOME/Downloads/EMCD-Sim-0.6.1-beta.2-Windows.zip" -Algorithm SHA256
 ```
 
-Expected SHA256:
-
-```text
-9fd5e71437d2c26d4595abb7adde9436e4c333ce18f3a57cf381b0c541bfd94f
-```
+Require an exact match to the Beta 2 release's `SHA256SUMS.txt`. The Beta 1 archive and checksum remain preserved in its historical release.
 
 The package bundles its Python runtime and is intended to run without a separate Python/Conda/WIEN2k installation. Same-host standalone testing passed; **independent clean-machine installation remains NOT TESTED**. This Windows x64 Beta is unsigned. See [installation and troubleshooting](docs/INSTALL_WINDOWS.md), including saved-project reopening. The original validated ZIP is retained unchanged despite its `RC` filename.
 
@@ -56,13 +52,13 @@ Source installation is a separate workflow; the portable EXE does not require th
 
 ## Quick Start
 
-Choose **File → New**, **FCC Ni default**, nominal zone `0 1 7` and target `2 0 0`. Keep 200 kV and use **Reset to reference geometry** for Tilt X approximately -7.11672544 mrad and Tilt Y = 0. Click **Preview diffraction**; exact (200) Bragg alignment is not zero-tilt zone-axis incidence or an isolated two-beam wavefield.
+Choose **File → New**, **FCC Ni default**, nominal zone `0 1 7` and target `2 0 0`. New projects start at 300 kV. For the historical 200 kV reference, explicitly set 200 kV and use **Reset to reference geometry** for Tilt X approximately -7.11672544 mrad and Tilt Y = 0. Click **Preview diffraction**; exact (200) Bragg alignment is not zero-tilt zone-axis incidence or an isolated two-beam wavefield.
 
 Select and validate the bundled five-column XMCD source, inspect its native energy assignments and explicitly declare the magnetization/polarization convention. Choose **Channeling Model**, **Propagation Method** and **Spectral coverage**. For a faster selected-energy workflow choose **Selected L3/L2 samples only (not full EELS)**. Click **Run EMCD / EELS** once. **Cancel** cooperatively stops the worker while preserving the last completed result. Do not start duplicate jobs while initialization or cancellation is pending.
 
 ## GUI workflow
 
-**Local worker-safety development update:** new projects start at **300 kV**, beam/MDFF cutoff **3.0 Å⁻¹**, potential cutoff **2.0 Å⁻¹**, angular grid **97×97** and **2048 MiB**. Panel F adds independent Automatic/Manual **Parallel Workers**, actual native BLAS threading and a pre-Run resource/risk preview. These are starting settings, not universal convergence or crash guarantees. The published Beta and older development ZIP predate this fix; see the [local diagnostic-build report](docs/BW_PARALLEL_WORKER_SAFETY.md).
+**Beta 2 worker-safety update:** new projects start at **300 kV**, beam/MDFF cutoff **3.0 Å⁻¹**, potential cutoff **2.0 Å⁻¹**, angular grid **97×97** and **2048 MiB**. Panel F adds independent Automatic/Manual **Parallel Workers**, actual native BLAS threading and a pre-Run resource/risk preview. These are starting settings, not universal convergence or crash guarantees. The old Beta 1 and development ZIPs predate this fix; see the [validation report](docs/BW_PARALLEL_WORKER_SAFETY.md).
 
 **Development source update:** numerical settings default to Automatic, with a read-only parameter summary and full Manual overrides. Selection uses inexpensive configuration checks, without trial simulations or a guarantee of convergence. MS-only FFT/slice controls remain separate from shared support and sampling. See the [selection policy](docs/USER_GUIDE.md#automatic-and-manual-numerical-settings) and [parameter-role table](docs/USER_GUIDE.md#development-source-shared-and-solver-specific-settings). This source update does not change the published v0.6.1-beta.1 binary.
 
