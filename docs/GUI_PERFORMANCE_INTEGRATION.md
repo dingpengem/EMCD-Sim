@@ -33,7 +33,32 @@ The integration checks use saved results whenever possible. The extended package
 
 Focused integration checks passed **156 tests**, followed by **19** legacy GUI tests after their explicit Manual setup was corrected. The fresh full available suite passed **527 tests, zero failures/errors/skips**, with 33 Matplotlib/Qt warnings, in **414.03 s**. This includes **525 tracked tests and two untouched, untracked local user tests**; those local files are not included in the integration commit. Logs and JUnit XML are under `outputs/gui_performance_integration/` (`focused_final`, `legacy_controls`, `full_final`). Saved BW/MS Single/Double source-GUI acceptance passed with zero forward calls and unchanged arrays. All **204 production checkpoints remain byte-identical**; the published ZIP retains SHA256 `9fd5e71437d2c26d4595abb7adde9436e4c333ce18f3a57cf381b0c541bfd94f`. Documentation checks cover 169 relative links including anchors.
 
-Frozen acceptance and exact build identity are recorded below after packaging. Generated evidence and packages are excluded from Git. The package is built from a committed, clean isolated worktree, preserving unrelated modified Ni data and untracked experiments in the user's worktree. Its bundled spectrum is the repository-tracked example, not private WIEN2k companions.
+Frozen acceptance and exact build identity are recorded below. Generated evidence and packages are excluded from Git. The package was built from a committed, clean isolated worktree, preserving unrelated modified Ni data and untracked experiments in the user's worktree. Its bundled spectrum is the repository-tracked example, not private WIEN2k companions.
+
+## Completed Windows development acceptance
+
+The actual frozen executable passed saved **BW/MS Single and Double** acceptance, using the existing `single_both_project` and `double_both_project` fixtures. The tested processes were PID **7152** (Single) and **17708** (Double), each reporting the exact executable path and embedded source identity. Development Python was removed from PATH. Automatic/Manual round trips, parameter summaries, BW/MS/Both visibility, 97/2048 defaults, legacy values, reversible view, full-field maps/overlays, raw/percentage displays, PNG/SVG and CSV/NPZ exports, save/reopen and existing cancellation controls passed. Every saved array and input project file remained unchanged; **zero forward calls** occurred. Cancellation execution itself remains covered by focused worker/physics tests rather than a new packaged simulation.
+
+The external PowerShell launcher's initial null exit-code property stopped orchestration after Single had already passed. Its process-handle bookkeeping was corrected, the completed Single report was reused, and only Double acceptance was launched afterward. No application change or rebuild was needed. Local reports and launch records are retained under `outputs/gui_performance_integration/frozen_single/`, `frozen_double/` and `frozen_launches.json`.
+
+| Build fact | Verified value |
+| --- | --- |
+| Runtime source commit | `7878c7e6ce1a823c53b564de72818951278f817e` |
+| Source tree | Clean isolated worktree, `dirty=false` |
+| Build UTC | `2026-10-20T03:42:13.373209+00:00` |
+| Python / PyInstaller | 3.11.17 / 6.22.3 |
+| NumPy / SciPy | 2.4.6 / 1.17.1 |
+| Matplotlib / ASE / PySide6 | 3.11.2 / 3.29.0 / 6.12.0 |
+| Application version | Unchanged `0.6.1b1` |
+| Development label | `EMCD-Sim main development 7878c7e6ce1a - unreleased local build` |
+| EXE, relative to repository | `build/windows-main-dev/dist/EMCD-Sim/EMCD-Sim.exe` |
+| ZIP, relative to repository | `build/windows-main-dev/EMCD-Sim-main-dev-7878c7e6ce1a-Windows.zip` |
+| ZIP bytes | 108,721,769 |
+| ZIP SHA256 | `234f3f77f8555ac889ab545333e4d59b30eef045bc1edacf952705b20fafffc7` |
+
+ZIP CRC, every manifest file hash and every embedded runtime-source hash against the committed source passed. The archive contains `EMCD-Sim/EMCD-Sim.exe` and the complete runtime directory. `build/windows-main-dev/build_manifest.json`, `SHA256SUMS.txt` and embedded `build_info.json` provide the detailed provenance. This build was tested on Windows 11 Enterprise 10.0.26200, i7-1365U, 12 logical processors and 31.58 GiB RAM, with Python/Conda installed on the host. Independent clean-machine installation remains **NOT TESTED**.
+
+The final main update consists of the validated source commit above followed by acceptance-documentation changes only. The exact pushed main identity is recorded in the GitHub branch history and local `outputs/gui_performance_integration/public_after.json`; it must not be confused with the embedded runtime-source revision. Main is integrated by fast-forward after a fresh remote check, without force-pushing. The published v0.6.1-beta.1 release/tag/assets are independently compared with their previously recorded metadata before and after publication; no release, tag or generated binary is published by this milestone.
 
 ## Build and scientific scope
 

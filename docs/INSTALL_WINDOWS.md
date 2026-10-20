@@ -121,7 +121,7 @@ candidate, not for users running from source. Neither route requires WIEN2k.
 
 ## Local Windows development build
 
-Current main includes newer GUI and execution improvements than the published Beta. The local package is under `build/windows-main-dev/`; its ZIP is named `EMCD-Sim-main-dev-<source-short-SHA>-Windows.zip`. It is not a release asset. Extract the complete ZIP: its top-level directory is `EMCD-Sim`, containing `EMCD-Sim.exe`, `README.txt`, `SHA256SUMS.txt` and `_internal/`. The unarchived executable is `build/windows-main-dev/dist/EMCD-Sim/EMCD-Sim.exe` relative to the repository. Keep all files together.
+Current main includes newer GUI and execution improvements than the published Beta. The local package is `build/windows-main-dev/EMCD-Sim-main-dev-7878c7e6ce1a-Windows.zip`, built from source commit `7878c7e6ce1a823c53b564de72818951278f817e`. It is not a release asset. Extract the complete ZIP: its top-level directory is `EMCD-Sim`, containing `EMCD-Sim.exe`, `README.txt`, `SHA256SUMS.txt` and `_internal/`. The unarchived executable is `build/windows-main-dev/dist/EMCD-Sim/EMCD-Sim.exe` relative to the repository. Keep all files together.
 
 Check the ZIP against `build/windows-main-dev/SHA256SUMS.txt`. **Help → About / build** and `_internal/build_info.json` identify the exact source commit, build timestamp, dependency versions and development label; `build_manifest.json` beside the ZIP records file hashes. The application version remains `0.6.1b1` and alone does not identify this newer development build.
 
