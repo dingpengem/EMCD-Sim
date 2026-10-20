@@ -1,5 +1,29 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
+## Automatic / Manual source update
+
+Panel F now defaults to Automatic with an expandable read-only resolved-value
+summary; Manual exposes the existing editable controls. Selection is a cached,
+deterministic configuration operation in `gui/numerical_settings.py`, using the
+existing geometry/FFT checks and unchanged memory admission. It calls no
+propagation or inelastic-response solver. See the [selection policy and legacy
+project behavior](USER_GUIDE.md#automatic-and-manual-numerical-settings).
+
+Only strict matches to the archived [017] representative-point Ni study receive
+its numerical profile, without claiming full-field/full-spectrum convergence.
+Other conditions use explicit starting settings. No automatic degradation or
+solver fallback is permitted. UI selection provenance is captured when Run is
+pressed and saved in result/method metadata; `Settings`, `ForwardSettings`,
+numerical algorithms and existing scientific array formats remain unchanged.
+Legacy metadata without a mode restores as Manual. No production simulations,
+version change, release-asset modification or Windows build accompanies this work.
+
+Focused acceptance: **50 tests passed** across Automatic/Manual configuration,
+the existing solver-settings UI, angular-resolution controls and memory-budget
+checks. Scientific solver/eigenmode calls are forbidden in the selection tests;
+a mocked Run starts one worker. Explicit-setting baseline comparisons, FFT
+support/exhaustion, saved metadata/arrays and legacy restoration are included.
+
 ## Development audit: numerical-control dependencies
 
 The post-v0.6.1 source UI separates solver controls in Panel E from shared settings in Panel F. This is **not included in the published v0.6.1-beta.1 ZIP** and does not change its version, physics or assets. See the [parameter table and depth treatment](USER_GUIDE.md#development-source-shared-and-solver-specific-settings) for actual control labels and classifications.

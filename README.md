@@ -61,7 +61,7 @@ Select and validate the bundled five-column XMCD source, inspect its native ener
 
 ## GUI workflow
 
-**Development source update:** the next GUI change separates MS-only FFT/slice controls from shared beam/MDFF support, potential, depth, angular sampling and resource limits. See the [parameter-role table](docs/USER_GUIDE.md#development-source-shared-and-solver-specific-settings). This local source update does not change the published v0.6.1-beta.1 binary or physical defaults.
+**Development source update:** numerical settings default to Automatic, with a read-only parameter summary and full Manual overrides. Selection uses inexpensive configuration checks, without trial simulations or a guarantee of convergence. MS-only FFT/slice controls remain separate from shared support and sampling. See the [selection policy](docs/USER_GUIDE.md#automatic-and-manual-numerical-settings) and [parameter-role table](docs/USER_GUIDE.md#development-source-shared-and-solver-specific-settings). This source update does not change the published v0.6.1-beta.1 binary.
 
 
 

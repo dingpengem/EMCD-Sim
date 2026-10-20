@@ -24,7 +24,7 @@ def window(app,tmp_path):
     with ExitStack() as guards:
         for name in ('emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.stage_b.EMCDWorker.run','emcd_sim.gui.channeling.double_channeling_response','emcd_sim.gui.channeling.multislice_double_channeling_response'):
             guards.enter_context(patch(name,side_effect=AssertionError('No propagation allowed in presentation tests')))
-        w=MainWindow(workspace=tmp_path/'workspace');w.model_box.setCurrentIndex(1)
+        w=MainWindow(workspace=tmp_path/'workspace');w.numerical_mode.setCurrentIndex(1);w.model_box.setCurrentIndex(1)
         try:yield w
         finally:w.close();app.processEvents()
 
@@ -64,7 +64,7 @@ def test_solver_visibility_and_classification(window,selection):
     assert 'No additional BW-only' in window.solver_note.text() if selection==0 else 'FFT controls' in window.solver_note.text()
     window.refresh()
     assert 'Additional FFT harmonics' in window.spin['beam'].toolTip()
-    for key in ('beam','potential','b'):assert window.spin[key].parentWidget()==window.shared_elastic_group
+    for key in ('beam','potential'):assert window.spin[key].parentWidget()==window.shared_elastic_group
     for key in ('energy','grid','depth','subpixels','halfwidth'):assert window.spin[key].parentWidget()==window.shared_sampling_group
     for key in ('fft_grid','slice_step'):assert window.ms_settings_group.isAncestorOf(window.spin[key])
     assert window.memory_budget.parentWidget()==window.shared_resources_group

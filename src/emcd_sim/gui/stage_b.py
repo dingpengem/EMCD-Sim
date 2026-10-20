@@ -12,6 +12,7 @@ from .emcd_forward import (ForwardSettings,DEFAULT_SOURCE,inspect_source,materia
 from ..ni_local_mdff import NiLocalConfig
 from ..wien2k_xmcd import load_wien2k_xmcd
 from .results import ResultsView,comparison_text
+from .numerical_settings import NumericalSettingsUI
 
 
 class EMCDWorker(QtCore.QThread):
@@ -42,7 +43,7 @@ class EMCDWorker(QtCore.QThread):
             self.cancellation_times['stopped']=time.perf_counter()
 
 
-class StageB:
+class StageB(NumericalSettingsUI):
     emcd_ready=QtCore.Signal()
     def mdff_controls(self):
         self.emcd_result=None;self.source_info=None;self.validated_path=None
@@ -81,7 +82,7 @@ class StageB:
         saved=self.form;self.form=QtWidgets.QFormLayout(body)
         box=QtWidgets.QSpinBox();box.setRange(12,128);box.setSingleStep(2);box.setValue(32);self.spin['fft_grid']=box;self.form.addRow('FFT grid (even)',box);box.valueChanged.connect(self.emcd_stale)
         self.number('slice_step','Max slice step (nm)',.04,.001,1,self.emcd_stale)
-        box.setToolTip('MS-only propagation mesh and reciprocal harmonic support; not the angular/detector q grid. Must contain the exact common retained beam basis.')
+        box.setToolTip('Controls the FFT representation of Multislice propagation. It must support the selected beam basis and potential Fourier bandwidth. Not the angular/detector q grid.')
         self.spin['slice_step'].setToolTip('MS-only maximum split-step distance between requested depth planes. Depth integration nodes and angular sampling remain separate controls.')
         label=QtWidgets.QLabel('Verified FFT: Ni [017], or explicit [001] (200) systematic row. Incoming/outgoing beam support is matched in Double Channeling.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
         self.solver_note=QtWidgets.QLabel();self.solver_note.setWordWrap(True);self.form.addRow(self.solver_note)
@@ -90,9 +91,10 @@ class StageB:
     def sync_solver_controls(self):
         """Presentation only: retain every existing numerical value."""
         ms=self.propagation_box.currentIndex()!=0
-        self.ms_settings_group.setVisible(ms);self.ms_settings_group.setEnabled(ms)
-        self.solver_note.setText('FFT controls apply to MS propagation. Common beam support, potential and depth sampling are in Panel F.' if ms else
-            'No additional BW-only numerical controls. Common beam support, potential and depth sampling are in Panel F; MS settings are retained while hidden.')
+        manual=not hasattr(self,'numerical_mode') or self.numerical_mode.currentIndex()==1
+        self.ms_settings_group.setVisible(ms and manual);self.ms_settings_group.setEnabled(ms and manual)
+        self.solver_note.setText(('FFT controls apply to MS propagation. ' if ms else 'No additional BW-only numerical controls. ')+
+            'Elastic propagation: BW eigenmodes or MS FFT. Inelastic scattering: shared reciprocal-space MDFF. Common support and sampling are in Panel F.')
 
     def shared_group(self,title):
         group=QtWidgets.QGroupBox(title);self.form.addRow(group)
@@ -105,7 +107,7 @@ class StageB:
         self.number('beam','Beam / MDFF basis cutoff (Å⁻¹)',3.2,.2,6.5,self.refresh)
         self.spin['beam'].setToolTip('Shared retained basis: BW uses these elastic beams; MS uses the same ordered beams for diffraction/MDFF contraction. Additional FFT harmonics may participate in MS propagation. This is not a BW-only cutoff.')
         self.number('potential','Potential Fourier cutoff\n|g−g′|max (Å⁻¹)',2.2,.1,6.5,self.refresh)
-        self.spin['potential'].setToolTip('Shared elastic potential Fourier support for BW and MS: U_(g−g′), |g−g′| ≤ cutoff. Distinct from beam radius, ionization momentum transfer and detector extent. Crystallographic g=1/d; no extra 2π.')
+        self.spin['potential'].setToolTip('BW: limits crystal-potential Fourier components used in diffraction-beam coupling. MS: limits Fourier components used to construct the projected real-space potential. U_(g−g′), |g−g′| ≤ cutoff. Distinct from beam radius, ionization momentum transfer and detector extent. Crystallographic g=1/d; no extra 2π.')
         self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
         self.spin['b'].setToolTip('Shared IAM elastic-potential damping for both BW and MS; not a solver-specific sampling control.')
         self.row_projection=QtWidgets.QCheckBox('Explicit [001] (200) systematic-row approximation');self.form.addRow(self.row_projection)
@@ -150,6 +152,15 @@ class StageB:
         self.memory_label=QtWidgets.QLabel();self.memory_label.setWordWrap(True);self.form.addRow(self.memory_label)
         self.memory_label.setToolTip('Diagnostic estimate for the selected solver(s), common basis, sampling and current RAM. The budget controls admission, never an automatic parameter reduction.')
         self.form=shared_form
+
+        # Physical approximations remain accessible in Automatic mode.
+        for widget in (self.spin['b'],self.row_projection):
+            row=self.shared_elastic_group.layout().takeRow(widget)
+            if row.labelItem:self.form.addRow(row.labelItem.widget(),widget)
+            else:self.form.addRow(widget)
+        self.shared_resources_group.layout().removeWidget(self.memory_label)
+        self.form.addRow(self.memory_label)
+        self.setup_numerical_mode(shared_form)
 
     def set_angular_resolution(self,*_):
         n=self.angular_resolution.currentData()
@@ -208,10 +219,13 @@ class StageB:
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
 
     def emcd_stale(self,*_):
+        if self.resolve_numerical_ui():
+            self.refresh();return
         self.sync_solver_controls()
         if not hasattr(self,'emcd_button') or getattr(self,'_restoring',False):return
         reason=material_reason(self.structure);cfg=None;info=None
         try:
+            if getattr(self,'_numerical_error',None):raise ValueError(self._numerical_error)
             cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
             if cfg.model=='xmcd' and not cfg.axis_declared:raise ValueError('Declare XMCD conventions before Run EMCD')
             if cfg.model=='atomic' and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
@@ -265,6 +279,8 @@ class StageB:
     def start_emcd(self):
         if self.busy:return
         try:
+            self.resolve_numerical_ui()
+            if self._numerical_error:raise ValueError(self._numerical_error)
             cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
             reason=material_reason(self.structure)
             reason=reason or self.input_source_reason()
@@ -274,6 +290,7 @@ class StageB:
             structure=Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings)
         except Exception as exc:self.error(str(exc));return
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.emcd_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0)
+        self._run_numerical_selection=self.numerical_selection_snapshot()
         self.worker=EMCDWorker(structure,s,cfg);self.worker.stage.connect(self.emcd_stage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.emcd_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
     def emcd_stage(self,message):
         # Queued progress from before Cancel must not hide the pending request.
@@ -282,6 +299,10 @@ class StageB:
         if not self.worker.isInterruptionRequested():self.preview_failed(message)
     def emcd_completed(self,result):
         if self.worker.isInterruptionRequested():return
+        selection=getattr(self,'_run_numerical_selection',None)
+        if selection:
+            result['metadata']['numerical_selection']=selection
+            for method in result.get('methods',{}).values():method['metadata']['numerical_selection']=selection
         self.emcd_result=result;self.run_outcome='completed'
         self.register_completed(result)
         for i,view in ((1,self.maps_view),(2,self.eels_view)):

@@ -136,11 +136,12 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
     def refresh(self,*_,fit=False):
         if not hasattr(self,'canvas'):return
+        self.resolve_numerical_ui()
         try:
             s=self.settings();self.current=geometry(self.structure,s,systematic_row=self.row_projection.isChecked());self.drawn_settings=s;crystal,R,hkl,g,microscope=self.current
             from ..geometry import electron_wavelength_angstrom
             angle=1000*electron_wavelength_angstrom(s.voltage)*s.beam_cutoff
-            self.spin['beam'].setToolTip(f'Shared beam / MDFF basis cutoff: retained elastic beams in BW; common diffraction/MDFF beams in MS. Additional FFT harmonics may participate in MS propagation. g=1/d, Å⁻¹; no 2π conversion. Approximate angular equivalent λ|g|max = {angle:.4f} mrad at {s.voltage:g} kV. Not the EELS detector collection limit.')
+            self.spin['beam'].setToolTip(f'BW: limits diffraction beams retained in the Bloch-wave eigenproblem and MDFF response. MS: limits retained diffraction beams used for MDFF contraction. Additional FFT harmonics may participate in MS propagation. g=1/d, Å⁻¹; no 2π conversion. Approximate angular equivalent λ|g|max = {angle:.4f} mrad at {s.voltage:g} kV. Not the EELS detector collection limit.')
             target_valid=s.target in hkl and s.target!=(0,0,0)
             supported=not self.structure.elastic_reason and target_valid
             self.run_button.setEnabled(supported and not self.busy);self.align_button.setEnabled(target_valid and not self.busy)
@@ -228,7 +229,10 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         text=QtWidgets.QPlainTextEdit(self.structure.description());text.setReadOnly(True);layout.addWidget(text);dialog.show();self.dialogs.append(dialog)
     def start_preview(self):
         if self.busy:return
-        try:s=self.settings();actual=geometry(self.structure,s,systematic_row=self.row_projection.isChecked())
+        try:
+            self.resolve_numerical_ui()
+            if self._numerical_error:raise ValueError(self._numerical_error)
+            s=self.settings();actual=geometry(self.structure,s,systematic_row=self.row_projection.isChecked())
         except Exception as exc:self.error(str(exc));return
         if self.structure.elastic_reason:self.error(self.structure.elastic_reason);return
         if s.target not in actual[2] or s.target==(0,0,0):self.error('Select a valid nonzero target');return

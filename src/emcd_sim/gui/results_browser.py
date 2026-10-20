@@ -235,6 +235,9 @@ class ProjectWorkspace:
         self.save_to_path(target,approved)
     def new_project(self):
         if self.busy:return
+        self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
+        with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(0)
+        self.apply_numerical_visibility()
         self.clear_selected();self.input_source_requirements=[];self.default_structure()
         from .memory_budget import DEFAULT_BUDGET_MIB
         self.memory_budget.setCurrentIndex(self.memory_budget.findData(DEFAULT_BUDGET_MIB))
@@ -290,6 +293,7 @@ class ProjectWorkspace:
             for name,status in source_status(r).items():
                 if name=='cif':self.input_source_requirements.append(status)
         finally:self._restoring=False
+        self.restore_numerical_selection(r['metadata'])
         self.refresh();self.statusBar().showMessage('Saved settings restored to Current Inputs. No calculation started. '+rerun_reason(r))
     def input_source_reason(self):
         for status in getattr(self,'input_source_requirements',[]):

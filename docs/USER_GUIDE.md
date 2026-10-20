@@ -327,11 +327,64 @@ their relative intensity units are not an absolute cross-model calibration.
 
 ## Development source: shared and solver-specific settings
 
-This UI organization is the next **source development update after v0.6.1-beta.1**. No Windows binary is rebuilt, no version changes, and the published ZIP retains its original Panel F layout. Configuration keys, physical defaults and numerical values are unchanged. Panel E remains **E. Propagation Method**; Panel F becomes **F. Shared Calculation Settings**.
+### Automatic and Manual numerical settings
 
-Panel E retains **Channeling Model** (Single/Double) and **Propagation Method** (Bloch-wave / FFT Multislice / Both). **Multislice numerical settings** appears and is enabled only for MS or Both; expand it for **FFT grid (even)** and **Max slice step (nm)**. BW currently has no additional BW-only numerical controls. Switching solver changes visibility and admission estimates, not stored settings. Hidden FFT values survive switching and saved-project restoration; invalid MS geometries still fail rather than falling back to BW.
+New source projects default to **Numerical Settings → Automatic** in Panel F.
+Expand **View Numerical Parameters** to inspect the actual read-only cutoffs,
+depth nodes, angular grid and memory budget passed to the calculation. MS/Both
+also shows FFT mesh and maximum slice step; BW omits those unused entries.
+Memory estimates and admission failures remain visible. Automatic selection
+does not propagate waves, evaluate MDFF, run trial calculations or establish
+convergence. Pressing Run starts only the requested calculation.
 
-Panel F groups existing controls into **Elastic Potential and Beam Support**, **Inelastic and Angular Sampling**, and **Computational Resources**. The explicit [001] systematic-row checkbox moves into shared elastic settings because it changes both the retained basis and projected potential. It remains inappropriate for [017]. Physical A/B detector positions and radius remain in **Virtual detectors**.
+The deterministic `automatic-starting-v1` policy normally uses the released
+starting values: beam 3.2 Å⁻¹, potential 2.2 Å⁻¹, depth 64, maximum MS step
+0.04 nm, angular grid 97, 64 aperture subpixels, halfwidth 1 Å⁻¹, 241 energy
+samples and 2048 MiB budget. It retains the selected physical geometry, B,
+systematic-row approximation, source, magnetization and detector positions.
+These settings are labeled **Automatic starting settings — convergence not
+established**. An unavailable geometry is reported without substituting a solver.
+
+The narrowly matched [Ni reference](DOUBLE_CHANNELING_UNIFORM_BASIS.md) uses
+beam 4.6 Å⁻¹, potential 6.2 Å⁻¹, FFT 48, depth 257 and 0.04 nm maximum step.
+Matching requires the conventional Ni cell, [017], full finite ZOLZ, exact (200)
+Bragg with zero vertical tilt, 200 kV, B=0, thickness exactly 8/12/30/100 nm,
+the archived source SHA256, declared crystal [001] magnetization, eta=beta=1,
+native 831.4778/848.698 eV samples, original Thales detectors/radius and no radial
+override. Both supported channeling models and all three propagation choices
+can use this profile. Changed conditions fall back to starting values, with no
+inherited convergence claim. A match refers to representative native-edge
+detector observables, **not** certification of arbitrary angular maps, full
+spectra, other thicknesses or global extrema. The summary always states that
+Automatic settings do not guarantee numerical convergence.
+
+MS mesh selection starts at 32 (48 for the matched reference), then checks even
+meshes through 128 using the existing geometry-specific exact-hkl, reciprocal
+coordinate and Nyquist checks. It additionally requires a two-index boundary
+guard band for physical support. It never increases potential bandwidth or
+truncates the beam basis to fit. Passing these checks establishes representation,
+not FFT/slice convergence. Memory admission is unchanged and may reject even a
+reference profile; Automatic never reduces settings to fit a budget.
+
+Choose **Manual (Advanced)** to edit all existing numerical controls and budget
+choices. The first switch copies the resolved values. Later switches back to
+Manual restore the session's last overrides; returning to Automatic resolves
+against current physical conditions. Physical B and systematic-row controls stay
+accessible in either mode. The existing independent solver, energy-coverage,
+map and post-edge controls retain their meanings.
+
+Saved result metadata includes mode, actual numerical values, manual overrides
+and selection policy/source. Old projects with no mode are **Manual**, retaining
+their original values. Viewing any saved result performs no recalculation.
+**Use These Settings** restores the saved mode and exact values; restored
+Automatic values remain intact until a relevant input changes. New Project
+returns to Automatic. The published v0.6.1-beta.1 ZIP is unchanged.
+
+This UI organization is the next **source development update after v0.6.1-beta.1**. No Windows binary is rebuilt, no version changes, and the published ZIP retains its original Panel F layout. Scientific configuration keys and explicit Manual values are unchanged; Automatic follows the policy above. Panel E remains **E. Propagation Method**; Panel F becomes **F. Shared Calculation Settings**.
+
+Panel E retains **Channeling Model** (Single/Double) and **Propagation Method** (Bloch-wave / FFT Multislice / Both). In Manual mode, **Multislice numerical settings** appears and is enabled only for MS or Both; expand it for **FFT grid (even)** and **Max slice step (nm)**. Automatic displays these values in Panel F's summary. BW currently has no additional BW-only numerical controls. Manual solver switching preserves stored settings; Automatic reruns its inexpensive selection policy. Invalid MS geometries still fail rather than falling back to BW.
+
+Panel F groups Manual controls into **Elastic Potential and Beam Support**, **Inelastic and Angular Sampling**, and **Computational Resources**. B and the explicit [001] systematic-row checkbox stay accessible in both modes because they affect the physical potential/basis. The row approximation remains inappropriate for [017]. Physical A/B detector positions and radius remain in **Virtual detectors**.
 
 | Actual control | Classification and effect |
 | --- | --- |
