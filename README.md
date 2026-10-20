@@ -14,7 +14,7 @@ EMCD-Sim is a research simulation tool for **electron magnetic circular dichrois
 - Signed magnetic/nonmagnetic decomposition, raw differences, total EMCD Asymmetry and Advanced Diagnostics.
 - Checksummed projects, Results Browser, PNG/SVG figures and CSV/NPZ scientific exports.
 - Checkpointed research thickness workflows, configurable memory admission and cooperative cancellation.
-- Current development source adds Automatic / Manual Numerical Settings, exact detector-support sampling away from selected map energies, and optimized MS Double buffers. Automatic performs configuration checks without trial simulations; convergence still requires numerical validation.
+- Beta 2 adds Automatic / Manual Numerical Settings, exact detector-support sampling away from selected map energies, and optimized MS Double buffers. Automatic performs configuration checks without trial simulations; convergence still requires numerical validation.
 
 ## Supported physical models
 
@@ -37,7 +37,7 @@ Get-FileHash "$HOME/Downloads/EMCD-Sim-0.6.1-beta.2-Windows.zip" -Algorithm SHA2
 
 Require an exact match to the Beta 2 release's `SHA256SUMS.txt`. The Beta 1 archive and checksum remain preserved in its historical release.
 
-The package bundles its Python runtime and is intended to run without a separate Python/Conda/WIEN2k installation. Same-host standalone testing passed; **independent clean-machine installation remains NOT TESTED**. This Windows x64 Beta is unsigned. See [installation and troubleshooting](docs/INSTALL_WINDOWS.md), including saved-project reopening. The original validated ZIP is retained unchanged despite its `RC` filename.
+The package bundles its Python runtime and is intended to run without a separate Python/Conda/WIEN2k installation. Same-host standalone testing passed; **independent clean-machine installation remains NOT TESTED**. This Windows x64 Beta is unsigned. See [installation and troubleshooting](docs/INSTALL_WINDOWS.md), including saved-project reopening. The historical Beta 1 ZIP is retained unchanged despite its `RC` filename.
 
 ### From Python source
 
@@ -60,7 +60,7 @@ Select and validate the bundled five-column XMCD source, inspect its native ener
 
 **Beta 2 worker-safety update:** new projects start at **300 kV**, beam/MDFF cutoff **3.0 Å⁻¹**, potential cutoff **2.0 Å⁻¹**, angular grid **97×97** and **2048 MiB**. Panel F adds independent Automatic/Manual **Parallel Workers**, actual native BLAS threading and a pre-Run resource/risk preview. These are starting settings, not universal convergence or crash guarantees. The old Beta 1 and development ZIPs predate this fix; see the [validation report](docs/BW_PARALLEL_WORKER_SAFETY.md).
 
-**Development source update:** numerical settings default to Automatic, with a read-only parameter summary and full Manual overrides. Selection uses inexpensive configuration checks, without trial simulations or a guarantee of convergence. MS-only FFT/slice controls remain separate from shared support and sampling. See the [selection policy](docs/USER_GUIDE.md#automatic-and-manual-numerical-settings) and [parameter-role table](docs/USER_GUIDE.md#development-source-shared-and-solver-specific-settings). This source update does not change the published v0.6.1-beta.1 binary.
+**Beta 2 numerical settings:** numerical settings default to Automatic, with a read-only parameter summary and full Manual overrides. Selection uses inexpensive configuration checks, without trial simulations or a guarantee of convergence. MS-only FFT/slice controls remain separate from shared support and sampling. See the [selection policy](docs/USER_GUIDE.md#automatic-and-manual-numerical-settings) and [parameter-role table](docs/USER_GUIDE.md#development-source-shared-and-solver-specific-settings). The historical v0.6.1-beta.1 binary is unchanged.
 
 
 
@@ -74,7 +74,7 @@ Select and validate the bundled five-column XMCD source, inspect its native ener
 
 Full-field maps are evaluated at selected L3/L2 energies. Other requested spectral energies use the exact union of nonzero fractional A/B aperture weights, without interpolation or dropping energies. This applies to BW/MS Single/Double and Both. Private MS Double working buffers reduce allocations without changing precision, propagation or diagnostics. Measured three-energy BW/MS Double times were 23.41→15.35 s and 134.23→80.32 s; later outgoing-field buffer improvements were 40.61→36.61 s at 8 nm and 41.58→37.91 s at 30 nm. These matched 300 kV benchmarks are not full-spectrum or whole-GUI timing guarantees.
 
-The published **v0.6.1-beta.1 ZIP remains unchanged** and predates these improvements. A separate local Windows development build is described in the [integration report](docs/GUI_PERFORMANCE_INTEGRATION.md) and [development installation instructions](docs/INSTALL_WINDOWS.md#local-windows-development-build). It is not a new published release.
+The historical **v0.6.1-beta.1 ZIP remains unchanged** and predates these improvements. The [integration report](docs/GUI_PERFORMANCE_INTEGRATION.md) and [development installation instructions](docs/INSTALL_WINDOWS.md#local-windows-development-build) retain the earlier local-build record; Beta 2 is the version-matched prerelease of these developments.
 
 **Estimated process memory budget:** 512, 1024, **2048 (default)**, 4096 or 8192 MiB. This is a ceiling, not a reserved allocation. Available RAM and estimated process peak are checked; High does not necessarily fit 2048 MiB. Existing explicit saved settings are preserved; New Project resets angular grid/budget to 97/2048. See [sampling and memory](docs/ANGULAR_MAP_RESOLUTION.md).
 
@@ -130,7 +130,7 @@ Double-Channeling GUI. Their results and original assumptions are preserved.
 
 ## Historical oriented research: oriented Ni [017] EMCD / X-Y mistilt study (post-v0.4.5)
 
-The **`main` branch now includes the completed Ni [710] and Ni [017] oriented projected-IAM benchmarks and the 43-orientation Ni [017] high-mistilt X/Y survey**. The original v0.4.5-era research record is retained below; the current Windows research Beta is **v0.6.1-beta.1**.
+The **`main` branch now includes the completed Ni [710] and Ni [017] oriented projected-IAM benchmarks and the 43-orientation Ni [017] high-mistilt X/Y survey**. The original v0.4.5-era research record is retained below; the current Windows research Beta is **v0.6.1-beta.2**.
 
 **Start here: [Ni [017] case-study guide — native WIEN2k L3/L2 edge assignment, minor-zone / (200) exact Bragg, mistilt coordinates and which figures to inspect](docs/NI_017_CASE_STUDY_GUIDE.md).** Detailed numerical results: [Ni [017] high-mistilt technical report](docs/NI_017_HIGH_MISTILT_XY.md) and [Ni [017] oriented diffraction report](docs/NI_017_MINORZONE.md).
 

@@ -35,7 +35,7 @@ def test_full_zolz_enumeration_and_frame(zone):
 
 
 def test_exact_bragg_and_tilt_coordinate_convention():
-    s=Settings(zone=(0,0,1),tilt=(-7.116725439974256,35),beam_cutoff=1.2,potential_cutoff=6.2)
+    s=Settings(voltage=200,zone=(0,0,1),tilt=(-7.116725439974256,35),beam_cutoff=1.2,potential_cutoff=6.2)
     e=elastic_model(Structure.nickel(),s)
     assert excitation_errors_angstrom_inv(e)[e.beams.hkl.index((2,0,0))]==pytest.approx(0,abs=1e-14)
     assert e.microscope.incident_k_xy[0]<0 and e.microscope.incident_k_xy[1]>0

@@ -40,8 +40,43 @@ project, and explicit four-worker/native-one execution. Compared spectra and
 selected L3/L2 fields were bitwise unchanged. The matching four-worker/native-12
 request is blocked before worker launch. See the
 [worker-safety report](BW_PARALLEL_WORKER_SAFETY.md) for exact diagnostic evidence.
-Version-matched Beta 2 build identity and frozen acceptance are recorded below
-after completion; the prior diagnostic EXE is not relabeled as Beta 2.
+The prior diagnostic EXE was not relabeled as Beta 2. The version-matched package
+was built from clean commit `81a74f51d2de8d66a086e9ba361f91fe96a61b06`, with
+application version `0.6.1b2` and the Beta 2 build label. Only version metadata
+differs in its runtime Python sources from the validated worker-safety diagnostic.
+Subsequent release-documentation and test-fixture corrections do not change the
+packaged implementation; the release tag includes those corrections.
+
+ZIP SHA256:
+
+```text
+04511b73d52fc1a843323e9b859dcbdc081dbc6a0abf3bff67ae320bce4b48d9
+```
+
+All 609 packaged files match the build manifest; ZIP CRC verification passed.
+The three actual Beta 2 BW Double selected-edge runs passed: saved 300 kV/8 nm
+case with one detector worker/native 12 (PID 8124), fresh 300 kV/30 nm defaults
+with one/native 12 (PID 8112), and saved case with four/native one (PID 21692).
+Each matched all 16 source spectral arrays bitwise. Unsafe requests were rejected
+before worker launch; native thread counts, numerical inputs, save/reopen and
+exports were preserved. Event-loop heartbeats were 24, 39 and 29 respectively.
+Automated calculation runs used Qt offscreen; a separate native Windows Qt
+startup verified normal rendering without an EMCD calculation. This remains
+same-host testing, not clean-machine acceptance or a whole-parameter-space test.
+
+28 release-focused version/worker checks passed. Inspection of pre-release CI
+found six legacy tests depending on superseded 200 kV/cutoff defaults. Their
+fixtures now explicitly select the historical reference, use the current voltage
+for coordinate conversion, actually change voltage, or check input preservation.
+All 19 focused tests covering those corrections passed; numerical tolerances
+were not relaxed. No further runtime change or rebuild was required.
+
+**CI limitation:** the earlier `4192caf` cross-platform workflow was not green.
+Besides those fixture failures, Linux reported a C-extension `bool_dealloc`
+fault during interpreter finalization. That shutdown fault has not been isolated
+or certified fixed. It was not observed in the bounded Windows package tests.
+The release does not claim a new full cross-platform regression pass; the
+historical 426-test result belongs to the previous acceptance milestone.
 
 Remaining scientific limitations include an XMCD-effective rather than complete
 DFT-derived MDFF, projected IAM elastic potential, finite reciprocal support,

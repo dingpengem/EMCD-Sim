@@ -4,7 +4,7 @@ Current package: **EMCD-Sim v0.6.1-beta.2 Windows research Beta**, not a stable 
 
 The Beta 1 installation/checksum record below is historical and remains unchanged; **do not use its checksum for Beta 2**. General extraction, project, logging and troubleshooting guidance still applies.
 
-## Recommended: portable Windows application
+## Historical Beta 1 portable installation record
 
 The package bundles a Python runtime and is intended to work without a separately installed Python, Conda, VS Code or WIEN2k. Same-host standalone tests with development Python removed from PATH passed. **Independent clean-machine installation has NOT been tested.** WIEN2k is not a runtime dependency, and the package does not supply a complete DFT calculation environment.
 

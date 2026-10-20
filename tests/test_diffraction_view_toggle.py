@@ -79,7 +79,7 @@ def test_geometry_changes_invalidate_previous_view(window,change):
     elif change=='zone':w.zone.setText('7 1 0');w.refresh()
     elif change=='target':w.target.setText('4 0 0');w.refresh()
     elif change=='tilt':w.spin['tx'].setValue(-6)
-    elif change=='voltage':w.spin['kv'].setValue(300)
+    elif change=='voltage':w.spin['kv'].setValue(w.spin['kv'].value()+100)
     else:w.structure.atoms.set_cell(w.structure.atoms.cell.array*1.01,scale_atoms=True);w.refresh()
     assert w._basis_view_limits is None
     assert w.basis_view_button.text()=='Show full basis'
