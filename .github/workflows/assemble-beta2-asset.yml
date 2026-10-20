@@ -24,7 +24,9 @@ jobs:
           from pathlib import Path
           name = 'EMCD-Sim-0.6.1-beta.2-Windows.zip'
           parts = sorted(Path('parts').glob(name + '.part-*'))
-          assert [p.name for p in parts] == [name + f'.part-{i:02d}' for i in range(26)]
+          expected = [name + '.part-00', name + '.part-01']
+          expected += [name + f'.part-{i:02d}-{j}' for i in range(2,26) for j in range(4)]
+          assert [p.name for p in parts] == expected
           with Path(name).open('wb') as output:
               for part in parts:
                   output.write(part.read_bytes())
