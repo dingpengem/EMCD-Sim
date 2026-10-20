@@ -1,0 +1,53 @@
+name: Assemble verified Beta 2 Windows asset
+
+# Publication transport only: manually invoked, no builds or scientific runs.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: dingpengem/EMCD-Sim
+    steps:
+      - name: Download draft transport parts
+        run: gh release download v0.6.1-beta.2 --pattern 'EMCD-Sim-0.6.1-beta.2-Windows.zip.part-*' --dir parts
+      - name: Assemble and verify the unchanged local archive
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          name = 'EMCD-Sim-0.6.1-beta.2-Windows.zip'
+          parts = sorted(Path('parts').glob(name + '.part-*'))
+          assert [p.name for p in parts] == [name + f'.part-{i:02d}' for i in range(26)]
+          with Path(name).open('wb') as output:
+              for part in parts:
+                  output.write(part.read_bytes())
+          assert Path(name).stat().st_size == 108739125
+          digest = hashlib.sha256(Path(name).read_bytes()).hexdigest()
+          assert digest == '04511b73d52fc1a843323e9b859dcbdc081dbc6a0abf3bff67ae320bce4b48d9'
+          print('Verified original Windows ZIP SHA256:', digest)
+          PY
+      - name: Upload original archive to draft
+        run: gh release upload v0.6.1-beta.2 EMCD-Sim-0.6.1-beta.2-Windows.zip
+      - name: Verify GitHub asset digest before removing transport parts
+        run: |
+          gh api repos/dingpengem/EMCD-Sim/releases/418544562 > release.json
+          python3 - <<'PY'
+          import json, subprocess
+          data = json.load(open('release.json'))
+          assert data['draft'] and data['tag_name'] == 'v0.6.1-beta.2'
+          name = 'EMCD-Sim-0.6.1-beta.2-Windows.zip'
+          asset = next(a for a in data['assets'] if a['name'] == name)
+          assert asset['size'] == 108739125
+          assert asset['digest'] == 'sha256:04511b73d52fc1a843323e9b859dcbdc081dbc6a0abf3bff67ae320bce4b48d9'
+          for a in data['assets']:
+              if a['name'].startswith(name + '.part-'):
+                  subprocess.run(['gh','api','--method','DELETE',f"repos/dingpengem/EMCD-Sim/releases/assets/{a['id']}"],check=True)
+          print('Verified final draft asset; temporary transport parts removed.')
+          PY
