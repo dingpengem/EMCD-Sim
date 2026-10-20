@@ -9,6 +9,9 @@ import os
 import platform
 import subprocess
 import sys
+import faulthandler
+
+_native_fault_file=None
 
 from .. import __version__
 
@@ -47,6 +50,7 @@ def build_info():
 
 
 def configure_logging():
+    global _native_fault_file
     logger = logging.getLogger('emcd_sim.gui')
     if not logger.handlers:
         folder = user_directory() / 'logs'
@@ -55,6 +59,11 @@ def configure_logging():
         handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
+        if _native_fault_file is None:
+            try:
+                _native_fault_file=(folder/f'native_fault_{os.getpid()}.log').open('ab',buffering=0)
+                faulthandler.enable(file=_native_fault_file,all_threads=True)
+            except (OSError,RuntimeError):logger.warning('Native fault trace file could not be enabled',exc_info=True)
         logger.info('Build %s; platform=%s Python=%s', build_info(), platform.platform(), platform.python_version())
         previous = sys.excepthook
         def unhandled(kind, value, tb):

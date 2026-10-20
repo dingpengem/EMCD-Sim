@@ -10,11 +10,13 @@ from ..multislice_emcd_reference import project_fft_amplitudes,complex_wave_diag
 METHOD_NAMES={'bloch':'Bloch-wave','fft-multislice':'FFT Multislice','difference':'BW-MS numerical difference'}
 
 
-def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True):
+def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True):
     if cfg.propagation not in ('bloch','fft-multislice','both'):raise ValueError('Unknown propagation method')
     if cfg.channeling_model not in ('single','double'):raise ValueError('Unknown channeling model')
     if hkl is None:hkl=geometry(structure,settings,systematic_row=cfg.systematic_row)[2]
     n=len(hkl);pixels=cfg.grid**2;mesh=cfg.fft_grid**2
+    from .parallel_resources import worker_plan,require_supported
+    execution=worker_plan(settings,cfg,n)
     pair=16*(pixels if cfg.angular_maps else min(pixels,64))*n*n/2**20;dense=4*pair
     info=dict(bw_beams=n,fft_harmonics=0,potential_nonzero_harmonics=0,single_complex_pair_mib=pair,dense_working_estimate_mib=dense,
         fft_storage_working_mib=0.,coherence_working_mib=16*cfg.depth*n*n/2**20,propagation=cfg.propagation,
@@ -47,22 +49,37 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True):
     info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20
     info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+info['retained_results_working_mib']
     if cfg.channeling_model=='double':
-        from .channeling import worker_count
         bw_dense=80*n**4/2**20
         bw_work=bw_dense+(128*(n*n+cfg.depth*(2*n+12))+144*pixels)/2**20+8
         samples=cfg.fft_grid if cfg.systematic_row else mesh
         ms_dense=96*32*n*n/2**20
         ms_work=ms_dense+(64*cfg.depth*samples+192*32*samples+32*32*9+64*len(structure.atoms)*n*n)/2**20+8
         engines=[];densities=[]
-        if cfg.propagation in ('bloch','both'):engines.append(worker_count(n,'bloch')*bw_work);densities.append(bw_dense)
-        if cfg.propagation in ('fft-multislice','both'):engines.append(worker_count(n,'fft-multislice')*ms_work);densities.append(ms_dense)
+        if cfg.propagation in ('bloch','both'):engines.append(execution['effective_workers']['bloch']*bw_work);densities.append(bw_dense)
+        if cfg.propagation in ('fft-multislice','both'):engines.append(execution['effective_workers']['fft-multislice']*ms_work);densities.append(ms_dense)
         dense=max(densities);info['dense_working_estimate_mib']=dense
         info['estimated_working_mib']=max(engines)+info['retained_results_working_mib']+info['fft_storage_working_mib']
-        info['detector_workers']={k:worker_count(n,k) for k in ('bloch','fft-multislice')}
+        info['detector_workers']=dict(execution['effective_workers'])
     info['memory_note']='Dense arrays plus FFT/depth storage, retained method results and coordinate/work arrays. Total process estimate adds current RSS, concurrent reservations, 25% allocation margin and 128 MiB reserve. Conservative estimate, not guaranteed peak RSS.'
     if check_memory:
         from .memory_budget import assess_memory
-        info.update(assess_memory(info['estimated_working_mib'],cfg.memory_budget_mib,dense_mib=dense))
+        admission=assess_memory(info['estimated_working_mib'],cfg.memory_budget_mib,dense_mib=dense,reject=False)
+        original_workers=dict(execution['effective_workers'])
+        while (admission.get('rejected') and cfg.worker_mode=='automatic' and cfg.channeling_model=='double'
+               and execution['effective_workers'].get('fft-multislice',1)>1):
+            execution['effective_workers']['fft-multislice']-=1
+            engines=[count*(bw_work if method=='bloch' else ms_work) for method,count in execution['effective_workers'].items()]
+            info['estimated_working_mib']=max(engines)+info['retained_results_working_mib']+info['fft_storage_working_mib']
+            info['detector_workers']=dict(execution['effective_workers'])
+            admission=assess_memory(info['estimated_working_mib'],cfg.memory_budget_mib,dense_mib=dense,reject=False)
+        if original_workers!=execution['effective_workers']:
+            execution['messages'].append('Automatic detector-worker count was limited by the current memory budget/RAM; numerical settings are unchanged.')
+        info.update(admission)
+        if admission.get('rejected'):
+            execution.update(blocked=True,status='Blocked',risk='RESOURCE REJECTED')
+            execution['messages'].append(admission['rejection_reason'])
+    info['execution']=execution
+    if check_memory and enforce_execution:require_supported(execution)
     return info
 
 

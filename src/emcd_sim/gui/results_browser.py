@@ -235,6 +235,8 @@ class ProjectWorkspace:
         self.save_to_path(target,approved)
     def new_project(self):
         if self.busy:return
+        self.set_values(dict(kv=300,beam=3.0,potential=2.0))
+        self.worker_mode.setCurrentIndex(0);self.worker_count.setValue(1)
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(0)
         self.apply_numerical_visibility()
@@ -262,6 +264,8 @@ class ProjectWorkspace:
     def use_result_settings(self):
         if self.busy or self.emcd_result is None:return
         r=self.emcd_result;s=r['settings'];c=r['config']
+        if c.worker_mode not in ('automatic','manual') or type(c.parallel_workers) is not int or not 1<=c.parallel_workers<=4:
+            self.error('Saved parallel-worker request is unsupported (Automatic/Manual, 1–4). Saved results remain viewable; inputs were not replaced or clamped.');return
         try:structure=restore_structure(r.get('structure_snapshot'))
         except Exception as exc:self.error(str(exc));return
         self._restoring=True
@@ -279,6 +283,9 @@ class ProjectWorkspace:
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.mdff_stack.setCurrentIndex(self.model_box.currentIndex())
             with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setCurrentIndex(self.memory_budget.findData(c.memory_budget_mib))
+            with QtCore.QSignalBlocker(self.worker_mode):self.worker_mode.setCurrentIndex(0 if c.worker_mode=='automatic' else 1)
+            with QtCore.QSignalBlocker(self.worker_count):self.worker_count.setValue(c.parallel_workers)
+            self.worker_count.setEnabled(c.worker_mode=='manual')
             values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial or .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
             values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()});self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()
             self.sync_angular_resolution()

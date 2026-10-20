@@ -25,13 +25,17 @@ def run(args):
         old=types.ModuleType('emcd_sim.gui._crash_baseline');old.__package__='emcd_sim.gui'
         source=subprocess.check_output(['git','show','f947889252adc15da0413f7a97d03fb178bc8fa5:src/emcd_sim/gui/channeling.py'])
         exec(compile(source,'baseline_channeling.py','exec'),old.__dict__)
-        adapter.contract=old.contract;baseline_workers=old.worker_count
+        def baseline_contract(*args,**kwargs):
+            kwargs.pop('execution_workers',None)
+            return old.contract(*args,**kwargs)
+        adapter.contract=baseline_contract;baseline_workers=old.worker_count
     saved=load_project(args.project)
     raw=json.loads((args.project/'input_parameters.json').read_text())
     structure=restore_structure(raw['structure_snapshot'])
     settings=replace(saved['settings'],beam_cutoff=args.cutoff)
     cfg=replace(saved['config'],propagation='bloch',channeling_model=args.channel,
                 energy_scope='edges',angular_maps=args.maps)
+    if args.workers is not None:cfg=replace(cfg,worker_mode='manual',parallel_workers=args.workers)
     args.output.mkdir(parents=True,exist_ok=False)
     report=dict(build=build_info(),pid=os.getpid(),executable=sys.executable,
                 settings=asdict(settings),config=asdict(cfg),source_project=str(args.project),
@@ -60,6 +64,7 @@ def run(args):
     w=MainWindow(workspace=args.output/'workspace');w.emcd_result=saved;w.use_result_settings()
     w.numerical_mode.setCurrentIndex(1);w.propagation_box.setCurrentIndex(0)
     w.channeling_box.setCurrentIndex(0 if args.channel=='single' else 1)
+    if args.workers is not None:w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(args.workers)
     w.spin['beam'].setValue(args.cutoff);w.energy_scope.setCurrentIndex(1)
     w.angular_maps.setChecked(args.maps);w.refresh()
     assert w.settings()==settings and w.forward_settings()==cfg
@@ -83,4 +88,5 @@ if __name__=='__main__':
     p.add_argument('--cutoff',type=float,required=True);p.add_argument('--channel',choices=['single','double'],required=True)
     p.add_argument('--maps',action='store_true');p.add_argument('--gui',action='store_true')
     p.add_argument('--baseline',action='store_true',help='Safe original-adapter comparison, requires one BLAS thread')
+    p.add_argument('--workers',type=int,help='Explicit supported Manual worker request; never changes native threads')
     raise SystemExit(run(p.parse_args()))

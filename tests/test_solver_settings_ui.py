@@ -43,6 +43,9 @@ def baseline_window(path):
 def test_released_configuration_exactly_preserved(window,tmp_path,app,channeling):
     old=baseline_window(tmp_path/'released');old.model_box.setCurrentIndex(1)
     try:
+        # Defaults intentionally changed; compare the same explicit legacy inputs.
+        legacy=old.settings()
+        window.set_values(dict(kv=legacy.voltage,tx=legacy.tilt[0],ty=legacy.tilt[1],beam=legacy.beam_cutoff,potential=legacy.potential_cutoff));window.refresh()
         assert window.settings()==old.settings()
         assert window.forward_settings()==old.forward_settings()
         for w in (old,window):
@@ -88,7 +91,7 @@ def test_switching_updates_real_memory_estimates_without_mutating_settings(windo
         assert window.settings()==settings
         assert calls[-1][0].propagation==method
         assert ('0 FFT harmonics' in window.memory_label.text())==(method=='bloch')
-        assert 'common retained beams / MDFF basis' in window.memory_label.text()
+        assert 'Retained beams:' in window.memory_label.text()
     assert any(v['fft_storage_working_mib']>0 for c,v in calls if c.propagation!='bloch')
 
 
@@ -120,7 +123,11 @@ def test_solver_configuration_and_physics_unchanged():
     current=ast.parse(Path('src/emcd_sim/gui/stage_b.py').read_text(encoding='utf-8-sig'))
     old=ast.parse(subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/stage_b.py']).decode('utf-8-sig'))
     find=lambda tree,name:next(n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef) and n.name==name)
-    assert ast.dump(find(current,'forward_settings'))==ast.dump(find(old,'forward_settings'))
+    method=find(current,'forward_settings')
+    for node in ast.walk(method):
+        if isinstance(node,ast.Call) and isinstance(node.func,ast.Name) and node.func.id=='ForwardSettings':
+            node.keywords=[k for k in node.keywords if k.arg not in ('worker_mode','parallel_workers')]
+    assert ast.dump(method)==ast.dump(find(old,'forward_settings'))
     # The energy-support scheduler is now intentionally in emcd_forward/channeling.
     # Protect configuration, tensor construction and energy selection independently
     # of that scheduling change, plus byte-identical propagation/physics modules.
@@ -138,5 +145,9 @@ def test_solver_configuration_and_physics_unchanged():
         assert ast.dump(find(ms_current,name))==ast.dump(find(ms_old,name))
     cls=lambda tree:next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='ProjectedNiFFT')
     assert ast.dump(cls(ms_current))==ast.dump(cls(ms_old))
-    for path in ('src/emcd_sim/gui/propagation.py','src/emcd_sim/gui/project_io.py','src/emcd_sim/double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
+    path='src/emcd_sim/gui/propagation.py'
+    now=ast.parse(Path(path).read_text(encoding='utf-8-sig'));before=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
+    for node in before.body:
+        if isinstance(node,ast.FunctionDef) and node.name!='numerical_info':assert ast.dump(find(now,node.name))==ast.dump(node)
+    for path in ('src/emcd_sim/gui/project_io.py','src/emcd_sim/double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
         assert Path(path).read_text(encoding='utf-8-sig').replace('\r\n','\n')==subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig').replace('\r\n','\n')

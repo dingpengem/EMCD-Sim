@@ -363,8 +363,8 @@ Memory estimates and admission failures remain visible. Automatic selection
 does not propagate waves, evaluate MDFF, run trial calculations or establish
 convergence. Pressing Run starts only the requested calculation.
 
-The deterministic `automatic-starting-v1` policy normally uses the released
-starting values: beam 3.2 Å⁻¹, potential 2.2 Å⁻¹, depth 64, maximum MS step
+The deterministic `automatic-starting-v2` policy normally uses the development
+starting values: beam 3.0 Å⁻¹, potential 2.0 Å⁻¹, depth 64, maximum MS step
 0.04 nm, angular grid 97, 64 aperture subpixels, halfwidth 1 Å⁻¹, 241 energy
 samples and 2048 MiB budget. It retains the selected physical geometry, B,
 systematic-row approximation, source, magnetization and detector positions.
@@ -428,7 +428,39 @@ Panel F groups Manual controls into **Elastic Potential and Beam Support**, **In
 | Estimated process memory budget | Shared execution/admission resource, **not a physical-model parameter or required allocation**; stored unchanged and checked against current available RAM. |
 | Memory estimate and solver explanation | Diagnostics-only presentation; estimates reflect the currently selected engines, basis/sampling, retained allocations and RAM. |
 
-No current Panel E/F parameter is genuinely BW-only. The physical-model and angular/integration categories affect both engines; memory admission is a separate shared-resource category rather than a scattering parameter. Only FFT mesh and maximum slice step are MS-only. GUI defaults remain beam 3.2 cycles/Å, potential 2.2 cycles/Å, B = 0, 64 depth nodes, FFT 32, maximum step 0.04 nm, energy count 241, halfwidth 1 cycle/Å, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. Production reference settings are not substituted as defaults.
+The physical-model and angular/integration categories affect both engines; memory admission and worker scheduling are separate resources rather than scattering parameters. Only FFT mesh and maximum slice step are MS-only. New development-project defaults are **300 kV**, beam **3.0 cycles/Å**, potential **2.0 cycles/Å**, B = 0, 64 depth nodes, FFT 32, maximum step 0.04 nm, energy count 241, halfwidth 1 cycle/Å, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. New-project reference alignment follows the selected voltage; loading a saved project preserves its explicit voltage, tilt, cutoffs and sampling. Production reference settings are not substituted as ordinary defaults.
+
+### Parallel Workers and pre-Run risk
+
+Panel F's **Computational Resources** stays visible in both numerical modes.
+**Parallel Workers → Automatic (Recommended) / Manual** is independent of
+Automatic/Manual numerical settings. Manual requests are preserved, including
+when blocked; the preview distinguishes requested and effective counts for
+BW/MS/Both. Single Channeling currently uses one serial detector contraction;
+Double supports 1–4 detector workers subject to runtime/resource checks.
+
+The calculation QThread keeps Qt responsive. Its Python detector workers are
+separate from the native BLAS/LAPACK threads shown by runtime introspection.
+CPU count or an environment variable alone is not used as a BLAS-thread reading.
+An unidentified runtime is **Unknown**, not verified safe. Beam-basis cost can
+grow sharply: analytic BW Double includes N⁴ temporaries; MS estimates include
+FFT/depth/batch arrays. Peak admission also considers current RSS, active
+reservations and available RAM. Automatic may reduce detector workers to fit;
+Manual is rejected rather than silently changed. Scientific inputs are retained.
+
+Windows BW Double defaults to the bounded-tested single-detector-worker policy.
+Multiple Windows BW workers are allowed only when native BLAS is verified to
+have one thread; the GUI never mutates its process-global thread limit. Start a
+fresh source process with `OPENBLAS_NUM_THREADS=1` if you intentionally want to
+test that execution strategy. It is not assumed faster. MS retains its separate
+worker policy. Effective counts are rechecked before Run and pinned for the job.
+
+**KNOWN UNSAFE** blocks matching crash evidence. **RESOURCE REJECTED** blocks
+memory-budget/RAM violations. **UNVERIFIED COMBINATION** warns, or blocks an
+unsupported parallel strategy; acceptable memory alone is not stability proof.
+**VALIDATED POLICY** refers only to matching bounded tests, not an impossible-to-
+crash promise or physical convergence. There is no universal unsafe cutoff at
+3.0 Å⁻¹. See [worker safety and diagnostic EXE](BW_PARALLEL_WORKER_SAFETY.md).
 
 **Depth treatment:** BW evaluates elastic amplitudes analytically at the requested planes, but the GUI's Single-channeling coherence is formed by trapezoidal integration of those samples. MS Single likewise integrates sampled coherence, with propagation subdivided between planes according to the maximum slice step. BW Double uses analytic depth response for the explicit systematic row and numerical depth integration for the general path (including full [017]); the node count still supports preparation, stored amplitudes/coherence, diagnostics and memory estimates in the analytic path. MS Double samples incoming/outgoing/inelastic depth contributions and uses MS substeps. Therefore depth nodes must not be labeled universally analytic for BW or exclusively MS-specific.
 

@@ -20,7 +20,7 @@ from emcd_sim.mdff_tensor import dipole_tensor_from_transitions
 class ForwardTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.structure=Structure.nickel();cls.settings=Settings(beam_cutoff=2.2)
+        cls.structure=Structure.nickel();cls.settings=Settings(beam_cutoff=2.2,potential_cutoff=2.2,voltage=200,tilt=(-7.116725439974256,0))
         cls.cfg=ForwardSettings(energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True)
         cls.result=calculate(cls.structure,cls.settings,cls.cfg)
     def test_source_native_and_independent_import_validation(self):
@@ -100,7 +100,7 @@ class WorkerTests(unittest.TestCase):
         self.w.close();self.app.processEvents()
     def test_cancel_and_failed_not_completed(self):
         entered=threading.Event();release=threading.Event();w=self.w
-        def blocked(*args):entered.set();release.wait(5);return {'not':'registered'}
+        def blocked(*args,**kwargs):entered.set();release.wait(5);return {'not':'registered'}
         with patch('emcd_sim.gui.stage_b.calculate',blocked):
             w.start_emcd();self.assertTrue(entered.wait(5));w.cancel();release.set();self.assertTrue(w.worker.wait(5000));self.app.processEvents()
         self.assertIsNone(w.emcd_result);self.assertFalse(w.busy);self.assertEqual(w.progress.value(),0)
@@ -111,7 +111,8 @@ class WorkerTests(unittest.TestCase):
         w=self.w;s=w.settings();w.model_box.setCurrentIndex(1);self.assertEqual(w.settings(),s)
         self.assertEqual(w.spin['atomic_l3_ev'].value(),852.7);self.assertFalse(w.correction.isChecked())
         r=ForwardTests.result;w.emcd_result=r;w.maps_view.result=r;w.eels_view.result=r
-        w.spin['tx'].setValue(-8);self.assertIn('STALE',w.eels_view.label.text());self.assertEqual(r['settings'].tilt,Settings().tilt)
+        original_tilt=r['settings'].tilt
+        w.spin['tx'].setValue(-8);self.assertIn('STALE',w.eels_view.label.text());self.assertEqual(r['settings'].tilt,original_tilt)
 
     def test_real_worker_display_and_detector_recalculation(self):
         w=self.w;w.numerical_mode.setCurrentIndex(1)

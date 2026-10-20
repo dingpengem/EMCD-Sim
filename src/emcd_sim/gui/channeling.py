@@ -56,7 +56,7 @@ def angular_schedule(model,cfg,energy):
     return qx,qy,weights,detector_support,selected
 
 
-def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared_incoming=None,*,energy_checkpoint=None):
+def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared_incoming=None,*,energy_checkpoint=None,execution_workers=None):
     """Full field at selected map energies, detector-only elsewhere, on one grid.
 
     Detector-only skips exactly zero-weight pixels. Fractional weights and all
@@ -79,7 +79,11 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             sign=np.ones((len(points),3));sign[points[:,1]<0,1]=-1
         else:query=points;inverse=sign=None
         supports[full]=(support,points,query,inverse,sign)
-    n=len(elastic.beams.hkl);workers=worker_count(n,method)
+    n=len(elastic.beams.hkl);workers=worker_count(n,method) if execution_workers is None else execution_workers
+    if method=='bloch' and sys.platform=='win32' and workers>1:
+        from .parallel_resources import native_backend_info
+        if native_backend_info()['threads']!=1:
+            raise ValueError('Parallel Windows BW requires verified single-thread native BLAS; no calculation started.')
     start_incoming=perf_counter()
     incoming_bw=prepare_incoming_bloch(elastic,settings.thickness,cfg.depth,cancelled=cancelled) if cfg.channeling_model=='double' and method=='bloch' else None
     incoming_seconds=perf_counter()-start_incoming

@@ -7,7 +7,7 @@ from .geometry import geometry, excitation
 from .emcd_forward import material_reason, ForwardSettings
 
 
-POLICY = 'automatic-starting-v1'
+POLICY = 'automatic-starting-v2'
 NUMERICAL_KEYS = ('beam','potential','fft_grid','depth','slice_step','grid','subpixels','halfwidth','energy')
 
 
@@ -18,7 +18,7 @@ def resolve_parameters(structure, settings, cfg):
     exact-Bragg [017] representative points. Other cases use released starting
     defaults. Even reference matches are not claims about full-field convergence.
     """
-    values = dict(beam=3.2,potential=2.2,fft_grid=32,depth=64,slice_step=.04,
+    values = dict(beam=3.0,potential=2.0,fft_grid=32,depth=64,slice_step=.04,
                   grid=97,subpixels=64,halfwidth=1.,energy=241,memory_budget_mib=2048)
     centers=((1/3.524,1/3.524),(1/3.524,-1/3.524))
     # Native-source identity is explicit; a filename/material resemblance is insufficient.
@@ -90,9 +90,10 @@ class NumericalSettingsUI:
 
     def apply_numerical_visibility(self):
         manual=self.numerical_mode.currentIndex()==1
-        for group in (self.shared_elastic_group,self.shared_sampling_group,self.shared_resources_group):group.setVisible(manual)
+        for group in (self.shared_elastic_group,self.shared_sampling_group):group.setVisible(manual)
+        self.shared_resources_group.setVisible(True)
         for key in NUMERICAL_KEYS:self.spin[key].setEnabled(manual)
-        self.memory_budget.setEnabled(manual);self.angular_resolution.setEnabled(manual)
+        self.memory_budget.setEnabled(True);self.angular_resolution.setEnabled(manual)
         self.numerical_details.setVisible(not manual)
         self.sync_solver_controls()
 
@@ -127,6 +128,7 @@ class NumericalSettingsUI:
                     self._numerical_cache=key;self._restore_auto_once=False
                 elif key!=self._numerical_cache:
                     values,provenance=resolve_parameters(self.structure,s,cfg)
+                    values['memory_budget_mib']=self.memory_budget.currentData()
                     self.set_numerical_values(values);self.numerical_provenance=provenance;self._numerical_cache=key
                 self.numerical_status.setText(self.numerical_provenance['source']+'\n'+self.numerical_provenance['status'])
             else:

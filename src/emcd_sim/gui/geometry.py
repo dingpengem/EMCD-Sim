@@ -80,11 +80,11 @@ class Structure:
 class Settings:
     zone: tuple=(0,1,7)
     target: tuple=(2,0,0)
-    tilt: tuple=(-7.116725439974256,0.)
-    voltage: float=200.
+    tilt: tuple=(round(float(-1000*electron_wavelength_angstrom(300)/3.524),10),0.)
+    voltage: float=300.
     thickness: float=30.
-    beam_cutoff: float=3.2
-    potential_cutoff: float=2.2
+    beam_cutoff: float=3.0
+    potential_cutoff: float=2.0
     b_factor: float=0.
 
 

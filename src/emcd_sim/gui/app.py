@@ -47,7 +47,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.target=QtWidgets.QLineEdit('2 0 0');self.target.setToolTip('Target Miller indices; must belong to the oriented finite basis.');self.form.addRow('Target (hkl)',self.target)
         self.button('Apply orientation / target',self.apply_orientation)
         self.mode=QtWidgets.QComboBox();self.mode.addItems(['Select reflection','Set projected ZA','Move detector A','Move detector B']);self.form.addRow('Click mode',self.mode)
-        self.number('tx','Tilt X (mrad)',-7.116725439974256,-100,100,self.tilt_changed)
+        self.number('tx','Tilt X (mrad)',Settings().tilt[0],-100,100,self.tilt_changed)
         self.number('ty','Tilt Y (mrad)',0,-100,100,self.tilt_changed)
         self.number('qx','ZA qx (Å⁻¹)',0,-20,20,self.za_changed)
         self.number('qy','ZA qy (Å⁻¹)',0,-20,20,self.za_changed)
@@ -57,7 +57,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.button('Reset to zone axis',lambda:self.set_tilt((0,0)))
         self.button('Reset to reference geometry',self.reset_reference)
         self.section('C. Microscope & Sample')
-        self.number('kv','Voltage (kV)',200,20,1000,self.tilt_changed)
+        self.number('kv','Voltage (kV)',300,20,1000,self.tilt_changed)
         self.number('thickness','Thickness (nm)',30,.1,1000,self.refresh)
         self.section('D. MDFF Model',False)
         self.mdff_controls()
@@ -330,9 +330,15 @@ def main():
     parser.add_argument('--beta-acceptance',type=Path,help='Run sequential Beta RC widget/worker acceptance in a new folder')
     parser.add_argument('--beta-source',type=Path,help='Explicit external scientific source for matched acceptance')
     parser.add_argument('--beta-production',type=Path,help='Existing full-spectrum reference folders; never bundled')
+    parser.add_argument('--parallel-acceptance',type=Path,help='Opt-in resource-controls and bounded native BW Double acceptance')
+    parser.add_argument('--parallel-project',type=Path,help='Optional checksummed saved case for diagnostic acceptance')
+    parser.add_argument('--parallel-workers',type=int,help='Explicit supported detector-worker request for diagnostic acceptance')
     args=parser.parse_args()
     from .runtime import configure_logging, LABEL, build_info
     configure_logging()
+    if args.parallel_acceptance:
+        from .parallel_acceptance import run
+        return run(args.parallel_acceptance,args.parallel_project,args.parallel_workers)
     if args.cancellation_acceptance:
         if not args.cancellation_source:parser.error('Cancellation acceptance requires an explicit source')
         from .cancellation_acceptance import run
@@ -356,7 +362,7 @@ def main():
         font_id=QtGui.QFontDatabase.addApplicationFont(str(Path(get_data_path())/'fonts/ttf/DejaVuSans.ttf'))
         families=QtGui.QFontDatabase.applicationFontFamilies(font_id)
         if families:app.setFont(QtGui.QFont(families[0],9))
-    window=MainWindow();window.setWindowTitle(LABEL)
+    window=MainWindow();window.setWindowTitle(build_info()['label'])
     about=window.menuBar().addMenu('Help').addAction('About / build')
     about.triggered.connect(lambda:QtWidgets.QMessageBox.information(window,LABEL,json.dumps(build_info(),indent=2)))
     window.show()

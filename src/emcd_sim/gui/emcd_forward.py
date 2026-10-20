@@ -76,6 +76,8 @@ class ForwardSettings:
     energy_scope: str='full'
     angular_maps: bool=True
     systematic_row: bool=False
+    worker_mode: str='automatic'
+    parallel_workers: int=1
 
 
 def material_reason(structure):
@@ -138,24 +140,28 @@ def energy_grid(cfg,requested=None):
 from ..cancellation import Cancelled, check_cancelled
 
 
-def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,energy_ev=None,energy_checkpoint=None):
+def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
     check_cancelled(cancelled)
     from .propagation import numerical_info
     from .memory_budget import reserve_memory
     info=numerical_info(structure,settings,cfg)
+    if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
+        raise ValueError('Resources changed since preflight; Run again to review the new effective worker counts.')
+    execution_policy=info['execution']
     check_cancelled(cancelled)
     # Double kernels make their own concurrent reservations. Reserve retained
     # GUI arrays here, after admitting the complete estimated working set.
     reserved=info['retained_results_working_mib'] if cfg.channeling_model=='double' else info['estimated_working_mib']
     with reserve_memory(reserved,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
-        result=_calculate(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,energy_checkpoint=energy_checkpoint)
+        result=_calculate(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,energy_checkpoint=energy_checkpoint,execution_policy=execution_policy)
+        result['metadata']['execution']=execution_policy
         check_cancelled(cancelled)
         result['metadata']['memory_admission']=admission
         for r in result['methods'].values():r['metadata']['memory_admission']=admission
         return result
 
 
-def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None):
+def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
     def stage(s):
         if cancelled():raise Cancelled()
         progress(s)
@@ -189,7 +195,8 @@ def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy
         stage('Calculating '+method+' EELS and EMCD')
         from .channeling import contract
         checkpoint=(lambda e,data:energy_checkpoint(method,e,data)) if energy_checkpoint is not None else None
-        prepared=contract(model,settings,cfg,method,C,energy,ts,stage,cancelled,prepared_incoming,energy_checkpoint=checkpoint)
+        prepared=contract(model,settings,cfg,method,C,energy,ts,stage,cancelled,prepared_incoming,energy_checkpoint=checkpoint,
+            execution_workers=execution_policy['effective_workers'][method] if execution_policy else None)
         methods[method]=_contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,prepared=prepared)
         methods[method]['method']=method
         methods[method]['metadata'].update(solver=method+' '+cfg.channeling_model+' channeling localized single ionization',numerics=info,

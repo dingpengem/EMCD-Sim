@@ -49,7 +49,7 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
         values,_=resolve_parameters(Structure.nickel(),Settings(),cfg)
         assert values['fft_grid']==minimum
     assert [c.fft_grid for s,c in calls]==list(range(32,min(minimum,128)+1,2))
-    assert all(s.beam_cutoff==3.2 and s.potential_cutoff==2.2 and c.depth==64 and c.slice_step==.04 for s,c in calls)
+    assert all(s.beam_cutoff==3.0 and s.potential_cutoff==2.0 and c.depth==64 and c.slice_step==.04 for s,c in calls)
 
 
 def test_pure_resolution_never_calls_scientific_solvers():
@@ -67,10 +67,11 @@ def test_pure_resolution_never_calls_scientific_solvers():
 @pytest.mark.parametrize('channel',['single','double'])
 def test_reference_selection_and_fft_support(method,channel):
     cfg=reference_config(propagation=method,channeling_model=channel)
-    values,meta=resolve_parameters(Structure.nickel(),Settings(),cfg)
+    reference=replace(Settings(),voltage=200,tilt=(-7.116725439974256,0))
+    values,meta=resolve_parameters(Structure.nickel(),reference,cfg)
     assert (values['beam'],values['potential'],values['fft_grid'],values['depth'],values['slice_step'])==(4.6,6.2,48,257,.04)
     assert meta['source']=='Matching reference configuration'
-    s=replace(Settings(),beam_cutoff=values['beam'],potential_cutoff=values['potential'])
+    s=replace(reference,beam_cutoff=values['beam'],potential_cutoff=values['potential'])
     numerical_info(Structure.nickel(),s,replace(cfg,fft_grid=48,depth=257),check_memory=False)
 
 
@@ -87,7 +88,7 @@ def test_reference_selection_and_fft_support(method,channel):
 ])
 def test_unmatched_never_claims_convergence(settings,cfg):
     values,meta=resolve_parameters(Structure.nickel(),settings,cfg)
-    assert values['beam']==3.2 and values['potential']==2.2
+    assert values['beam']==3.0 and values['potential']==2.0
     assert 'convergence not established' in meta['status']
 
 
@@ -101,7 +102,7 @@ def test_unsupported_geometry_no_fallback():
 def test_auto_defaults_display_and_no_solvers(window):
     w=window
     assert w.numerical_mode.currentIndex()==0
-    assert w.shared_sampling_group.isHidden() and w.shared_resources_group.isHidden()
+    assert w.shared_sampling_group.isHidden() and not w.shared_resources_group.isHidden()
     assert not w.spin['beam'].isEnabled() and not w.spin['fft_grid'].isEnabled()
     assert w.spin['grid'].value()==97 and w.memory_budget.currentData()==2048
     assert 'FFT grid' not in w.numerical_values.text()
@@ -124,7 +125,7 @@ def test_manual_roundtrip_preserves_physics_and_overrides(window):
     for i in (1,2,0):w.propagation_box.setCurrentIndex(i)
     assert w.numerical_snapshot()==manual
     w.numerical_mode.setCurrentIndex(0)
-    assert w.spin['grid'].value()==97 and w.spin['beam'].value()==3.2
+    assert w.spin['grid'].value()==97 and w.spin['beam'].value()==3.0
     w.numerical_mode.setCurrentIndex(1)
     assert w.numerical_snapshot()==manual and w.forward_settings()==cfg
     assert replace(w.settings(),beam_cutoff=physical.beam_cutoff,potential_cutoff=physical.potential_cutoff)==physical
@@ -185,7 +186,6 @@ def test_run_starts_one_worker_only(window,monkeypatch):
     import emcd_sim.gui.stage_b as sb
     worker=Mock();worker.isInterruptionRequested.return_value=False
     factory=Mock(return_value=worker);monkeypatch.setattr(sb,'EMCDWorker',factory)
-    monkeypatch.setattr('emcd_sim.gui.propagation.numerical_info',Mock(return_value={}))
     window.start_emcd();assert factory.call_count==1 and worker.start.call_count==1
     window.start_emcd();assert factory.call_count==1
     window.busy=False;window.worker=None

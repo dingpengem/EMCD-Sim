@@ -21,6 +21,12 @@ _reservations = {}
 
 
 def memory_snapshot():
+    # Windows ctypes signatures below contain per-call structure types. Keep
+    # concurrent previews/admission calls from replacing each other's argtypes.
+    with _lock:return _memory_snapshot()
+
+
+def _memory_snapshot():
     """Available physical RAM and current process RSS, in MiB; stdlib only."""
     if os.name == 'nt':
         from ctypes import wintypes
@@ -51,7 +57,7 @@ def memory_snapshot():
     return dict(available_ram_mib=available, process_rss_mib=resident_pages*os.sysconf('SC_PAGE_SIZE')/2**20)
 
 
-def assess_memory(working_mib, budget_mib=DEFAULT_BUDGET_MIB, *, dense_mib=0., snapshot=None):
+def assess_memory(working_mib, budget_mib=DEFAULT_BUDGET_MIB, *, dense_mib=0., snapshot=None,reject=True):
     """Reject over-budget jobs before large allocations; include active workers."""
     if budget_mib not in BUDGETS_MIB:
         raise ValueError(f'Memory budget must be one of {BUDGETS_MIB} MiB.')
@@ -80,10 +86,12 @@ def assess_memory(working_mib, budget_mib=DEFAULT_BUDGET_MIB, *, dense_mib=0., s
             cause.append(f'selected budget {budget_mib} MiB')
         if peak > ram_limit:
             cause.append(f'50% of currently available RAM ({ram_limit:.1f} MiB of {available:.1f} MiB)')
-        raise ValueError(f'Memory admission rejected: dense kernel {dense_mib:.1f} MiB; estimated arrays {working_mib:.1f} MiB; '
+        message=(f'Memory admission rejected: dense kernel {dense_mib:.1f} MiB; estimated arrays {working_mib:.1f} MiB; '
             f'estimated total process peak {peak:.1f} MiB exceeds '+ ' and '.join(cause)+
             f'. Includes current RSS {rss:.1f} MiB, {count} active calculation(s), 25% allocation margin and 128 MiB reserve. '
             'No simulation parameters were changed. Choose a larger supported budget or free RAM; any sampling change must be explicit.')
+        if reject:raise ValueError(message)
+        info.update(rejected=True,rejection_reason=message)
     return info
 
 

@@ -32,13 +32,15 @@ class EMCDWorker(QtCore.QThread):
         return requested
     def run(self):
         try:
-            logging.getLogger('emcd_sim.gui').info('Calculate method=%s model=%s source=%s sha256=%s', self.config.propagation, self.config.model, self.config.source, self.config.source_sha256)
+            logging.getLogger('emcd_sim.gui').info('Calculate method=%s model=%s sha256=%s', self.config.propagation, self.config.model, self.config.source_sha256)
             logger=logging.getLogger('emcd_sim.gui')
-            logger.info('Calculation inputs settings=%s config=%s',asdict(self.settings),asdict(self.config))
+            configuration=asdict(self.config);configuration.pop('source',None)
+            logger.info('Calculation inputs settings=%s config=%s',asdict(self.settings),configuration)
             def progress(message):
                 logger.info('Calculation stage: %s',message)
                 self.stage.emit(message)
-            r=calculate(self.structure,self.settings,self.config,progress,self.cancelled)
+            kwargs={'execution_policy':self.execution_policy} if hasattr(self,'execution_policy') else {}
+            r=calculate(self.structure,self.settings,self.config,progress,self.cancelled,**kwargs)
             if not self.cancelled():self.result.emit(r)
         except Cancelled:pass
         except Exception as exc:
@@ -109,9 +111,9 @@ class StageB(NumericalSettingsUI):
     def numerical_controls(self):
         shared_form=self.form
         self.shared_elastic_group=self.shared_group('Elastic Potential and Beam Support')
-        self.number('beam','Beam / MDFF basis cutoff (Å⁻¹)',3.2,.2,6.5,self.refresh)
+        self.number('beam','Beam / MDFF basis cutoff (Å⁻¹)',3.0,.2,6.5,self.refresh)
         self.spin['beam'].setToolTip('Shared retained basis: BW uses these elastic beams; MS uses the same ordered beams for diffraction/MDFF contraction. Additional FFT harmonics may participate in MS propagation. This is not a BW-only cutoff.')
-        self.number('potential','Potential Fourier cutoff\n|g−g′|max (Å⁻¹)',2.2,.1,6.5,self.refresh)
+        self.number('potential','Potential Fourier cutoff\n|g−g′|max (Å⁻¹)',2.0,.1,6.5,self.refresh)
         self.spin['potential'].setToolTip('BW: limits crystal-potential Fourier components used in diffraction-beam coupling. MS: limits Fourier components used to construct the projected real-space potential. U_(g−g′), |g−g′| ≤ cutoff. Distinct from beam radius, ionization momentum transfer and detector extent. Crystallographic g=1/d; no extra 2π.')
         self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
         self.spin['b'].setToolTip('Shared IAM elastic-potential damping for both BW and MS; not a solver-specific sampling control.')
@@ -154,6 +156,12 @@ class StageB(NumericalSettingsUI):
         self.memory_budget.setCurrentIndex(BUDGETS_MIB.index(DEFAULT_BUDGET_MIB));self.memory_budget.currentIndexChanged.connect(self.emcd_stale)
         self.form.addRow('Estimated process memory budget',self.memory_budget)
         self.memory_budget.setToolTip('Shared maximum estimated working-memory allowance, not a required allocation. Checks available RAM and estimated process peak; never changes scientific settings to fit.')
+        self.worker_mode=QtWidgets.QComboBox();self.worker_mode.addItems(['Automatic (Recommended)','Manual'])
+        self.worker_count=QtWidgets.QSpinBox();self.worker_count.setRange(1,4);self.worker_count.setValue(1);self.worker_count.setEnabled(False)
+        self.form.addRow('Parallel Workers',self.worker_mode);self.form.addRow('Requested workers (Manual)',self.worker_count)
+        self.worker_mode.setToolTip('Separate from numerical settings. One calculation QThread schedules detector workers; native BLAS/LAPACK has its own threads. Unsafe or unsupported manual requests are blocked, not replaced.')
+        self.worker_mode.currentIndexChanged.connect(lambda index:(self.worker_count.setEnabled(index==1),self.emcd_stale()))
+        self.worker_count.valueChanged.connect(self.emcd_stale)
         self.memory_label=QtWidgets.QLabel();self.memory_label.setWordWrap(True);self.form.addRow(self.memory_label)
         self.memory_label.setToolTip('Diagnostic estimate for the selected solver(s), common basis, sampling and current RAM. The budget controls admission, never an automatic parameter reduction.')
         self.form=shared_form
@@ -217,7 +225,7 @@ class StageB(NumericalSettingsUI):
         mode='xmcd' if self.model_box.currentIndex()==0 else 'atomic';axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')
         if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):raise ValueError('Validate the current XMCD source first')
-        return ForwardSettings(channeling_model=('single','double')[self.channeling_box.currentIndex()],energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+        return ForwardSettings(worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
@@ -235,8 +243,10 @@ class StageB(NumericalSettingsUI):
             if cfg.model=='xmcd' and not cfg.axis_declared:raise ValueError('Declare XMCD conventions before Run EMCD')
             if cfg.model=='atomic' and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
             from .propagation import numerical_info
-            info=numerical_info(self.structure,s,cfg)
-            self.memory_label.setText(f"{info['bw_beams']} common retained beams / MDFF basis; {info['fft_harmonics']} FFT harmonics. Dense kernel {info['dense_working_estimate_mib']:.1f} MiB; estimated arrays {info['estimated_working_mib']:.1f} MiB.\nEstimated process peak {info['estimated_process_peak_mib']:.1f} / {cfg.memory_budget_mib} MiB; available RAM {info['available_ram_mib']:.1f} MiB (50% allowed). Includes RSS, allocation margin and active calculations; not a guaranteed peak.")
+            info=numerical_info(self.structure,s,cfg,enforce_execution=False)
+            from .parallel_resources import preview_text
+            self.memory_label.setText(preview_text(s,cfg,info))
+            if info['execution']['blocked']:reason=reason or info['execution']['risk']+': '+' '.join(info['execution']['messages'])
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
             structure_matches=self.emcd_result is not None and self.emcd_result['metadata']['structure']==self.structure.description()
             if self.emcd_result and self.emcd_result.get('structure_snapshot'):
@@ -291,12 +301,21 @@ class StageB(NumericalSettingsUI):
             reason=reason or self.input_source_reason()
             if reason:raise ValueError(reason)
             from .propagation import numerical_info
-            numerical_info(self.structure,s,cfg)
+            assessment=numerical_info(self.structure,s,cfg,enforce_execution=False)
+            from .parallel_resources import require_supported
+            from .runtime import build_info
+            logger=logging.getLogger('emcd_sim.gui')
+            logger.info('Run preflight build=%s cutoff=%s beams=%s solver=%s channeling=%s energy=%s grid=%s budget=%s execution=%s memory=%s',
+                build_info()['commit'],s.beam_cutoff,assessment['bw_beams'],cfg.propagation,cfg.channeling_model,
+                cfg.energy_scope,cfg.grid,cfg.memory_budget_mib,assessment['execution'],
+                {k:v for k,v in assessment.items() if k not in ('execution',)})
+            for handler in logger.handlers:handler.flush()
+            require_supported(assessment['execution'])
             structure=Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings)
         except Exception as exc:self.error(str(exc));return
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.emcd_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0)
         self._run_numerical_selection=self.numerical_selection_snapshot()
-        self.worker=EMCDWorker(structure,s,cfg);self.worker.stage.connect(self.emcd_stage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.emcd_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
+        self.worker=EMCDWorker(structure,s,cfg);self.worker.execution_policy=assessment['execution'];self.worker.stage.connect(self.emcd_stage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.emcd_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
     def emcd_stage(self,message):
         # Queued progress from before Cancel must not hide the pending request.
         if not self.worker.isInterruptionRequested():self.statusBar().showMessage(message)

@@ -62,6 +62,8 @@ Select and validate the bundled five-column XMCD source, inspect its native ener
 
 ## GUI workflow
 
+**Local worker-safety development update:** new projects start at **300 kV**, beam/MDFF cutoff **3.0 Å⁻¹**, potential cutoff **2.0 Å⁻¹**, angular grid **97×97** and **2048 MiB**. Panel F adds independent Automatic/Manual **Parallel Workers**, actual native BLAS threading and a pre-Run resource/risk preview. These are starting settings, not universal convergence or crash guarantees. The published Beta and older development ZIP predate this fix; see the [local diagnostic-build report](docs/BW_PARALLEL_WORKER_SAFETY.md).
+
 **Development source update:** numerical settings default to Automatic, with a read-only parameter summary and full Manual overrides. Selection uses inexpensive configuration checks, without trial simulations or a guarantee of convergence. MS-only FFT/slice controls remain separate from shared support and sampling. See the [selection policy](docs/USER_GUIDE.md#automatic-and-manual-numerical-settings) and [parameter-role table](docs/USER_GUIDE.md#development-source-shared-and-solver-specific-settings). This source update does not change the published v0.6.1-beta.1 binary.
 
 

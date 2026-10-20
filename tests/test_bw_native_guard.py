@@ -80,9 +80,10 @@ def test_worker_logs_inputs_and_last_stage_without_changing_results(monkeypatch,
     def calculate(structure,settings,cfg,progress,cancelled):
         progress('outgoing eigenproblem diagnostic');return expected
     monkeypatch.setattr('emcd_sim.gui.stage_b.calculate',calculate)
-    worker=EMCDWorker(Structure.nickel(),replace(Settings(),beam_cutoff=3.),ForwardSettings())
+    worker=EMCDWorker(Structure.nickel(),replace(Settings(),beam_cutoff=3.),ForwardSettings(source='C:/private/user_sample.xmcd'))
     result=[];worker.result.connect(result.append)
     with caplog.at_level(logging.INFO,logger='emcd_sim.gui'):worker.run()
     assert result==[expected]
     assert any("'beam_cutoff': 3.0" in line for line in caplog.messages)
     assert 'Calculation stage: outgoing eigenproblem diagnostic' in caplog.messages
+    assert 'C:/private/user_sample.xmcd' not in '\n'.join(caplog.messages)

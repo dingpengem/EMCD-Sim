@@ -21,7 +21,7 @@ from emcd_sim.multislice_emcd_reference import project_fft_amplitudes,coherence_
 class PropagationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.structure=Structure.nickel();cls.settings=Settings();cls.cfg=ForwardSettings(propagation='both',energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True)
+        cls.structure=Structure.nickel();cls.settings=Settings(voltage=200,beam_cutoff=3.2,potential_cutoff=2.2,tilt=(-7.116725439974256,0));cls.cfg=ForwardSettings(propagation='both',energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True)
         cls.result=calculate(cls.structure,cls.settings,cls.cfg)
     def test_actual_oriented_potential_and_common_projection(self):
         r=self.result;geo=Ni017Geometry();u,hkl,g=_projected_ni_potential(32,200,0,2.2,geo)
@@ -124,7 +124,7 @@ class ZGUIStageCTests(unittest.TestCase):
     def test_cancel_partial_comparison_preserves_prior_result_and_failure(self):
         w=self.w;prior=PropagationTests.result;w.emcd_result=prior;w.propagation_box.setCurrentIndex(2)
         entered=threading.Event();release=threading.Event()
-        def blocked(*args):entered.set();release.wait(5);return {'partial':True}
+        def blocked(*args,**kwargs):entered.set();release.wait(5);return {'partial':True}
         with patch('emcd_sim.gui.stage_b.calculate',blocked):
             w.start_emcd();self.assertTrue(entered.wait(5));w.cancel();release.set();self.assertTrue(w.worker.wait(10000));self.app.processEvents()
         self.assertIs(w.emcd_result,prior);self.assertEqual(w.progress.value(),0)
