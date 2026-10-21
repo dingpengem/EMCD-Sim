@@ -64,7 +64,7 @@ From the repository root, using the existing Python environment, this
 single-line command works in Windows CMD, macOS and Linux:
 
 ```text
-python -m emcd_sim.fractional_aperture_validation --xmcd-file data/wien2k_ni/Ni_fm.xmcd --aperture-subpixels 64 --output outputs/ni_fractional_aperture_validation
+python scripts/research/fractional_aperture_validation.py --xmcd-file data/wien2k_ni/Ni_fm.xmcd --aperture-subpixels 64 --output outputs/ni_fractional_aperture_validation
 ```
 
 Install first with `python -m pip install -e ".[dev]"` if needed.

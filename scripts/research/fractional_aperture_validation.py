@@ -8,9 +8,9 @@ import json
 from pathlib import Path
 import numpy as np
 
-from .benchmark import nickel_apertures
-from .multislice_emcd_reference import MultisliceEMCDConfig, run_multislice_emcd_reference
-from .xmcd_geometry_decomposition import A, GeometryDecompositionConfig, run_geometry_decomposition, _json_safe
+from emcd_sim.benchmark import nickel_apertures
+from emcd_sim.multislice_emcd_reference import MultisliceEMCDConfig, run_multislice_emcd_reference
+from emcd_sim.xmcd_geometry_decomposition import A, GeometryDecompositionConfig, run_geometry_decomposition, _json_safe
 
 METRICS = ('Sigma_ref','A_mag','A_nonmag','A_raw_plus','f_mag')
 

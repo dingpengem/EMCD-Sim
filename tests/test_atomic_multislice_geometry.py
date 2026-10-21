@@ -191,7 +191,10 @@ def test_nearly_commensurate_cell_is_not_silently_strained():
 
 def test_pickle_free_diagnostics_cif_roundtrip_and_no_propagation(tmp_path):
     from ase.io import read
-    from emcd_sim.atomic_slicing_diagnostics import export_diagnostics
+    from pathlib import Path
+    from runpy import run_path
+    export_diagnostics = run_path(str(Path(__file__).resolve().parents[1] /
+        'scripts/research/atomic_slicing_diagnostics.py'))['export_diagnostics']
     with patch('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes', side_effect=AssertionError('P1 propagation')), \
          patch('emcd_sim.multislice_reference.fft_multislice_ni', side_effect=AssertionError('P1 propagation')):
         result = export_diagnostics(tmp_path/'p1', thickness_nm=.15)

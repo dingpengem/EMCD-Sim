@@ -41,6 +41,8 @@ The package bundles its Python runtime and is intended to run without a separate
 
 ### From Python source
 
+Standalone research drivers live in [`scripts/research/`](scripts/research/README.md); core simulation, GUI and declared console entry points remain in `src/emcd_sim/`. See the [module cleanup inventory](docs/SOURCE_CLEANUP.md) for moved commands and retained research dependencies.
+
 With a suitable Python environment (tested with Python 3.11), clone this repository, open its directory, then run:
 
 ```powershell

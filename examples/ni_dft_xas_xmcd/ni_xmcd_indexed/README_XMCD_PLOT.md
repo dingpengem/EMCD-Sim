@@ -5,12 +5,12 @@ This folder contains a direct visualization of the WIEN2k FCC Ni XMCD/XAS result
 Files:
 - `ni_dft_xmcd.svg`: committed vector figure for Git.
 - `ni_dft_xmcd_summary.txt`: quick numerical summary.
-- `src/emcd_sim/plot_wien2k_xmcd.py`: reproducible plotting script.
+- `scripts/research/plot_wien2k_xmcd.py`: reproducible plotting script.
 
 Suggested Git location:
 - `examples/ni_xmcd_indexed/ni_dft_xmcd.svg`
 - `examples/ni_xmcd_indexed/ni_dft_xmcd_summary.txt`
-- `src/emcd_sim/plot_wien2k_xmcd.py`
+- `scripts/research/plot_wien2k_xmcd.py`
 
 The plot shows:
 1. RP, LP and XAS around Ni L3/L2;

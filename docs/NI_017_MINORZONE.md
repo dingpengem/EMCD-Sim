@@ -109,7 +109,7 @@ control is effectively one-dimensional because off-row harmonics start near
 
 ## Explicit comparison with [710]
 
-`ni_017_comparison` reads the untouched [710] checkpoints and verifies matched
+`scripts/research/ni_017_comparison.py` reads the untouched [710] checkpoints and verifies matched
 elastic/detector settings. The equal-local-transverse-coordinate index map is
 `(h,k,l)_710 -> (l,-k,-h)_017`. The FCC selection and IAM coefficients are
 preserved, and reordered Hamiltonians, complex BW/FFT amplitudes, exit
@@ -142,7 +142,7 @@ $env:PYTHONPATH='src'
 python -m emcd_sim.ni_017_mistilt --controls-only
 python -m emcd_sim.ni_017_mistilt
 python -m emcd_sim.ni_017_mistilt --plot-only
-python -m emcd_sim.ni_017_comparison
+python scripts/research/ni_017_comparison.py
 ```
 
 The scan supports offset range/step, output directory and numerical controls.

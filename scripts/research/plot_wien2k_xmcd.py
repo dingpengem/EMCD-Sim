@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from .wien2k_xmcd import load_wien2k_xmcd
+from emcd_sim.wien2k_xmcd import load_wien2k_xmcd
 
 
 def main(argv: list[str] | None = None) -> None:

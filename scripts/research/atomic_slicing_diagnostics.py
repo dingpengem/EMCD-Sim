@@ -1,6 +1,6 @@
 """Export P1 Ni structural diagnostics; no potentials or waves are calculated.
 
-python -m emcd_sim.atomic_slicing_diagnostics --output outputs/ni_017_atomic_3d
+python scripts/research/atomic_slicing_diagnostics.py --output outputs/ni_017_atomic_3d
 """
 import argparse
 import csv
@@ -15,7 +15,7 @@ import numpy as np
 from ase.build import bulk
 from ase.io import write
 
-from . import atomic_multislice_geometry as geometry
+from emcd_sim import atomic_multislice_geometry as geometry
 
 
 def _csv(path, header, rows):

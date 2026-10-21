@@ -140,7 +140,7 @@ partial/disordered occupancies and invalid/nonperiodic cells fail explicitly.
 In the existing ASE/NumPy/Matplotlib environment:
 
 ```powershell
-python -m emcd_sim.atomic_slicing_diagnostics --output outputs/ni_017_atomic_3d/p1_final
+python scripts/research/atomic_slicing_diagnostics.py --output outputs/ni_017_atomic_3d/p1_final
 ```
 
 Use a **new** output folder on a repeat run. ASE is already part of the GUI

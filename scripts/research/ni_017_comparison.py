@@ -2,12 +2,12 @@
 from pathlib import Path
 import hashlib,json
 import numpy as np
-from .ni_017_geometry import Ni017Geometry,rotated_tensor
-from .ni_710_geometry import Ni710Geometry
-from .ni_017_mistilt import Config,csv_write
-from .ni_mistilt_series import write_json,METHODS,EDGES
-from .ni_mistilt_eels import case_name
-from .single_channeling_tensor import run_tensor_with_coherence
+from emcd_sim.ni_017_geometry import Ni017Geometry,rotated_tensor
+from emcd_sim.ni_710_geometry import Ni710Geometry
+from emcd_sim.ni_017_mistilt import Config,csv_write
+from emcd_sim.ni_mistilt_series import write_json,METHODS,EDGES
+from emcd_sim.ni_mistilt_eels import case_name
+from emcd_sim.single_channeling_tensor import run_tensor_with_coherence
 
 
 def export_normalized_pairs(root):

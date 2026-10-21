@@ -5,7 +5,7 @@ on:
     paths:
       - "data/wien2k_ni/Ni_fm.xmcd"
       - "src/emcd_sim/xmcd_indexed_maps.py"
-      - "src/emcd_sim/plot_wien2k_xmcd_suite.py"
+      - "scripts/research/plot_wien2k_xmcd_suite.py"
       - ".github/workflows/ni-xmcd-maps.yml"
 permissions:
   contents: write
@@ -29,7 +29,7 @@ jobs:
         run: python -m pip install -e '.[dev]'
       - name: Generate WIEN2k XAS / XMCD figures
         run: |
-          python -m emcd_sim.plot_wien2k_xmcd_suite \
+          python scripts/research/plot_wien2k_xmcd_suite.py \
             --xmcd-file data/wien2k_ni/Ni_fm.xmcd \
             --output-dir examples/ni_dft_xas_xmcd
       - name: Run indexed diffraction and EMCD maps
