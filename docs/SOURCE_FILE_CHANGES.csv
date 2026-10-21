@@ -1,0 +1,154 @@
+Path,Action,Scope,Purpose
+.github/workflows/ni-xmcd-maps.yml,D,.github,Retired historical implementation/test/tool
+.github/workflows/publish-condition-maps.yml,D,.github,Retired historical implementation/test/tool
+.github/workflows/tests.yml,M,.github,Production extraction/import/interface or documentation update
+README.md,M,README.md,Production extraction/import/interface or documentation update
+docs/EMCD_GUI.md,M,docs,Production extraction/import/interface or documentation update
+docs/SOURCE_CLEANUP.md,M,docs,Production extraction/import/interface or documentation update
+docs/SOURCE_CLEANUP_VALIDATION.json,A,docs,Current regression fixtures and cleanup validation/inventory
+docs/SOURCE_FILE_CHANGES.csv,A,docs,Current regression fixtures and cleanup validation/inventory
+docs/SOURCE_MODULE_INVENTORY.csv,M,docs,Production extraction/import/interface or documentation update
+docs/USER_GUIDE.md,M,docs,Production extraction/import/interface or documentation update
+packaging/README.md,M,packaging,Production extraction/import/interface or documentation update
+pyproject.toml,M,pyproject.toml,Production extraction/import/interface or documentation update
+scripts/angular_map_convergence.py,D,scripts,Retired historical implementation/test/tool
+scripts/audit_historical_ms_source.py,D,scripts,Retired historical implementation/test/tool
+scripts/benchmark_energy_angular_sampling.py,M,scripts,Production extraction/import/interface or documentation update
+scripts/finish_ni_emcd_thickness.py,D,scripts,Retired historical implementation/test/tool
+scripts/gui_stage_c_validation.py,D,scripts,Retired historical implementation/test/tool
+scripts/gui_stage_g_validation.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_017_thickness_scan.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_bw.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_cutoff_report.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_cutoff_study.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_final_200kv.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_final_report.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_full_benchmark.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_full_report.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_full_spectra.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_gui_validation.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_ms_validation.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_spectral_report.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_uniform_basis.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_double_channeling_uniform_basis_report.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_emcd_complete_thickness.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_full_spectra_gui_validation.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_prb2007_geometry_validation.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_two_beam_geometry_comparison.py,D,scripts,Retired historical implementation/test/tool
+scripts/ni_voltage_dependence.py,D,scripts,Retired historical implementation/test/tool
+scripts/report_angular_convergence.py,D,scripts,Retired historical implementation/test/tool
+scripts/research/README.md,M,scripts,Production extraction/import/interface or documentation update
+scripts/research/atomic_slicing_diagnostics.py,D,scripts,Retired historical implementation/test/tool
+scripts/research/fractional_aperture_validation.py,D,scripts,Retired historical implementation/test/tool
+scripts/research/ni_017_comparison.py,D,scripts,Retired historical implementation/test/tool
+scripts/validate_v060_presentation.py,D,scripts,Retired historical implementation/test/tool
+scripts/verify_v061_candidate.py,D,scripts,Retired historical implementation/test/tool
+scripts/windows_beta_reference_audit.py,D,scripts,Retired historical implementation/test/tool
+src/emcd_sim/__init__.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/__main__.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/atomic_multislice_geometry.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/benchmark.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/cli.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/compare_conditions.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/convergence.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/diffraction.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/elastic.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/elastic_reference.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/emcd_angular_plots.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/gui/app.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/gui/beta_acceptance.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/gui/cancellation_acceptance.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/gui/emcd_forward.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/gui/geometry.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/gui/parallel_acceptance.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/gui/project_io.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/gui/propagation.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/gui/rc_acceptance.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/gui/stage_f_acceptance.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/inelastic.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/mdff_reference.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/multislice_emcd_reference.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/multislice_reference.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/ni_017_geometry.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/ni_017_high_mistilt_analysis.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_017_high_mistilt_convergence.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_017_high_mistilt_plots.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_017_high_mistilt_xy.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_017_mistilt.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_710_geometry.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_710_mistilt.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_atomic_reference.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_data_audit.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_local_mdff.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/ni_mistilt_diffraction.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_mistilt_eels.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/ni_mistilt_series.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/physical_elastic.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/postedge_emcd_maps.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/scan.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/scattering.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/simulation.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/voltage.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/xmcd_basis_convergence.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/xmcd_geometry_decomposition.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/xmcd_indexed_maps.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/xmcd_postedge_normalization.py,M,src,Production extraction/import/interface or documentation update
+src/emcd_sim/xmcd_postedge_robustness.py,D,src,Retired historical implementation/test/tool
+src/emcd_sim/xmcd_reversal.py,D,src,Retired historical implementation/test/tool
+tests/runtime_fixtures.py,A,tests,Current regression fixtures and cleanup validation/inventory
+tests/test_angular_map_convergence.py,D,tests,Retired historical implementation/test/tool
+tests/test_apertures.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_atomic_multislice_geometry.py,D,tests,Retired historical implementation/test/tool
+tests/test_automatic_numerical_settings.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_compare_conditions.py,D,tests,Retired historical implementation/test/tool
+tests/test_convergence.py,D,tests,Retired historical implementation/test/tool
+tests/test_diffraction.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_double_channeling_cutoff_study.py,D,tests,Retired historical implementation/test/tool
+tests/test_double_channeling_final_200kv.py,D,tests,Retired historical implementation/test/tool
+tests/test_double_channeling_foundation.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_double_channeling_full_benchmark.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_double_channeling_full_outputs.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_double_channeling_uniform_basis.py,D,tests,Retired historical implementation/test/tool
+tests/test_elastic_reference.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_emcd_angular_plots.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_energy_angular_schedule.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_fractional_aperture.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_full_field_emcd.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_gui_stage_b.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_gui_stage_c.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_gui_stage_d.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_gui_stage_f.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_integration_acceptance_controls.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_mdff_tensor.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_memory_budget.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_multislice_double_channeling.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_multislice_emcd_reference.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_ni_017.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_ni_017_high_mistilt_xy.py,D,tests,Retired historical implementation/test/tool
+tests/test_ni_017_thickness_scan.py,D,tests,Retired historical implementation/test/tool
+tests/test_ni_710_geometry.py,D,tests,Retired historical implementation/test/tool
+tests/test_ni_atomic_reference.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_ni_data_audit.py,D,tests,Retired historical implementation/test/tool
+tests/test_ni_double_channeling_bw.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_ni_double_channeling_ms_validation.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_ni_mistilt_diffraction.py,D,tests,Retired historical implementation/test/tool
+tests/test_ni_mistilt_eels.py,D,tests,Retired historical implementation/test/tool
+tests/test_ni_mistilt_series.py,D,tests,Retired historical implementation/test/tool
+tests/test_ni_prb2007_validation.py,D,tests,Retired historical implementation/test/tool
+tests/test_ni_voltage_dependence.py,D,tests,Retired historical implementation/test/tool
+tests/test_physical_elastic.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_physics.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_portability.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_postedge_emcd_maps.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_prb_benchmark.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_research_scripts.py,D,tests,Retired historical implementation/test/tool
+tests/test_runtime_interfaces.py,A,tests,Current regression fixtures and cleanup validation/inventory
+tests/test_single_channeling_tensor.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_solver_settings_ui.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_tilt_thickness_scan.py,D,tests,Retired historical implementation/test/tool
+tests/test_two_beam_geometry_comparison.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_xmcd_basis_convergence.py,D,tests,Retired historical implementation/test/tool
+tests/test_xmcd_geometry_decomposition.py,D,tests,Retired historical implementation/test/tool
+tests/test_xmcd_postedge_normalization.py,M,tests,Production extraction/import/interface or documentation update
+tests/test_xmcd_postedge_robustness.py,D,tests,Retired historical implementation/test/tool
+tests/test_xmcd_reversal.py,M,tests,Production extraction/import/interface or documentation update

@@ -61,25 +61,6 @@ def test_concurrent_reservations_and_cleanup_on_errors():
             assert memory.assess_memory(10)['concurrent_calculations'] == 0
 
 
-def test_scan_checkpoint_keeps_no_wavefields_or_coherences(tmp_path):
-    spec = importlib.util.spec_from_file_location('thickness_study', Path(__file__).resolve().parents[1]/'scripts/ni_017_thickness_scan.py')
-    study = importlib.util.module_from_spec(spec); spec.loader.exec_module(study)
-    (tmp_path/'checkpoints').mkdir()
-    case = {m: dict(raw=np.full((2, 4), .55), amplitudes=np.ones((64, 27), complex),
-        coherence=np.eye(27, dtype=complex), actual_thickness_nm=2.) for m in study.METHODS}
-    refs = [weakref.ref(v) for d in case.values() for v in d.values() if isinstance(v, np.ndarray)]
-    compact = study.checkpoint_case(tmp_path, 2., case, {})
-    del case
-    gc.collect()
-    assert all(ref() is None for ref in refs)
-    for d in compact.values():
-        assert 'amplitudes' not in d and 'coherence' not in d
-        assert d['raw'].dtype == np.float64
-        np.testing.assert_array_equal(d['raw'], np.full((2, 4), .55))
-    with np.load(tmp_path/'checkpoints/t002.npz', allow_pickle=False) as saved:
-        assert not any('amplitudes' in k or 'coherence' in k for k in saved.files)
-
-
 def test_real_system_memory_measurement():
     state = memory.memory_snapshot()
     assert state['available_ram_mib'] > 0 and state['process_rss_mib'] > 0

@@ -13,8 +13,8 @@ from emcd_sim.elastic import BeamSet
 from emcd_sim.geometry import Microscope,electron_wavelength_angstrom
 from emcd_sim.physical_elastic import PhysicalElasticModel
 from emcd_sim.scattering import IndependentAtomPotential
-from emcd_sim.elastic_reference import FourierCutoffPotential
-from emcd_sim.diffraction import excitation_errors_angstrom_inv
+from emcd_sim.scattering import FourierCutoffPotential
+from emcd_sim.physical_elastic import excitation_errors_angstrom_inv
 
 
 def indices(text,direction=False):

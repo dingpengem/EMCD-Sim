@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from emcd_sim.xmcd_postedge_normalization import (
-    normalize_postedge, analyze_postedge_spectra, recovery_diagnostics, PostedgeConfig, run_postedge_simulation,
+    normalize_postedge, analyze_postedge_spectra, recovery_diagnostics,
 )
 
 E=np.linspace(0.,10.,101)
@@ -88,58 +88,3 @@ def test_exact_window_endpoints_and_undefined_signed_integral():
     assert np.isnan(metrics['magnetic_integral_change'])
     assert 'cancels' in reasons['magnetic_integral_change']
     assert np.isnan(metrics['nonmag_suppression'])
-
-
-def test_eta_zero_wrapper_and_fractional_states(tmp_path,monkeypatch):
-    from emcd_sim import xmcd_postedge_normalization as module
-    e=np.linspace(837.,883.,65); n=1.+np.exp(-((e-850)/3)**2)
-    p=tmp_path/'synthetic.xmcd'; np.savetxt(p,np.column_stack((e,1.1*n,.9*n,.2*n,2*n)))
-    original=module.run_xmcd_reversal
-    captured=[]
-    def wrapped(*args,**kwargs):
-        captured.append(kwargs)
-        return original(*args,**kwargs)
-    monkeypatch.setattr(module,'run_xmcd_reversal',wrapped)
-    config=PostedgeConfig(eta=0,cutoff=.75,grid=17,steps=3,energy_points=65)
-    result=run_postedge_simulation(p,config)
-    np.testing.assert_array_equal(result.spectra['D_mag'],0)
-    np.testing.assert_array_equal(result.spectra['M_A'],0)
-    assert captured[0]['integration_mode']=='fractional' and captured[0]['aperture_subpixels']==64
-    for iw in range(3):
-        np.testing.assert_allclose(result.spectra['D_corrected'][iw],result.spectra['D_nonmag_residual_obs'][iw],atol=1e-14)
-
-
-def test_real_source_cli_four_apertures_and_output_integrity(tmp_path):
-    source=Path(__file__).resolve().parents[1]/'data/wien2k_ni/Ni_fm.xmcd'
-    output=tmp_path/'post edge paths with spaces'
-    done=subprocess.run([sys.executable,'-m','emcd_sim.xmcd_postedge_normalization',
-        '--xmcd-file',str(source),'--condition','symmetric-3bc','--cutoff','.75','--grid','17',
-        '--steps','3','--energy-points','65','--output',str(output)],
-        capture_output=True,text=True,check=True,timeout=120)
-    summary=json.loads(done.stdout)
-    assert summary['condition']=='symmetric-3bc'
-    folder=output/'symmetric-3bc'
-    meta=json.loads((folder/'metadata.json').read_text(encoding='utf-8'))
-    assert meta['chiral_groups']=={'A':['RU','LD'],'B':['RD','LU']}
-    assert meta['config']['integration_mode']=='fractional'
-    assert all(d['integration_mode']=='fractional' for d in meta['detectors'].values())
-    import hashlib
-    assert meta['source_sha256']==hashlib.sha256(source.read_bytes()).hexdigest()
-    assert meta['software_commit'] and meta['python_version']==sys.version.split()[0]
-    assert meta['source_energy_bounds_ev'][1]>=882.
-    assert all(meta[k] is False for k in ('quantitative_Ni','absolute_cross_section','outgoing_channeling','extended_continuum','experimental_background_subtraction'))
-    with np.load(folder/'postedge_spectra.npz',allow_pickle=False) as s:
-        for key in s.files:assert s[key].dtype.kind!='O'
-        assert s['D_corrected'].shape==(3,65)
-        assert s['postedge_window_mask'].shape==(3,65)
-        assert s['valid_alpha_obs'].all() and s['metric_valid'].dtype==bool
-        for kind,name in [('obs','D_corrected'),('oracle','D_oracle')]:
-            np.testing.assert_allclose(s[name],s['D_mag_processed_'+kind]+s['D_nonmag_residual_'+kind],atol=1e-13)
-        np.testing.assert_allclose(s['I_A_plus'],s['N_A']+s['M_A'],atol=1e-13)
-        assert {'alpha_obs','alpha_nonmag','D_mag','D_nonmag','D_raw','I_A_minus','I_B_minus'}<=set(s.files)
-    metrics=json.loads((folder/'postedge_metrics.json').read_text())
-    assert len(metrics)==18
-    assert all('undefined_reasons_json' in r for r in metrics)
-    assert (folder/'postedge_window_comparison.csv').is_file()
-    for name in ('postedge_normalization_comparison.png','magnetic_recovery_comparison.png','normalization_window_sensitivity.png'):
-        assert (folder/name).stat().st_size>1000

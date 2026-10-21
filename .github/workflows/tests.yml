@@ -34,7 +34,5 @@ jobs:
         run: python -m pip install -e ".[dev,gui]"
       - name: Run focused regression tests
         run: python -m pytest -q
-      - name: Smoke-test CLI and output paths
-        run: python -m emcd_sim --diffraction-condition two-beam --diffraction-only --output "outputs/ci results"
-      - name: Verify saved diffraction data
-        run: python -c "from pathlib import Path; p=Path('outputs/ci results'); assert all((p / name).is_file() for name in ('diffraction_pattern.png','diffraction_pattern.npz','diffraction_spots.csv','metadata.json'))"
+      - name: Smoke-test current desktop launcher
+        run: python -m emcd_sim.gui --help

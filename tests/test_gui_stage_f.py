@@ -108,7 +108,7 @@ class SavedVisualizationTests(unittest.TestCase):
         cls.guards=ExitStack()
         for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni',
                      'emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.emcd_forward.tensors','emcd_sim.gui.propagation.propagate',
-                     'emcd_sim.gui.emcd_forward.run_tensor_with_coherence','emcd_sim.single_channeling_tensor.run_tensor_with_coherence',
+                     'emcd_sim.single_channeling_tensor.run_tensor_with_coherence','emcd_sim.single_channeling_tensor.run_tensor_with_coherence',
                      'emcd_sim.gui.stage_b.EMCDWorker.run','emcd_sim.gui.app.PreviewWorker.run'):
             cls.guards.enter_context(patch(name,side_effect=AssertionError('Forward calculation forbidden in Stage F')))
         cls.r=load_project(SAVED/'reference_project');cls.second=load_project(SAVED/'mistilt_project')

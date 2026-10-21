@@ -5,8 +5,7 @@ import numpy as np
 import pytest
 from emcd_sim.benchmark import nickel_physical_benchmark
 from emcd_sim.geometry import VirtualDetector
-from emcd_sim.postedge_emcd_maps import (MapConfig, paired_geometry, paired_maps, integrate_paired,
-    run_map_comparison, save_comparison, load_comparison, map_error)
+from emcd_sim.emcd_angular_plots import paired_geometry, paired_maps, integrate_paired
 from emcd_sim.xmcd_postedge_normalization import normalize_postedge
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
 
@@ -66,36 +65,3 @@ def test_binary_weights_preserve_center_masks_and_observed_scale_uses_plus_only(
     first=paired_maps(n+m,n-m,alpha,g);second=paired_maps(n+m,n-5*m,alpha,g)
     np.testing.assert_array_equal(first['D_corrected'],second['D_corrected'])
     assert not np.allclose(first['I_mag'],second['I_mag'])
-    err=map_error(first['D_nonmag']*0,first['D_nonmag']*0,g,1.)
-    assert not err['relative_valid'] and np.isnan(err['l2_relative']) and err['l2_abs']==0
-
-
-def test_small_real_source_matched_conventions_and_pickle_free_export(tmp_path):
-    source=Path(__file__).resolve().parents[1]/'data/wien2k_ni/Ni_fm.xmcd'
-    cfg=MapConfig(conditions=('near-2bc',),thickness_nm=(.5,),potential_cutoff=.6,
-        beam_cutoff=1.2,fft_grid=16,depth_steps=4,detector_grid=17,energy_points=65)
-    r=run_map_comparison(source,cfg)
-    assert r['metadata']['propagation']['config']['integration_mode']=='fractional'
-    assert r['metadata']['source_sha256']==r['metadata']['propagation']['xmcd_sha256']
-    c=r['cases'][0]
-    for row in r['rows']:
-        if 'paired_detector_reconstruction_max_abs' in row:assert row['paired_detector_reconstruction_max_abs']<1e-14
-    assert c['map_errors'][0]['D_raw']['l2_relative']<.01
-    assert c['map_errors'][0]['D_corrected']['l2_relative']<.01
-    for m in c['methods']:
-        s=m['spectra'];assert s['alpha_obs'][0]==pytest.approx(normalize_postedge(s['energy_ev'],s['I_A_plus'],s['I_B_plus'],(878.,882.))['alpha'])
-    # Effective eta=0 is reversal invariant, without hard-coded Ni signals.
-    zero=effective_tensor_from_xmcd(source,np.array([852.7,870.]),eta=0.)
-    np.testing.assert_array_equal(zero.tensor_angstrom2_per_ev.imag,0)
-    zero_result=run_map_comparison(source,replace(cfg,eta=0.))
-    for method in zero_result['cases'][0]['methods']:
-        for fields in method['maps']:
-            np.testing.assert_array_equal(fields['I_mag'],0)
-            np.testing.assert_array_equal(fields['D_mag'][zero_result['cases'][0]['geometry']['valid']],0)
-    save_comparison(r,tmp_path)
-    loaded=load_comparison(tmp_path)
-    np.testing.assert_array_equal(loaded['cases'][0]['methods'][0]['maps'][0]['D_corrected'],c['methods'][0]['maps'][0]['D_corrected'])
-    with np.load(tmp_path/'map_comparison.npz',allow_pickle=False) as data:
-        for k in data.files:assert data[k].dtype.kind!='O'
-        assert data['I_plus'].shape==(1,2,2,17,17)
-        assert data['spectra__energy_ev'].shape==(1,2,65)

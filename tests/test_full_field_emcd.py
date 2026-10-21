@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from emcd_sim.gui.project_io import load_project
 from emcd_sim.gui.component_display import primary_angular
-from emcd_sim.gui.rc_acceptance import fingerprints
+from runtime_fixtures import fingerprints
 
 
 @pytest.fixture
@@ -85,39 +85,3 @@ def test_all_saved_models_solvers_and_overlays_preserve_science():
                 assert 'Full-field mirrored-point EMCD' in fig._suptitle.get_text()
                 assert all(a.patches for a in axes)
             assert before==fingerprints(r)
-
-
-def scan_module():
-    sys.path.insert(0,str(Path('scripts').resolve()))
-    import ni_emcd_complete_thickness as scan
-    return scan
-
-
-def test_checkpoint_equivalence_is_audited_and_physical_drift_rejected():
-    scan=scan_module();aliases,audit=scan.implementation_audit()
-    assert all(r['default_path_ast_equal'] or r['validated_buffer_equivalence'] for r in audit.values())
-    p=dict(thickness_nm=8,fft_grid=48,depth_steps=257,source_sha256='same')
-    assert scan.compatible(p,p,aliases)
-    for key,value in [('fft_grid',32),('depth_steps',129),('source_sha256','wrong')]:
-        altered=dict(p,**{key:value});assert not scan.compatible(altered,p,aliases)
-
-
-def test_checkpoint_audit_rejects_unknown_optimized_implementation(monkeypatch):
-    scan=scan_module();read=Path.read_bytes
-    def changed(path):
-        data=read(path)
-        if path.as_posix()=='src/emcd_sim/multislice_double_channeling.py':
-            return data+b'\nUNKNOWN_PHYSICS_CHANGE = True\n'
-        return data
-    monkeypatch.setattr(Path,'read_bytes',changed)
-    with pytest.raises(AssertionError,match='Default numerical path changed'):
-        scan.implementation_audit()
-
-
-def test_atomic_compact_checkpoint_preserves_raw_precision(tmp_path):
-    scan=scan_module();raw=np.arange(16,dtype=float).reshape(2,2,4)/17
-    path=tmp_path/'case.npz';scan.save_case(path,{'thickness_nm':10},raw,3.2,{'kind':'test'})
-    assert not path.with_suffix('.temporary.npz').exists()
-    with np.load(path,allow_pickle=False) as data:
-        np.testing.assert_array_equal(data['raw'],raw)
-        assert data['raw'].dtype==np.float64 and float(data['elapsed_seconds'])==3.2

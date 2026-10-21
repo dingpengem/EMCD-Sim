@@ -4,14 +4,15 @@ import pytest
 
 from emcd_sim.benchmark import nickel_physical_benchmark
 from emcd_sim.crystal import fcc_nickel
-from emcd_sim.diffraction import select_diffraction_setup, save_diffraction_pattern
+from runtime_fixtures import diffraction_preset as select_diffraction_setup
 from emcd_sim.elastic import depth_coherence
-from emcd_sim.voltage import ConstantMagnetization
+from emcd_sim.single_channeling_tensor import run_tensor_single_channeling, _tensor_angular_maps, fcc_site_phase_matrix
+from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
 
 
 def make_sim(condition, moment=0.6):
     setup = select_diffraction_setup(condition, fcc_nickel())
-    sim = nickel_physical_benchmark(ConstantMagnetization(moment),
+    sim = nickel_physical_benchmark(
                                     tilt_mrad_xy=setup.tilt_mrad_xy,
                                     beams_override=setup.beams,
                                     diffraction_condition=condition)
@@ -40,11 +41,11 @@ def test_3bc_quadrant_double_difference_and_magnetic_reversal():
                           'LU':(-1,1),'LD':(-1,-1)}.items():
         assert sim.detectors[name].center_q_xy == pytest.approx((sx*g/2,sy*g/2))
     energies=np.array([852.7,870.0])
-    plus=sim.run(energies,grid_size=45,depth_steps=24)
+    plus=run_tensor_single_channeling(sim,effective_tensor_from_xmcd("data/wien2k_ni/Ni_fm.xmcd",energies),grid_size=45,depth_steps=24)
     _, simzero=make_sim('symmetric-3bc',0)
     _, simminus=make_sim('symmetric-3bc',-0.6)
-    zero=simzero.run(energies,grid_size=45,depth_steps=24)
-    minus=simminus.run(energies,grid_size=45,depth_steps=24)
+    zero=run_tensor_single_channeling(simzero,effective_tensor_from_xmcd("data/wien2k_ni/Ni_fm.xmcd",energies,eta=0),grid_size=45,depth_steps=24)
+    minus=run_tensor_single_channeling(simminus,effective_tensor_from_xmcd("data/wien2k_ni/Ni_fm.xmcd",energies,eta=-1),grid_size=45,depth_steps=24)
     np.testing.assert_allclose(plus.chiral_spectrum('A'),
                                plus.detector_spectra['RU']+plus.detector_spectra['LD'])
     np.testing.assert_allclose(plus.difference(),-minus.difference(),atol=1e-11)
@@ -59,21 +60,14 @@ def test_reciprocal_coordinate_is_transmitted_beam_centered():
     coh = depth_coherence(sim.elastic,30,16)
     qx=np.array([[0.25,-0.25]])
     qy=np.array([[0.25,-0.25]])
-    n1,m1=sim.angular_components(852.7,coh,qx,qy)
+    t=effective_tensor_from_xmcd("data/wien2k_ni/Ni_fm.xmcd",np.array([852.7,870.])).tensor_angstrom2_per_ev[0]
+    n1,m1=_tensor_angular_maps(sim,t,852.7,coh,fcc_site_phase_matrix(sim),qx,qy)
     from emcd_sim.geometry import Microscope
     from emcd_sim.physical_elastic import PhysicalElasticModel
     # Construct a different incident tilt but hold the *same* coherence matrix.
     # An angle-dependent shift in q at this stage would be a coordinate error.
     tilted = PhysicalElasticModel(sim.elastic.crystal,Microscope(200,(11,37)),sim.elastic.beams)
     from dataclasses import replace
-    n2,m2=replace(sim,elastic=tilted).angular_components(852.7,coh,qx,qy)
+    n2,m2=_tensor_angular_maps(replace(sim,elastic=tilted),t,852.7,coh,fcc_site_phase_matrix(sim),qx,qy)
     np.testing.assert_allclose(n1,n2,atol=1e-12)
     np.testing.assert_allclose(m1,m2,atol=1e-12)
-
-
-def test_aperture_diagram_and_metadata(tmp_path):
-    setup, sim = make_sim('symmetric-3bc')
-    data=save_diffraction_pattern(sim.elastic,30,tmp_path,setup,sim.detectors,sim.chiral_groups)
-    assert (tmp_path/'aperture_geometry.png').stat().st_size > 1000
-    assert len(data['physical_apertures']) == 4
-    assert data['chiral_groups']['A'] == ('RU','LD')

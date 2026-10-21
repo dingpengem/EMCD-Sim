@@ -36,6 +36,8 @@ def configuration():
 def baseline():
     for name,file in (('_benchmark_old_channeling','channeling.py'),('_benchmark_old_forward','emcd_forward.py')):
         source=subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/'+file]).decode('utf-8-sig')
+        source=source.replace('..multislice_emcd_reference import','..multislice_reference import')
+        source=source.replace('..postedge_emcd_maps import paired_geometry, paired_maps','..emcd_angular_plots import paired_geometry, paired_maps')
         if file=='emcd_forward.py':source=source.replace('from .channeling import contract','from ._benchmark_old_channeling import contract')
         module=types.ModuleType('emcd_sim.gui.'+name);module.__package__='emcd_sim.gui';sys.modules[module.__name__]=module
         exec(compile(source,file,'exec'),module.__dict__)

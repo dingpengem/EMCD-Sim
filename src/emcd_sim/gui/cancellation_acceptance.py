@@ -12,7 +12,7 @@ from PySide6 import QtCore,QtWidgets
 from .. import double_channeling as bw,multislice_double_channeling as ms
 from . import channeling,stage_b,memory_budget
 from .project_io import save_project,load_project
-from .rc_acceptance import fingerprints
+from .project_io import fingerprints
 from .runtime import build_info
 
 

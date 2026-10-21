@@ -64,29 +64,3 @@ def test_spin_degenerate_local_model_has_no_chiral_component():
     assert np.max(np.abs(r.magnetic_map_at_l3))<1e-12
     assert all(a.min()>-1e-12 for a in r.detector_spectra.values())
     assert r.moment_muB is None
-
-
-def test_crossplatform_tensor_cli_and_metadata(tmp_path):
-    output=tmp_path/"Ni tensor paths with spaces"
-    r=subprocess.run([sys.executable,"-m","emcd_sim","--mdff-model","ni-local",
-        "--diffraction-condition","near-2bc","--grid","19","--steps","12",
-        "--output",str(output)],capture_output=True,text=True,check=True,timeout=90)
-    meta=json.loads((output/"metadata.json").read_text(encoding="utf8"))
-    result=json.loads(r.stdout)
-    assert result["muB_per_atom"] is None
-    assert not meta["magnetic_fraction_applied"] and not meta["mdff_quantitative_Ni"]
-    assert not meta["outgoing_channeling"]
-    for name in ("ni_emcd.png","ni_mdff_reciprocal.png","ni_l2_reciprocal.npz",
-                 "input_mdff_tensor.npz"):
-        assert (output/name).is_file()
-
-
-def test_external_transition_cli_and_voltage_rejection(tmp_path):
-    transitions=tmp_path/"complex source.npz"
-    ni_local_transitions().save_npz(transitions)
-    cmd=[sys.executable,"-m","emcd_sim","--mdff-model","transitions",
-         "--mdff-transitions",str(transitions),"--grid","19","--steps","12",
-         "--output",str(tmp_path/"external")]
-    assert subprocess.run(cmd,capture_output=True,text=True,timeout=90).returncode==0
-    bad=subprocess.run(cmd+["--voltage-v","2"],capture_output=True,text=True,timeout=90)
-    assert bad.returncode!=0 and "unsupported" in bad.stderr

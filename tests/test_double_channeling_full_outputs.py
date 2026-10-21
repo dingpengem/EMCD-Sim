@@ -1,4 +1,4 @@
-﻿"""Verify actual complete scans, integrated observables and the conditional gate."""
+"""Verify actual complete scans, integrated observables and the conditional gate."""
 from pathlib import Path
 import csv,json,hashlib,subprocess
 import numpy as np

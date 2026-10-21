@@ -17,18 +17,9 @@ dev = ["pytest>=7.4"]
 gui = ["PySide6>=6.6", "ase>=3.23"]
 
 [project.scripts]
-emcd-ni = "emcd_sim.cli:main"
-emcd-scan = "emcd_sim.scan:main"
-emcd-convergence = "emcd_sim.convergence:main"
-emcd-compare = "emcd_sim.compare_conditions:main"
-emcd-elastic-reference = "emcd_sim.elastic_reference:main"
-emcd-mdff = "emcd_sim.mdff_reference:main"
-emcd-ni-atomic = "emcd_sim.ni_atomic_reference:main"
-emcd-ni-local-mdff = "emcd_sim.ni_local_mdff:main"
-emcd-import-transitions = "emcd_sim.transition_csv:main"
-emcd-audit-ni-data = "emcd_sim.ni_data_audit:main"
-emcd-xmcd-maps = "emcd_sim.xmcd_indexed_maps:main"
 emcd-gui = "emcd_sim.gui:main"
+emcd-import-transitions = "emcd_sim.transition_csv:main"
+emcd-ni-local-mdff = "emcd_sim.ni_local_mdff:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

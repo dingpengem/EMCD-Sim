@@ -96,3 +96,23 @@ class IndependentAtomPotential:
         HBAR2_PER_M0_E_V_ANGSTROM2 = 7.619964231073853
         return (2 * np.pi * HBAR2_PER_M0_E_V_ANGSTROM2
                 * self.structure_factor(hkl) / self.cell_volume_angstrom3)
+
+
+@dataclass(frozen=True)
+class FourierCutoffPotential:
+    """Explicit finite Fourier-harmonic reference potential, not full IAM Ni."""
+    original: IndependentAtomPotential
+    cutoff_inv_angstrom: float
+
+    @property
+    def crystal(self):
+        return self.original.crystal
+
+    @property
+    def cell_volume_angstrom3(self):
+        return self.original.cell_volume_angstrom3
+
+    def structure_factor(self, hkl):
+        return (self.original.structure_factor(hkl) if
+                np.linalg.norm(self.crystal.g_vector(hkl)) <= self.cutoff_inv_angstrom + 1e-10
+                else 0j)

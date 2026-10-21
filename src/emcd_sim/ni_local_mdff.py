@@ -19,7 +19,60 @@ from pathlib import Path
 import numpy as np
 
 from .mdff_tensor import TransitionDataset, dipole_tensor_from_transitions
-from .ni_atomic_reference import ni_2p_to_3d_dipole
+# C(1, m_l; 1, q | 2, m_l + q), Condon--Shortley phases.
+_SQRT2 = np.sqrt(2.0)
+_CG_P_TO_D = {
+    (-1, -1): 1.0, (-1, 0): 1.0/_SQRT2, (-1, 1): 1.0/np.sqrt(6.0),
+    (0, -1): 1.0/_SQRT2, (0, 0): np.sqrt(2.0/3.0), (0, 1): 1.0/_SQRT2,
+    (1, -1): 1.0/np.sqrt(6.0), (1, 0): 1.0/_SQRT2, (1, 1): 1.0,
+}
+
+
+def core_spinor_amplitude(two_j: int, two_mj: int, two_ms: int) -> float:
+    """<l=1,m_l; s=1/2,m_s|j,m_j>, where m_l=(2mj-2ms)/2.
+
+    Integers represent twice j/m_j/m_s, avoiding half-integer indexing.
+    """
+    if two_j not in (1, 3) or two_ms not in (-1, 1):
+        raise ValueError("Core j must be 1/2 or 3/2, ms must be +/-1/2")
+    if abs(two_mj) > two_j or (two_mj % 2) != (two_j % 2):
+        raise ValueError("Invalid 2p core m_j")
+    ml = (two_mj - two_ms)//2
+    if abs(ml) > 1:
+        return 0.0
+    mj = two_mj / 2.0
+    if two_j == 3:  # j = l + 1/2
+        return float(np.sqrt((1.5 + mj) / 3.0) if two_ms == 1
+                     else np.sqrt((1.5 - mj) / 3.0))
+    # j = l - 1/2, CS phase convention
+    return float(np.sqrt((1.5 - mj) / 3.0) if two_ms == 1
+                 else -np.sqrt((1.5 + mj) / 3.0))
+
+def ni_2p_to_3d_dipole(two_j: int, two_mj: int, final_m: int,
+                       two_ms: int, radial_angstrom: float = 1.0) -> np.ndarray:
+    """Cartesian complex d=<core|r|final> for a pure atomic |3d,m,ms>.
+
+    0 radial integral is a shared model parameter; for angular harmonics
+    <2m_f|n_q|1m_i> = sqrt(2/5)*C(1 m_i, 1 q|2 m_f).
+    Spherical n_{+1}=-(x+iy)/sqrt(2), n_{-1}=(x-iy)/sqrt(2).
+    """
+    if final_m not in range(-2, 3):
+        raise ValueError("3d magnetic quantum number must be -2,...,+2")
+    if not np.isfinite(radial_angstrom) or radial_angstrom <= 0:
+        raise ValueError("radial_angstrom must be finite positive")
+    core = core_spinor_amplitude(two_j, two_mj, two_ms)
+    ml = (two_mj - two_ms)//2
+    components = {}
+    for q in (-1, 0, 1):
+        components[q] = (radial_angstrom * core * np.sqrt(2.0/5.0)
+                         * _CG_P_TO_D.get((ml, q), 0.0)
+                         if final_m == ml + q else 0.0)
+    # First calculate <final|r|core>; Hermitian conjugation gives <core|r|final>.
+    x = (components[-1] - components[1]) / _SQRT2
+    y = 1j * (components[-1] + components[1]) / _SQRT2
+    z = components[0]
+    return np.conjugate(np.asarray((x, y, z), dtype=complex))
+
 
 BOHR_ANGSTROM = 0.529177210903
 

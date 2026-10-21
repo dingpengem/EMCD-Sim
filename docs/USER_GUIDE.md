@@ -2,7 +2,7 @@
 
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
 
-Repository-only research drivers are listed in [`scripts/research/`](../scripts/research/README.md). Their relocated commands and the unchanged installed GUI/CLI boundary are documented in [Source cleanup](SOURCE_CLEANUP.md).
+The [source cleanup audit](SOURCE_CLEANUP.md) defines the current GUI/tensor runtime and supported commands. Historical research CLI/scan drivers are retired from current source; their numerical results and original Git revisions remain preserved. Published Windows packages are unchanged.
 
 **Current Windows prerelease: v0.6.1-beta.2.** It includes the worker-safety and GUI/performance developments described below. See [Beta 2 release notes and acceptance](RELEASE_NOTES_0_6_1_BETA_2.md). Beta 1 statements and acceptance below document the preserved historical package. Post-release source projects use 300 kV and 3.2/2.5 cycles/Å beam/potential cutoffs; the published Beta 2 ZIP retains 3.0/2.0. Explicitly choose 200 kV for the locked scientific example.
 
@@ -830,15 +830,13 @@ See [physics](PHYSICS.md), [GUI technical reference](EMCD_GUI.md),
 
 ## Complete 200 kV thickness workflow
 
-The separate [full-field/thickness study](FULL_FIELD_EMCD_THICKNESS_200KV.md)
-uses fixed native L3/L2 energies and the validated enlarged profile. Run
-`python scripts/ni_emcd_complete_thickness.py` for the read-only checkpoint
-audit/runtime estimate; add `--run` to resume only missing cases. Each MS job
-calculates Single and Double jointly, saves atomically and releases temporary
-fields. Use the completion/progress files to distinguish a complete curve
-from an unfinished scan. No full-energy EELS, voltage scan or GUI scan framework
-is added. Large numerical outputs remain local.
-
+The completed [full-field/thickness study](FULL_FIELD_EMCD_THICKNESS_200KV.md)
+is a preserved scientific record, not a current source CLI. Its standalone
+scan/resume driver has been retired. All 204 production checkpoints remain
+unchanged; saved projects remain viewable without recalculation. Reproduction
+of the historical workflow requires its original recorded Git revision. The
+current GUI still supports Single/Double BW/MS at explicitly selected thickness,
+full EELS, angular maps and export; this cleanup adds no GUI scan framework.
 
 ### v0.6.1-beta.1 acceptance
 

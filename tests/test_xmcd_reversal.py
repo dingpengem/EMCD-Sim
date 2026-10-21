@@ -9,7 +9,7 @@ import pytest
 from emcd_sim.benchmark import nickel_physical_benchmark
 from emcd_sim.geometry import VirtualDetector
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
-from emcd_sim.xmcd_reversal import run_xmcd_reversal, normalized_signal, parity_spectra
+from runtime_fixtures import run_xmcd_reversal, normalized_signal, parity_spectra
 
 
 @pytest.fixture
@@ -90,30 +90,3 @@ def test_normalization_and_distinct_denominators():
     s = parity_spectra(Result([4.,0.], [2.,0.]), Result([2.,0.], [1.,0.]))
     assert s['A_odd'][0] != (s['A_raw_plus'][0]-s['A_raw_minus'][0])/2
     assert not s['valid'][1] and np.isnan(s['A_odd'][1])
-
-
-def test_cli_outputs(xmcd, tmp_path):
-    out = tmp_path/'output'
-    completed = subprocess.run([sys.executable, '-m', 'emcd_sim.xmcd_reversal',
-        '--xmcd-file', str(xmcd), '--condition', 'two-beam', '--grid', '17',
-        '--steps', '2', '--energy-points', '4', '--output', str(out)],
-        capture_output=True, text=True, check=True)
-    assert 'L3_energy_ev' in completed.stdout
-    folder = out/'two-beam'
-    meta = json.loads((folder/'metadata.json').read_text())
-    import hashlib
-    assert meta['xmcd_sha256'] == hashlib.sha256(xmcd.read_bytes()).hexdigest()
-    for flag in ('absolute_cross_section', 'outgoing_channeling', 'quantitative_Ni'):
-        assert meta[flag] is False
-    assert len(meta['beam_hkl']) == 2 and len(meta['detectors']) == 2
-    with np.load(folder/'magnetic_parity_spectra.npz') as s:
-        assert {'energy_ev', 'I_A_plus', 'I_B_plus', 'I_A_minus', 'I_B_minus',
-                'delta_plus', 'delta_minus', 'delta_odd', 'delta_even', 'sigma_ref',
-                'A_raw_plus', 'A_raw_minus', 'A_odd', 'A_even', 'valid'} <= set(s.files)
-        for edge in ('L3', 'L2'):
-            with np.load(folder/f'magnetic_parity_{edge}_map.npz') as m:
-                assert m['I_odd'].shape == (17,17)
-                assert m['energy_ev'] in s['energy_ev']
-                assert meta['selected_energies_ev'][edge] == m['energy_ev']
-                assert {'qx_inv_angstrom', 'qy_inv_angstrom', 'I_even'} <= set(m.files)
-    assert (folder/'magnetic_parity_summary.png').stat().st_size > 0

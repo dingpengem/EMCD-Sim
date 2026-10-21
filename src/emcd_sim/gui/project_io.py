@@ -1,4 +1,4 @@
-﻿"""Versioned, checksummed project folders and read-only Stage B/C import.
+"""Versioned, checksummed project folders and read-only Stage B/C import.
 
 Loading constructs saved plotting context only. No potential, tensor or
 propagation routines are called, and external sources are never read to plot.
@@ -296,3 +296,10 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     if manifest and 'display_state.json' in manifest['files']:result['display_state']=json.loads((root/'display_state.json').read_text(encoding='utf-8'))
     check('Saved results ready; no physical recalculation')
     return result
+
+
+def fingerprints(result):
+    return {method+'__'+key: hashlib.sha256(np.ascontiguousarray(value).tobytes()).hexdigest()
+            for method,m in result['methods'].items()
+            for key,value in dict(m['spectra'], coherence=m['coherence'], amplitudes=m['amplitudes'],
+                **{e+'__'+k:v for e,fields in m['maps'].items() for k,v in fields.items()}).items()}

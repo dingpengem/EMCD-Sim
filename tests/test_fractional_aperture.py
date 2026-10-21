@@ -8,8 +8,7 @@ from emcd_sim.elastic import depth_coherence
 from emcd_sim.geometry import VirtualDetector, _circle_pixel_weights
 from emcd_sim.single_channeling_tensor import run_tensor_with_coherence
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
-from emcd_sim.xmcd_reversal import parity_spectra, run_xmcd_reversal
-from emcd_sim.multislice_emcd_reference import MultisliceEMCDConfig, run_multislice_emcd_reference
+from runtime_fixtures import parity_spectra, run_xmcd_reversal
 
 
 @pytest.fixture
@@ -104,21 +103,3 @@ def test_reversal_caches_weights_once_per_detector_grid(xmcd):
     zero=run_xmcd_reversal(model,xmcd,grid_size=17,depth_steps=3,eta=0,integration_mode='fractional')
     np.testing.assert_array_equal(zero.spectra['delta_odd'],0)
     assert _circle_pixel_weights.cache_info().misses==2
-
-
-def test_fractional_bloch_multislice_consistency(xmcd):
-    config=MultisliceEMCDConfig(conditions=('near-2bc',),thickness_nm=(1.,),
-        potential_cutoff=.6,beam_cutoff=1.4,detector_grid=17,fft_grid=16,
-        slice_step_nm=.01,depth_steps=8)
-    binary=run_multislice_emcd_reference(xmcd,config)
-    fractional=run_multislice_emcd_reference(xmcd,replace(config,integration_mode='fractional'))
-    for key in ('bw_amplitudes','ms_amplitudes_projected','coherence_bw','coherence_ms'):
-        np.testing.assert_array_equal(binary.cases[0][key],fractional.cases[0][key])
-    for key in ('I_mag','I_nonmag','I_plus','I_minus'):
-        for a,b in zip(binary.cases[0]['method_maps'],fractional.cases[0]['method_maps']):
-            np.testing.assert_array_equal(a[key],b[key])
-    for key in ('A_mag','A_nonmag','A_raw_plus'):
-        assert fractional.cases[0]['scalar_discrepancies'][key]['absolute']<1e-4
-    info=fractional.metadata['geometries']['near-2bc']['aperture_integration']
-    assert all(d['integration_mode']=='fractional' and d['aperture_subpixels']==64 for d in info.values())
-    assert all(r['integration_mode']=='fractional' for r in fractional.records)

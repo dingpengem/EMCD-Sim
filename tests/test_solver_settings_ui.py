@@ -1,4 +1,4 @@
-﻿"""Configuration-level regression for shared/solver-specific UI; no propagation."""
+"""Configuration-level regression for shared/solver-specific UI; no propagation."""
 import os,sys,types,subprocess,json,ast
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from contextlib import ExitStack
@@ -109,7 +109,7 @@ def test_invalid_ms_geometry_remains_rejected(window):
 def test_saved_settings_and_arrays_preserved_without_solver(window):
     path=Path('outputs/v060_release/source_native/single_both_project')
     if not path.exists():pytest.skip('Optional saved GUI reference unavailable')
-    from emcd_sim.gui.stage_f_acceptance import fingerprints
+    from runtime_fixtures import fingerprints
     saved=load_project(path);before=fingerprints(saved)
     cfg=replace(saved['config'],propagation='fft-multislice',grid=65,memory_budget_mib=512,fft_grid=48,slice_step=.025)
     window.emcd_result=dict(saved,config=cfg);window.use_result_settings()
@@ -149,5 +149,11 @@ def test_solver_configuration_and_physics_unchanged():
     now=ast.parse(Path(path).read_text(encoding='utf-8-sig'));before=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for node in before.body:
         if isinstance(node,ast.FunctionDef) and node.name!='numerical_info':assert ast.dump(find(now,node.name))==ast.dump(node)
-    for path in ('src/emcd_sim/gui/project_io.py','src/emcd_sim/double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
+    # Persistence gained only the extracted array fingerprint utility.
+    path='src/emcd_sim/gui/project_io.py'
+    present=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
+    archived=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
+    present.body=[n for n in present.body if not (isinstance(n,ast.FunctionDef) and n.name=='fingerprints')]
+    assert ast.dump(present)==ast.dump(archived)
+    for path in ('src/emcd_sim/double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
         assert Path(path).read_text(encoding='utf-8-sig').replace('\r\n','\n')==subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig').replace('\r\n','\n')

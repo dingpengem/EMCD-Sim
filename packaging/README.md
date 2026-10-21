@@ -1,5 +1,13 @@
 # Windows candidate build
 
+Current source packaging still uses `emcd_gui.spec` and `launcher.py`; all
+hidden imports resolve after the [runtime cleanup](../docs/SOURCE_CLEANUP.md).
+No executable or ZIP was rebuilt. Older acceptance commands and removed
+verification scripts below are historical build records. Current source
+acceptance uses the retained GUI/physics tests and native worker/cancellation
+diagnostics, not the retired Stage E/F/Beta orchestration modules.
+
+
 Windows x64 research Beta, package version **0.6.0**. Build the standalone
 Double-Channeling EMCD Simulation in a fresh directory; previous 0.4.5
 artifacts must remain untouched. Labels, archive names and manifests derive

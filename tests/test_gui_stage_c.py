@@ -1,4 +1,4 @@
-﻿"""Focused Stage C: genuine oriented FFT waves, shared MDFF, GUI and exports."""
+"""Focused Stage C: genuine oriented FFT waves, shared MDFF, GUI and exports."""
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import unittest,uuid,threading,importlib.util
@@ -15,7 +15,7 @@ from emcd_sim.gui.results import draw_maps,draw_eels,draw_diffraction
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.ni_017_geometry import Ni017Geometry
 from emcd_sim.multislice_reference import fft_multislice_ni,_projected_ni_potential
-from emcd_sim.multislice_emcd_reference import project_fft_amplitudes,coherence_from_amplitudes
+from emcd_sim.multislice_reference import project_fft_amplitudes,coherence_from_amplitudes
 
 
 class PropagationTests(unittest.TestCase):

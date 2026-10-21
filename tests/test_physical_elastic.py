@@ -7,7 +7,6 @@ from emcd_sim.geometry import Microscope, electron_wavelength_angstrom
 from emcd_sim.scattering import IndependentAtomPotential, nickel_lobato_factor
 from emcd_sim.physical_elastic import PhysicalElasticModel
 from emcd_sim.benchmark import nickel_physical_benchmark
-from emcd_sim.voltage import ConstantMagnetization
 
 
 def test_ni_lobato_2014_reference_values():
@@ -82,7 +81,34 @@ def test_zolz_complete_pairs_and_backend_usage():
     assert len(beams.hkl)>3
     assert all(tuple(-h for h in hkl) in beams.hkl for hkl in beams.hkl)
     assert all(ni.is_allowed(hkl) for hkl in beams.hkl)
-    sim=nickel_physical_benchmark(ConstantMagnetization(.6),zone2d_max_g_angstrom_inv=1.0)
-    result=sim.run(np.array([850.,852.7,860.,870.]),grid_size=19,depth_steps=10)
+    sim=nickel_physical_benchmark(zone2d_max_g_angstrom_inv=1.0)
+    from emcd_sim.single_channeling_tensor import run_tensor_single_channeling
+    from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
+    tensor=effective_tensor_from_xmcd("data/wien2k_ni/Ni_fm.xmcd",np.array([850.,852.7,860.,870.]))
+    result=run_tensor_single_channeling(sim,tensor,grid_size=19,depth_steps=10)
     assert np.all(np.isfinite(result.asymmetry()))
     assert np.all(result.detector_spectra['A']>=0)
+
+
+def test_relativistic_voltage_and_extinction_units_without_study_driver():
+    """Retain the independent SI regression from the retired voltage study."""
+    from emcd_sim.geometry import electron_beta
+    from emcd_sim.physical_elastic import bragg_tilt_mrad
+    ni=fcc_nickel();physics={}
+    for kv,expected in {100:.03701436614,200:.02507934045,300:.01968748901}.items():
+        wavelength=electron_wavelength_angstrom(kv)
+        assert wavelength==pytest.approx(expected,rel=1e-8)
+        elastic=PhysicalElasticModel(ni,Microscope(kv,(-bragg_tilt_mrad(ni,(2,0,0),kv),0.)),BeamSet(((0,0,0),(2,0,0))))
+        H=elastic.hamiltonian_nm_inv();velocity=electron_beta(kv)*299792458.
+        sigma=abs(H[0,1])/(10*abs(elastic.potential.fourier_potential_volts((2,0,0))))
+        sigma_si=1.602176634e-19/((6.62607015e-34/(2*np.pi))*velocity)*1e-10
+        assert sigma==pytest.approx(sigma_si,rel=1e-7)
+        xi=elastic.extinction_distance_nm((2,0,0))
+        assert xi*abs(H[0,1])==pytest.approx(np.pi,rel=1e-12)
+        assert 2*np.pi/np.diff(np.linalg.eigvalsh(H))[0]==pytest.approx(xi,rel=1e-12)
+        physics[kv]=(xi,velocity,sigma)
+    assert physics[100][0]/physics[200][0]==pytest.approx(.79,abs=.01)
+    assert physics[300][0]/physics[200][0]==pytest.approx(1.12,abs=.01)
+    assert physics[100][2]>physics[200][2]>physics[300][2]
+    for kv in (100,300):
+        assert physics[kv][0]/physics[200][0]==pytest.approx(physics[kv][1]/physics[200][1],rel=1e-12)

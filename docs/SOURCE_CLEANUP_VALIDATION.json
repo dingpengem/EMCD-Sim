@@ -1,0 +1,220 @@
+{
+  "baseline_commit": "df0e089b45c8e2051fe0ff6f9f668e3d91ca3f2f",
+  "branch": "cleanup/current-runtime-only",
+  "utc": "2026-10-21T16:42:21.465033+00:00",
+  "python": "3.11.17 | packaged by Anaconda, Inc. | (main, Oct  1 2026, 20:16:54) [MSC v.1942 64 bit (AMD64)]",
+  "numpy": "2.4.6",
+  "threads": {
+    "OPENBLAS_NUM_THREADS": 1,
+    "OMP_NUM_THREADS": 1
+  },
+  "gui_reference": {
+    "zone": [
+      0,
+      1,
+      7
+    ],
+    "voltage_kv": 300,
+    "thickness_nm": 8,
+    "beam_cutoff": 0.9,
+    "potential_cutoff": 1.8,
+    "grid": 9,
+    "depth": 9,
+    "fft_grid": 24,
+    "slice_step_nm": 0.2,
+    "subpixels": 16,
+    "energy_points": 9,
+    "models": [
+      "xmcd",
+      "atomic"
+    ],
+    "channeling": [
+      "single",
+      "double"
+    ],
+    "propagation": "both",
+    "correction": false
+  },
+  "direct_reference": {
+    "voltage_kv": 200,
+    "thickness_nm": 8,
+    "beam_cutoffs": [
+      0.9,
+      3.2,
+      4.6,
+      6.2
+    ],
+    "hamiltonian_potential_cutoff": 2.5,
+    "response_basis": 0.9,
+    "response_potential_cutoff": 1.8,
+    "depth": 9,
+    "fft_grid": 24,
+    "energies_ev": [
+      831.271,
+      848.698
+    ],
+    "postedge_window_ev": [
+      878,
+      882
+    ]
+  },
+  "numerical_comparisons": [
+    {
+      "baseline": "before.npz",
+      "candidate": "after.npz",
+      "arrays": 376,
+      "values": 42826,
+      "comparison": "Identical dtype, shape and bytes, including NaN representation",
+      "combined_array_sha256": "4405ffe92c44f71d752c261f5e90ecefc02c935c33b5e2410891389711de0534"
+    },
+    {
+      "baseline": "direct_before.npz",
+      "candidate": "direct_after.npz",
+      "arrays": 54,
+      "values": 19122,
+      "comparison": "Identical dtype, shape and bytes, including NaN representation",
+      "combined_array_sha256": "1777ef294b5c0fcbf1ee7affb8f7089cc8d385fbb96549298963816e63fc4bdb"
+    }
+  ],
+  "corrected_geometry_retest": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0
+  },
+  "regression_status": "415 passed in final full run. Six core-physics checks also pass, including one subsequently retained independent voltage/SI check. All 416 unique retained tests verified; no unresolved failures.",
+  "unrelated_local_tilt_tests": "2 passed; import-only migration remains untracked",
+  "source_gui_launch": "PASS: real source Qt window and default elastic preview, offscreen screenshot",
+  "saved_user_project": {
+    "path": "C:\\data\\EMCD_sim_data\\Ni017_20261020_041237Z",
+    "files_unchanged": 11,
+    "forward_calls": 0,
+    "spectra_unchanged": true,
+    "views": [
+      "diffraction",
+      "L3",
+      "L2",
+      "EELS"
+    ],
+    "display_modes": [
+      "raw",
+      "relative",
+      "asymmetry"
+    ]
+  },
+  "integrity": {
+    "original_modules": 78,
+    "remaining_modules": 46,
+    "ordinary_modules_imported": 44,
+    "exact_extractions": [
+      {
+        "source": "elastic_reference",
+        "destination": "scattering",
+        "name": "FourierCutoffPotential"
+      },
+      {
+        "source": "multislice_emcd_reference",
+        "destination": "multislice_reference",
+        "name": "project_fft_amplitudes"
+      },
+      {
+        "source": "multislice_emcd_reference",
+        "destination": "multislice_reference",
+        "name": "coherence_from_amplitudes"
+      },
+      {
+        "source": "multislice_emcd_reference",
+        "destination": "multislice_reference",
+        "name": "complex_wave_diagnostics"
+      },
+      {
+        "source": "postedge_emcd_maps",
+        "destination": "emcd_angular_plots",
+        "name": "paired_geometry"
+      },
+      {
+        "source": "postedge_emcd_maps",
+        "destination": "emcd_angular_plots",
+        "name": "paired_maps"
+      },
+      {
+        "source": "postedge_emcd_maps",
+        "destination": "emcd_angular_plots",
+        "name": "integrate_paired"
+      },
+      {
+        "source": "ni_710_geometry",
+        "destination": "ni_017_geometry",
+        "name": "crystal"
+      },
+      {
+        "source": "ni_710_geometry",
+        "destination": "ni_017_geometry",
+        "name": "beams"
+      },
+      {
+        "source": "ni_atomic_reference",
+        "destination": "ni_local_mdff",
+        "name": "core_spinor_amplitude"
+      },
+      {
+        "source": "ni_atomic_reference",
+        "destination": "ni_local_mdff",
+        "name": "ni_2p_to_3d_dipole"
+      },
+      {
+        "source": "gui/rc_acceptance",
+        "destination": "gui/project_io",
+        "name": "fingerprints"
+      },
+      {
+        "source": "diffraction",
+        "destination": "physical_elastic",
+        "name": "bragg_tilt_mrad"
+      },
+      {
+        "source": "diffraction",
+        "destination": "physical_elastic",
+        "name": "excitation_errors_angstrom_inv"
+      }
+    ],
+    "unchanged_solver_and_safety_files": [
+      "double_channeling",
+      "multislice_double_channeling",
+      "single_channeling_tensor",
+      "geometry",
+      "mdff_tensor",
+      "xmcd_effective_mdff",
+      "gui/channeling",
+      "gui/memory_budget",
+      "gui/parallel_resources",
+      "gui/numerical_settings",
+      "gui/stage_b"
+    ],
+    "protected_checkpoints_unchanged": 204,
+    "preserved_archives": {
+      "build/windows-v061-beta-final/EMCD-Sim-0.6.1-beta.1-Windows-RC.zip": "9fd5e71437d2c26d4595abb7adde9436e4c333ce18f3a57cf381b0c541bfd94f",
+      "build/windows-v061-beta2-release/EMCD-Sim-0.6.1-beta.2-Windows.zip": "04511b73d52fc1a843323e9b859dcbdc081dbc6a0abf3bff67ae320bce4b48d9",
+      "build/windows-defaults-32-25/EMCD-Sim-defaults-3.2-2.5-f427992-Windows.zip": "4be5b46547751f164ad1f0eb85fd644b37fb0f35527af880372af07032e80c03"
+    },
+    "user_source_data_unchanged": true,
+    "baseline_commit": "df0e089b45c8e2051fe0ff6f9f668e3d91ca3f2f"
+  },
+  "final_full_acceptance": {
+    "tests": 415,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 275.429
+  },
+  "final_physical_units_check": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "includes_preserved_voltage_SI_regression": true
+  },
+  "initial_migration_run": {
+    "tests": 415,
+    "failures": 1,
+    "errors": 0,
+    "seconds": 297.515
+  }
+}

@@ -3,12 +3,12 @@ from dataclasses import dataclass,replace
 import hashlib
 from pathlib import Path
 import numpy as np
-from .ni_710_geometry import Ni710Geometry
+from .crystal import Crystal,fcc_nickel
 from .elastic import BeamSet
 from .geometry import Microscope,VirtualDetector,electron_wavelength_angstrom
 from .physical_elastic import PhysicalElasticModel
 from .scattering import IndependentAtomPotential
-from .elastic_reference import FourierCutoffPotential
+from .scattering import FourierCutoffPotential
 from .benchmark import nickel_physical_benchmark
 from .xmcd_effective_mdff import effective_tensor_from_xmcd
 from .mdff_tensor import DipoleTensor
@@ -16,14 +16,31 @@ from .wien2k_xmcd import load_wien2k_xmcd
 
 
 @dataclass(frozen=True)
-class Ni017Geometry(Ni710Geometry):
+class Ni017Geometry:
+    a_angstrom: float=3.524
+    @property
+    def crystal(self):
+        ni=fcc_nickel(self.a_angstrom)
+        return Crystal(ni.lattice_angstrom@self.frame.T,ni.fractional_positions,ni.species)
+    def _basis_beams(self,cutoff):
+        """Complete radial cutoff, including odd FCC reflections; no beam cap."""
+        hmax=int(np.ceil(cutoff*self.a_angstrom/np.sqrt(50.)))
+        lmax=int(np.ceil(cutoff*self.a_angstrom));items=[]
+        for h in range(-hmax,hmax+1):
+            for l in range(-lmax,lmax+1):
+                if (h-l)%2:continue
+                hkl=(h,-7*h,l);g=self.crystal.g_vector(hkl)
+                if np.linalg.norm(g)<=cutoff+1e-12:items.append((np.linalg.norm(g),hkl))
+        items.sort(key=lambda item:(round(item[0],12),item[1]))
+        return BeamSet(tuple(h for _,h in items))
+
     @property
     def frame(self):
         return np.array([[1.,0.,0.],[0.,7.,-1.],[0.,1.,7.]])/np.array([[1.],[np.sqrt(50.)],[np.sqrt(50.)]])
 
     def beams(self,cutoff):
         items=[]
-        for h,k,l in super().beams(cutoff).hkl:
+        for h,k,l in self._basis_beams(cutoff).hkl:
             target=(l,-k,-h);items.append((np.linalg.norm(self.crystal.g_vector(target)),target))
         items.sort(key=lambda t:(round(t[0],12),t[1]))
         return BeamSet(tuple(h for _,h in items))

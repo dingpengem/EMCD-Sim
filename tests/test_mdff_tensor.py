@@ -8,7 +8,7 @@ import pytest
 from emcd_sim.mdff_tensor import (
     TransitionDataset, dipole_tensor_from_transitions, cycles_to_angular_q,
 )
-from emcd_sim.mdff_reference import toy_transitions
+from runtime_fixtures import toy_transitions
 
 
 def test_mdff_hermitian_psd_and_conjugate_symmetry():
@@ -67,13 +67,3 @@ def test_reject_invalid_amplitudes_and_weights():
     d=ds.dipoles_angstrom.copy();d[0,1]=np.nan
     with pytest.raises(ValueError, match="finite"):
         TransitionDataset(ds.energy_ev,d,ds.weights,ds.edge,ds.site,"test")
-
-
-def test_reference_cli_writes_portable_outputs(tmp_path):
-    out=tmp_path/"Ni MDFF demo"
-    result=subprocess.run([sys.executable,"-m","emcd_sim.mdff_reference","--toy",
-        "--output",str(out)],capture_output=True,text=True,timeout=90,check=True)
-    metadata=json.loads((out/"metadata.json").read_text(encoding="utf-8"))
-    assert metadata["toy"] and metadata["quantitative_Ni"] is False
-    assert (out/"mdff_tensor.png").exists() and (out/"mdff_tensor.npz").exists()
-    assert "quantitative_Ni" in result.stdout

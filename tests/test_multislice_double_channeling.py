@@ -99,7 +99,7 @@ def test_projected_potential_and_legacy_entrance_fields(row):
 
 
 def test_disabled_outgoing_recovers_entrance_and_reversal(row):
-    from emcd_sim.multislice_emcd_reference import coherence_from_amplitudes
+    from emcd_sim.multislice_reference import coherence_from_amplitudes
     from emcd_sim.single_channeling_tensor import _tensor_angular_maps,fcc_site_phase_matrix
     g=ProjectedNiFFT.build(row.elastic,grid_points=16,potential_cutoff=.75,systematic_row=True,row_reduction=True)
     fields,z,w,n,dz=incident_fields(g,3.,depth_steps=33)

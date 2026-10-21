@@ -1,4 +1,4 @@
-﻿"""Stage D persistence and scientific comparison using compact real fixtures."""
+"""Stage D persistence and scientific comparison using compact real fixtures."""
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import unittest,uuid,json,threading

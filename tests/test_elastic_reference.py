@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from emcd_sim.multislice_reference import _projected_ni_potential, fft_multislice_ni
-from emcd_sim.elastic_reference import ElasticReferenceConfig, run_elastic_reference, FourierCutoffPotential, _compare_spots
+from emcd_sim.scattering import FourierCutoffPotential
+from runtime_fixtures import _compare_spots
 from emcd_sim.scattering import IndependentAtomPotential
 from emcd_sim.crystal import fcc_nickel
 from emcd_sim.geometry import electron_wavelength_angstrom, Microscope
@@ -52,27 +53,3 @@ def test_independent_fft_matches_bloch_same_truncated_potential():
     np.testing.assert_allclose(fft.intensity_at((0,0,0)),bint[:,0],atol=0.002)
     for i in range(len(depth)):
         assert _compare_spots(beams.hkl,bint[i],fft.beam_hkl,fft.intensity[i])<0.003
-
-
-def test_reference_workflow_writes_documented_outputs(tmp_path):
-    cfg=ElasticReferenceConfig(conditions=("zone-axis",),
-        potential_cutoffs_inv_angstrom=(1.2,1.8),thickness_nm=(5.,10.),
-        beam_margin_inv_angstrom=1.2,fft_grid=24,slice_step_nm=.12,max_beams=150)
-    result=run_elastic_reference(cfg,tmp_path/"elastic check")
-    assert result["comparisons"]==4
-    assert result["max_norm_error"]<1e-10
-    assert not result["emcd_computed"]
-    assert not result["potential_converged"]
-    out=tmp_path/"elastic check"
-    for name in ("elastic_reference_results.csv","elastic_reference_metadata.json","elastic_reference_comparison.png"):
-        assert (out/name).is_file()
-    meta=json.loads((out/"elastic_reference_metadata.json").read_text(encoding="utf-8"))
-    assert meta["fft_grid"]==24
-    assert meta["physics_quantitative"] is False
-
-
-def test_reference_rejects_bad_grid_or_potential_cutoff():
-    with pytest.raises(ValueError):
-        fft_multislice_ni((10.,),grid_points=12,potential_cutoff_inv_angstrom=3.3)
-    with pytest.raises(ValueError):
-        ElasticReferenceConfig(potential_cutoffs_inv_angstrom=(2.2,1.8)).validate()

@@ -1,11 +1,11 @@
-﻿"""Verified [017] incoming FFT adapter, numerical diagnostics and labeled exports."""
+"""Verified [017] incoming FFT adapter, numerical diagnostics and labeled exports."""
 from pathlib import Path
 import json
 import numpy as np
 from .geometry import geometry,orientation
 from ..ni_017_geometry import Ni017Geometry
 from ..multislice_reference import fft_multislice_ni
-from ..multislice_emcd_reference import project_fft_amplitudes,complex_wave_diagnostics
+from ..multislice_reference import project_fft_amplitudes,complex_wave_diagnostics
 
 METHOD_NAMES={'bloch':'Bloch-wave','fft-multislice':'FFT Multislice','difference':'BW-MS numerical difference'}
 

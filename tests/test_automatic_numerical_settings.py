@@ -147,7 +147,7 @@ def test_refresh_cache_and_invalid_text(window,monkeypatch):
 
 @pytest.mark.parametrize('mode',['automatic','manual'])
 def test_project_roundtrip_metadata_and_arrays(window,tmp_path,mode):
-    from emcd_sim.gui.stage_f_acceptance import fingerprints
+    from runtime_fixtures import fingerprints
     path=Path('outputs/v060_release/source_native/single_both_project')
     if not path.exists():pytest.skip('Saved project fixture unavailable')
     result=load_project(path);before=fingerprints(result)

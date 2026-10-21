@@ -11,9 +11,8 @@ from ..mdff_tensor import DipoleTensor, dipole_tensor_from_transitions
 from ..ni_local_mdff import NiLocalConfig, ni_local_transitions
 from ..wien2k_xmcd import load_wien2k_xmcd
 from ..xmcd_effective_mdff import effective_tensor_from_xmcd
-from ..single_channeling_tensor import run_tensor_with_coherence
-from ..multislice_emcd_reference import coherence_from_amplitudes
-from ..postedge_emcd_maps import paired_geometry, paired_maps
+from ..multislice_reference import coherence_from_amplitudes
+from ..emcd_angular_plots import paired_geometry, paired_maps
 from ..xmcd_postedge_normalization import analyze_postedge_spectra
 
 from .runtime import reference_source, build_info
@@ -216,28 +215,10 @@ def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy
     return result
 
 
-def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,*,prepared=None):
+def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,*,prepared):
     """Stage B EELS/parity/post-edge implementation, shared by both coherences."""
-    spectra={k:np.empty(len(energy)) for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')};maps={};qx=qy=None
-    opts=dict(thickness_nm=settings.thickness,grid_size=cfg.grid,map_halfwidth_q=cfg.halfwidth,integration_mode='fractional',aperture_subpixels=cfg.subpixels)
-    # One shared-kernel energy at a time provides cooperative cancellation;
-    # expensive elastic propagation is reused across all states and energies.
     stage('Computing energy-resolved EELS and fractional detector integrals')
-    indices={int(np.argmin(abs(energy-v))):edge for edge,v in (('L3',cfg.l3),('L2',cfg.l2))}
-    for i,e in enumerate(energy if prepared is None else []):
-        if cancelled():raise Cancelled()
-        selected=[]
-        for sign,t in zip(('plus','minus'),ts):
-            one=DipoleTensor(np.array([e]),t.tensor_angstrom2_per_ev[i:i+1],t.source)
-            r=run_tensor_with_coherence(model,one,C,reference_energy_ev=e,**opts)
-            for d in ('A','B'):spectra['I_'+d+'_'+sign][i]=r.chiral_spectrum(d)[0]
-            if i in indices:selected.append(r.nonmag_map_at_l3+r.magnetic_map_at_l3)
-        if i in indices:maps[indices[i]]=dict(I_plus=selected[0],I_minus=selected[1],I_mag=(selected[0]-selected[1])/2,I_nonmag=(selected[0]+selected[1])/2)
-    if prepared is None:
-        qx,qy=r.qx_angstrom_inv,r.qy_angstrom_inv;weights=r.detector_weights
-        if not cfg.angular_maps:maps={}
-    else:
-        spectra,maps,qx,qy,weights=[prepared[k] for k in ('spectra','maps','qx','qy','weights')]
+    spectra,maps,qx,qy,weights=[prepared[k] for k in ('spectra','maps','qx','qy','weights')]
     stage('Computing L3/L2 map decomposition and post-edge diagnostics')
     ap,bp,am,bm=[spectra[k] for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')]
     na,nb,ma,mb=(ap+am)/2,(bp+bm)/2,(ap-am)/2,(bp-bm)/2

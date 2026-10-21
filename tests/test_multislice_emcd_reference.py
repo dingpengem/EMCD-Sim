@@ -9,18 +9,14 @@ import pytest
 from emcd_sim.benchmark import nickel_physical_benchmark
 from emcd_sim.crystal import fcc_nickel
 from emcd_sim.elastic import BeamSet, depth_coherence
-from emcd_sim.elastic_reference import FourierCutoffPotential
+from emcd_sim.scattering import FourierCutoffPotential
 from emcd_sim.geometry import Microscope
 from emcd_sim.multislice_reference import fft_multislice_ni
 from emcd_sim.physical_elastic import PhysicalElasticModel
 from emcd_sim.scattering import IndependentAtomPotential
 from emcd_sim.single_channeling_tensor import run_tensor_single_channeling, run_tensor_with_coherence
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
-from emcd_sim.multislice_emcd_reference import (
-    MultisliceEMCDConfig, coherence_from_amplitudes, complex_wave_diagnostics,
-    project_fft_amplitudes, run_multislice_emcd_reference,
-    save_multislice_emcd_reference, plot_multislice_emcd_reference, check_propagation_controls,
-)
+from emcd_sim.multislice_reference import coherence_from_amplitudes, complex_wave_diagnostics, project_fft_amplitudes
 
 
 @pytest.fixture
@@ -112,71 +108,3 @@ def test_shared_contraction_preserves_original_and_projected_norm(xmcd):
     np.testing.assert_array_equal(original.magnetic_map_at_l3,shared.magnetic_map_at_l3)
     with pytest.raises(ValueError,match='positive semidefinite'):
         run_tensor_with_coherence(model,t,-c,grid_size=17)
-
-
-def test_independent_emcd_parity_and_outputs(xmcd,tmp_path):
-    config=MultisliceEMCDConfig(conditions=('zone-axis','near-2bc'),thickness_nm=(1.,3.),
-        potential_cutoff=.6,beam_cutoff=1.4,fft_grid=16,slice_step_nm=.01,
-        depth_steps=8,detector_grid=17)
-    plus=run_multislice_emcd_reference(xmcd,config)
-    minus=run_multislice_emcd_reference(xmcd,replace(config,eta=-1))
-    zero=run_multislice_emcd_reference(xmcd,replace(config,eta=0))
-    for p,m,z in zip(plus.records,minus.records,zero.records):
-        assert p['A_mag']==pytest.approx(-m['A_mag'],abs=1e-13)
-        assert p['A_nonmag']==pytest.approx(m['A_nonmag'],abs=1e-13)
-        assert z['Delta_mag']==pytest.approx(0,abs=1e-14)
-        assert z['A_mag']==pytest.approx(0,abs=1e-14)
-        assert p['delta_plus']==pytest.approx(p['Delta_mag']+p['Delta_nonmag'],abs=1e-13)
-        assert p['Sigma_ref']>0
-    for c in plus.cases:
-        assert c['coherence_fro_abs']<1e-3
-        assert c['ms_norm_error']<1e-12
-        for m in c['method_maps']:
-            assert min(m['I_plus'].min(),m['I_minus'].min())>=-1e-8
-            np.testing.assert_allclose(m['I_plus'],m['I_mag']+m['I_nonmag'],atol=1e-13)
-        assert abs(np.trace(c['coherence_ms']).real-1)<=c['fft_outside_intensity'].max()+1e-12
-    # No calibrated Ni values: agreement assessed for a deliberately short, controlled calculation.
-    assert max(c['scalar_discrepancies']['A_mag']['absolute'] for c in plus.cases)<1e-4
-    check=check_propagation_controls(plus)
-    assert check['common_basis_count']==21 and check['larger_bloch_basis_count']==37
-    assert check['slice_steps_nm']==[.01,.005]
-    assert check['fine_ms_vs_larger_bw_projected_coherence_fro']<1e-3
-    plus.metadata['targeted_propagation_check']=check
-    output=tmp_path/'method comparison paths with spaces'
-    save_multislice_emcd_reference(plus,output); plot_multislice_emcd_reference(plus,output)
-    meta=json.loads((output/'comparison_metadata.json').read_text(encoding='utf-8'))
-    for key in ('absolute_cross_section','outgoing_channeling','quantitative_Ni','independent_mdff_validation','atom_layer_resolved_3d'):
-        assert meta[key] is False
-    assert meta['config']['potential_cutoff']==.6 and meta['config']['beam_cutoff']==1.4
-    assert meta['config']['depth_steps']==8 and meta['config']['slice_step_nm']==.01
-    assert meta['selected_energy_ev']==852.7
-    assert meta['targeted_propagation_check']==json.loads((output/'targeted_propagation_check.json').read_text())
-    import hashlib
-    assert meta['xmcd_sha256']==hashlib.sha256(xmcd.read_bytes()).hexdigest()
-    assert meta['pair_array_memory_estimate_mib']<meta['config']['max_kernel_mib']
-    with np.load(output/'elastic_complex_comparison.npz',allow_pickle=False) as e:
-        assert e['bw_amplitudes'].shape==e['ms_amplitudes_projected'].shape==(4,8,21)
-        np.testing.assert_array_equal(e['beam_hkl'],meta['beam_hkl'])
-        assert e['fft_outside_intensity'].min()>=0
-        assert e['phase_valid'].all()
-    with np.load(output/'coherence_comparison.npz',allow_pickle=False) as c:
-        assert c['coherence_bw'].shape==c['coherence_ms'].shape==(4,21,21)
-    with np.load(output/'emcd_method_comparison.npz',allow_pickle=False) as d:
-        assert d['I_mag'].shape==(8,17,17) and d['I_nonmag'].shape==(8,17,17)
-        assert {'A_raw_plus','A_raw_minus','A_mag','A_nonmag','Delta_mag','Delta_nonmag','Sigma_ref','f_mag','valid'}<=set(d.files)
-    with (output/'emcd_method_comparison.csv').open(newline='',encoding='utf-8') as f:
-        assert len(list(csv.DictReader(f)))==8
-    assert (output/'bloch_multislice_emcd_comparison.png').stat().st_size>1000
-
-
-def test_control_guards(xmcd):
-    config=MultisliceEMCDConfig(conditions=('zone-axis',),thickness_nm=(1.,),detector_grid=17)
-    for change in ({'slice_step_nm':0},{'fft_grid':13},{'depth_steps':1},{'thickness_nm':(3.,1.)}):
-        with pytest.raises(ValueError):
-            run_multislice_emcd_reference(xmcd,replace(config,**change))
-    with pytest.raises(ValueError,match='working memory'):
-        run_multislice_emcd_reference(xmcd,replace(config,max_kernel_mib=.001))
-    with pytest.raises(ValueError,match='cap clips'):
-        run_multislice_emcd_reference(xmcd,replace(config,max_beams=8))
-    with pytest.raises(ValueError,match='Nyquist'):
-        run_multislice_emcd_reference(xmcd,replace(config,beam_cutoff=3.,fft_grid=12))

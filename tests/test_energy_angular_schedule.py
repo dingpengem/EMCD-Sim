@@ -13,6 +13,10 @@ BASE='619a1969055ac6d717c092dcf663c3d58062b7e0'
 def reference():
     for name,filename in (('_sampling_baseline_channeling','channeling.py'),('_sampling_baseline_forward','emcd_forward.py')):
         source=subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/'+filename]).decode('utf-8-sig')
+        # Only relocate dependencies in the archived adapter; its numerical
+        # statements remain the exact pre-optimization reference.
+        source=source.replace('..multislice_emcd_reference import','..multislice_reference import')
+        source=source.replace('..postedge_emcd_maps import paired_geometry, paired_maps','..emcd_angular_plots import paired_geometry, paired_maps')
         if filename=='emcd_forward.py':source=source.replace('from .channeling import contract','from ._sampling_baseline_channeling import contract')
         module=types.ModuleType('emcd_sim.gui.'+name);module.__package__='emcd_sim.gui';sys.modules[module.__name__]=module
         exec(compile(source,filename,'exec'),module.__dict__)

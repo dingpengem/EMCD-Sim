@@ -5,7 +5,7 @@ import numpy as np
 from PySide6 import QtCore,QtWidgets
 from .runtime import build_info
 from .project_io import load_project,save_project
-from .stage_f_acceptance import fingerprints
+from .project_io import fingerprints
 from .parallel_resources import native_backend_info
 from .emcd_forward import export_result
 

@@ -3,11 +3,10 @@ import unittest
 from pathlib import Path
 import numpy as np
 from emcd_sim.ni_017_geometry import Ni017Geometry,rotated_tensor,energy_audit
-from emcd_sim.ni_710_geometry import Ni710Geometry
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
 from emcd_sim.multislice_reference import fft_multislice_ni
-from emcd_sim.multislice_emcd_reference import project_fft_amplitudes
-from emcd_sim.diffraction import excitation_errors_angstrom_inv
+from emcd_sim.multislice_reference import project_fft_amplitudes
+from emcd_sim.physical_elastic import excitation_errors_angstrom_inv
 
 SOURCE='data/wien2k_ni/Ni_fm.xmcd'
 
@@ -58,17 +57,11 @@ class Ni017Tests(unittest.TestCase):
         np.testing.assert_allclose([marker.get_xdata()[0],marker.get_ydata()[0]],-m.elastic.microscope.incident_k_xy)
         np.testing.assert_array_equal(artist.get_array(),original);plt.close(fig)
 
-    def test_cubic_permutation_elastic_equivalence_bw_and_fft(self):
-        old,new=Ni710Geometry(),Ni017Geometry();a,b=old.model(),new.model()
-        mapped=[(l,-k,-h) for h,k,l in a.elastic.beams.hkl]
-        indices=[mapped.index(h) for h in b.elastic.beams.hkl]
-        np.testing.assert_allclose(a.elastic.hamiltonian_nm_inv()[np.ix_(indices,indices)],b.elastic.hamiltonian_nm_inv(),atol=1e-12)
-        z=np.array([0.,.001,.3,1.]);results=[]
-        for geo,m in ((old,a),(new,b)):
-            f=fft_multislice_ni(z,tilt_mrad_xy=m.elastic.microscope.tilt_mrad_xy,grid_points=32,slice_step_nm=.01,potential_cutoff_inv_angstrom=2.2,return_amplitudes=True,projected_geometry=geo)
-            psi,_=project_fft_amplitudes(f,m.elastic.beams.hkl);results.append(psi)
-            np.testing.assert_allclose(psi,m.elastic.amplitudes(z),atol=4e-6)
-        np.testing.assert_allclose(results[0][:,indices],results[1],atol=1e-12)
-
 
 if __name__=='__main__':unittest.main()
+
+def test_oriented_017_bw_fft_amplitudes():
+    geo=Ni017Geometry();m=geo.model();z=np.array([0.,.001,.3,1.])
+    f=fft_multislice_ni(z,tilt_mrad_xy=m.elastic.microscope.tilt_mrad_xy,grid_points=32,slice_step_nm=.01,potential_cutoff_inv_angstrom=2.2,return_amplitudes=True,projected_geometry=geo)
+    psi,_=project_fft_amplitudes(f,m.elastic.beams.hkl)
+    np.testing.assert_allclose(psi,m.elastic.amplitudes(z),atol=4e-6)

@@ -131,7 +131,7 @@ SAVED = Path(__file__).resolve().parents[1]/'outputs/gui_stage_d/windows_2026101
 def test_saved_gui_modes_export_and_no_forward_calls(app, tmp_path):
     from emcd_sim.gui.app import MainWindow
     from emcd_sim.gui.project_io import load_project
-    from emcd_sim.gui.stage_f_acceptance import FORWARD_PATHS, fingerprints
+    from runtime_fixtures import FORWARD_PATHS, fingerprints
     from emcd_sim.gui.normalization_export import export_derived, save_figure
     with ExitStack() as guards:
         mocks = [guards.enter_context(patch(name, side_effect=AssertionError('Readout invoked forward calculation'))) for name in FORWARD_PATHS]

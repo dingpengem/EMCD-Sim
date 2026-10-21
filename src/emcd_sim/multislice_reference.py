@@ -161,3 +161,41 @@ def fft_multislice_ni(
     return ElasticFFTResult(depth, hkl, g, values, norm_error,
                             grid_points, slice_step_nm, potential_cutoff_inv_angstrom, amplitudes,
                             None if systematic_row_hkl is None else tuple(int(v) for v in systematic_row_hkl))
+
+
+def project_fft_amplitudes(fft, beam_hkl):
+    """Exact integer hkl lookup; no sign reversal, conjugation or rescaling."""
+    if fft.amplitudes is None:
+        raise ValueError('Request return_amplitudes=True from fft_multislice_ni')
+    lookup = {tuple(h):i for i,h in enumerate(fft.beam_hkl)}
+    try:
+        indices = np.asarray([lookup[tuple(h)] for h in beam_hkl],dtype=int)
+    except KeyError as exc:
+        raise ValueError(f'Common beam outside FFT grid: {exc.args[0]}') from exc
+    if len(set(indices)) != len(indices):
+        raise ValueError('Common hkl basis must be unique')
+    retained = np.zeros(len(fft.beam_hkl),dtype=bool)
+    retained[indices] = True
+    outside = fft.intensity[:,~retained].sum(axis=1)
+    return fft.amplitudes[:,indices].copy(), outside
+
+def coherence_from_amplitudes(depth_nm, amplitudes):
+    """Same trapezoidal quadrature and C_gh=psi_g*conj(psi_h) as depth_coherence."""
+    z, psi = np.asarray(depth_nm,float), np.asarray(amplitudes,complex)
+    if (z.ndim!=1 or len(z)<2 or not np.isfinite(z).all() or z[0]!=0
+            or np.any(np.diff(z)<=0) or psi.ndim!=2 or psi.shape[0]!=len(z)
+            or not np.isfinite(psi).all()):
+        raise ValueError('Require finite amplitudes on increasing depths from zero to t>0')
+    pair = psi[:,:,None]*psi[:,None,:].conj()
+    integral = np.trapezoid(pair,x=z,axis=0) if hasattr(np,'trapezoid') else np.trapz(pair,x=z,axis=0)
+    return integral/z[-1]
+
+def complex_wave_diagnostics(bloch, multislice):
+    """Per-depth global-phase alignment for diagnostics only; no change to C."""
+    overlap = np.sum(bloch.conj()*multislice,axis=1)
+    valid = abs(overlap)>1e-14
+    phase = np.where(valid,np.angle(overlap),np.nan)
+    aligned = multislice*np.exp(-1j*phase[:,None])
+    return dict(global_phase_ms_vs_bw=phase, phase_valid=valid,
+        amplitude_max_abs_raw=np.max(abs(multislice-bloch),axis=1),
+        amplitude_max_abs_aligned=np.max(abs(aligned-bloch),axis=1))

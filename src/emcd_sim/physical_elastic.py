@@ -83,3 +83,18 @@ class PhysicalElasticModel:
         initial[0] = 1.0
         coeff = vectors.conj().T @ initial
         return (np.exp(1j * z[:,None] * values) * coeff[None,:]) @ vectors.T
+
+
+def bragg_tilt_mrad(crystal: Crystal, hkl: tuple[int, int, int], acceleration_kv: float) -> float:
+    """Paraxial Bragg angle (positive magnitude); s_g=0 for tilt=-theta_B along g."""
+    return 500.0 * electron_wavelength_angstrom(acceleration_kv) * float(np.linalg.norm(crystal.g_vector(hkl)))
+
+def excitation_errors_angstrom_inv(model) -> np.ndarray:
+    """Signed s_g=(|k_perp+g|²-|k_perp|²)/(2k), in cycles/Å.
+
+    The physical solver has diagonal entries H_gg=-20π s_g in nm^-1.
+    """
+    g = model.reciprocal_vectors_xy
+    kxy = model.microscope.incident_k_xy
+    lam = electron_wavelength_angstrom(model.microscope.acceleration_kv)
+    return 0.5 * lam * (np.sum((g + kxy)**2, axis=1) - np.dot(kxy, kxy))

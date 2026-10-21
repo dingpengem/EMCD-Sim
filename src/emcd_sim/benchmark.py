@@ -1,10 +1,8 @@
-"""FCC Ni [001] three-beam demonstrator, 200/(-200) systematic row."""
+"""FCC Ni physical-model construction and paired-aperture geometry."""
 from .crystal import fcc_nickel
-from .elastic import BeamSet, ElasticModel
+from .elastic import BeamSet
 from .geometry import Microscope, VirtualDetector
-from .inelastic import LEdgeSpectrum, DipoleMDFF
 from .simulation import EMCDSimulation
-from .voltage import ConstantMagnetization, MagnetizationLaw
 
 
 def nickel_apertures(condition: str):
@@ -37,33 +35,7 @@ def nickel_apertures(condition: str):
     }, None
 
 
-def nickel_three_beam(magnetization: MagnetizationLaw | None = None,
-                      tilt_mrad_xy: tuple[float, float] = (0, 0),
-                      acceleration_kv: float = 200.0,
-                      extinction_distance_200_nm: float = 55.0) -> EMCDSimulation:
-    crystal = fcc_nickel()
-    g200 = 2 / 3.524
-    elastic = ElasticModel(
-        crystal=crystal,
-        microscope=Microscope(acceleration_kv, tilt_mrad_xy),
-        beams=BeamSet(),
-        xi_reference_nm=extinction_distance_200_nm,
-    )
-    # Left/right detector locations have opposite signed y coordinate. To avoid
-    # symmetry cancellation of +g and -g, use x != 0 (a standard 4-quadrant cut).
-    centers = (0.55*g200, 0.52*g200)
-    return EMCDSimulation(
-        elastic=elastic, mdff=DipoleMDFF(LEdgeSpectrum()),
-        magnetization=magnetization or ConstantMagnetization(),
-        detectors={
-            "A": VirtualDetector((centers[0], centers[1]), 0.16*g200),
-            "B": VirtualDetector((centers[0], -centers[1]), 0.16*g200),
-        },
-    )
-
-
-def nickel_physical_benchmark(magnetization: MagnetizationLaw | None = None,
-                              tilt_mrad_xy: tuple[float, float] = (0, 0),
+def nickel_physical_benchmark(tilt_mrad_xy: tuple[float, float] = (0, 0),
                               acceleration_kv: float = 200.0,
                               beam_order: int = 3,
                               debye_waller_b_angstrom2: float = 0.0,
@@ -92,7 +64,6 @@ def nickel_physical_benchmark(magnetization: MagnetizationLaw | None = None,
     )
     detectors, chiral_groups = nickel_apertures(diffraction_condition)
     return EMCDSimulation(
-        elastic=elastic, mdff=DipoleMDFF(LEdgeSpectrum()),
-        magnetization=magnetization or ConstantMagnetization(),
+        elastic=elastic,
         detectors=detectors, chiral_groups=chiral_groups,
     )

@@ -319,17 +319,8 @@ def main():
     parser.add_argument('--smoke-emcd-screenshot',type=Path,help='Compute and export real default BW EMCD, capture native Qt results')
     parser.add_argument('--smoke-atomic',action='store_true',help='Use the atomic model for EMCD acceptance run')
     parser.add_argument('--smoke-propagation',choices=['bloch','fft-multislice','both'],default='bloch')
-    parser.add_argument('--rc-acceptance', type=Path, help='Run real native RC acceptance into a new directory')
-    parser.add_argument('--rc-source', type=Path, help='External audited Ni source for acceptance')
-    parser.add_argument('--rc-reopen', action='store_true', help='Reopen RC projects in a new process without calculations')
     parser.add_argument('--cancellation-acceptance',type=Path,help='Run focused real-worker cancellation acceptance into a new directory')
     parser.add_argument('--cancellation-source',type=Path,help='Explicit external XMCD source for cancellation acceptance')
-    parser.add_argument('--stage-f-acceptance',type=Path,help='Validate normalized visualization from saved projects; no solvers')
-    parser.add_argument('--stage-f-project',type=Path)
-    parser.add_argument('--stage-f-comparison',type=Path)
-    parser.add_argument('--beta-acceptance',type=Path,help='Run sequential Beta RC widget/worker acceptance in a new folder')
-    parser.add_argument('--beta-source',type=Path,help='Explicit external scientific source for matched acceptance')
-    parser.add_argument('--beta-production',type=Path,help='Existing full-spectrum reference folders; never bundled')
     parser.add_argument('--parallel-acceptance',type=Path,help='Opt-in resource-controls and bounded native BW Double acceptance')
     parser.add_argument('--parallel-project',type=Path,help='Optional checksummed saved case for diagnostic acceptance')
     parser.add_argument('--parallel-workers',type=int,help='Explicit supported detector-worker request for diagnostic acceptance')
@@ -343,17 +334,6 @@ def main():
         if not args.cancellation_source:parser.error('Cancellation acceptance requires an explicit source')
         from .cancellation_acceptance import run
         return run(args.cancellation_acceptance,args.cancellation_source)
-    if args.beta_acceptance:
-        if not args.beta_source or not args.beta_production:parser.error('Beta acceptance requires source and saved production paths')
-        from .beta_acceptance import run
-        return run(args.beta_acceptance,args.beta_source,args.beta_production)
-    if args.stage_f_acceptance:
-        if not args.stage_f_project or not args.stage_f_comparison:parser.error('Stage F needs both saved project folders')
-        from .stage_f_acceptance import run
-        return run(args.stage_f_acceptance,args.stage_f_project,args.stage_f_comparison)
-    if args.rc_acceptance:
-        from .rc_acceptance import run
-        return run(args.rc_acceptance, args.rc_source, args.rc_reopen)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv[:1])
     if not QtGui.QFontDatabase.families():
         # Qt's offscreen Windows plugin may expose no system fonts. Use the

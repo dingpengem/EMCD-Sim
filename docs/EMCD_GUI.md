@@ -1,5 +1,16 @@
 # EMCD-Sim desktop GUI — technical reference and milestone record
 
+**Current source boundary:** the [production cleanup audit](SOURCE_CLEANUP.md)
+lists the retained GUI/physics modules and three supported installed commands.
+Source launch remains `python -m emcd_sim.gui` (or `python -m emcd_sim`).
+Historical milestone sections below preserve their original scientific and
+acceptance context. Retired research commands and `--rc-acceptance`,
+`--beta-acceptance` and `--stage-f-acceptance` are not current source interfaces.
+Use the retained regression tests and current `--parallel-acceptance` /
+`--cancellation-acceptance` diagnostics for development acceptance. Published
+EXEs, saved data, numerical defaults and physical approximations are unchanged.
+
+
 ## Energy-dependent angular scheduling (development source)
 
 `channeling.angular_schedule` computes the original q grid and fractional

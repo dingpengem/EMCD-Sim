@@ -29,23 +29,6 @@ def test_saved_raw_observables_and_optimization_equivalence():
             assert_allclose(np.load(OUT/f't{t}.npz')['double'],old[f't{t}'],rtol=2e-13,atol=1e-15)
 
 
-def test_unchanged_entrance_64node_results():
-    sys.path.insert(0,str(ROOT/'scripts'))
-    try:
-        import ni_prb2007_geometry_validation as study
-        from emcd_sim.elastic import depth_coherence
-        saved=study.base.load_project(ROOT/'outputs/gui_stage_d/windows_20261016/reference_project')
-        c=study.make_context(saved,(0,0,1),2048,systematic_row=True)
-        d=study.DetectorGrid(c['centers'],(c['cfg'].radius,),193,.5,64)
-        original=list(csv.DictReader((ROOT/'outputs/ni_voltage_dependence_100_200_300kv/results.csv').open()))
-        for t in (10.,12.,20.,30.):
-            raw=study.contract_detectors(c,depth_coherence(c['model'].elastic,t,64),t,d)[0]
-            expected=np.array([[float(r[k]) for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')]
-                for r in original if float(r['voltage_kv'])==200 and r['solver']=='bloch' and float(r['thickness_nm'])==t])
-            assert_allclose(raw,expected,rtol=1e-13,atol=1e-15)
-    finally:sys.path.remove(str(ROOT/'scripts'))
-
-
 def test_raw_and_complex_response_convergence():
     controls=list(csv.DictReader((OUT/'convergence.csv').open()))
     for c in controls:

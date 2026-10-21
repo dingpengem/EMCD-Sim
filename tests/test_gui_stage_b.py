@@ -1,4 +1,4 @@
-﻿"""Focused Stage B real-kernel, source, atomic reversal and Qt lifecycle checks."""
+"""Focused Stage B real-kernel, source, atomic reversal and Qt lifecycle checks."""
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import unittest,uuid,threading,importlib.util
@@ -15,6 +15,7 @@ from emcd_sim.elastic import depth_coherence
 from emcd_sim.ni_017_geometry import Ni017Geometry,rotated_tensor
 from emcd_sim.ni_local_mdff import ni_local_transitions
 from emcd_sim.mdff_tensor import dipole_tensor_from_transitions
+from emcd_sim.single_channeling_tensor import run_tensor_with_coherence
 
 
 class ForwardTests(unittest.TestCase):

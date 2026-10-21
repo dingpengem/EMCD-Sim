@@ -48,12 +48,11 @@ def test_momentum_units_and_phase_conjugation():
     assert_allclose(contract_cartesian(v*np.exp(.74j),t.conj()),even-odd)
 
 
-
 def test_atomic_transition_provider_uses_same_complex_contraction():
-    from emcd_sim.ni_atomic_reference import NiAtomicReferenceConfig, ni_atomic_transitions
+    from emcd_sim.ni_local_mdff import NiLocalConfig, ni_local_transitions
     from emcd_sim.mdff_tensor import dipole_tensor_from_transitions, gaussian_broadening_ev
-    cfg=NiAtomicReferenceConfig(spin_up_hole_weight=.1,spin_down_hole_weight=.6)
-    ds=ni_atomic_transitions(cfg)
+    cfg=NiLocalConfig(eg_up_holes=.1,t2g_up_holes=.1,eg_down_holes=.6,t2g_down_holes=.6)
+    ds=ni_local_transitions(cfg)
     energy=np.array([852.7,870.])
     tensor=dipole_tensor_from_transitions(ds,energy,.6)
     v=np.array([.2+.1j,.3-.4j,-.1+.02j])
