@@ -1,6 +1,8 @@
-EMCD-Sim 0.6.1-beta.2 - Double-Channeling EMCD Simulation
+EMCD-Sim v0.6.1-beta.3 - Double-Channeling EMCD Simulation
 Windows x64 research prerelease; unsigned.
-Check the release acceptance report for the validated distribution and scope.
+Package version 0.6.1b3. Distributed as a GitHub Actions candidate artifact;
+no Beta 3 GitHub release or tag has been created. See docs/WINDOWS_BETA_3.md
+in the source repository for validation scope.
 Double Channeling already existed in published 0.4.5-beta.1.
 
 Extract the complete folder. Run EMCD-Sim.exe; keep _internal beside it.
@@ -53,3 +55,8 @@ MDFF, branch-frozen longitudinal transfer, finite projected ZOLZ and cutoffs,
 no calibrated absolute EELS cross section or electron-count SNR. Agreement at
 representative settings does not establish convergence for every geometry,
 thickness or energy. No claim of quantitative experimental predictivity.
+
+Responsive UI: Settings and Diffraction remain side by side. Drag the
+three-column splitters; click chevron headers to collapse optional controls
+or Project Results. Very narrow windows offer a one-click Results strip.
+Layout preferences are independent of scientific project settings.

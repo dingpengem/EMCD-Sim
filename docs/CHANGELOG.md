@@ -1,3 +1,12 @@
+# v0.6.1-beta.3 - Windows Actions candidate
+
+Package `0.6.1b3`; no release or tag. Responsive simultaneous scientific panels,
+persistent splitter/chevron preferences, collapsible Project Results, compact
+figure reflow and native standalone acceptance. Versioned EXE metadata and
+ZIP/build provenance use the existing PyInstaller pipeline. Physics and
+300 kV / 3.2 / 2.5 / 97 / 2048 defaults remain unchanged. See
+[candidate scope and downloads](WINDOWS_BETA_3.md).
+
 # v0.6.0-beta.1 - Double-Channeling EMCD Simulation
 
 Windows research prerelease; application/package version **0.6.0**.

@@ -2,7 +2,10 @@
 
 EMCD-Sim is a research simulation tool for **electron magnetic circular dichroism (EMCD)** using Bloch-wave (BW) and independent FFT multislice (MS) propagation. It combines dynamical electron diffraction, approximate core-loss scattering tensors and virtual-detector EELS/EMCD analysis, with fcc Ni as the principal validated material.
 
-**Current Windows research prerelease: v0.6.1-beta.2.**
+**Current source / Windows Actions candidate: v0.6.1-beta.3 (package 0.6.1b3).**
+[Beta 3 build and installation](docs/WINDOWS_BETA_3.md) ? [Download from a successful Windows Actions run](https://github.com/dingpengem/EMCD-Sim/actions/workflows/windows-build.yml). The candidate ZIP is `EMCD-Sim-v0.6.1-beta.3-Windows.zip`; no Beta 3 release or tag is created.
+
+**Latest published release: v0.6.1-beta.2 (preserved).**
 [Release and download](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2) · [Windows installation](docs/INSTALL_WINDOWS.md) · [Quick Start](docs/QUICK_START.md) · [User Manual](docs/USER_GUIDE.md) · [Release notes and acceptance](docs/RELEASE_NOTES_0_6_1_BETA_2.md).
 
 ## Main capabilities
@@ -24,7 +27,11 @@ The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An 
 
 ## Installation
 
-### Windows portable application
+### Beta 3 Windows candidate
+
+Use the [Actions installation instructions](docs/WINDOWS_BETA_3.md#download-and-install). The three adjustable scientific panels keep Settings and Diffraction visible together; chevron sections and Project Results collapse to release plot space. Layout preferences persist independently of scientific projects. Defaults remain 300 kV, beam/potential cutoffs 3.2/2.5 cycles/Angstrom, 97x97 and 2048 MiB. No physics changes or new full-curve convergence claims are introduced.
+
+### Historical published Beta 2 portable application
 
 1. Open [v0.6.1-beta.2 Releases](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2).
 2. Download [EMCD-Sim-0.6.1-beta.2-Windows.zip](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.6.1-beta.2/EMCD-Sim-0.6.1-beta.2-Windows.zip) and `SHA256SUMS.txt`.

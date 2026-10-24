@@ -1,11 +1,12 @@
-﻿"""Scientific comparison of immutable completed results; no forward solver."""
+"""Scientific comparison of immutable completed results; no forward solver."""
 import csv,json
 from pathlib import Path
 import numpy as np
 from PySide6 import QtWidgets
 from matplotlib.figure import Figure
 from matplotlib import colormaps
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg,NavigationToolbar2QT
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
+from .responsive import ResponsiveCanvas as FigureCanvasQTAgg
 from ..emcd_angular_plots import decorate_reciprocal_map
 from .emcd_forward import metrics
 from .signal_normalization import DisplaySettings, normalized_spectra, angular_display, percentage_metrics
@@ -139,11 +140,14 @@ def export_comparison_data(entries,path):
     (root/'comparison_metadata.json').write_text(json.dumps(records,indent=2,allow_nan=False)+'\n',encoding='utf-8')
 
 
+from .responsive import FlowLayout
+
+
 class CompareResults(QtWidgets.QWidget):
     def __init__(self,owner,selected):
         super().__init__();self.owner=owner;self.selected=selected;self.methods=[];layout=QtWidgets.QVBoxLayout(self)
         self.note=QtWidgets.QLabel('Maps show the first two results. Spectra and signed metrics include all selections.');self.note.setWordWrap(True);layout.addWidget(self.note)
-        row=QtWidgets.QHBoxLayout();layout.addLayout(row)
+        row=FlowLayout();layout.addLayout(row)
         for label,r in selected:
             choice=QtWidgets.QComboBox()
             for name in r.get('methods',{r.get('method','bloch'):r}):choice.addItem(label+' | '+name,name)
@@ -153,13 +157,13 @@ class CompareResults(QtWidgets.QWidget):
         self.spectrum=QtWidgets.QComboBox();self.spectrum.addItems(['D_mag','A/B +M','D_nonmag','D_raw','D_corrected']);row.addWidget(self.spectrum)
         self.zoom=QtWidgets.QComboBox();self.zoom.addItems(['Full spectrum','L3 zoom','L2 zoom']);row.addWidget(self.zoom)
         for c in (self.edge,self.field,self.spectrum,self.zoom):c.currentIndexChanged.connect(self.redraw)
-        actions=QtWidgets.QHBoxLayout();layout.addLayout(actions)
+        actions=FlowLayout();layout.addLayout(actions)
         for title,callback in [('Export figure PNG/SVG',self.export_figure),('Export NPZ/CSV',self.export_data),('Maximize / restore',self.maximize)]:
             b=QtWidgets.QPushButton(title);b.clicked.connect(callback);actions.addWidget(b)
         self.normalization=NormalizationControls(self,maps=True,saved=True);layout.addWidget(self.normalization);self.normalization.changed.connect(self.redraw)
         self.tabs=QtWidgets.QTabWidget();layout.addWidget(self.tabs,1);plot=QtWidgets.QWidget();pl=QtWidgets.QVBoxLayout(plot)
-        self.figure=Figure(figsize=(14,9),layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure);pl.addWidget(NavigationToolbar2QT(self.canvas,self));self.canvas.setMinimumSize(950,650)
-        scroll=QtWidgets.QScrollArea();scroll.setWidgetResizable(True);scroll.setWidget(self.canvas);pl.addWidget(scroll);self.tabs.addTab(plot,'Maps and EELS')
+        self.figure=Figure(figsize=(14,9),layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure);pl.addWidget(NavigationToolbar2QT(self.canvas,self));self.canvas.setMinimumSize(280,160)
+        pl.addWidget(self.canvas,1);self.tabs.addTab(plot,'Maps and EELS')
         self.table=QtWidgets.QTableWidget();self.tabs.addTab(self.table,'Signed scalar metrics');self.normalization.set_result(selected[0][1],[label for label,_ in selected]);self.redraw()
     def entries(self):
         from .prb_benchmark import data_origin
@@ -174,10 +178,11 @@ class CompareResults(QtWidgets.QWidget):
         rows=scalar_rows(entries,display);keys=list(dict.fromkeys(k for row in rows for k in row));self.table.setColumnCount(len(keys));self.table.setRowCount(len(rows));self.table.setHorizontalHeaderLabels(keys)
         for i,r in enumerate(rows):
             for j,k in enumerate(keys):self.table.setItem(i,j,QtWidgets.QTableWidgetItem('undefined' if r.get(k) is None else str(r[k])))
-        self.table.resizeColumnsToContents();self.canvas.draw_idle()
+        self.table.resizeColumnsToContents()
+        if self.figure._suptitle is not None:self.figure._suptitle.set_wrap(True)
+        self.canvas.draw_idle()
     def maximize(self):
-        if getattr(self.owner,'result_sizes',None) is None:self.owner.result_sizes=self.owner.splitter.sizes();self.owner.splitter.setSizes([0,0,sum(self.owner.result_sizes)])
-        else:self.owner.splitter.setSizes(self.owner.result_sizes);self.owner.result_sizes=None
+        self.owner.responsive.show_panel(2);self.owner.responsive.focus_plot('results')
     def export_figure(self):
         path,_=QtWidgets.QFileDialog.getSaveFileName(self,'Export displayed scientific comparison','','PNG (*.png);;SVG (*.svg)')
         if path:

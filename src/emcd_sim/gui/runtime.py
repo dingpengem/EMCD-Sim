@@ -13,9 +13,9 @@ import faulthandler
 
 _native_fault_file=None
 
-from .. import __version__
+from .. import __version__, __display_version__
 
-LABEL = f'EMCD-Sim {__version__} Beta - Double-Channeling EMCD Simulation'
+LABEL = f'EMCD-Sim {__display_version__} - Double-Channeling EMCD Simulation'
 
 
 def resource_root():
@@ -44,7 +44,7 @@ def build_info():
         dirty = bool(subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain'], text=True, stderr=subprocess.DEVNULL))
     except (OSError, subprocess.CalledProcessError):
         commit, dirty = 'unknown', None
-    return dict(label=LABEL, application_version=__version__, commit=commit, dirty=dirty, build_utc=None,
+    return dict(label=LABEL, application_version=__version__, display_version=__display_version__, commit=commit, dirty=dirty, build_utc=None,
                 implementation_sha256={p: hashlib.sha256(Path(__file__).with_name(p).read_bytes()).hexdigest()
                                        for p in ('emcd_forward.py', 'geometry.py', 'propagation.py')})
 

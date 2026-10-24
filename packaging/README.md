@@ -1,8 +1,17 @@
 # Windows candidate build
 
+Current candidate: **v0.6.1-beta.3 / 0.6.1b3**. Use the existing Conda-backed build venv or the pinned `requirements-windows.txt`.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -BuildRoot build/windows-v061-beta3
+```
+
+The default archive is `EMCD-Sim-v0.6.1-beta.3-Windows.zip`. Native metadata uses numeric 0.6.1.3 and display v0.6.1-beta.3. Run the extracted EXE with `--desktop-acceptance NEW_OUTPUT_DIRECTORY` for bounded actual BW/MS Single/Double and GUI checks. See [scope and Actions artifacts](../docs/WINDOWS_BETA_3.md). No release/tag is created. Older commands below are historical.
+
+
 Current source packaging still uses `emcd_gui.spec` and `launcher.py`; all
 hidden imports resolve after the [runtime cleanup](../docs/SOURCE_CLEANUP.md).
-No executable or ZIP was rebuilt. Older acceptance commands and removed
+The source-cleanup stage did not rebuild an executable or ZIP. Older acceptance commands and removed
 verification scripts below are historical build records. Current source
 acceptance uses the retained GUI/physics tests and native worker/cancellation
 diagnostics, not the retired Stage E/F/Beta orchestration modules.

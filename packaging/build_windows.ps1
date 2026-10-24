@@ -5,11 +5,14 @@ param([string]$Python = "$PSScriptRoot/../build/windows-rc/venv/Scripts/python.e
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path "$PSScriptRoot/..").Path
 Push-Location $root
+$previousPythonPath = $env:PYTHONPATH
+$env:PYTHONPATH = "$root/src" + $(if ($previousPythonPath) { ";$previousPythonPath" } else { "" })
 try {
     $applicationVersion = (& $Python -c "from emcd_sim import __version__; print(__version__)").Trim()
     if ($LASTEXITCODE -ne 0 -or -not $applicationVersion) { throw 'Cannot read source application version' }
-    if (-not $BuildLabel) { $BuildLabel = "EMCD-Sim $applicationVersion Beta - Double-Channeling EMCD Simulation (unreleased)" }
-    if (-not $ArchiveName) { $ArchiveName = "EMCD-Sim-$applicationVersion-Beta-RC-Windows.zip" }
+    $displayVersion = (& $Python -c "from emcd_sim import __display_version__; print(__display_version__)").Trim()
+    if (-not $BuildLabel) { $BuildLabel = (& $Python -c "from emcd_sim.gui.runtime import LABEL; print(LABEL)").Trim() }
+    if (-not $ArchiveName) { $ArchiveName = "EMCD-Sim-$displayVersion-Windows.zip" }
     # PyInstaller logs progress to stderr; Windows PowerShell must not treat
     # those informational native records as terminating script errors.
     $nativePreference = $ErrorActionPreference
@@ -33,4 +36,4 @@ try {
     $archiveHash = Get-FileHash -LiteralPath "$BuildRoot/$ArchiveName" -Algorithm SHA256
     ($archiveHash.Hash.ToLowerInvariant()+'  '+$ArchiveName) | Set-Content -LiteralPath "$BuildRoot/SHA256SUMS.txt" -Encoding ASCII
     $archiveHash
-} finally { Pop-Location }
+} finally { $env:PYTHONPATH = $previousPythonPath; Pop-Location }

@@ -11,6 +11,7 @@ from .geometry import Structure
 from .emcd_forward import (ForwardSettings,DEFAULT_SOURCE,inspect_source,material_reason,energy_grid,tensors,calculate,Cancelled,export_result)
 from ..ni_local_mdff import NiLocalConfig
 from ..wien2k_xmcd import load_wien2k_xmcd
+from .responsive import CollapsibleSection
 from .results import ResultsView,comparison_text
 from .numerical_settings import NumericalSettingsUI
 
@@ -62,7 +63,7 @@ class StageB(NumericalSettingsUI):
         self.button('Browse XMCD...',self.browse_xmcd);self.button('Validate source / native features',self.validate_xmcd)
         self.number('eta','eta',1,-5,5,self.emcd_stale);self.number('beta','beta',1,0,10,self.emcd_stale)
         self.number('xl3','L3 native feature (eV)',831.271,1,10000,self.emcd_stale);self.number('xl2','L2 native feature (eV)',848.698,1,10000,self.emcd_stale)
-        self.declaration=QtWidgets.QCheckBox('I declare M axis, RP/LP convention and edge assignments');self.declaration.setToolTip('Tensor Txy=+i eta (RP-LP)/2; source convention must be checked.');self.form.addRow(self.declaration)
+        self.declaration=QtWidgets.QCheckBox('I declare M axis, RP/LP convention\nand edge assignments');self.declaration.setToolTip('Tensor Txy=+i eta (RP-LP)/2; source convention must be checked.');self.form.addRow(self.declaration)
         self.source_status=QtWidgets.QLabel('Validate source before calculation.');self.source_status.setWordWrap(True);self.form.addRow(self.source_status)
         at=QtWidgets.QWidget();self.form=QtWidgets.QFormLayout(at);self.mdff_stack.addWidget(at)
         label=QtWidgets.QLabel('Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni. Crystal [001] magnetization only.');label.setWordWrap(True);self.form.addRow(label)
@@ -104,8 +105,10 @@ class StageB(NumericalSettingsUI):
             'Elastic propagation: BW eigenmodes or MS FFT. Inelastic scattering: shared reciprocal-space MDFF. Common support and sampling are in Panel F.')
 
     def shared_group(self,title):
-        group=QtWidgets.QGroupBox(title);self.form.addRow(group)
+        section=CollapsibleSection(title,expanded=False);section.setObjectName('shared_'+title.replace(' ','_'));self.form.addRow(section)
+        group=QtWidgets.QGroupBox();group.setAccessibleName(title);group.setFlat(True);body=QtWidgets.QVBoxLayout(section.body);body.setContentsMargins(0,0,0,0);body.addWidget(group);group.presentation_section=section
         self.form=QtWidgets.QFormLayout(group)
+        self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         return group
 
     def numerical_controls(self):
@@ -117,7 +120,7 @@ class StageB(NumericalSettingsUI):
         self.spin['potential'].setToolTip('BW: limits crystal-potential Fourier components used in diffraction-beam coupling. MS: limits Fourier components used to construct the projected real-space potential. U_(g−g′), |g−g′| ≤ cutoff. Distinct from beam radius, ionization momentum transfer and detector extent. Crystallographic g=1/d; no extra 2π.')
         self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
         self.spin['b'].setToolTip('Shared IAM elastic-potential damping for both BW and MS; not a solver-specific sampling control.')
-        self.row_projection=QtWidgets.QCheckBox('Explicit [001] (200) systematic-row approximation');self.form.addRow(self.row_projection)
+        self.row_projection=QtWidgets.QCheckBox('Explicit [001] (200)\nsystematic-row approximation');self.form.addRow(self.row_projection)
         self.row_projection.setToolTip('Only for [001]. Excludes off-row ZOLZ beams and changes the projected elastic model. Exact (200) Bragg alignment does not establish physical two-beam isolation. [017] retains its full finite 2D ZOLZ basis.')
         self.row_projection.toggled.connect(self.refresh)
 
@@ -171,8 +174,8 @@ class StageB(NumericalSettingsUI):
             row=self.shared_elastic_group.layout().takeRow(widget)
             if row.labelItem:self.form.addRow(row.labelItem.widget(),widget)
             else:self.form.addRow(widget)
-        self.shared_resources_group.layout().removeWidget(self.memory_label)
-        self.form.addRow(self.memory_label)
+        self.memory_label.parentWidget().layout().removeWidget(self.memory_label)
+        self.resource_estimate=CollapsibleSection('Resource estimate',self.memory_label,expanded=False);self.resource_estimate.setObjectName('resource_estimate');self.form.addRow(self.resource_estimate)
         self.setup_numerical_mode(shared_form)
 
     def set_angular_resolution(self,*_):

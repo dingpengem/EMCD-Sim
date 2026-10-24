@@ -1,9 +1,10 @@
-﻿"""Qt result views and reusable plotting of completed immutable run geometry."""
+"""Qt result views and reusable plotting of completed immutable run geometry."""
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib import colormaps
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg,NavigationToolbar2QT
-from PySide6 import QtWidgets
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
+from .responsive import ResponsiveCanvas as FigureCanvasQTAgg
+from PySide6 import QtWidgets,QtCore
 from ..emcd_angular_plots import decorate_reciprocal_map
 from .emcd_forward import metrics
 from .signal_normalization import DisplaySettings, normalized_spectra, angular_display, percentage_metrics
@@ -246,11 +247,14 @@ def draw_comparison(fig,result,display=None):
     fig.suptitle(cfg.channeling_model.title()+' Channeling | '+fig._suptitle.get_text()+'\n'+normalized[0][1]['units']+' | reference '+normalized[0][1]['reference_run']+' '+normalized[0][1]['reference_method'],fontsize=10)
 
 
+from .responsive import FlowLayout, CollapsibleSection, FigurePresentation
+
+
 class ResultsView(QtWidgets.QWidget):
     def __init__(self,parent,kind):
         super().__init__();self.owner=parent;self.kind=kind;self.result=None;self.proxies=[]
         layout=QtWidgets.QVBoxLayout(self);self.label=QtWidgets.QLabel('No completed EMCD calculation.');self.label.setWordWrap(True);layout.addWidget(self.label)
-        row=QtWidgets.QHBoxLayout();layout.addLayout(row);self.choice=QtWidgets.QComboBox();self.choice.addItems(['L3','L2'] if kind=='maps' else (['Exit intensity','Depth average'] if kind=='diffraction' else ['Full spectrum','L3 zoom','L2 zoom']));row.addWidget(self.choice)
+        row=FlowLayout();layout.addLayout(row);self.choice=QtWidgets.QComboBox();self.choice.addItems(['L3','L2'] if kind=='maps' else (['Exit intensity','Depth average'] if kind=='diffraction' else ['Full spectrum','L3 zoom','L2 zoom']));row.addWidget(self.choice)
         self.method=QtWidgets.QComboBox();row.addWidget(self.method);self.method.currentIndexChanged.connect(self.redraw)
         self.choice.setVisible(kind!='comparison');self.method.setVisible(kind!='comparison')
         self.field=QtWidgets.QComboBox();self.field.addItem('All six fields',None)
@@ -271,21 +275,31 @@ class ResultsView(QtWidgets.QWidget):
         self.display_note=QtWidgets.QLabel();self.display_note.setWordWrap(True);layout.addWidget(self.display_note)
         if kind=='eels':
             from .prb_controls import PRBBenchmarkControls
-            self.prb_benchmark=PRBBenchmarkControls(self);layout.addWidget(self.prb_benchmark)
+            self.prb_benchmark=PRBBenchmarkControls(self);self.benchmark_section=CollapsibleSection('PRB benchmark controls',self.prb_benchmark,expanded=False);self.benchmark_section.setObjectName('benchmark_panel');layout.addWidget(self.benchmark_section)
             self.prb_readout=self.prb_benchmark.summary
             self.prb_benchmark.changed.connect(self.update_prb_metadata)
         export=QtWidgets.QPushButton('Export derived NPZ/CSV + metadata');export.setVisible(kind!='diffraction');layout.addWidget(export);export.clicked.connect(self.export_derived)
         self.figure=Figure(layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure)
-        layout.addWidget(NavigationToolbar2QT(self.canvas,self))
-        # Keep scientific axes readable in a narrow splitter. Maximizing gives
-        # the full figure; scrolling avoids collapsed axes at smaller sizes.
-        self.canvas.setMinimumSize(900 if kind in ('maps','comparison') else 650,650 if kind=='maps' else 580)
-        scroll=QtWidgets.QScrollArea();scroll.setWidgetResizable(True);scroll.setWidget(self.canvas);layout.addWidget(scroll,1)
+        self.navigation=NavigationToolbar2QT(self.canvas,self)
+        self.canvas.setMinimumSize(280,160)
+        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Expanding)
+        layout.addWidget(self.canvas,1)
+        self.details_section=CollapsibleSection('Display details / diagnostics / export',expanded=False);self.details_section.setObjectName('results_details_'+kind);self.details_toggle=self.details_section.header;self.details_body=self.details_section.body;details=QtWidgets.QVBoxLayout(self.details_body);details.setContentsMargins(0,0,0,0)
+        for widget in (self.label,self.advanced,self.display_note,export):
+            layout.removeWidget(widget);details.addWidget(widget)
+        self.full_caption=QtWidgets.QLabel();self.full_caption.setWordWrap(True);self.full_caption.setTextFormat(QtCore.Qt.TextFormat.PlainText);details.addWidget(self.full_caption)
+        details.addWidget(self.navigation)
+        self.presentation=FigurePresentation(self.canvas,kind,self.full_caption)
+        layout.insertWidget(1,self.details_section)
         self.choice.currentTextChanged.connect(self.redraw);self.canvas.mpl_connect('pick_event',self.pick)
+    def set_compact(self,compact):
+        focused=getattr(self,'_focused',False)
+        self.details_section.setVisible(not focused)
+        if hasattr(self,'prb_benchmark'):
+            self.prb_benchmark.set_compact(compact);self.benchmark_section.setVisible(not focused)
     def maximize(self):
         w=self.owner
-        if getattr(w,'result_sizes',None) is None:w.result_sizes=w.splitter.sizes();w.splitter.setSizes([0,0,sum(w.result_sizes)])
-        else:w.splitter.setSizes(w.result_sizes);w.result_sizes=None
+        w.responsive.show_panel(2);self._focused=not getattr(self,'_focused',False);self.set_compact(w.responsive.compact);w.responsive.focus_plot('results')
     def set_result(self,result):
         self.result=result
         self.normalization.set_result(result)
@@ -321,11 +335,19 @@ class ResultsView(QtWidgets.QWidget):
         if self.kind=='eels':
             selected=self.result['config'].l2 if self.choice.currentText()=='L2 zoom' else self.result['config'].l3
             self.prb_benchmark.set_context(self.result,method,display.windows,selected)
+        if self.figure._suptitle is not None:self.figure._suptitle.set_wrap(True)
+        self.presentation.capture()
         self.canvas.draw_idle()
     def update_prb_metadata(self):
         metadata=getattr(self.figure,'_emcd_display_metadata',{})
         metadata['prb_2007_benchmark']=dict(values=self.prb_benchmark.records,undefined=self.prb_benchmark.errors)
         self.figure._emcd_display_metadata=metadata
+        records=self.prb_benchmark.records
+        text='PRB benchmarks / controls'
+        if len(records)==1:
+            value=records[0]['prb_relative_dichroism_percent'];energy=records[0]['evaluation_energy_ev']
+            if value is not None and energy is not None:text=f'PRB {value:+.4f}% at {energy:.4f} eV'
+        self.benchmark_section.header.setText(text);self.benchmark_section.header.setToolTip(self.prb_benchmark.compact_summary.text())
     def export_derived(self):
         from .normalization_export import export_derived
         from pathlib import Path

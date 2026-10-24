@@ -1,6 +1,12 @@
 # Install EMCD-Sim on Windows
 
-Current package: **EMCD-Sim v0.6.1-beta.2 Windows research Beta**, not a stable release. Download `EMCD-Sim-0.6.1-beta.2-Windows.zip` and `SHA256SUMS.txt` from the [Beta 2 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2), verify the ZIP hash against that release's checksum file, Extract All, and run `EMCD-Sim/EMCD-Sim.exe` with `_internal` beside it. About reports `0.6.1b2`. New-project defaults are 300 kV, beam/potential cutoffs 3.0/2.0 cycles/Å, 97×97 and 2048 MiB. Windows BW Double uses one detector worker by default; inspect Panel F for actual native threads and resource/risk status. See [Beta 2 notes and acceptance](RELEASE_NOTES_0_6_1_BETA_2.md), [Quick Start](QUICK_START.md) and the [User Manual](USER_GUIDE.md).
+## Current Beta 3 Actions candidate
+
+The current candidate is **v0.6.1-beta.3**, package **0.6.1b3**, ZIP **EMCD-Sim-v0.6.1-beta.3-Windows.zip**. Download it from a successful [Windows Actions run](https://github.com/dingpengem/EMCD-Sim/actions/workflows/windows-build.yml), verify its own checksum, extract the full folder, and run `EMCD-Sim/EMCD-Sim.exe`. No Beta 3 release/tag exists. See [candidate provenance, layout and acceptance scope](WINDOWS_BETA_3.md). The new GUI keeps Settings and Diffraction side by side. Defaults remain 300 kV, 3.2/2.5 cycles/Angstrom, 97x97 and 2048 MiB.
+
+## Historical published Beta 2
+
+Published package: **EMCD-Sim v0.6.1-beta.2 Windows research Beta**, not a stable release. Download `EMCD-Sim-0.6.1-beta.2-Windows.zip` and `SHA256SUMS.txt` from the [Beta 2 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2), verify the ZIP hash against that release's checksum file, Extract All, and run `EMCD-Sim/EMCD-Sim.exe` with `_internal` beside it. About reports `0.6.1b2`. New-project defaults are 300 kV, beam/potential cutoffs 3.0/2.0 cycles/Å, 97×97 and 2048 MiB. Windows BW Double uses one detector worker by default; inspect Panel F for actual native threads and resource/risk status. See [Beta 2 notes and acceptance](RELEASE_NOTES_0_6_1_BETA_2.md), [Quick Start](QUICK_START.md) and the [User Manual](USER_GUIDE.md).
 
 The Beta 1 installation/checksum record below is historical and remains unchanged; **do not use its checksum for Beta 2**. General extraction, project, logging and troubleshooting guidance still applies.
 

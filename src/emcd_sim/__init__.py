@@ -12,7 +12,8 @@ from .simulation import EMCDSimulation, SimulationResult
 from .mdff_tensor import TransitionDataset, DipoleTensor, dipole_tensor_from_transitions, cycles_to_angular_q
 from .single_channeling_tensor import run_tensor_single_channeling
 
-__version__ = "0.6.1b2"
+__version__ = "0.6.1b3"
+__display_version__ = "v0.6.1-beta.3"
 __all__ = [
     "Crystal", "fcc_nickel", "BeamSet", "PhysicalElasticModel",
     "IndependentAtomPotential", "nickel_lobato_factor", "depth_coherence",

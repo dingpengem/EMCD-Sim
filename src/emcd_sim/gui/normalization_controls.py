@@ -1,4 +1,5 @@
 """Compact display-only controls shared by live and saved result viewers."""
+from .responsive import FlowLayout
 from PySide6 import QtWidgets, QtCore
 from .signal_normalization import DisplaySettings, MODES, MAP_MODES, default_windows, peak_reference, validate_pair
 
@@ -8,7 +9,7 @@ class NormalizationControls(QtWidgets.QWidget):
     def __init__(self,parent,maps=False,saved=False):
         super().__init__(parent);self.result=None;self.saved=saved;self.show_maps=maps
         layout=QtWidgets.QVBoxLayout(self);layout.setContentsMargins(0,0,0,0)
-        row=QtWidgets.QHBoxLayout();layout.addLayout(row)
+        row=FlowLayout();layout.addLayout(row)
         row.addWidget(QtWidgets.QLabel('Intensity Display'))
         self.mode=QtWidgets.QComboBox()
         for key,title in MODES.items():self.mode.addItem(title,key)
@@ -18,7 +19,7 @@ class NormalizationControls(QtWidgets.QWidget):
         row.addWidget(self.peak_edge)
         self.scope=QtWidgets.QComboBox();self.scope.addItem('Shared reference peak','shared');self.scope.addItem('Per-run peak reference' if saved else 'Per-method peaks (presentation only)','independent');row.addWidget(self.scope)
         self.reference=QtWidgets.QComboBox();row.addWidget(self.reference);self.reference.setVisible(saved)
-        maprow=QtWidgets.QHBoxLayout();layout.addLayout(maprow)
+        maprow=FlowLayout();layout.addLayout(maprow)
         self.map_mode=QtWidgets.QComboBox()
         for key,title in MAP_MODES.items():self.map_mode.addItem(title,key)
         self.map_mode.setVisible(maps);maprow.addWidget(self.map_mode)

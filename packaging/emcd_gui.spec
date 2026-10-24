@@ -4,6 +4,7 @@ from importlib.metadata import distribution, version
 from datetime import datetime, timezone
 
 root = Path(SPECPATH).parent
+sys.path.insert(0, str(root / 'src'))
 stage = root / os.environ.get('EMCD_GUI_BUILD_ROOT','build/windows-rc') / 'resources'
 stage.mkdir(parents=True, exist_ok=True)
 # Only the explicitly tracked example, never the modified working copy or companions.
@@ -43,5 +44,6 @@ a = Analysis([str(root/'packaging/launcher.py')], pathex=[str(root/'src')],
     hooksconfig={'matplotlib': {'backends': ['Agg', 'QtAgg', 'svg']}},
     excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow'], noarchive=False)
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='EMCD-Sim', console=False)
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='EMCD-Sim', console=False,
+          version=str(root/'packaging/windows_version_info.txt'))
 coll = COLLECT(exe, a.binaries, a.datas, name='EMCD-Sim')

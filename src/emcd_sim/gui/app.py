@@ -5,7 +5,8 @@ import argparse,json,sys
 import numpy as np
 from PySide6 import QtCore,QtWidgets,QtGui
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg,NavigationToolbar2QT
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
+from .responsive import ResponsiveCanvas as FigureCanvasQTAgg
 from matplotlib.patches import Circle
 from .geometry import (Structure,Settings,indices,geometry,preview,excitation,
                        align_bragg,za_from_tilt,tilt_from_za)
@@ -24,6 +25,7 @@ class PreviewWorker(QtCore.QThread):
         except Exception as exc:self.failed.emit(str(exc))
 
 
+from .responsive import FlowLayout, ResponsiveLayout, CollapsibleSection
 from .stage_b import StageB
 from .results_browser import ProjectWorkspace
 
@@ -43,16 +45,18 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.structure_label=QtWidgets.QLabel();self.structure_label.setWordWrap(True);self.form.addRow(self.structure_label)
         self.button('Inspect structure…',self.inspect_structure)
         self.section('B. Zone Axis & Diffraction')
+        geometry_form=self.form;self.geometry_options=CollapsibleSection('Orientation / ZA options',expanded=False);self.geometry_options.setObjectName('geometry_options');self.geometry_options.header.setToolTip('Crystal orientation, target hkl, projected ZA coordinates and Bragg alignment lock');geometry_form.addRow(self.geometry_options);self.form=QtWidgets.QFormLayout(self.geometry_options.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         self.zone=QtWidgets.QLineEdit('0 1 7');self.zone.setToolTip('Direct-lattice [u v w]; changes the actual oriented cell.');self.form.addRow('Nominal zone [uvw]',self.zone)
         self.target=QtWidgets.QLineEdit('2 0 0');self.target.setToolTip('Target Miller indices; must belong to the oriented finite basis.');self.form.addRow('Target (hkl)',self.target)
         self.button('Apply orientation / target',self.apply_orientation)
         self.mode=QtWidgets.QComboBox();self.mode.addItems(['Select reflection','Set projected ZA','Move detector A','Move detector B']);self.form.addRow('Click mode',self.mode)
-        self.number('tx','Tilt X (mrad)',Settings().tilt[0],-100,100,self.tilt_changed)
-        self.number('ty','Tilt Y (mrad)',0,-100,100,self.tilt_changed)
         self.number('qx','ZA qx (Å⁻¹)',0,-20,20,self.za_changed)
         self.number('qy','ZA qy (Å⁻¹)',0,-20,20,self.za_changed)
-        self.step=QtWidgets.QComboBox();self.step.addItems(['0.01','0.1','1']);self.step.setCurrentText('0.1');self.step.currentTextChanged.connect(self.step_changed);self.form.addRow('Tilt step (mrad)',self.step)
         self.lock=QtWidgets.QComboBox();self.lock.addItems(['None','X','Y']);self.form.addRow('Lock for Bragg alignment',self.lock)
+        self.form=geometry_form
+        self.number('tx','Tilt X (mrad)',Settings().tilt[0],-100,100,self.tilt_changed)
+        self.number('ty','Tilt Y (mrad)',0,-100,100,self.tilt_changed)
+        self.step=QtWidgets.QComboBox();self.step.addItems(['0.01','0.1','1']);self.step.setCurrentText('0.1');self.step.currentTextChanged.connect(self.step_changed);self.form.addRow('Tilt step (mrad)',self.step)
         self.align_button=self.button('Align to selected Bragg',self.align)
         self.button('Reset to zone axis',lambda:self.set_tilt((0,0)))
         self.button('Reset to reference geometry',self.reset_reference)
@@ -78,13 +82,13 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.form_layout.addStretch()
         center=QtWidgets.QWidget();layout=QtWidgets.QVBoxLayout(center);self.figure=Figure(layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure);self.ax=self.figure.add_subplot()
         self.toolbar=NavigationToolbar2QT(self.canvas,self);layout.addWidget(self.toolbar)
-        actions=QtWidgets.QHBoxLayout();layout.addLayout(actions)
+        actions=FlowLayout();layout.addLayout(actions)
         self.run_button=QtWidgets.QPushButton('Preview diffraction');self.run_button.clicked.connect(self.start_preview);actions.addWidget(self.run_button)
         self.cancel_button=QtWidgets.QPushButton('Cancel');self.cancel_button.clicked.connect(self.cancel);self.cancel_button.setEnabled(False);actions.addWidget(self.cancel_button)
         self._basis_view_limits=None;self._basis_view_geometry=None
         self.basis_view_button=QtWidgets.QPushButton('Show full basis');self.basis_view_button.clicked.connect(self.toggle_basis_view);actions.addWidget(self.basis_view_button)
         maximum=QtWidgets.QPushButton('Maximize / restore viewer');maximum.clicked.connect(self.maximize_view);actions.addWidget(maximum)
-        layout.addWidget(self.canvas,1);self.selection=QtWidgets.QLabel();self.selection.setWordWrap(True);layout.addWidget(self.selection)
+        layout.addWidget(self.canvas,1);self.selection=QtWidgets.QLabel();self.selection.setWordWrap(True);self.diffraction_details=CollapsibleSection('Diffraction details',self.selection,expanded=False);self.diffraction_details.setObjectName('diffraction_details');layout.addWidget(self.diffraction_details)
         self.progress=QtWidgets.QProgressBar();self.progress.setRange(0,1);self.progress.setValue(0);layout.addWidget(self.progress)
         self.splitter.addWidget(center);self.tabs=QtWidgets.QTabWidget();self.tabs.setMinimumWidth(300)
         self.table=QtWidgets.QTableWidget(0,5);self.table.setHorizontalHeaderLabels(['hkl','qx','qy','s_g (1/A)','Exit I (last preview)'])
@@ -96,10 +100,10 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.canvas.mpl_connect('button_press_event',self.clicked)
         self.zone.returnPressed.connect(self.apply_orientation);self.target.returnPressed.connect(self.apply_orientation)
         self.sync_za();self.restore_detectors();self.refresh();self.setup_stage_b();self.setup_stage_d(workspace)
+        self.responsive=ResponsiveLayout(self)
 
     def section(self,title,expanded=True):
-        group=QtWidgets.QGroupBox(title);group.setCheckable(True);group.setChecked(expanded);body=QtWidgets.QWidget();self.form=QtWidgets.QFormLayout(body)
-        outer=QtWidgets.QVBoxLayout(group);outer.addWidget(body);body.setVisible(expanded);group.toggled.connect(body.setVisible);self.form_layout.addWidget(group)
+        group=CollapsibleSection(title,expanded=expanded);group.setObjectName('settings_'+''.join(c if c.isalnum() else '_' for c in title));self.form=QtWidgets.QFormLayout(group.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);self.form_layout.addWidget(group)
 
     def number(self,key,label,value,lo,hi,callback):
         box=QtWidgets.QDoubleSpinBox();box.setRange(lo,hi);box.setDecimals(10);box.setValue(value);box.setSingleStep(.1);box.setKeyboardTracking(False)
@@ -291,8 +295,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.store_ui_preferences()
         super().closeEvent(event)
     def maximize_view(self):
-        if self.saved_sizes is None:self.saved_sizes=self.splitter.sizes();self.splitter.setSizes([0,sum(self.saved_sizes),0])
-        else:self.splitter.setSizes(self.saved_sizes);self.saved_sizes=None
+        self.responsive.focus_plot('diffraction')
     def export_plot(self):
         path,_=QtWidgets.QFileDialog.getSaveFileName(self,'Export current diffraction viewer','','PNG (*.png);;SVG (*.svg)')
         if path:self.figure.savefig(path,dpi=160)
@@ -313,6 +316,13 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.warning(self,'EMCD-Sim',message)
 
 
+def add_about_menu(window):
+    from .runtime import LABEL, build_info
+    action=window.menuBar().addMenu('Help').addAction('About / build')
+    action.triggered.connect(lambda:QtWidgets.QMessageBox.information(window,LABEL,json.dumps(build_info(),indent=2)))
+    return action
+
+
 def main():
     parser=argparse.ArgumentParser(description='EMCD-Sim desktop diffraction and BW EMCD/EELS interface')
     parser.add_argument('--smoke-screenshot',type=Path,help='Run a real default elastic preview, save a Qt window screenshot and exit')
@@ -324,9 +334,13 @@ def main():
     parser.add_argument('--parallel-acceptance',type=Path,help='Opt-in resource-controls and bounded native BW Double acceptance')
     parser.add_argument('--parallel-project',type=Path,help='Optional checksummed saved case for diagnostic acceptance')
     parser.add_argument('--parallel-workers',type=int,help='Explicit supported detector-worker request for diagnostic acceptance')
+    parser.add_argument('--desktop-acceptance',type=Path,help='Opt-in portable-build GUI and small BW/MS Single/Double acceptance')
     args=parser.parse_args()
     from .runtime import configure_logging, LABEL, build_info
     configure_logging()
+    if args.desktop_acceptance:
+        from .desktop_acceptance import run
+        return run(args.desktop_acceptance)
     if args.parallel_acceptance:
         from .parallel_acceptance import run
         return run(args.parallel_acceptance,args.parallel_project,args.parallel_workers)
@@ -343,8 +357,7 @@ def main():
         families=QtGui.QFontDatabase.applicationFontFamilies(font_id)
         if families:app.setFont(QtGui.QFont(families[0],9))
     window=MainWindow();window.setWindowTitle(build_info()['label'])
-    about=window.menuBar().addMenu('Help').addAction('About / build')
-    about.triggered.connect(lambda:QtWidgets.QMessageBox.information(window,LABEL,json.dumps(build_info(),indent=2)))
+    add_about_menu(window)
     window.show()
     if args.smoke_screenshot:
         def capture():

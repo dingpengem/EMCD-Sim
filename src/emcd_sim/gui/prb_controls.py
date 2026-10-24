@@ -1,4 +1,5 @@
 """Compact PRB readout; changing these controls never redraws or runs physics."""
+from .responsive import FlowLayout, CollapsibleSection
 from PySide6 import QtCore, QtWidgets
 from .prb_benchmark import benchmark_readout, data_origin, LIMITATION, REFERENCE
 
@@ -12,14 +13,18 @@ class PRBBenchmarkControls(QtWidgets.QGroupBox):
         self.records = []
         self.errors = []
         self.context_key = None
-        layout = QtWidgets.QVBoxLayout(self)
-        row = QtWidgets.QHBoxLayout()
+        self.compact = False
+        outer = QtWidgets.QVBoxLayout(self)
+        self.options_section=CollapsibleSection('Benchmark controls',expanded=False);self.options_section.setObjectName('benchmark_options');outer.addWidget(self.options_section);self.options_toggle=self.options_section.header;self.options_body=self.options_section.body
+        layout = QtWidgets.QVBoxLayout(self.options_body);layout.setContentsMargins(0,0,0,0)
+        self.options_toggle.toggled.connect(self.update_visibility)
+        row = FlowLayout()
         layout.addLayout(row)
         self.selection = QtWidgets.QComboBox()
         self.selection.addItem('L3 white-line peak (raw A+B)', 'l3-peak')
         self.selection.addItem('Current selected energy', 'selected')
         row.addWidget(self.selection)
-        row = QtWidgets.QHBoxLayout()
+        row = FlowLayout()
         layout.addLayout(row)
         row.addWidget(QtWidgets.QLabel('Energy (native eV)'))
         self.energy = QtWidgets.QDoubleSpinBox()
@@ -33,7 +38,8 @@ class PRBBenchmarkControls(QtWidgets.QGroupBox):
         self.summary = QtWidgets.QLabel('Load or complete a result to evaluate.')
         self.summary.setTextFormat(QtCore.Qt.TextFormat.PlainText)
         self.summary.setWordWrap(True)
-        layout.addWidget(self.summary)
+        outer.addWidget(self.summary)
+        self.compact_summary=QtWidgets.QLabel('Load or complete a result to evaluate.');self.compact_summary.setWordWrap(True);self.compact_summary.hide();outer.addWidget(self.compact_summary)
         toggle = QtWidgets.QToolButton()
         toggle.setText('Diagnostics definitions / Figure 5(c) reference')
         toggle.setCheckable(True)
@@ -49,6 +55,17 @@ class PRBBenchmarkControls(QtWidgets.QGroupBox):
         self.energy.valueChanged.connect(self.recompute)
         self.fixed.toggled.connect(self.fix_energy)
         self.energy.setEnabled(False)
+
+    def set_compact(self,compact):
+        self.compact=compact
+        self.update_visibility()
+
+    def update_visibility(self,*_):
+        expanded=self.options_toggle.isChecked()
+        self.options_body.setVisible(expanded)
+        if hasattr(self,'summary'):
+            self.summary.setVisible(expanded)
+            self.compact_summary.setVisible(not expanded)
 
     def set_context(self, result, method, windows, selected_energy):
         self.result, self.method, self.windows = result, method, windows
@@ -103,4 +120,11 @@ class PRBBenchmarkControls(QtWidgets.QGroupBox):
                 self.errors.append(dict(solver=name, undefined_reason=str(exc)))
                 lines.append(name+': undefined — '+str(exc))
         self.summary.setText('\n'.join(lines) or 'No compatible original detector spectra.')
+        compact=[]
+        for record in self.records:
+            energy=record['evaluation_energy_ev']
+            compact.append(record['solver']+': PRB '+fmt(record['prb_relative_dichroism_percent'])+
+                           (' (energy undefined)' if energy is None else f' at {energy:.4f} eV'))
+        compact.extend(error['solver']+': undefined (expand Benchmark options)' for error in self.errors)
+        self.compact_summary.setText('\n'.join(compact) or 'No compatible original detector spectra.')
         self.changed.emit()

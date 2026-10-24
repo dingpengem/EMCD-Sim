@@ -90,8 +90,10 @@ class NumericalSettingsUI:
 
     def apply_numerical_visibility(self):
         manual=self.numerical_mode.currentIndex()==1
-        for group in (self.shared_elastic_group,self.shared_sampling_group):group.setVisible(manual)
+        for group in (self.shared_elastic_group,self.shared_sampling_group):
+            group.setVisible(manual);group.presentation_section.setVisible(manual)
         self.shared_resources_group.setVisible(True)
+        self.shared_resources_group.presentation_section.setVisible(True)
         for key in NUMERICAL_KEYS:self.spin[key].setEnabled(manual)
         self.memory_budget.setEnabled(True);self.angular_resolution.setEnabled(manual)
         self.numerical_details.setVisible(not manual)

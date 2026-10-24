@@ -54,17 +54,27 @@ class IOWorker(QtCore.QThread):
             self.failed.emit(str(exc))
 
 
+from .responsive import FlowLayout
+
+
 class ResultsBrowser(QtWidgets.QWidget):
     def __init__(self,owner,index):
-        super().__init__();self.owner=owner;self.registry=index;self.cache={};layout=QtWidgets.QVBoxLayout(self);row=QtWidgets.QHBoxLayout();layout.addLayout(row)
+        super().__init__();self.owner=owner;self.registry=index;self.cache={};layout=QtWidgets.QVBoxLayout(self);row=FlowLayout();layout.addLayout(row)
         self.filter=QtWidgets.QLineEdit();self.filter.setPlaceholderText('Filter material, zone, MDFF, method or name');row.addWidget(self.filter)
+        self.action_buttons=[];self.more=QtWidgets.QToolButton();self.more.setText('More actions');self.more.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.InstantPopup);menu=QtWidgets.QMenu(self.more);self.more.setMenu(menu)
         for title,callback in [('Import Result',owner.import_result_dialog),('Open Folder',self.open_folder),('View Selected',self.view),('Compare Selected',owner.compare_selected),('Use These Settings',owner.use_result_settings),('Details',self.details),('Rename',self.rename),('Locate Project',self.locate),('Remove From Browser',self.remove)]:
-            b=QtWidgets.QPushButton(title);b.clicked.connect(callback);row.addWidget(b)
+            b=QtWidgets.QPushButton(title);b.clicked.connect(callback);row.addWidget(b);self.action_buttons.append(b)
+            action=menu.addAction(title);action.triggered.connect(callback)
+        row.addWidget(self.more);self.more.hide()
         self.table=QtWidgets.QTableWidget(0,11);self.table.setHorizontalHeaderLabels(['Run name','Date (Los Angeles)','Material','Zone','Target','Tilt X (mrad)','Tilt Y (mrad)','Thickness (nm)','MDFF','Method','Status'])
         self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows);self.table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection);self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSortingEnabled(True);layout.addWidget(self.table);self.filter.textChanged.connect(self.refresh);self.table.cellDoubleClicked.connect(lambda *_:self.view());self.refresh()
         self.selection_timer=QtCore.QTimer(self);self.selection_timer.setSingleShot(True);self.selection_timer.setInterval(250)
         self.table.itemSelectionChanged.connect(lambda:self.selection_timer.start());self.selection_timer.timeout.connect(self.auto_view)
+    def set_compact(self,compact):
+        for button in self.action_buttons:button.setVisible(not compact or button.text() in ('View Selected','Use These Settings'))
+        self.more.setVisible(compact)
+        self.table.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Ignored if compact else QtWidgets.QSizePolicy.Policy.Expanding)
     def auto_view(self):
         rows=self.selected()
         if not self.owner.busy and len(rows)==1 and (not self.owner.selected_record or rows[0]['id']!=self.owner.selected_record['id']):self.view()
@@ -143,15 +153,16 @@ class ProjectWorkspace:
         toolbar=self.addToolBar('Projects');toolbar.setObjectName('projectsToolbar')
         for title,callback in [('Open Project',self.open_project_dialog),('Save Project',self.save_project_action),('Use These Settings',self.use_result_settings),('Compare Results',self.compare_selected),('Export Figure',self.export_current_figure)]:
             action=toolbar.addAction(title);action.triggered.connect(lambda checked=False,f=callback:f())
-        if self.ui_settings.contains('geometry'):self.restoreGeometry(self.ui_settings.value('geometry'))
-        if self.ui_settings.contains('state'):self.restoreState(self.ui_settings.value('state'))
-        sizes=self.ui_settings.value('splitter')
-        if sizes:self.splitter.setSizes([int(x) for x in sizes])
+        value=self.ui_settings.value('geometry')
+        if isinstance(value,QtCore.QByteArray):self.restoreGeometry(value)
+        value=self.ui_settings.value('state')
+        if isinstance(value,QtCore.QByteArray):self.restoreState(value)
+        # ResponsiveLayout validates and restores legacy or current proportions.
     def store_ui_preferences(self):
         if not hasattr(self,'ui_settings'):return
-        self.ui_settings.setValue('geometry',self.saveGeometry());self.ui_settings.setValue('state',self.saveState());self.ui_settings.setValue('splitter',self.splitter.sizes());self.ui_settings.sync()
+        self.ui_settings.setValue('geometry',self.saveGeometry());self.ui_settings.setValue('state',self.saveState());self.responsive.save_preferences();self.ui_settings.setValue('splitter',self.responsive.saved_splitter_sizes());self.ui_settings.sync()
     def restore_layout(self):
-        self.browser_dock.show();self.splitter.setSizes([340,820,390]);self.result_sizes=None;self.saved_sizes=None;self.resizeDocks([self.browser_dock],[190],QtCore.Qt.Orientation.Vertical)
+        self.browser_dock.show();self.responsive.reset()
     def register_completed(self,result):
         if hasattr(self,'browser'):self.selected_record=self.browser.register(result)
     def display_saved_result(self,result,record=None):
