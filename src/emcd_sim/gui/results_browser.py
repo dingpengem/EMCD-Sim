@@ -160,9 +160,14 @@ class ProjectWorkspace:
         # ResponsiveLayout validates and restores legacy or current proportions.
     def store_ui_preferences(self):
         if not hasattr(self,'ui_settings'):return
-        self.ui_settings.setValue('geometry',self.saveGeometry());self.ui_settings.setValue('state',self.saveState());self.responsive.save_preferences();self.ui_settings.setValue('splitter',self.responsive.saved_splitter_sizes());self.ui_settings.sync()
+        self.ui_settings.setValue('geometry',self.saveGeometry());self.ui_settings.setValue('state',self.saveState())
+        responsive=getattr(self,'responsive',None)
+        if responsive is not None:responsive.save_preferences()
+        self.ui_settings.setValue('splitter',responsive.saved_splitter_sizes() if responsive is not None else self.splitter.sizes());self.ui_settings.sync()
     def restore_layout(self):
-        self.browser_dock.show();self.responsive.reset()
+        self.browser_dock.show()
+        if hasattr(self,'responsive'):self.responsive.reset()
+        else:self.splitter.setSizes([340,820,390]);self.result_sizes=None;self.saved_sizes=None;self.resizeDocks([self.browser_dock],[190],QtCore.Qt.Orientation.Vertical)
     def register_completed(self,result):
         if hasattr(self,'browser'):self.selected_record=self.browser.register(result)
     def display_saved_result(self,result,record=None):
