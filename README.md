@@ -23,7 +23,21 @@ EMCD-Sim is a research simulation tool for **electron magnetic circular dichrois
 
 Elastic propagation uses an oriented **projected independent-atom-model (IAM) potential**. Single retains entrance channeling; Double also propagates the outgoing electron at its reduced post-loss energy. BW and MS are independent numerical implementations within matched physical approximations.
 
-The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An approximate atomic-ionization model is also available. A complete DFT-derived MDFF from complex core-to-band transition matrix elements is **not implemented**. CIF import supports structural inspection; it does not validate arbitrary materials for magnetic EELS. The verified GUI FFT geometries are Ni [017] full finite ZOLZ and the explicitly restricted [001] (200) systematic row.
+The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An approximate atomic-ionization model is also available. A complete DFT-derived MDFF from complex core-to-band transition matrix elements is **not implemented**. CIF import supports structural inspection; it does not validate arbitrary materials for magnetic EELS. The separate generalized-multislice development branch uses one structure-derived Projected ZOLZ engine for bounded crystallographic directions, with [001]/[017]/[117]/[111]/[710] BW/MS Single/Double comparisons. Orientation-specific geometry modules are retained only as frozen test references. See the [architecture](docs/GENERALIZED_MULTISLICE_ARCHITECTURE.md), [validation and explicit convergence failures](docs/GENERAL_ZOLZ_MULTISLICE_VALIDATION.md), and [Atomic 3D integration plan](docs/ATOMIC_3D_MULTISLICE_DEVELOPMENT.md). Atomic 3D is not implemented by this milestone. These source additions are not in the preserved Windows packages.
+
+For [117], crystal-[001] magnetization is rotated once into the target-aligned frame; raw magnetic intensity need not be mirror-antisymmetric. The default potential cutoff 2.5 cycles/Å has no off-row [117] harmonics. Use explicit research settings and resource checks; Automatic does not establish convergence. See the [configuration guide](docs/USER_GUIDE.md#research-ni-117--2-20), [scientific validation](docs/NI_117_FINAL_SYMMETRY_VALIDATION.md) and [merge-readiness review](docs/NI_117_MERGE_READINESS.md). Validation is representative, not a universal convergence or experimental-accuracy claim.
+
+The generalized branch now has [normal-GUI end-to-end validation](docs/GENERALIZED_MULTISLICE_EMCD_VALIDATION.md)
+for all five representative orientations in Single/Double BW/MS. The [111]
+angular/aperture refinements pass at the tested 2 nm point, but a joint raw-intensity
+check still fails; general production convergence remains uncertified. No Atomic
+3D implementation, packaged EXE update or release is included.
+
+The [final scientific merge review](docs/GENERALIZED_MULTISLICE_MERGE_READINESS.md)
+recommends merging this bounded research implementation with explicit limits.
+The [111] residual is dominated by potential/beam support; larger-MS increments
+pass at the tested point, while the lower-support profile remains uncertified.
+Main and existing Windows packages have not been updated by this review.
 
 ## Installation
 

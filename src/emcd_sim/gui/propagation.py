@@ -1,19 +1,37 @@
-"""Verified [017] incoming FFT adapter, numerical diagnostics and labeled exports."""
+"""General projected-ZOLZ adapter, numerical diagnostics and labeled exports."""
 from pathlib import Path
 import json
 import numpy as np
-from .geometry import geometry,orientation
-from ..ni_017_geometry import Ni017Geometry
-from ..multislice_reference import fft_multislice_ni
-from ..multislice_reference import project_fft_amplitudes,complex_wave_diagnostics
+from .geometry import geometry
+from ..projected_geometry import ProjectedGeometry
+from ..crystal import fcc_nickel
+from ..crystallography import primitive_direction
+from ..multislice_reference import complex_wave_diagnostics
 
 METHOD_NAMES={'bloch':'Bloch-wave','fft-multislice':'FFT Multislice','difference':'BW-MS numerical difference'}
+
+
+def projected_geometry_for(settings,crystal=None,fft_generators=None):
+    if crystal is None:
+        return ProjectedGeometry.from_crystal(fcc_nickel(),settings.zone,settings.target,generators=fft_generators)
+    return ProjectedGeometry.from_oriented(crystal,settings.zone,settings.target,generators=fft_generators)
+
+
+def resolve_fft_configuration(structure,settings,cfg):
+    """Record the actual FFT cell, independent of orientation-specific presets."""
+    if cfg.propagation=='bloch' or cfg.fft_generators is not None:return cfg
+    from dataclasses import replace
+    crystal=geometry(structure,settings,systematic_row=cfg.systematic_row)[0]
+    cell=projected_geometry_for(settings,crystal).generators
+    return replace(cfg,fft_generators=tuple(tuple(int(v) for v in h) for h in cell))
 
 
 def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True):
     if cfg.propagation not in ('bloch','fft-multislice','both'):raise ValueError('Unknown propagation method')
     if cfg.channeling_model not in ('single','double'):raise ValueError('Unknown channeling model')
-    if hkl is None:hkl=geometry(structure,settings,systematic_row=cfg.systematic_row)[2]
+    actual_geometry=geometry(structure,settings,systematic_row=cfg.systematic_row)
+    if hkl is None:hkl=actual_geometry[2]
+    if tuple(hkl)!=actual_geometry[2]:raise ValueError('Beam support changed during numerical preflight')
     n=len(hkl);pixels=cfg.grid**2;mesh=cfg.fft_grid**2
     from .parallel_resources import worker_plan,require_supported
     execution=worker_plan(settings,cfg,n)
@@ -21,30 +39,46 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     info=dict(bw_beams=n,fft_harmonics=0,potential_nonzero_harmonics=0,single_complex_pair_mib=pair,dense_working_estimate_mib=dense,
         fft_storage_working_mib=0.,coherence_working_mib=16*cfg.depth*n*n/2**20,propagation=cfg.propagation,
         fft_grid=cfg.fft_grid,slice_step_nm=cfg.slice_step,depth_nodes=cfg.depth)
+    info['numerical_warnings']=[]
+    if settings.basis_mode=='full' and not cfg.systematic_row:
+        geo=projected_geometry_for(settings,actual_geometry[0],cfg.fft_generators)
+        offrow=sum(abs(geo.crystal.g_vector(h)[1])>1e-12 for h in geo.hkl_within(settings.potential_cutoff))
+        info['potential_nonzero_offrow_harmonics']=int(offrow)
+        first=min((np.linalg.norm(geo.crystal.g_vector(h)) for h in geo.hkl_within(np.linalg.norm(geo.crystal.g_vector(geo.support_generators[1]))) if abs(geo.crystal.g_vector(h)[1])>1e-12),default=float('inf'))
+        info['potential_support_warning']=(f'Requested cutoff retains no off-row ZOLZ harmonics (first approximately {first:.3f} cycles/Angstrom). '
+            'This is not a full 2D potential; increase the cutoff explicitly.' if not offrow else '')
+        if info['potential_support_warning']:info['numerical_warnings'].append(info['potential_support_warning'])
+    else:info['potential_support_warning']=''
+    nominal_zone=primitive_direction(settings.zone)
+    if nominal_zone==(1,1,7) and cfg.grid<97:
+        info['numerical_warnings'].append('Coarse [117] detector sampling: grid17 differed from grid97 by 0.2296 percentage points at 30 nm. '
+            'Refine angular/aperture sampling; grid97 is not a general convergence guarantee.')
+    if nominal_zone==(1,1,1):
+        info['numerical_warnings'].append('Ni [111] quantitative convergence is not certified: the tested 200 kV, 2 nm joint refinement '
+            'changed raw detector intensity by 0.1094%, above the unchanged 0.1% limit. '
+            'Beam/potential support dominates; BW/MS agreement and fine detector sampling do not certify other configurations. '
+            'See docs/GENERALIZED_MULTISLICE_MERGE_READINESS.md.')
     if cfg.propagation!='bloch':
-        if settings.zone!=(0,1,7) and not (settings.zone==(0,0,1) and cfg.systematic_row):raise ValueError('FFT EMCD supports verified Ni [017] or the explicit [001] (200) systematic row; no automatic fallback.')
         from .emcd_forward import material_reason
         reason=material_reason(structure)
         if reason:raise ValueError(reason)
         if not isinstance(cfg.fft_grid,int) or not 12<=cfg.fft_grid<=128 or cfg.fft_grid%2:raise ValueError('FFT grid must be even, 12–128')
         if not np.isfinite(cfg.slice_step) or not .001<=cfg.slice_step<=1:raise ValueError('Maximum slice step must be 0.001–1 nm')
         if int(np.ceil(settings.thickness/(cfg.depth-1)/cfg.slice_step))*(cfg.depth-1)>200000:raise ValueError('Requested FFT propagation exceeds 200000 split steps; increase slice step or reduce thickness explicitly')
-        geo=Ni017Geometry() if settings.zone==(0,1,7) else None
-        if geo is not None:
-            if not np.allclose(orientation(structure.atoms.cell.array,settings.zone),geo.frame,atol=1e-14):raise ValueError('FFT and BW orientation frames differ')
-            harmonics,g=geo.harmonics(cfg.fft_grid,max(settings.beam_cutoff,settings.potential_cutoff))
-        else:
-            if max(settings.beam_cutoff,settings.potential_cutoff)>=(cfg.fft_grid//2-1)*2/3.524:raise ValueError('Beam/potential support reaches unsafe FFT Nyquist boundary')
-            v=np.rint(np.fft.fftfreq(cfg.fft_grid)*cfg.fft_grid).astype(int);x,y=np.meshgrid(v,v,indexing='ij')
-            harmonics=np.stack((2*x,2*y,np.zeros_like(x)),axis=-1).reshape(-1,3);g=harmonics[:,:2]/3.524
+        geo=projected_geometry_for(settings,actual_geometry[0],cfg.fft_generators)
+        harmonics,g=geo.harmonics(cfg.fft_grid,max(settings.beam_cutoff,settings.potential_cutoff))
         lookup={tuple(h):i for i,h in enumerate(harmonics)}
         if len(lookup)!=mesh or any(tuple(h) not in lookup for h in hkl):raise ValueError('FFT mesh does not contain the exact ordered common hkl basis')
-        actual=geometry(structure,settings,systematic_row=cfg.systematic_row)[3]
+        actual=actual_geometry[3]
         if not np.allclose(g[[lookup[tuple(h)] for h in hkl]],actual,atol=1e-13):raise ValueError('FFT and BW reciprocal coordinates differ')
-        allowed=np.array([geo.crystal.is_allowed(tuple(h)) for h in harmonics]) if geo is not None else harmonics[:,1]==0
+        allowed=np.array([geo.crystal.is_allowed(tuple(h)) for h in harmonics])
+        if cfg.systematic_row:allowed&=np.all(np.cross(harmonics,settings.target)==0,axis=1)
         count=int(np.sum(allowed & (np.linalg.norm(g,axis=1)<=settings.potential_cutoff) & np.any(harmonics!=0,axis=1)))
         info.update(fft_harmonics=mesh,potential_nonzero_harmonics=count,fft_storage_working_mib=(24*cfg.depth+160)*mesh/2**20,
-            projected_geometry='Actual oriented Ni [017] full 2D, or explicitly selected [001] (200) systematic row; exact common hkl, IAM, B and Fourier cutoff as BW')
+            fft_generators=geo.generators.tolist(),real_cell_xy_angstrom=geo.real_cell_xy.tolist(),cell_area_angstrom2=geo.area_angstrom2,
+            projected_geometry='General structure-derived ZOLZ '+str(settings.zone)+'; exact common hkl, IAM, B and Fourier cutoff as BW',
+            elastic_basis_mode=settings.basis_mode,
+            fft_projection='Explicit exp(i dz PVP) FFT-convolution two-beam Galerkin' if settings.basis_mode=='two-beam' else 'Unrestricted FFT propagation; finite incoming/outgoing MDFF beam support')
     methods=2 if cfg.propagation=='both' else 1
     info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20
     info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+info['retained_results_working_mib']
@@ -88,28 +122,18 @@ def propagate(elastic,settings,cfg,z,stage,*,cancelled=None):
     if cfg.propagation in ('bloch','both'):
         stage('Running Bloch-wave propagation');waves['bloch']=elastic.amplitudes(z)
     if cfg.propagation in ('fft-multislice','both'):
-        if cfg.channeling_model=='double' or cfg.systematic_row:
-            from .channeling import fft_geometry,incident_fields
-            stage('Running incoming FFT propagation in the matched projected potential')
-            grid=fft_geometry(elastic,settings,cfg)
-            incoming=incident_fields(grid,settings.thickness,depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,cancelled=cancelled)
-            psi=incoming[0][:,grid.indices(elastic.beams.hkl)];waves['fft-multislice']=psi
-            total=np.sum(abs(incoming[0])**2,axis=1);outside=total-np.sum(abs(psi)**2,axis=1)
-            extra=dict(beam_hkl=grid.hkl,reciprocal_gxy=grid.g,exit_intensity=abs(incoming[0][-1])**2,
-                total_norm=total,excluded_intensity=outside,_prepared=(grid,incoming),
-                summary=dict(norm_error=float(abs(total-1).max()),max_excluded_population=float(outside.max()),exit_excluded_population=float(outside[-1]),
-                    projected_norm_exit=float(np.sum(abs(psi[-1])**2)),renormalized=False,phase_convention='raw FFT coefficients; no conjugation or fitted factor'))
-            return waves,extra
-        stage('Running FFT multislice propagation in actual [017] projected potential')
-        fft=fft_multislice_ni(z,acceleration_kv=settings.voltage,tilt_mrad_xy=settings.tilt,grid_points=cfg.fft_grid,
-            slice_step_nm=cfg.slice_step,potential_cutoff_inv_angstrom=settings.potential_cutoff,b_factor_angstrom2=settings.b_factor,
-            return_amplitudes=True,projected_geometry=Ni017Geometry())
-        stage('Projecting complex FFT amplitudes onto exact ordered common hkl')
-        psi,outside=project_fft_amplitudes(fft,elastic.beams.hkl);waves['fft-multislice']=psi
-        extra=dict(beam_hkl=fft.beam_hkl,reciprocal_gxy=fft.reciprocal_xy_inv_angstrom,exit_intensity=fft.intensity[-1],
-            full_amplitudes=fft.amplitudes,total_norm=fft.intensity.sum(axis=1),excluded_intensity=outside,
-            summary=dict(norm_error=fft.norm_error,max_excluded_population=float(outside.max()),exit_excluded_population=float(outside[-1]),
-                projected_norm_exit=float(np.sum(abs(psi[-1])**2)),renormalized=False,phase_convention='raw fft2(wave)/N²; no conjugation, sign remapping or fitted factor'))
+        from .channeling import fft_geometry,incident_fields
+        stage('Running incoming FFT propagation in the matched projected potential')
+        grid=fft_geometry(elastic,settings,cfg,cancelled=cancelled)
+        incoming=incident_fields(grid,settings.thickness,depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,cancelled=cancelled,memory_budget_mib=cfg.memory_budget_mib)
+        psi=incoming[0][:,grid.indices(elastic.beams.hkl)];waves['fft-multislice']=psi
+        total=np.sum(abs(incoming[0])**2,axis=1);outside=total-np.sum(abs(psi)**2,axis=1)
+        extra=dict(beam_hkl=grid.hkl,reciprocal_gxy=grid.g,exit_intensity=abs(incoming[0][-1])**2,
+            generators=grid.geometry.generators,
+            total_norm=total,excluded_intensity=outside,_prepared=(grid,incoming),
+            summary=dict(norm_error=float(abs(total-1).max()),max_excluded_population=float(outside.max()),exit_excluded_population=float(outside[-1]),
+                projected_norm_exit=float(np.sum(abs(psi[-1])**2)),renormalized=False,phase_convention='raw FFT coefficients; no conjugation or fitted factor'))
+        return waves,extra
     return waves,extra
 
 
@@ -167,7 +191,7 @@ def export_comparison(result,root,export_single):
     for name,r in methods.items():
         arrays.update({name+'__amplitudes':r['amplitudes'],name+'__exit_intensity':abs(r['amplitudes'][-1])**2,name+'__depth_average_intensity':np.diag(r['coherence']).real})
     fft=result.get('fft',{})
-    for key in ('beam_hkl','reciprocal_gxy','exit_intensity','total_norm','excluded_intensity','full_amplitudes'):
+    for key in ('beam_hkl','reciprocal_gxy','exit_intensity','total_norm','excluded_intensity','full_amplitudes','generators'):
         if key in fft:arrays['fft_full__'+key]=fft[key]
     if len(methods)==2:
         diag=complex_wave_diagnostics(methods['bloch']['amplitudes'],methods['fft-multislice']['amplitudes']);arrays.update(diag)

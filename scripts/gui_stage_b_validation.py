@@ -1,11 +1,12 @@
-﻿"""Focused Stage B default BW/CLI comparison; no multislice or orientation sweep."""
+"""Focused Stage B default BW/CLI comparison; no multislice or orientation sweep."""
 import argparse,json
 from dataclasses import replace
 from pathlib import Path
 import numpy as np
 from emcd_sim.gui.emcd_forward import ForwardSettings,inspect_source,DEFAULT_SOURCE,calculate,metrics,export_result
 from emcd_sim.gui.geometry import Structure,Settings
-from emcd_sim.ni_017_geometry import Ni017Geometry,rotated_tensor
+from emcd_sim.study_geometry import StudyGeometry,rotated_tensor
+Ni017Geometry=lambda a_angstrom=3.524: StudyGeometry((0,1,7),(2,0,0),a_angstrom)
 from emcd_sim.elastic import depth_coherence
 from emcd_sim.single_channeling_tensor import run_tensor_with_coherence
 from emcd_sim.xmcd_postedge_normalization import analyze_postedge_spectra
@@ -27,7 +28,7 @@ def compare_gui_export(root):
     with np.load(root/'virtual_detector_eels.npz',allow_pickle=False) as data:
         e=data['energy_ev']
         for sign,state in ((1,'plus'),(-1,'minus')):
-            r=run_tensor_with_coherence(model,rotated_tensor(cfg['source'],e,eta=sign*cfg['eta'],beta=cfg['beta']),C,
+            r=run_tensor_with_coherence(model,rotated_tensor(cfg['source'],e,frame=Ni017Geometry().frame,eta=sign*cfg['eta'],beta=cfg['beta']),C,
                 thickness_nm=s['thickness'],grid_size=cfg['grid'],map_halfwidth_q=cfg['halfwidth'],reference_energy_ev=cfg['l3'],
                 integration_mode='fractional',aperture_subpixels=cfg['subpixels'])
             for d in ('A','B'):
@@ -51,7 +52,7 @@ def main():
     refs=[]
     for sign,state in ((1,'plus'),(-1,'minus')):
         print('Established CLI contraction: '+state,flush=True)
-        r=run_tensor_with_coherence(model,rotated_tensor(DEFAULT_SOURCE,e,eta=sign),C,reference_energy_ev=cfg.l3,**opts);refs.append(r)
+        r=run_tensor_with_coherence(model,rotated_tensor(DEFAULT_SOURCE,e,frame=Ni017Geometry().frame,eta=sign),C,reference_energy_ev=cfg.l3,**opts);refs.append(r)
         for d in ('A','B'):
             key='I_'+d+'_'+state;x=result['spectra'][key];y=r.chiral_spectrum(d)
             np.testing.assert_allclose(x,y,rtol=1e-11,atol=1e-14)

@@ -6,7 +6,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 from emcd_sim.double_channeling import equivalent_site_phases,double_channeling_response
 from emcd_sim.multislice_double_channeling import ProjectedNiFFT,incident_fields,multislice_double_channeling_response
-from emcd_sim.ni_017_geometry import Ni017Geometry
+from legacy_geometry import Ni017Geometry
 from emcd_sim.multislice_reference import fft_multislice_ni
 
 

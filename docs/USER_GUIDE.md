@@ -2,6 +2,42 @@
 
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
 
+## Research Ni [117] / (2,-2,0)
+
+This development-source feature is not included in the preserved Windows ZIPs.
+Enter nominal zone `1 1 7` and target `2 -2 0`, apply orientation, and keep the
+explicit [001] systematic-row restriction off. The right-handed screen frame is
+x=[1,-1,0], y=[7,7,-2], z=[1,1,7], each normalized. Select **Full finite ZOLZ**
+or the explicitly ideal **[117] 000 + target** basis. Both support BW, MS, and
+Single/Double Channeling. Arbitrary-zone structural previews do not establish
+validated arbitrary-zone EMCD or FFT support; unsupported combinations fail
+explicitly.
+
+For the studied reference, choose 200 kV, lock Y at zero and align the signed
+target to Bragg; X is approximately -10.06456964 mrad. Restore physical Thales
+A/B detectors. The transmitted beam is (0,0), while ZA=-k_incident,perp lies
+at (0.40130918,0) cycles/Å. Inspect source metadata and declare **crystal-frame**
+magnetization; the audited local Ni source is [001], not the incident axis.
+With eta=beta=1 the native studied magnetic samples are 831.271/848.698 eV.
+No experimental energy shift or new DFT tensor is implied. Rotate the tensor
+once; raw reversal-odd intensity can have a mirror-even part from finite qz
+and transverse magnetization. Paired-detector differences are not a parity test.
+
+Use Manual (Advanced) to inspect provisional research settings: beam4.6,
+potential6.2 cycles/Å, FFT32–48, depth129, max slice0.02 nm, detector97–129 and
+fractional boundary subpixels128. Run memory/resource preflight and review
+runtime before calculating. Automatic leaves the released starting defaults
+unchanged and does not claim [117] convergence. Potential2.5 omits all off-row
+[117] Fourier terms; BW and MS now warn. Coarse sampling warns too: grid17
+versus97 changed detector asymmetry by0.2296 pp at30 nm; even33 was insufficient
+there. Neither grid97 nor BW/MS agreement guarantees universal convergence.
+
+Older [117] projects retain their saved views. Missing, invalid or different
+frame metadata blocks reuse of orientation-dependent inputs; re-enter tilt
+and physical detector positions explicitly. Existing [001]/[017] conventions
+and defaults are preserved. See [scope and numerical evidence](NI_117_FINAL_SYMMETRY_VALIDATION.md)
+and [review status](NI_117_MERGE_READINESS.md) before quantitative interpretation.
+
 **Current source / Actions candidate: v0.6.1-beta.3 (0.6.1b3).** See [Windows candidate installation and provenance](WINDOWS_BETA_3.md). No Beta 3 release/tag is created. Settings and Diffraction remain side by side with adjustable three-column splitters; chevrons collapse optional controls and the bottom Project Results browser. Narrow Results panels stack maps, preserve full context under Details and restore full context in exports. Layout preferences do not change scientific project parameters.
 
 
@@ -856,3 +892,56 @@ Saved explicit memory budgets are preserved; New Project resets the budget.
 See [sampling and memory guidance](ANGULAR_MAP_RESOLUTION.md), including runtime
 limits and why High can be rejected under 2048 MiB. These controls are included
 in the fresh local candidate described in [release acceptance](V061_BETA_ACCEPTANCE.md).
+
+
+## Generalized Projected ZOLZ development branch
+
+The shared geometry engine derives local axes and the complete reciprocal plane
+from the structure, zone and signed target. A target defines positive local x;
+changing it can rotate screen coordinates. Tilt and detector coordinates are
+local to that frame. Magnetization remains specified in crystal Cartesian axes.
+New FFT results record their actual reciprocal generators. Older saved frames
+and FFT tables remain viewable; incompatible or ambiguous input recipes require
+explicit re-entry before rerunning.
+
+See [Milestone A validation](GENERAL_ZOLZ_MULTISLICE_VALIDATION.md) for the five
+representative orientations, accepted BW/MS comparisons and retained numerical
+failures. New zone support does not imply converged numerical defaults or a
+validated arbitrary-material MDFF. This development is not in the existing
+Windows packages; Atomic 3D remains a separately gated implementation plan.
+
+
+### Generalized EMCD GUI workflow and numerical scope
+
+In Manual mode, enter a valid zone and signed ZOLZ target, apply orientation,
+set the fixed tilt component, and align Bragg with the appropriate lock.
+Restore Thales detectors, then select Single/Double and BW/MS/Both. The same
+coherent MDFF and detector pipeline serves every supported orientation; source
+magnetization remains declared in crystal Cartesian coordinates.
+
+[End-to-end GUI validation](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md#normal-gui-acceptance-and-usage)
+covers [001]/[017]/[117]/[111]/[710], raw/relative displays, exports and project
+roundtrips. A full-spectrum post-edge window needs at least three sampled energy
+points; Selected L3/L2 samples cannot provide post-edge correction. Relative
+magnetic and nonmagnetic components share N_A+N_B; corrected contrast is not
+intrinsically magnetic. Scientific support is resource-bounded and remains Ni
+MDFF-specific. [111] joint/support convergence is still conditional, despite
+passing BW/MS and refined quadrature comparisons. Existing Windows packages
+have not been rebuilt with these development changes.
+
+
+### Final generalized-Multislice review warnings
+
+The GUI now explicitly labels [111] quantitative convergence as unestablished,
+including equivalent [222] input, for BW, MS and Both. The measured lower-profile
+joint raw change was 0.1094%, beyond the unchanged 0.1% limit. Subsequent larger
+MS support/cutoff increments pass at one 200 kV/2 nm detector configuration;
+that is not enlarged-BW, full-spectrum or thickness-curve certification. See
+[merge readiness](GENERALIZED_MULTISLICE_MERGE_READINESS.md) for the exact settings.
+[117] off-row-cutoff and coarse-grid warnings remain in effect.
+
+An ideal two-beam live diffraction preview now identifies its truncation
+explicitly. Cached low-level MS fields must match microscope, frame, reciprocal
+support and physical depth quadrature; mismatches fail instead of silently
+mixing contexts. Very large cells are rejected before overflowing a search-size
+calculation. These checks do not change solver physics, defaults or saved arrays.

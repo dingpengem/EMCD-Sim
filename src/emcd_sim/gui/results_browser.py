@@ -242,7 +242,8 @@ class ProjectWorkspace:
         if path and (Path(path)/'project.json').exists():self.save_to_path(path,True);return
         parent=QtWidgets.QFileDialog.getExistingDirectory(self,'New project parent folder')
         if not parent:return
-        name,ok=QtWidgets.QInputDialog.getText(self,'Save Project As','New project folder name',text='Ni017_'+datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%SZ'))
+        zone='Ni_'+'_'.join(map(str,self.emcd_result['settings'].zone))
+        name,ok=QtWidgets.QInputDialog.getText(self,'Save Project As','New project folder name',text=zone+'_'+datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%SZ'))
         if not ok:return
         if not name.strip() or Path(name).name!=name or name in ('.','..'):self.error('Use one folder name.');return
         target=Path(parent)/name;approved=False
@@ -280,6 +281,10 @@ class ProjectWorkspace:
     def use_result_settings(self):
         if self.busy or self.emcd_result is None:return
         r=self.emcd_result;s=r['settings'];c=r['config']
+        from .project_io import frame_rerun_reason
+        frame_reason=frame_rerun_reason(r)
+        if frame_reason:self.error(frame_reason);return
+        if r.get('fft_recipe_error'):self.error(r['fft_recipe_error']);return
         if c.worker_mode not in ('automatic','manual') or type(c.parallel_workers) is not int or not 1<=c.parallel_workers<=4:
             self.error('Saved parallel-worker request is unsupported (Automatic/Manual, 1–4). Saved results remain viewable; inputs were not replaced or clamped.');return
         try:structure=restore_structure(r.get('structure_snapshot'))
@@ -295,6 +300,7 @@ class ProjectWorkspace:
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
             for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),(self.energy_scope,('full','edges').index(c.energy_scope))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
+            with QtCore.QSignalBlocker(self.basis_mode):self.basis_mode.setCurrentIndex(self.basis_mode.findData(s.basis_mode))
             for widget,checked in ((self.row_projection,c.systematic_row),(self.angular_maps,c.angular_maps)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.mdff_stack.setCurrentIndex(self.model_box.currentIndex())
@@ -316,6 +322,7 @@ class ProjectWorkspace:
             for name,status in source_status(r).items():
                 if name=='cif':self.input_source_requirements.append(status)
         finally:self._restoring=False
+        self._loaded_fft_recipe=(self.fft_cell_key(),c.fft_generators) if c.fft_generators is not None else None
         self.restore_numerical_selection(r['metadata'])
         self.refresh();self.statusBar().showMessage('Saved settings restored to Current Inputs. No calculation started. '+rerun_reason(r))
     def input_source_reason(self):

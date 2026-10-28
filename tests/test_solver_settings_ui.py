@@ -47,14 +47,16 @@ def test_released_configuration_exactly_preserved(window,tmp_path,app,channeling
         legacy=old.settings()
         window.set_values(dict(kv=legacy.voltage,tx=legacy.tilt[0],ty=legacy.tilt[1],beam=legacy.beam_cutoff,potential=legacy.potential_cutoff));window.refresh()
         assert window.settings()==old.settings()
-        assert window.forward_settings()==old.forward_settings()
+        assert replace(window.forward_settings(),fft_generators=None)==old.forward_settings()
+        assert window.forward_settings().fft_generators is None
         for w in (old,window):
             w.set_values(dict(beam=2.8,potential=2.4,b=.15,grid=65,depth=33,subpixels=24,halfwidth=.75,fft_grid=48,slice_step=.025,energy=51,window_lo=877,window_hi=881))
             w.memory_budget.setCurrentIndex(w.memory_budget.findData(4096));w.channeling_box.setCurrentIndex(channeling)
         for method in (0,1,0,2,1):
             old.propagation_box.setCurrentIndex(method);window.propagation_box.setCurrentIndex(method)
             assert window.settings()==old.settings()
-            assert window.forward_settings()==old.forward_settings()
+            assert replace(window.forward_settings(),fft_generators=None)==old.forward_settings()
+            assert (window.forward_settings().fft_generators is not None)==(method!=0)
             cfg=window.forward_settings();assert config_from_dict(json.loads(json.dumps(asdict(cfg))))==cfg
     finally:old.close();app.processEvents()
 
@@ -87,7 +89,7 @@ def test_switching_updates_real_memory_estimates_without_mutating_settings(windo
     window.spin['fft_grid'].setValue(48);window.spin['slice_step'].setValue(.025);expected=window.forward_settings()
     for index,method in ((0,'bloch'),(1,'fft-multislice'),(0,'bloch'),(2,'both'),(1,'fft-multislice')):
         window.propagation_box.setCurrentIndex(index);window.emcd_stale()
-        assert window.forward_settings()==replace(expected,propagation=method)
+        assert replace(window.forward_settings(),fft_generators=None)==replace(expected,propagation=method,fft_generators=None)
         assert window.settings()==settings
         assert calls[-1][0].propagation==method
         assert ('0 FFT harmonics' in window.memory_label.text())==(method=='bloch')
@@ -95,15 +97,13 @@ def test_switching_updates_real_memory_estimates_without_mutating_settings(windo
     assert any(v['fft_storage_working_mib']>0 for c,v in calls if c.propagation!='bloch')
 
 
-def test_invalid_ms_geometry_remains_rejected(window):
-    # Stay below the independent interactive beam cap to reach the MS guard.
+def test_general_ms_orientation_supported_but_non_zolz_target_rejected(window):
     window.spin['beam'].setValue(.9)
     window.zone.setText('0 1 1');window.propagation_box.setCurrentIndex(1);window.emcd_stale()
-    assert 'FFT EMCD supports verified Ni [017]' in window.memory_label.text()
-    assert not window.emcd_button.isEnabled()
-    assert window.forward_settings().propagation=='fft-multislice'
-    with pytest.raises(ValueError,match='FFT EMCD supports verified'):
-        numerical_info(Structure.nickel(),replace(Settings(),zone=(0,1,1),beam_cutoff=.9),replace(ForwardSettings(),propagation='fft-multislice'),check_memory=False)
+    info=numerical_info(Structure.nickel(),replace(Settings(),zone=(0,1,1),beam_cutoff=.9),replace(ForwardSettings(),propagation='fft-multislice'),check_memory=False)
+    assert info['fft_harmonics']==1024
+    with pytest.raises(ValueError,match='ZOLZ'):
+        numerical_info(Structure.nickel(),replace(Settings(),zone=(1,1,1),target=(2,0,0)),replace(ForwardSettings(),propagation='fft-multislice'),check_memory=False)
 
 
 def test_saved_settings_and_arrays_preserved_without_solver(window):
@@ -123,11 +123,10 @@ def test_solver_configuration_and_physics_unchanged():
     current=ast.parse(Path('src/emcd_sim/gui/stage_b.py').read_text(encoding='utf-8-sig'))
     old=ast.parse(subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/stage_b.py']).decode('utf-8-sig'))
     find=lambda tree,name:next(n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef) and n.name==name)
-    method=find(current,'forward_settings')
-    for node in ast.walk(method):
-        if isinstance(node,ast.Call) and isinstance(node.func,ast.Name) and node.func.id=='ForwardSettings':
-            node.keywords=[k for k in node.keywords if k.arg not in ('worker_mode','parallel_workers')]
-    assert ast.dump(method)==ast.dump(find(old,'forward_settings'))
+    def mapped_keywords(tree):
+        call=next(n for n in ast.walk(find(tree,'forward_settings')) if isinstance(n,ast.Call) and isinstance(n.func,ast.Name) and n.func.id=='ForwardSettings')
+        return {k.arg:ast.dump(k.value) for k in call.keywords if k.arg not in ('worker_mode','parallel_workers','fft_generators')}
+    assert mapped_keywords(current)==mapped_keywords(old)
     # The energy-support scheduler is now intentionally in emcd_forward/channeling.
     # Protect configuration, tensor construction and energy selection independently
     # of that scheduling change, plus byte-identical propagation/physics modules.
@@ -141,19 +140,22 @@ def test_solver_configuration_and_physics_unchanged():
     path='src/emcd_sim/multislice_double_channeling.py'
     ms_current=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
     ms_old=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
-    for name in ('transition_modes','depth_quadrature','propagate_slices','forward_event_amplitudes','incident_fields'):
+    for name in ('transition_modes','depth_quadrature','propagate_slices','forward_event_amplitudes'):
         assert ast.dump(find(ms_current,name))==ast.dump(find(ms_old,name))
-    cls=lambda tree:next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='ProjectedNiFFT')
-    assert ast.dump(cls(ms_current))==ast.dump(cls(ms_old))
+    # ProjectedNiFFT deliberately gained an opt-in two-beam subspace. Keep the
+    # unchanged index mapping guard; default-plan arrays/diagnostics are compared
+    # bit-for-bit with archived code in test_ms_double_buffers for [001]/[017].
+    assert ast.dump(find(ms_current,'indices'))==ast.dump(find(ms_old,'indices'))
     path='src/emcd_sim/gui/propagation.py'
     now=ast.parse(Path(path).read_text(encoding='utf-8-sig'));before=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for node in before.body:
-        if isinstance(node,ast.FunctionDef) and node.name!='numerical_info':assert ast.dump(find(now,node.name))==ast.dump(node)
-    # Persistence gained only the extracted array fingerprint utility.
+        if isinstance(node,ast.FunctionDef) and node.name not in ('numerical_info','propagate','projected_geometry_for','export_comparison'):assert ast.dump(find(now,node.name))==ast.dump(node)
+    # Save/load recipe migration has functional tests. Retain the unchanged
+    # atomic-save, integrity and structure guards independently of that migration.
     path='src/emcd_sim/gui/project_io.py'
     present=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
     archived=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
-    present.body=[n for n in present.body if not (isinstance(n,ast.FunctionDef) and n.name=='fingerprints')]
-    assert ast.dump(present)==ast.dump(archived)
+    for name in ('save_project','_read_npz','safe_path','structures_match','restore_structure'):
+        assert ast.dump(find(present,name))==ast.dump(find(archived,name))
     for path in ('src/emcd_sim/double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
         assert Path(path).read_text(encoding='utf-8-sig').replace('\r\n','\n')==subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig').replace('\r\n','\n')

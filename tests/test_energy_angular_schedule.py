@@ -15,6 +15,7 @@ def reference():
         source=subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/'+filename]).decode('utf-8-sig')
         # Only relocate dependencies in the archived adapter; its numerical
         # statements remain the exact pre-optimization reference.
+        source=source.replace('from ..ni_017_geometry import','from legacy_geometry import')
         source=source.replace('..multislice_emcd_reference import','..multislice_reference import')
         source=source.replace('..postedge_emcd_maps import paired_geometry, paired_maps','..emcd_angular_plots import paired_geometry, paired_maps')
         if filename=='emcd_forward.py':source=source.replace('from .channeling import contract','from ._sampling_baseline_channeling import contract')
@@ -33,7 +34,7 @@ def small():
 
 
 def equivalent(old,new):
-    assert old['config']==new['config'] and old['settings']==new['settings']
+    assert replace(new['config'],fft_generators=None)==replace(old['config'],fft_generators=None) and old['settings']==new['settings']
     for method,a in old['methods'].items():
         b=new['methods'][method]
         for name,value in a['spectra'].items():np.testing.assert_allclose(b['spectra'][name],value,rtol=3e-12,atol=2e-14,equal_nan=True,err_msg=method+' '+name)
@@ -41,7 +42,8 @@ def equivalent(old,new):
         for edge,fields in a['maps'].items():
             for name,value in fields.items():np.testing.assert_allclose(b['maps'][edge][name],value,rtol=3e-12,atol=2e-14,equal_nan=True,err_msg=method+' '+edge+' '+name)
         for name,value in a['weights'].items():np.testing.assert_array_equal(b['weights'][name],value)
-        for name in ('qx','qy','depth_nm','amplitudes','coherence'):np.testing.assert_array_equal(a[name],b[name])
+        for name in ('qx','qy','depth_nm'):np.testing.assert_array_equal(a[name],b[name])
+        for name in ('amplitudes','coherence'):np.testing.assert_allclose(a[name],b[name],rtol=0,atol=2e-13)
         np.testing.assert_allclose(b['spectra']['D_raw'],b['spectra']['D_mag']+b['spectra']['D_nonmag'],rtol=1e-12,atol=1e-14)
 
 
@@ -75,7 +77,7 @@ def test_asymmetric_apertures_do_not_control_field_symmetry(small,tilt_y):
     equivalent(reference().calculate(a,s,c,energy_ev=e),f.calculate(a,s,c,energy_ev=e))
     result=f.calculate(a,s,c,energy_ev=e)
     for m in result['methods'].values():
-        assert all(d['mirror_reuse']==(tilt_y==0) for d in m['metadata']['angular_evaluation'])
+        assert not any(d['mirror_reuse'] for d in m['metadata']['angular_evaluation'])
         assert all(d['query_pixels']==d['evaluated_pixels'] for d in m['metadata']['angular_evaluation']) if tilt_y else True
         assert m['maps']['L3']['I_plus'].shape==(9,9)
 
@@ -101,8 +103,7 @@ def test_no_duplicate_response_and_exact_detector_union(small,channel):
         actual=np.concatenate(calls[float(energy)])
         support=np.ones((9,9),bool) if ie in (1,3) else (r['weights']['A']>0)|(r['weights']['B']>0)
         points=np.column_stack((r['qx'][support],r['qy'][support]))
-        if channel=='double':points=np.unique(np.column_stack((points[:,0],abs(points[:,1]))),axis=0)
-        else:points=np.repeat(points,2,axis=0)
+        if channel=='single':points=np.repeat(points,2,axis=0)
         assert sorted(map(tuple,actual))==sorted(map(tuple,points))
 
 

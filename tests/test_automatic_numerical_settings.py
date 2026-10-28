@@ -95,7 +95,7 @@ def test_unmatched_never_claims_convergence(settings,cfg):
 def test_unsupported_geometry_no_fallback():
     # The full basis admission cap can reject this geometry even before the
     # MS geometry gate; neither rejection may truncate beams or switch engines.
-    with pytest.raises(ValueError,match='FFT EMCD supports verified|interactive limit'):
+    with pytest.raises(ValueError,match='FFT EMCD supports Ni|interactive limit'):
         resolve_parameters(Structure.nickel(),replace(Settings(),zone=(0,1,1)),replace(ForwardSettings(),propagation='both'))
 
 

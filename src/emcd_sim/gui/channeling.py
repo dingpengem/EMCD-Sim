@@ -6,14 +6,17 @@ from time import perf_counter
 import numpy as np
 from ..double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch
 from ..multislice_double_channeling import ProjectedNiFFT, incident_fields, multislice_double_channeling_response
-from ..ni_017_geometry import Ni017Geometry
 from ..single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix
 
 
-def fft_geometry(elastic,settings,cfg):
+def fft_geometry(elastic,settings,cfg,*,cancelled=None):
+    from .propagation import projected_geometry_for
     return ProjectedNiFFT.build(elastic,grid_points=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
         systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
-        projected_geometry=Ni017Geometry() if settings.zone==(0,1,7) else None)
+        projected_geometry=projected_geometry_for(settings,elastic.crystal,cfg.fft_generators),
+        systematic_row_hkl=settings.target if cfg.systematic_row else None,
+        retained_hkl=elastic.beams.hkl if settings.basis_mode=='two-beam' else None,
+        memory_budget_mib=cfg.memory_budget_mib,cancelled=cancelled)
 
 
 _windows_bw_lock=threading.Lock()
@@ -64,21 +67,19 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
     Double responses already include depth integration; Single needs thickness.
     """
     from .emcd_forward import Cancelled
+    from .propagation import projected_geometry_for
     qx,qy,weights,detector_support,selected=angular_schedule(model,cfg,energy)
     dq2=(qx[0,1]-qx[0,0])**2
     full_weights=np.stack([weights[k].ravel() for k in ('A','B')])
     spectra={f'I_{d}_{s}':np.empty(len(energy)) for s in ('plus','minus') for d in ('A','B')}
     maps={};phase=fcc_site_phase_matrix(model);elastic=model.elastic
-    folded=(cfg.systematic_row or (settings.zone==(0,1,7) and abs(settings.tilt[1])<1e-14))
+    # Directly evaluate both mirror directions for any orientation. A reference
+    # symmetry is a diagnostic, not an input used to manufacture a response.
     supports={}
     for full in (False,True) if cfg.angular_maps else (False,):
         support=np.ones(qx.size,bool) if full else detector_support
         points=np.column_stack((qx.ravel()[support],qy.ravel()[support]))
-        if folded and cfg.channeling_model=='double':
-            query,inverse=np.unique(np.column_stack((points[:,0],abs(points[:,1]))),axis=0,return_inverse=True)
-            sign=np.ones((len(points),3));sign[points[:,1]<0,1]=-1
-        else:query=points;inverse=sign=None
-        supports[full]=(support,points,query,inverse,sign)
+        supports[full]=(support,points,points)
     n=len(elastic.beams.hkl);workers=worker_count(n,method) if execution_workers is None else execution_workers
     if method=='bloch' and sys.platform=='win32' and workers>1:
         from .parallel_resources import native_backend_info
@@ -91,10 +92,10 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
     for ie,e in enumerate(energy):
         if cancelled():raise Cancelled()
         full=cfg.angular_maps and ie in selected
-        support,points,query,inverse,sign=supports[full]
+        support,points,query=supports[full]
         diagnostic=dict(energy_ev=float(e),full_field=full,required_pixels=len(points),
             evaluated_pixels=0,query_pixels=0,response_batches=0,outgoing_directions=0,
-            mirror_reuse=folded and cfg.channeling_model=='double',checkpoint_reused=False,
+            mirror_reuse=False,checkpoint_reused=False,
             outgoing_response_seconds=0.,mdff_contraction_seconds=0.)
         stage(f'{method} {cfg.channeling_model}: energy {ie+1}/{len(energy)} ({e:.4f} eV)')
         cached=energy_checkpoint(float(e),None) if energy_checkpoint is not None else None
@@ -129,17 +130,18 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             def response(batch):
                 if cancelled():raise Cancelled()
                 if method=='bloch':
-                    return double_channeling_response(elastic,float(e),batch,settings.thickness,
+                    r=double_channeling_response(elastic,float(e),batch,settings.thickness,
                         method='analytic' if cfg.systematic_row else 'numerical',depth_steps=cfg.depth,
                         memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,cancelled=cancelled)
+                    return r,None
                 grid,incoming=prepared_incoming
                 r,diag=multislice_double_channeling_response(elastic,float(e),batch,settings.thickness,
                     fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
                     systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
-                    projected_geometry=Ni017Geometry() if settings.zone==(0,1,7) else None,
+                    projected_geometry=projected_geometry_for(settings,elastic.crystal,cfg.fft_generators),
                     depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,memory_budget_mib=cfg.memory_budget_mib,
                     prepared_grid=grid,prepared_incoming=incoming,cancelled=cancelled)
-                return r
+                return r,diag
             # MS chunks bound cancellation latency without retaining outgoing
             # depth stacks. BW retains its existing per-call dense admission.
             batches=([query[i:i+32] for i in range(0,len(query),32)] if method=='fft-multislice'
@@ -148,10 +150,12 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             with bw_executor_guard(method,cancelled):
                 with ThreadPoolExecutor(max_workers=workers) as pool:
                     responses=list(pool.map(response,batches))
-            r=np.concatenate(responses)
+            r=np.concatenate([item[0] for item in responses])
+            if method=='fft-multislice':
+                for key in ('incoming_norm_error','outgoing_norm_error','incoming_max_excluded_population','outgoing_max_excluded_population'):
+                    diagnostic[key]=max(item[1][key] for item in responses)
             diagnostic.update(outgoing_response_seconds=perf_counter()-start_response,response_batches=len(batches),outgoing_directions=len(query),workers=workers)
             start_contract=perf_counter()
-            if inverse is not None:r=r[inverse]*sign[:,:,None]*sign[:,None,:]
             values=np.stack([intensities_from_response(r,t.tensor_angstrom2_per_ev[ie]) for t in tensors])
             diagnostic['mdff_contraction_seconds']=perf_counter()-start_contract
         diagnostic.update(evaluated_pixels=len(points),query_pixels=len(query))

@@ -1,5 +1,26 @@
 # EMCD-Sim architecture and theory development plan
 
+## Implemented development note: Ni [117]
+
+The [117] research extension uses `gui.geometry.orientation` and
+`ni_117_geometry.Ni117Geometry` for the same proper target-aligned cell in BW
+and FFT. Its reciprocal generators are (2,-2,0) and (8,6,-2), not a relabeled
+[001] potential. `projected_geometry_for` rejects unsupported FFT zones;
+`numerical_info` checks ordered common hkl, FFT support, resource admission
+and solver-independent cutoff/sampling warnings. `FFTSplitStep` has an opt-in
+FFT-sampled `exp(i dz PVP)` two-beam path; its default full-field arithmetic is
+preserved and checked against archived code. Incoming/outgoing MDFF support
+and the existing reduced-energy outgoing convention remain unchanged.
+
+Tensor construction remains in `gui.emcd_forward.tensors`: crystal-frame
+reversal and one proper Cartesian rotation. `mirror_parity` diagnoses raw
+reversal-odd/even fields without imposing spatial symmetry. Saved project
+schema1 remains compatible; old or unidentified [117] frames are viewable but
+cannot silently replace current inputs. The research drivers live in `scripts/`,
+not the GUI runtime or a new scattering framework. See the [scientific report](NI_117_FINAL_SYMMETRY_VALIDATION.md)
+and [integration review](NI_117_MERGE_READINESS.md). The older proposal below
+is historical planning, not the current inventory of implemented engines.
+
 **Status:** design proposal, October 2026. This document describes intended interfaces and validation gates; it does **not** imply that the listed physics engines already exist. The implemented code remains a research-stage FCC Ni benchmark with a finite-beam elastic entrance solver, illustrative dipole MDFF, and approximate 2BC/3BC geometry.
 
 ## 1. Mission and non-negotiable principles

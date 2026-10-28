@@ -1,4 +1,4 @@
-"""Independent *elastic* FFT split-step reference for oriented FCC Ni [001].
+"""Independent elastic FFT split-step convenience interface for oriented Ni.
 
 Real-space propagation is deliberately distinct from finite-basis Bloch-wave
 matrix diagonalization. This is a projected IAM-potential, paraxial,
@@ -42,56 +42,20 @@ class ElasticFFTResult:
 def _projected_ni_potential(
     grid_points: int, acceleration_kv: float, b_factor_angstrom2: float,
     cutoff_inv_angstrom: float, projected_geometry=None, systematic_row_hkl=None,
+    *,memory_budget_mib=2048,cancelled=None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Return real U(x,y) (nm^-1), hkl indices and reciprocal xy (cycles/Å).
-
-    U_G = (10 gamma lambda / Omega) F_G, with U_000=0 (global phase).
-    U(x,y) = sum_G U_G exp(+2pi i G.r). Transverse cell repeats by a/2.
-    """
-    if grid_points < 12 or grid_points % 2:
-        raise ValueError("grid_points must be an even integer >= 12")
-    if not np.isfinite(cutoff_inv_angstrom) or cutoff_inv_angstrom <= 0:
-        raise ValueError("potential cutoff must be positive")
-    if not np.isfinite(b_factor_angstrom2) or b_factor_angstrom2 < 0:
-        raise ValueError("B factor must be finite and nonnegative")
-    row = None if systematic_row_hkl is None else np.asarray(systematic_row_hkl, float)
-    if row is not None and (row.shape != (3,) or not np.isfinite(row).all() or not np.any(row) or np.any(row != np.rint(row))):
-        raise ValueError('Systematic row must be a nonzero three-integer hkl vector')
-    crystal = fcc_nickel() if projected_geometry is None else projected_geometry.crystal
-    potential = IndependentAtomPotential(crystal, debye_waller_b_angstrom2=b_factor_angstrom2)
-    a = float(crystal.lattice_angstrom[0, 0]) if projected_geometry is None else projected_geometry.a_angstrom
-    fft_indices = np.rint(np.fft.fftfreq(grid_points) * grid_points).astype(int)
-    mx, my = np.meshgrid(fft_indices, fft_indices, indexing="ij")
-    hkl = np.stack((2*mx, 2*my, np.zeros_like(mx)), axis=-1).reshape(-1, 3)
-    g = np.stack((2*mx/a, 2*my/a), axis=-1).reshape(-1, 2)
-    if projected_geometry is not None:
-        hkl,g=projected_geometry.harmonics(grid_points,cutoff_inv_angstrom)
-    # Do not let requested potential harmonics reach the Nyquist boundary.
-    nyquist_g = (grid_points//2 - 1) * 2/a
-    if projected_geometry is None and cutoff_inv_angstrom >= nyquist_g:
-        raise ValueError("FFT grid too coarse for potential cutoff; increase grid_points")
-    fourier = np.zeros((grid_points, grid_points), dtype=complex)
-    lam = electron_wavelength_angstrom(acceleration_kv)
-    gamma = 1 + 1000*acceleration_kv/510998.95
-    prefactor = 10*gamma*lam/potential.cell_volume_angstrom3
-    for i in range(grid_points):
-        for j in range(grid_points):
-            indices = tuple(int(x) for x in hkl[i*grid_points+j])
-            if indices == (0, 0, 0) or np.linalg.norm(g[i*grid_points+j]) > cutoff_inv_angstrom:
-                continue
-            # Explicit publication-style systematic-row APPROXIMATION. This is
-            # a Fourier projection of the IAM potential, not a physical FCC
-            # extinction, an isolated two-beam model, or atomic-3D slicing.
-            if row is not None and np.any(np.cross(indices, row)):
-                continue
-            if projected_geometry is not None and not crystal.is_allowed(indices):
-                continue
-            fourier[i, j] = prefactor * potential.structure_factor(indices)
-    # numpy ifft2 uses +2*pi*i*m*x in real space; inverse transform needs N^2.
-    projected = np.fft.ifft2(fourier)*grid_points**2
-    if np.max(np.abs(projected.imag)) > 1e-9:
-        raise ValueError("Potential violates real-space Hermitian Fourier symmetry")
-    return projected.real, hkl, g
+    """Legacy Ni input convenience; potential construction is fully generic."""
+    from .crystallography import infer_zone
+    from .projected_geometry import ProjectedGeometry
+    from .projected_potential import prepare_projected_potential,potential_site_labels
+    crystal=fcc_nickel() if projected_geometry is None else projected_geometry.crystal
+    potential=IndependentAtomPotential(crystal,debye_waller_b_angstrom2=b_factor_angstrom2)
+    geometry=ProjectedGeometry.from_oriented(crystal,infer_zone(crystal),
+        getattr(projected_geometry,'target',None),labels=potential_site_labels(potential),
+        generators=getattr(projected_geometry,'generators',None))
+    result=prepare_projected_potential(geometry,potential,acceleration_kv,grid_points,cutoff_inv_angstrom,
+        systematic_row_hkl=systematic_row_hkl,memory_budget_mib=memory_budget_mib,cancelled=cancelled)
+    return result.phase_nm_inv,result.hkl,result.reciprocal_xy
 
 
 def fft_multislice_ni(
@@ -106,8 +70,10 @@ def fft_multislice_ni(
     return_amplitudes: bool = False,
     projected_geometry=None,
     systematic_row_hkl=None,
+    memory_budget_mib=2048,
+    cancelled=None,
 ) -> ElasticFFTResult:
-    """Elastic projected-potential FFT multislice on periodic FCC Ni [001].
+    """Elastic projected-potential FFT multislice; [001] is the default input.
 
     Kinetic and potential propagators are symmetrically split in real space:
     exp(i D dz/2) exp(i U_xy dz) exp(i D dz/2). The periodic entrance
@@ -129,38 +95,37 @@ def fft_multislice_ni(
     if tilt.shape != (2,) or not np.all(np.isfinite(tilt)):
         raise ValueError("tilt_mrad_xy must contain two finite numbers")
 
-    u, hkl, g = _projected_ni_potential(grid_points, acceleration_kv, b_factor_angstrom2, potential_cutoff_inv_angstrom,projected_geometry,systematic_row_hkl)
-    lam = electron_wavelength_angstrom(acceleration_kv)
-    ki = tilt*1e-3/lam
-    d = (-10*np.pi*lam*(np.sum((g+ki)**2, axis=1)-float(ki @ ki))).reshape(grid_points, grid_points)
-
-    wave = np.ones((grid_points, grid_points), dtype=complex)
-    n2 = grid_points**2
-    values = np.empty((len(depth), n2), dtype=float)
-    amplitudes = np.empty((len(depth), n2), dtype=complex) if return_amplitudes else None
-    current_z = 0.
-    for index, target in enumerate(depth):
-        delta = float(target-current_z)
-        n_steps = int(np.ceil(delta/slice_step_nm)) if delta > 0 else 0
-        step = delta/n_steps if n_steps else 0.
-        if n_steps:
-            kinetic = np.exp(0.5j*step*d)
-            transmission = np.exp(1j*step*u)
-            for _ in range(n_steps):
-                q = np.fft.fft2(wave)/n2
-                wave = np.fft.ifft2(q*kinetic)*n2
-                wave *= transmission
-                q = np.fft.fft2(wave)/n2
-                wave = np.fft.ifft2(q*kinetic)*n2
-        coeff = (np.fft.fft2(wave)/n2).reshape(-1)
-        values[index] = np.abs(coeff)**2
-        if amplitudes is not None:
-            amplitudes[index] = coeff
-        current_z = float(target)
-    norm_error = float(np.max(np.abs(values.sum(axis=1)-1)))
-    return ElasticFFTResult(depth, hkl, g, values, norm_error,
-                            grid_points, slice_step_nm, potential_cutoff_inv_angstrom, amplitudes,
-                            None if systematic_row_hkl is None else tuple(int(v) for v in systematic_row_hkl))
+    from .cancellation import check_cancelled
+    from .gui.memory_budget import reserve_memory
+    from .projected_geometry import fft_shape
+    check_cancelled(cancelled)
+    if sum(np.ceil(np.diff(np.r_[0.,depth])/slice_step_nm))>200000:
+        raise ValueError('Requested propagation exceeds 200000 split steps')
+    samples=int(np.prod(fft_shape(grid_points)))
+    working=((48*len(depth)+200)*samples+32*len(depth))/2**20
+    with reserve_memory(working,memory_budget_mib,dense_mib=24*len(depth)*samples/2**20):
+        u, hkl, g = _projected_ni_potential(grid_points, acceleration_kv, b_factor_angstrom2, potential_cutoff_inv_angstrom,projected_geometry,systematic_row_hkl,memory_budget_mib=memory_budget_mib,cancelled=cancelled)
+        from .multislice_double_channeling import FFTSplitStep
+        from .projected_geometry import fft_shape
+        shape=fft_shape(grid_points);n2=int(np.prod(shape))
+        lam=electron_wavelength_angstrom(acceleration_kv);ki=tilt*1e-3/lam
+        d=(-10*np.pi*lam*(np.sum(g*g,axis=1)+2*g@ki)).reshape(shape)
+        plan=FFTSplitStep(u,d);coeff=np.zeros(n2,complex);coeff[0]=1
+        values=np.empty((len(depth),n2),float)
+        amplitudes=np.empty((len(depth),n2),complex) if return_amplitudes else None
+        current_z=0.
+        for index,target in enumerate(depth):
+            check_cancelled(cancelled)
+            delta=float(target-current_z);n_steps=int(np.ceil(delta/slice_step_nm)) if delta>0 else 0
+            step=delta/n_steps if n_steps else 0.
+            coeff=plan.advance(coeff,n_steps,step,cancelled=cancelled)
+            values[index]=abs(coeff)**2
+            if amplitudes is not None:amplitudes[index]=coeff
+            current_z=float(target)
+        norm_error = float(np.max(np.abs(values.sum(axis=1)-1)))
+        return ElasticFFTResult(depth, hkl, g, values, norm_error,
+                                grid_points, slice_step_nm, potential_cutoff_inv_angstrom, amplitudes,
+                                None if systematic_row_hkl is None else tuple(int(v) for v in systematic_row_hkl))
 
 
 def project_fft_amplitudes(fft, beam_hkl):

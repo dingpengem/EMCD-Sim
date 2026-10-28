@@ -1,4 +1,4 @@
-"""Independent FFT split-step double-channeling, projected Ni [001] IAM.
+"""Independent FFT split-step double-channeling, general projected IAM ZOLZ.
 
 No elastic eigenmode decomposition. Coefficients use fft(wave)/N, where N is
 number of spatial samples; q in cycles/angstrom, H in radians/nm. Complex
@@ -35,7 +35,7 @@ class FFTSplitStep:
     Potential is real nm^-1, kinetic is real nm^-1 with optional batch axes.
     Negative dz is the exact adjoint of a positive step in this real potential.
     """
-    def __init__(self,potential,kinetic):
+    def __init__(self,potential,kinetic,*,retained_indices=None):
         self.u=np.asarray(potential,float)
         self.d=np.asarray(kinetic,float)
         if (self.u.ndim not in (1,2) or self.d.shape[-self.u.ndim:]!=self.u.shape
@@ -44,6 +44,41 @@ class FFTSplitStep:
         self.shape=self.u.shape
         self.size=self.u.size
         self._cached_dz=None
+        self._retained_mask=None
+        if retained_indices is not None:
+            indices=np.asarray(retained_indices,int)
+            if indices.shape!=(2,) or len(set(indices))!=2 or np.any(indices<0) or np.any(indices>=self.size):
+                raise ValueError('Explicit two-beam projection requires two distinct FFT indices')
+            self._retained_mask=np.zeros(self.size,bool);self._retained_mask[indices]=True
+            self._retained_mask=self._retained_mask.reshape(self.shape)
+            self._projected_indices=indices
+            coordinates=np.array(np.unravel_index(indices,self.shape)).T
+            difference=(coordinates[:,None,:]-coordinates[None,:,:])%np.asarray(self.shape)
+            coefficients=np.fft.fftn(self.u)/self.size
+            self._projected_potential=coefficients[tuple(difference[...,i] for i in range(self.u.ndim))]
+
+    def _projected_transmission(self,c,dz):
+        """exp(i dz P V P) via sparse FFT convolution, without BW eigenmodes.
+
+        Projection is inside every Taylor power, not after exp(i V dz).
+        Thus this is the explicitly requested finite two-beam model, rather
+        than a lossy crop of an unrestricted propagated wave. No normalization.
+        """
+        if np.max(abs(c[...,~self._retained_mask]),initial=0)>1e-13:
+            raise ValueError('Initial field lies outside the explicit two-beam subspace')
+        # The retained convolution kernel was sampled from FFT(U), independent
+        # of the BW Hamiltonian. Sparse multiplication exactly equals applying
+        # FFT(U * IFFT(c)) and projecting at *every* power, without large FFTs.
+        shape=c.shape[:-self.u.ndim]+(self.size,)
+        term=c.reshape(shape)[...,self._projected_indices].copy();out=term.copy()
+        for order in range(1,65):
+            term=(term@self._projected_potential.T)*(1j*dz/order)
+            out+=term
+            if np.max(abs(term))<=4*np.finfo(float).eps*max(float(np.max(abs(out))),np.finfo(float).tiny):
+                result=np.zeros(c.shape,complex)
+                result.reshape(shape)[...,self._projected_indices]=out
+                return result
+        raise ValueError('Projected transmission did not converge; reduce the explicit slice step')
 
     def advance(self,coefficients,steps,dz,*,cancelled=None):
         check_cancelled(cancelled)
@@ -61,9 +96,14 @@ class FFTSplitStep:
         # Positive step counts immediately produce private FFT outputs. Preserve
         # copy/ownership semantics for zero steps, without copying every depth
         # interval's input. No mutable scratch is shared between plans/workers.
-        if not steps:c=c.copy()
+        if not steps or self._retained_mask is not None:c=c.copy()
         for _ in range(steps):
             check_cancelled(cancelled)
+            if self._retained_mask is not None:
+                c*=self._kinetic
+                c=self._projected_transmission(c,dz)
+                c*=self._kinetic
+                continue
             wave=np.fft.ifftn(c*self._kinetic,axes=axes)
             wave*=self.size
             wave*=self._transmission
@@ -105,54 +145,65 @@ def depth_quadrature(thickness_nm,depth_steps):
 
 
 @dataclass
-class ProjectedNiFFT:
+class ProjectedFFT:
     potential: np.ndarray
     hkl: np.ndarray
     g: np.ndarray
     acceleration_kv: float
     carrier: np.ndarray
     reduction: bool
+    retained_indices: np.ndarray | None = None
 
     @classmethod
-    def build(cls,elastic,*,grid_points=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,projected_geometry=None):
-        if not isinstance(grid_points,int) or grid_points<12 or grid_points%2:
-            raise ValueError('Even FFT grid >=12 required')
-        if not np.isfinite(potential_cutoff) or potential_cutoff<=0:
-            raise ValueError('Positive potential cutoff required')
-        crystal=elastic.crystal
-        a=crystal.lattice_angstrom[0,0]
-        if projected_geometry is None and (not np.allclose(crystal.lattice_angstrom,np.eye(3)*a,atol=1e-12) or not all(s=='Ni' for s in crystal.species)):
-            raise ValueError('Projected FFT currently requires cubic Ni [001] frame')
-        if row_reduction and not systematic_row:
-            raise ValueError('1D reduction requires explicit (200) systematic-row potential')
-        if projected_geometry is not None:
-            if systematic_row or row_reduction:raise ValueError('Oriented full-2D geometry cannot use [001] row reduction')
-            if not np.allclose(crystal.lattice_angstrom,projected_geometry.crystal.lattice_angstrom,atol=1e-13):
-                raise ValueError('FFT/BW oriented crystal frames differ')
-        if projected_geometry is None and potential_cutoff >= (grid_points//2-1)*2/a:
-            raise ValueError('Potential cutoff reaches unsafe FFT Nyquist boundary')
-        n=np.rint(np.fft.fftfreq(grid_points)*grid_points).astype(int)
-        mx,my=np.meshgrid(n,n,indexing='ij')
-        hkl=np.stack((2*mx,2*my,np.zeros_like(mx)),axis=-1).reshape(-1,3)
-        g=hkl[:,:2]/a
-        if projected_geometry is not None:
-            support=max(potential_cutoff,float(np.max(np.linalg.norm(elastic.reciprocal_vectors_xy,axis=1))))
-            hkl,g=projected_geometry.harmonics(grid_points,support)
-        fourier=np.zeros(len(g),complex)
-        kv=elastic.microscope.acceleration_kv
-        prefactor=10*(1+1000*kv/510998.95)*electron_wavelength_angstrom(kv)/elastic.potential.cell_volume_angstrom3
-        for i,(h,gv) in enumerate(zip(hkl,g)):
-            if (np.any(h) and np.linalg.norm(gv)<=potential_cutoff and crystal.is_allowed(tuple(h)) and (not systematic_row or h[1]==0)):
-                fourier[i]=prefactor*elastic.potential.structure_factor(tuple(h))
-        u=np.fft.ifft2(fourier.reshape(grid_points,grid_points))*grid_points**2
-        if np.max(abs(u.imag))>1e-10:
-            raise ValueError('Projected potential is not real/Hermitian')
+    def build(cls,elastic,*,grid_points=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,
+            projected_geometry=None,retained_hkl=None,fft_generators=None,systematic_row_hkl=None,
+            memory_budget_mib=2048,cancelled=None):
+        from .crystallography import infer_zone
+        from .projected_geometry import ProjectedGeometry
+        from .projected_potential import potential_site_labels
+        # Old descriptor objects are accepted as crystal data only. No legacy
+        # provider's beams/harmonics/propagation algorithms are called here.
+        if projected_geometry is not None and not np.allclose(elastic.crystal.lattice_angstrom,projected_geometry.crystal.lattice_angstrom,rtol=0,atol=1e-12):
+            raise ValueError('FFT/BW oriented crystal frames differ')
+        zone=(projected_geometry.orientation.zone if isinstance(projected_geometry,ProjectedGeometry) else infer_zone(elastic.crystal))
+        target=systematic_row_hkl if systematic_row_hkl is not None else getattr(projected_geometry,'target',None)
+        if systematic_row and target is None:
+            # Historical callers without a target used the positive local-x
+            # row. Infer it from their actual oriented beam support, never hkl.
+            candidates=[h for h in elastic.beams.hkl if elastic.crystal.g_vector(h)[0]>0
+                and np.linalg.norm(elastic.crystal.g_vector(h)[1:])<1e-12]
+            if not candidates:raise ValueError('Specify a systematic-row reflection in the actual oriented beam basis')
+            target=min(candidates,key=lambda h:np.linalg.norm(elastic.crystal.g_vector(h)))
+        generators=fft_generators
+        if generators is None and isinstance(projected_geometry,ProjectedGeometry):generators=projected_geometry.generators
+        geometry=ProjectedGeometry.from_oriented(elastic.crystal,zone,target,
+            labels=potential_site_labels(elastic.potential),generators=generators)
+        return cls.from_potential(geometry,elastic.potential,elastic.microscope,grid_points=grid_points,
+            potential_cutoff=potential_cutoff,beam_hkl=elastic.beams.hkl,systematic_row_hkl=target if systematic_row else systematic_row_hkl,
+            row_reduction=row_reduction,retained_hkl=retained_hkl,memory_budget_mib=memory_budget_mib,cancelled=cancelled)
+
+    @classmethod
+    def from_potential(cls,geometry,potential,microscope,*,grid_points=32,potential_cutoff=2.2,
+            beam_hkl=(),systematic_row_hkl=None,row_reduction=False,retained_hkl=None,memory_budget_mib=2048,cancelled=None):
+        from .projected_potential import prepare_projected_potential
+        support=max([potential_cutoff]+[float(np.linalg.norm(geometry.crystal.g_vector(h))) for h in beam_hkl])
+        field=prepare_projected_potential(geometry,potential,microscope.acceleration_kv,grid_points,potential_cutoff,
+            support_cutoff=support,systematic_row_hkl=systematic_row_hkl,memory_budget_mib=memory_budget_mib,cancelled=cancelled)
+        hkl,g,u=field.hkl,field.reciprocal_xy,field.phase_nm_inv
+        kv=microscope.acceleration_kv
+        if row_reduction and systematic_row_hkl is None:
+            raise ValueError('1D reduction requires an explicit systematic-row potential')
+        if retained_hkl is not None and row_reduction:raise ValueError('Two-beam projection is distinct from 1D row reduction')
         if row_reduction:
             if not np.allclose(u,u[:,:1],rtol=0,atol=1e-12):
-                raise ValueError('Potential is not invariant in y')
-            keep=hkl[:,1]==0
-            return cls(u[:,0].real,hkl[keep],g[keep],kv,elastic.microscope.incident_k_xy,True)
-        return cls(u.real,hkl,g,kv,elastic.microscope.incident_k_xy,False)
+                raise ValueError('Potential is not invariant along FFT axis 1; use full 2D row propagation')
+            keep=np.all(np.cross(hkl,systematic_row_hkl)==0,axis=1)
+            result=cls(u[:,0],hkl[keep],g[keep],kv,microscope.incident_k_xy,True)
+        else:result=cls(u,hkl,g,kv,microscope.incident_k_xy,False)
+        result.geometry=geometry
+        if len(beam_hkl):result.indices(beam_hkl)
+        if retained_hkl is not None:result.retained_indices=result.indices(retained_hkl)
+        return result
 
     def indices(self,hkl):
         lookup={tuple(h):i for i,h in enumerate(self.hkl)}
@@ -173,22 +224,49 @@ class ProjectedNiFFT:
         if carrier.shape[-1]!=2 or not np.isfinite(carrier).all():raise ValueError('Finite transverse carrier required')
         d=-10*np.pi*lam*(np.sum(self.g**2,axis=-1)+2*np.einsum('...a,ga->...g',carrier,self.g))
         d=d.reshape(d.shape[:-1]+self.potential.shape)
-        return FFTSplitStep(self.potential*ratio if elastic_potential else np.zeros_like(self.potential),d)
+        kwargs={} if self.retained_indices is None else dict(retained_indices=self.retained_indices)
+        return FFTSplitStep(self.potential*ratio if elastic_potential else np.zeros_like(self.potential),d,**kwargs)
 
 
-def incident_fields(grid,thickness_nm,*,depth_steps=257,slice_step_nm=.04,cancelled=None):
-    check_cancelled(cancelled)
-    z,w=depth_quadrature(thickness_nm,depth_steps)
+# Historical public name; this is one generic implementation, not a Ni adapter.
+ProjectedNiFFT=ProjectedFFT
+
+
+def incident_fields(grid,thickness_nm,*,depth_steps=257,slice_step_nm=.04,cancelled=None,memory_budget_mib=2048):
+    if not np.isfinite(thickness_nm) or thickness_nm<0 or not isinstance(depth_steps,int) or depth_steps<2:
+        raise ValueError('Finite nonnegative thickness and integer depth_steps >=2 required')
     if not np.isfinite(slice_step_nm) or slice_step_nm<=0:raise ValueError('Positive finite slice step required')
-    interval=float(thickness_nm)/(depth_steps-1)
-    n=int(np.ceil(interval/slice_step_nm)) if interval else 0
-    dz=interval/n if n else 0.
-    plan=grid.plan()
-    c=np.zeros(grid.potential.size,complex);c[0]=1
-    fields=np.empty((depth_steps,plan.size),complex);fields[0]=c
-    for i in range(1,depth_steps):
-        c=plan.advance(c,n,dz,cancelled=cancelled);fields[i]=c
-    return fields,z,w,n,dz
+    if (depth_steps-1)*int(np.ceil(float(thickness_nm)/(depth_steps-1)/slice_step_nm))>200000:
+        raise ValueError('Requested propagation exceeds 200000 split steps; choose an explicit supported configuration')
+    working=(16*depth_steps*grid.potential.size+160*grid.potential.size+32*depth_steps)/2**20
+    with reserve_memory(working,memory_budget_mib,dense_mib=16*depth_steps*grid.potential.size/2**20):
+        check_cancelled(cancelled)
+        z,w=depth_quadrature(thickness_nm,depth_steps)
+        if not np.isfinite(slice_step_nm) or slice_step_nm<=0:raise ValueError('Positive finite slice step required')
+        interval=float(thickness_nm)/(depth_steps-1)
+        n=int(np.ceil(interval/slice_step_nm)) if interval else 0
+        dz=interval/n if n else 0.
+        plan=grid.plan()
+        c=np.zeros(grid.potential.size,complex);c[0]=1
+        fields=np.empty((depth_steps,plan.size),complex);fields[0]=c
+        for i in range(1,depth_steps):
+            c=plan.advance(c,n,dz,cancelled=cancelled);fields[i]=c
+        return fields,z,w,n,dz
+
+
+def _validate_grid_context(grid,elastic,outgoing_beams):
+    """Reject mixing cached fields with a different microscope or local frame."""
+    if (not np.isclose(grid.acceleration_kv,elastic.microscope.acceleration_kv,rtol=0,atol=1e-12)
+            or not np.allclose(grid.carrier,elastic.microscope.incident_k_xy,rtol=0,atol=1e-12)):
+        raise ValueError('Prepared FFT grid microscope energy/incident tilt differs from the requested elastic model')
+    if hasattr(grid,'geometry') and not np.allclose(grid.geometry.crystal.lattice_angstrom,
+            elastic.crystal.lattice_angstrom,rtol=0,atol=1e-12):
+        raise ValueError('Prepared FFT grid crystal frame differs from the requested elastic model')
+    for beams in (elastic.beams,outgoing_beams):
+        indices=grid.indices(beams.hkl)
+        expected=np.array([elastic.crystal.g_vector(h)[:2] for h in beams.hkl])
+        if not np.allclose(grid.g[indices],expected,rtol=0,atol=1e-12):
+            raise ValueError('Prepared FFT grid reciprocal coordinates differ from the requested beam support')
 
 
 def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
@@ -207,17 +285,28 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
     if not isinstance(batch_pixels,int) or batch_pixels<1:raise ValueError('Positive integer batch required')
     depth_quadrature(thickness_nm,depth_steps)
     ni=len(elastic.beams.hkl);ob=elastic.beams if outgoing_beams is None else outgoing_beams
-    no=len(ob.hkl);samples=fft_grid if row_reduction else fft_grid**2
+    from .projected_geometry import fft_shape
+    no=len(ob.hkl)
+    samples=(prepared_grid.potential.size if prepared_grid is not None else
+        fft_shape(fft_grid)[0] if row_reduction else int(np.prod(fft_shape(fft_grid))))
     b=min(batch_pixels,len(q));sites=len(elastic.crystal.species)
     dense=96*b*ni*no/2**20
     working=(dense+(64*depth_steps*samples+192*b*samples+32*len(q)*9+64*sites*ni*no)/2**20+8)
     with reserve_memory(working,memory_budget_mib,dense_mib=dense) as admission:
         grid=prepared_grid if prepared_grid is not None else ProjectedNiFFT.build(elastic,grid_points=fft_grid,
-            potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction,projected_geometry=projected_geometry)
+            potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction,projected_geometry=projected_geometry,
+            memory_budget_mib=memory_budget_mib,cancelled=cancelled)
+        _validate_grid_context(grid,elastic,ob)
         fields,z,w,n,dz=(prepared_incoming if prepared_incoming is not None else
-            incident_fields(grid,thickness_nm,depth_steps=depth_steps,slice_step_nm=slice_step_nm,cancelled=cancelled))
-        if fields.shape!=(depth_steps,grid.potential.size) or not np.allclose(z,np.linspace(0,thickness_nm,depth_steps)):
+            incident_fields(grid,thickness_nm,depth_steps=depth_steps,slice_step_nm=slice_step_nm,cancelled=cancelled,memory_budget_mib=memory_budget_mib))
+        expected_z,expected_w=depth_quadrature(thickness_nm,depth_steps)
+        if fields.shape!=(depth_steps,grid.potential.size) or not np.allclose(z,expected_z,rtol=0,atol=1e-12):
             raise ValueError('Prepared incoming fields do not match depth/grid settings')
+        if np.shape(w)!=expected_w.shape or not np.allclose(w,expected_w,rtol=0,atol=1e-12):
+            raise ValueError('Prepared incoming fields have incompatible depth quadrature weights')
+        if (not isinstance(n,int) or n<0 or not np.isfinite(dz) or dz<0
+                or (thickness_nm>0 and n==0) or not np.isclose(n*dz,float(thickness_nm)/(depth_steps-1),rtol=0,atol=1e-12)):
+            raise ValueError('Prepared incoming split steps do not span the requested physical depth intervals')
         ii,oi=grid.indices(elastic.beams.hkl),grid.indices(ob.hkl)
         keep_i=np.zeros(grid.potential.size,bool);keep_i[ii]=True
         keep_o=np.zeros(grid.potential.size,bool);keep_o[oi]=True

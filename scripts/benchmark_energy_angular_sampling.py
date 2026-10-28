@@ -13,7 +13,8 @@ from emcd_sim.gui import emcd_forward as f,channeling,propagation
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model,geometry
 from emcd_sim.gui.memory_budget import memory_snapshot
 from emcd_sim.gui.project_io import save_project,load_project
-from emcd_sim.ni_017_geometry import Ni017Geometry
+from emcd_sim.study_geometry import StudyGeometry
+Ni017Geometry=lambda a_angstrom=3.524: StudyGeometry((0,1,7),(2,0,0),a_angstrom)
 from emcd_sim.geometry import VirtualDetector
 from emcd_sim.benchmark import nickel_physical_benchmark
 from emcd_sim.double_channeling import prepare_incoming_bloch

@@ -1,3 +1,50 @@
+# Unreleased ? generalized Multislice final scientific review
+
+- Five targeted [111] detector-only controls identify potential/beam support as
+  the dominant raw-intensity sensitivity; passing final MS increments do not
+  erase the lower-profile failure or certify enlarged BW.
+- Reject mismatched prepared FFT microscope/frame/reciprocal/depth contexts;
+  make large-cell preview work checks overflow-safe.
+- Expose [111] certification warnings and truthful ideal-basis preview labels;
+  retain existing defaults, thresholds, MDFF and protected scientific outputs.
+- [GO for bounded research merge](GENERALIZED_MULTISLICE_MERGE_READINESS.md),
+  not unrestricted convergence. No merge, release, Atomic 3D or Windows rebuild.
+
+# Unreleased ? generalized EMCD end-to-end validation
+
+- Normal source-GUI Single/Double BW/MS acceptance across [001], [017], [117],
+  [111] and [710], including Bragg alignment, coherent EELS/maps and projects.
+- General target/local-row selection replaces the remaining implicit (200) FFT
+  row fallback; stale orientation/outgoing/basis descriptions and project naming fixed.
+- Direct [117] raw-map equivalence and independent [111] quadrature/outgoing/joint
+  controls; residual joint raw-intensity failure retained at unchanged thresholds.
+- No solver-model/default/version change, Atomic 3D work, merge or Windows rebuild.
+  See [validation and review disposition](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md).
+
+# Unreleased ? generalized Projected ZOLZ development
+
+- Shared crystallographic orientation, exact integer reciprocal basis and
+  structure-derived IAM Fourier potential; no production [017]/[117] geometry imports.
+- Legacy algorithms retained as frozen test fixtures; saved FFT-cell metadata
+  and frame guards preserve viewing and prevent ambiguous reruns.
+- Representative [001]/[017]/[117]/[111]/[710] BW/MS Single/Double checks.
+  Independent [111] quadrature failures remain documented; no universal
+  production convergence claim. Atomic 3D B1 is deferred pending review.
+- No default/version change, Windows rebuild, merge or publication.
+  See [Milestone A validation](GENERAL_ZOLZ_MULTISLICE_VALIDATION.md).
+
+# Unreleased — Ni [117] research geometry
+
+- Target-aligned FCC Ni [117] / (2,-2,0), full finite ZOLZ and explicit ideal
+  incoming/outgoing two-beam support for BW/MS Single and Double Channeling.
+- Raw mirror-parity diagnostics and reproducible bounded scientific validation;
+  crystal-[001] magnetization remains fixed and rotates once into the local frame.
+- Solver-independent warnings for absent off-row potential terms and coarse
+  sampling; safe read-only viewing of older [117] projects with guarded input reuse.
+- Existing [001]/[017] defaults, XMCD data, physical conventions, package version
+  and Windows artifacts are unchanged. No universal convergence, genuine DFT
+  MDFF or calibrated experimental accuracy is claimed. See [review](NI_117_MERGE_READINESS.md).
+
 # v0.6.1-beta.3 - Windows Actions candidate
 
 Package `0.6.1b3`; no release or tag. Responsive simultaneous scientific panels,
