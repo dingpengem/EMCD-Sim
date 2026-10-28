@@ -242,7 +242,8 @@ class ProjectWorkspace:
         if path and (Path(path)/'project.json').exists():self.save_to_path(path,True);return
         parent=QtWidgets.QFileDialog.getExistingDirectory(self,'New project parent folder')
         if not parent:return
-        name,ok=QtWidgets.QInputDialog.getText(self,'Save Project As','New project folder name',text='Ni017_'+datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%SZ'))
+        zone='Ni_'+'_'.join(map(str,self.emcd_result['settings'].zone))
+        name,ok=QtWidgets.QInputDialog.getText(self,'Save Project As','New project folder name',text=zone+'_'+datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%SZ'))
         if not ok:return
         if not name.strip() or Path(name).name!=name or name in ('.','..'):self.error('Use one folder name.');return
         target=Path(parent)/name;approved=False

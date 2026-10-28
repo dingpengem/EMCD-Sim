@@ -14,7 +14,8 @@ from .normalization_controls import NormalizationControls
 def geometry_description(result):
     """Describe the saved basis explicitly; Bragg alignment is not isolation."""
     settings=result['settings'];cfg=result['config']
-    support='systematic-row-restricted basis' if cfg.systematic_row else 'full finite ZOLZ basis'
+    support=('explicit ideal 000 + target two-beam basis' if settings.basis_mode=='two-beam' else
+        'systematic-row-restricted basis' if cfg.systematic_row else 'full finite ZOLZ basis')
     return (f'Nominal ZA {list(settings.zone)}; tilt ({settings.tilt[0]:.4f}, '
             f'{settings.tilt[1]:.4f}) mrad; {support}')
 

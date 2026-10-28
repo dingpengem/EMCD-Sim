@@ -1,5 +1,11 @@
 # Ni [017] angular-map convergence and historical source audit
 
+The historical [017] results below are preserved. For the separate generalized
+[111] investigation, see [end-to-end validation](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md#111-angular-and-aperture-investigation).
+Its refined angular and aperture increments pass at the tested 2 nm setting,
+but a joint raw-intensity/support check still fails. These scopes must not be
+combined into a universal orientation or thickness convergence claim.
+
 **Status: all six requested numerical maps completed.**
 
 Branch feat/full-field-emcd-thickness, task-start HEAD 737e3f9. Existing prepared work is preserved. No version change, Windows rebuild, broad release acceptance, push, merge or tag.

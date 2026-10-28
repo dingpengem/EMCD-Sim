@@ -26,14 +26,22 @@ def test_supported_budgets_and_512_compatibility(budget):
 
 def test_larger_dense_kernel_admitted_only_with_larger_budget():
     cfg = ForwardSettings(propagation='bloch',grid=33)
+    # Use a real large basis. Preflight intentionally rejects synthetic hkl
+    # counts that disagree with the actual oriented diffraction geometry.
+    settings = Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=3.2)
     assert cfg.memory_budget_mib == config_from_dict({}).memory_budget_mib == 2048
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
-        info = numerical_info(Structure.nickel(), Settings(), cfg, hkl=tuple(range(100)))
+        info = numerical_info(Structure.nickel(), settings, cfg)
         assert info['dense_working_estimate_mib'] > 512
         assert info['estimated_process_peak_mib'] > info['estimated_working_mib']
         assert info['estimated_working_mib'] > info['dense_working_estimate_mib']
         with pytest.raises(ValueError, match='selected budget 512 MiB'):
-            numerical_info(Structure.nickel(), Settings(), replace(cfg, memory_budget_mib=512), hkl=tuple(range(100)))
+            numerical_info(Structure.nickel(), settings, replace(cfg, memory_budget_mib=512))
+
+
+def test_preflight_rejects_incompatible_hkl_before_admission():
+    with pytest.raises(ValueError,match='Beam support changed'):
+        numerical_info(Structure.nickel(),Settings(),ForwardSettings(),hkl=tuple(range(100)))
 
 
 def test_available_ram_and_invalid_measurement_fail_closed():

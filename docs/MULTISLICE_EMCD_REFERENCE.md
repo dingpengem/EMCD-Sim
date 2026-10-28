@@ -1,5 +1,12 @@
 # Independent multislice reference for entrance-channeling EMCD
 
+This is the historical entrance-only reference workflow. Current development
+source also supports [generalized Projected ZOLZ Single and Double Channeling
+through the normal GUI](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md). Double uses
+independent reduced-energy outgoing FFT adjoint propagation, not a multiplicative
+correction. The conventions and original reference evidence below are retained;
+they are not claims of Atomic 3D or unrestricted numerical convergence.
+
 This workflow compares independently computed Bloch-wave and real-space FFT
 incident waves, then applies the **same** XMCD-constrained effective dipole
 MDFF contraction to both. It tests numerical incident propagation and

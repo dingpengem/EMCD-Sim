@@ -206,7 +206,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             support='explicit target systematic row' if self.row_projection.isChecked() else 'full radial ZOLZ cutoff'
             self.info.setPlainText(self.structure.description()+f'\n\nNominal zone: {s.zone}\nR crystal-to-local:\n{R}\nIncluded beams: {len(hkl)} ({support})\n'
                 f'Current tilt: {s.tilt} mrad\nZA: {za} Å⁻¹\nSelected target: {s.target}\n'
-                'Stage C: BW / verified [017] FFT entrance-channeling EMCD/EELS through explicit Run EMCD / EELS.\nNi projected ZOLZ IAM; no outgoing channeling, absorption/TDS or physical CBED disks.\n'
+                'Generalized projected ZOLZ IAM: BW / FFT Single or Double Channeling EMCD/EELS through Run EMCD / EELS.\nSingle includes incoming diffraction; Double also includes reduced-energy outgoing diffraction. No absorption/TDS, atomic 3D potential or physical CBED disks.\n'
                 + ('Current inputs match last completed preview.' if fresh else 'Inputs differ from last preview, or no preview exists. Right diffraction table is the last completed result.')
                 +f'\nCompleted previews this session: {len(self.history)}')
             self.statusBar().showMessage(f'{len(hkl)} included reciprocal points. '+('Current preview.' if fresh else 'Geometry only; press Preview diffraction explicitly.'))

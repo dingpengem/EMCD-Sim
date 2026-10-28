@@ -27,6 +27,12 @@ The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An 
 
 For [117], crystal-[001] magnetization is rotated once into the target-aligned frame; raw magnetic intensity need not be mirror-antisymmetric. The default potential cutoff 2.5 cycles/Å has no off-row [117] harmonics. Use explicit research settings and resource checks; Automatic does not establish convergence. See the [configuration guide](docs/USER_GUIDE.md#research-ni-117--2-20), [scientific validation](docs/NI_117_FINAL_SYMMETRY_VALIDATION.md) and [merge-readiness review](docs/NI_117_MERGE_READINESS.md). Validation is representative, not a universal convergence or experimental-accuracy claim.
 
+The generalized branch now has [normal-GUI end-to-end validation](docs/GENERALIZED_MULTISLICE_EMCD_VALIDATION.md)
+for all five representative orientations in Single/Double BW/MS. The [111]
+angular/aperture refinements pass at the tested 2 nm point, but a joint raw-intensity
+check still fails; general production convergence remains uncertified. No Atomic
+3D implementation, packaged EXE update or release is included.
+
 ## Installation
 
 ### Beta 3 Windows candidate

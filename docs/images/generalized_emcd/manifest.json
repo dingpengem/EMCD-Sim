@@ -1,0 +1,18 @@
+{
+  "validation.png": {
+    "source": "outputs\\generalized_multislice_emcd_validation\\validation.png",
+    "sha256": "c3dda7fde980f367d1d21d943c3fca5cadaefa9216aa94d3676a5d499a0442a7"
+  },
+  "bw_ms_maps.png": {
+    "source": "outputs\\generalized_multislice_emcd_validation\\bw_ms_maps.png",
+    "sha256": "248a176d916c462ad60fe09043f695726bbf7b53341eead0213e6d20ff9a1618"
+  },
+  "gui_eels_raw.png": {
+    "source": "outputs\\generalized_multislice_emcd_validation\\gui_eels_raw.png",
+    "sha256": "0c3c7e2ba9b0d76f0b4873321353342551822288fc6978bc078407589475b14c"
+  },
+  "gui_eels_relative.png": {
+    "source": "outputs\\generalized_multislice_emcd_validation\\gui_eels_relative.png",
+    "sha256": "6d8cd137eeb2ffd7e8eee87c1175efeeef25a1ded519122678c10f33e7d641fc"
+  }
+}

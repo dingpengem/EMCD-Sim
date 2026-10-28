@@ -909,3 +909,22 @@ representative orientations, accepted BW/MS comparisons and retained numerical
 failures. New zone support does not imply converged numerical defaults or a
 validated arbitrary-material MDFF. This development is not in the existing
 Windows packages; Atomic 3D remains a separately gated implementation plan.
+
+
+### Generalized EMCD GUI workflow and numerical scope
+
+In Manual mode, enter a valid zone and signed ZOLZ target, apply orientation,
+set the fixed tilt component, and align Bragg with the appropriate lock.
+Restore Thales detectors, then select Single/Double and BW/MS/Both. The same
+coherent MDFF and detector pipeline serves every supported orientation; source
+magnetization remains declared in crystal Cartesian coordinates.
+
+[End-to-end GUI validation](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md#normal-gui-acceptance-and-usage)
+covers [001]/[017]/[117]/[111]/[710], raw/relative displays, exports and project
+roundtrips. A full-spectrum post-edge window needs at least three sampled energy
+points; Selected L3/L2 samples cannot provide post-edge correction. Relative
+magnetic and nonmagnetic components share N_A+N_B; corrected contrast is not
+intrinsically magnetic. Scientific support is resource-bounded and remains Ni
+MDFF-specific. [111] joint/support convergence is still conditional, despite
+passing BW/MS and refined quadrature comparisons. Existing Windows packages
+have not been rebuilt with these development changes.

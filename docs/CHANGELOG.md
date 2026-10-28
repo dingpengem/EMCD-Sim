@@ -1,3 +1,14 @@
+# Unreleased ? generalized EMCD end-to-end validation
+
+- Normal source-GUI Single/Double BW/MS acceptance across [001], [017], [117],
+  [111] and [710], including Bragg alignment, coherent EELS/maps and projects.
+- General target/local-row selection replaces the remaining implicit (200) FFT
+  row fallback; stale orientation/outgoing/basis descriptions and project naming fixed.
+- Direct [117] raw-map equivalence and independent [111] quadrature/outgoing/joint
+  controls; residual joint raw-intensity failure retained at unchanged thresholds.
+- No solver-model/default/version change, Atomic 3D work, merge or Windows rebuild.
+  See [validation and review disposition](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md).
+
 # Unreleased ? generalized Projected ZOLZ development
 
 - Shared crystallographic orientation, exact integer reciprocal basis and

@@ -5,6 +5,16 @@ Development branch: `feat/generalized-multislice`, based on reviewed local
 `236893392838ab5bc17dcf1848fd127009f2f048` at preparation. No merge, release,
 version change or Windows rebuild is part of this milestone.
 
+## End-to-end follow-up
+
+[GUI and scientific integration evidence](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md)
+now exercises normal Single/Double BW/MS workflows for the five representative
+orientations. An implicit `(200)` row fallback was replaced by declared-target
+or actual local-x beam-support selection. GUI descriptions distinguish outgoing
+channeling and ideal two-beam support correctly. The shared physical pipeline is
+unchanged. [111] finer quadrature passes representative increments, while joint
+raw-intensity/support sensitivity remains unresolved. Atomic 3D remains deferred.
+
 ## Audit and scope
 
 The reviewed branch contained validated [117] work beyond main, together with

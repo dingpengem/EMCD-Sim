@@ -166,7 +166,14 @@ class ProjectedFFT:
         if projected_geometry is not None and not np.allclose(elastic.crystal.lattice_angstrom,projected_geometry.crystal.lattice_angstrom,rtol=0,atol=1e-12):
             raise ValueError('FFT/BW oriented crystal frames differ')
         zone=(projected_geometry.orientation.zone if isinstance(projected_geometry,ProjectedGeometry) else infer_zone(elastic.crystal))
-        target=systematic_row_hkl if systematic_row_hkl is not None else ((2,0,0) if systematic_row else getattr(projected_geometry,'target',None))
+        target=systematic_row_hkl if systematic_row_hkl is not None else getattr(projected_geometry,'target',None)
+        if systematic_row and target is None:
+            # Historical callers without a target used the positive local-x
+            # row. Infer it from their actual oriented beam support, never hkl.
+            candidates=[h for h in elastic.beams.hkl if elastic.crystal.g_vector(h)[0]>0
+                and np.linalg.norm(elastic.crystal.g_vector(h)[1:])<1e-12]
+            if not candidates:raise ValueError('Specify a systematic-row reflection in the actual oriented beam basis')
+            target=min(candidates,key=lambda h:np.linalg.norm(elastic.crystal.g_vector(h)))
         generators=fft_generators
         if generators is None and isinstance(projected_geometry,ProjectedGeometry):generators=projected_geometry.generators
         geometry=ProjectedGeometry.from_oriented(elastic.crystal,zone,target,
