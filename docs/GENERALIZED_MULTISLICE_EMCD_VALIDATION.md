@@ -8,6 +8,14 @@ Branch: `feat/generalized-multislice`, following Milestone A
 raw-intensity check still fails the existing threshold. Atomic 3D has not begun.
 No merge, publication, version change or Windows EXE rebuild is included.
 
+## Subsequent final review
+
+The [merge-readiness review](GENERALIZED_MULTISLICE_MERGE_READINESS.md) isolates
+the original 0.1094% raw change to potential/beam support, adds five minimal
+detector-only controls, and records passing final enlarged-MS increments. The
+original lower-profile failure and incomplete enlarged-BW certification remain
+explicit. The historical end-to-end evidence below is retained unchanged.
+
 ## Audit: already integrated and changes made
 
 Milestone A already connected general geometry, coherent FFT incoming waves,

@@ -33,6 +33,12 @@ angular/aperture refinements pass at the tested 2 nm point, but a joint raw-inte
 check still fails; general production convergence remains uncertified. No Atomic
 3D implementation, packaged EXE update or release is included.
 
+The [final scientific merge review](docs/GENERALIZED_MULTISLICE_MERGE_READINESS.md)
+recommends merging this bounded research implementation with explicit limits.
+The [111] residual is dominated by potential/beam support; larger-MS increments
+pass at the tested point, while the lower-support profile remains uncertified.
+Main and existing Windows packages have not been updated by this review.
+
 ## Installation
 
 ### Beta 3 Windows candidate

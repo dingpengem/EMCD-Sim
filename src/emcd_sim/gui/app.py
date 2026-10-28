@@ -203,7 +203,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             limits=((-s.beam_cutoff-.2,s.beam_cutoff+.2),)*2 if fit else old_limits
             self.ax.set(xlim=limits[0],ylim=limits[1],aspect='equal',xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)',title='Elastic diffraction — exit intensities' if fresh else 'Current reciprocal geometry — no current intensities')
             self.ax.legend(fontsize=7,loc='upper right');self.canvas.draw_idle()
-            support='explicit target systematic row' if self.row_projection.isChecked() else 'full radial ZOLZ cutoff'
+            support=('explicit ideal 000 + target two-beam basis' if s.basis_mode=='two-beam' else
+                'explicit target systematic row' if self.row_projection.isChecked() else 'full radial ZOLZ cutoff')
             self.info.setPlainText(self.structure.description()+f'\n\nNominal zone: {s.zone}\nR crystal-to-local:\n{R}\nIncluded beams: {len(hkl)} ({support})\n'
                 f'Current tilt: {s.tilt} mrad\nZA: {za} Å⁻¹\nSelected target: {s.target}\n'
                 'Generalized projected ZOLZ IAM: BW / FFT Single or Double Channeling EMCD/EELS through Run EMCD / EELS.\nSingle includes incoming diffraction; Double also includes reduced-energy outgoing diffraction. No absorption/TDS, atomic 3D potential or physical CBED disks.\n'

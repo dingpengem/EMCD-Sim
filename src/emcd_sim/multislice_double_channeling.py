@@ -254,6 +254,21 @@ def incident_fields(grid,thickness_nm,*,depth_steps=257,slice_step_nm=.04,cancel
         return fields,z,w,n,dz
 
 
+def _validate_grid_context(grid,elastic,outgoing_beams):
+    """Reject mixing cached fields with a different microscope or local frame."""
+    if (not np.isclose(grid.acceleration_kv,elastic.microscope.acceleration_kv,rtol=0,atol=1e-12)
+            or not np.allclose(grid.carrier,elastic.microscope.incident_k_xy,rtol=0,atol=1e-12)):
+        raise ValueError('Prepared FFT grid microscope energy/incident tilt differs from the requested elastic model')
+    if hasattr(grid,'geometry') and not np.allclose(grid.geometry.crystal.lattice_angstrom,
+            elastic.crystal.lattice_angstrom,rtol=0,atol=1e-12):
+        raise ValueError('Prepared FFT grid crystal frame differs from the requested elastic model')
+    for beams in (elastic.beams,outgoing_beams):
+        indices=grid.indices(beams.hkl)
+        expected=np.array([elastic.crystal.g_vector(h)[:2] for h in beams.hkl])
+        if not np.allclose(grid.g[indices],expected,rtol=0,atol=1e-12):
+            raise ValueError('Prepared FFT grid reciprocal coordinates differ from the requested beam support')
+
+
 def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         fft_grid=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,
         depth_steps=257,slice_step_nm=.04,outgoing_beams=None,outgoing_potential=True,
@@ -281,10 +296,17 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         grid=prepared_grid if prepared_grid is not None else ProjectedNiFFT.build(elastic,grid_points=fft_grid,
             potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction,projected_geometry=projected_geometry,
             memory_budget_mib=memory_budget_mib,cancelled=cancelled)
+        _validate_grid_context(grid,elastic,ob)
         fields,z,w,n,dz=(prepared_incoming if prepared_incoming is not None else
             incident_fields(grid,thickness_nm,depth_steps=depth_steps,slice_step_nm=slice_step_nm,cancelled=cancelled,memory_budget_mib=memory_budget_mib))
-        if fields.shape!=(depth_steps,grid.potential.size) or not np.allclose(z,np.linspace(0,thickness_nm,depth_steps)):
+        expected_z,expected_w=depth_quadrature(thickness_nm,depth_steps)
+        if fields.shape!=(depth_steps,grid.potential.size) or not np.allclose(z,expected_z,rtol=0,atol=1e-12):
             raise ValueError('Prepared incoming fields do not match depth/grid settings')
+        if np.shape(w)!=expected_w.shape or not np.allclose(w,expected_w,rtol=0,atol=1e-12):
+            raise ValueError('Prepared incoming fields have incompatible depth quadrature weights')
+        if (not isinstance(n,int) or n<0 or not np.isfinite(dz) or dz<0
+                or (thickness_nm>0 and n==0) or not np.isclose(n*dz,float(thickness_nm)/(depth_steps-1),rtol=0,atol=1e-12)):
+            raise ValueError('Prepared incoming split steps do not span the requested physical depth intervals')
         ii,oi=grid.indices(elastic.beams.hkl),grid.indices(ob.hkl)
         keep_i=np.zeros(grid.potential.size,bool);keep_i[ii]=True
         keep_o=np.zeros(grid.potential.size,bool);keep_o[oi]=True

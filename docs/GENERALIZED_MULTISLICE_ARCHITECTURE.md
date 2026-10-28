@@ -15,6 +15,15 @@ channeling and ideal two-beam support correctly. The shared physical pipeline is
 unchanged. [111] finer quadrature passes representative increments, while joint
 raw-intensity/support sensitivity remains unresolved. Atomic 3D remains deferred.
 
+## Final review
+
+[Merge-readiness assessment](GENERALIZED_MULTISLICE_MERGE_READINESS.md): GO for
+bounded research source support, not unrestricted quantitative certification.
+Incoming/outgoing prepared FFT contexts now reject mismatched microscope/frame/
+reciprocal data and depth quadrature. Large-cell work checks are overflow-safe.
+These validation guards do not change valid propagation or the MDFF. [111]
+certification limits are visible for every solver and equivalent zone multiples.
+
 ## Audit and scope
 
 The reviewed branch contained validated [117] work beyond main, together with

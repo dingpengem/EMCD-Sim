@@ -6,6 +6,10 @@ Its refined angular and aperture increments pass at the tested 2 nm setting,
 but a joint raw-intensity/support check still fails. These scopes must not be
 combined into a universal orientation or thickness convergence claim.
 
+For the final generalized [111] support/cutoff diagnosis and merge scope, see
+[merge readiness](GENERALIZED_MULTISLICE_MERGE_READINESS.md). Passing quadrature
+and matched-solver checks do not certify a lower-support raw-intensity profile.
+
 **Status: all six requested numerical maps completed.**
 
 Branch feat/full-field-emcd-thickness, task-start HEAD 737e3f9. Existing prepared work is preserved. No version change, Windows rebuild, broad release acceptance, push, merge or tag.

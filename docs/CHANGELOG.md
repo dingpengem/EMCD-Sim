@@ -1,3 +1,15 @@
+# Unreleased ? generalized Multislice final scientific review
+
+- Five targeted [111] detector-only controls identify potential/beam support as
+  the dominant raw-intensity sensitivity; passing final MS increments do not
+  erase the lower-profile failure or certify enlarged BW.
+- Reject mismatched prepared FFT microscope/frame/reciprocal/depth contexts;
+  make large-cell preview work checks overflow-safe.
+- Expose [111] certification warnings and truthful ideal-basis preview labels;
+  retain existing defaults, thresholds, MDFF and protected scientific outputs.
+- [GO for bounded research merge](GENERALIZED_MULTISLICE_MERGE_READINESS.md),
+  not unrestricted convergence. No merge, release, Atomic 3D or Windows rebuild.
+
 # Unreleased ? generalized EMCD end-to-end validation
 
 - Normal source-GUI Single/Double BW/MS acceptance across [001], [017], [117],

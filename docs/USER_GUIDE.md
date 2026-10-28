@@ -928,3 +928,20 @@ intrinsically magnetic. Scientific support is resource-bounded and remains Ni
 MDFF-specific. [111] joint/support convergence is still conditional, despite
 passing BW/MS and refined quadrature comparisons. Existing Windows packages
 have not been rebuilt with these development changes.
+
+
+### Final generalized-Multislice review warnings
+
+The GUI now explicitly labels [111] quantitative convergence as unestablished,
+including equivalent [222] input, for BW, MS and Both. The measured lower-profile
+joint raw change was 0.1094%, beyond the unchanged 0.1% limit. Subsequent larger
+MS support/cutoff increments pass at one 200 kV/2 nm detector configuration;
+that is not enlarged-BW, full-spectrum or thickness-curve certification. See
+[merge readiness](GENERALIZED_MULTISLICE_MERGE_READINESS.md) for the exact settings.
+[117] off-row-cutoff and coarse-grid warnings remain in effect.
+
+An ideal two-beam live diffraction preview now identifies its truncation
+explicitly. Cached low-level MS fields must match microscope, frame, reciprocal
+support and physical depth quadrature; mismatches fail instead of silently
+mixing contexts. Very large cells are rejected before overflowing a search-size
+calculation. These checks do not change solver physics, defaults or saved arrays.

@@ -92,8 +92,12 @@ def geometry(structure,settings,*,systematic_row=False):
         raise ValueError('Ideal two-beam support is distinct from a multibeam systematic-row restriction')
     crystal=Crystal(cell@R.T,structure.atoms.get_scaled_positions(),tuple(structure.atoms.get_chemical_symbols()))
     # |h_i|=|g dot a_i| <= cutoff*|a_i| gives a complete finite search.
-    bounds=np.ceil(settings.beam_cutoff*np.linalg.norm(cell,axis=1)).astype(int)
-    if np.prod(2*bounds+1)>500000:raise ValueError('Cell/cutoff search too large for interactive preview; lower the beam cutoff.')
+    limits=np.ceil(settings.beam_cutoff*np.linalg.norm(cell,axis=1))
+    # Check in floating point before integer conversion/product: large but
+    # valid CIF cells can overflow int64 and otherwise bypass this work bound.
+    if not np.isfinite(limits).all() or np.prod(2*limits+1)>500000:
+        raise ValueError('Cell/cutoff search too large for interactive preview; lower the beam cutoff.')
+    bounds=limits.astype(int)
     items=[];has_factors=not structure.elastic_reason
     for h in product(*(range(-v,v+1) for v in bounds)):
         if settings.basis_mode=='two-beam' and h not in ((0,0,0),settings.target):continue
