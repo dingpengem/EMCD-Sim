@@ -255,6 +255,7 @@ class ProjectWorkspace:
         self.set_values(dict(kv=300,beam=3.2,potential=2.5))
         self.worker_mode.setCurrentIndex(0);self.worker_count.setValue(1)
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
+        self._slice_step_override=None;self.set_values(dict(slice_step=2.))
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(0)
         self.apply_numerical_visibility()
         self.clear_selected();self.input_source_requirements=[];self.default_structure()

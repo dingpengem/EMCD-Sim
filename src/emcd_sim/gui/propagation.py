@@ -63,8 +63,17 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
         reason=material_reason(structure)
         if reason:raise ValueError(reason)
         if not isinstance(cfg.fft_grid,int) or not 12<=cfg.fft_grid<=128 or cfg.fft_grid%2:raise ValueError('FFT grid must be even, 12–128')
-        if not np.isfinite(cfg.slice_step) or not .001<=cfg.slice_step<=1:raise ValueError('Maximum slice step must be 0.001–1 nm')
+        if not np.isfinite(cfg.slice_step) or not .001<=cfg.slice_step<=10:raise ValueError('Maximum slice step must be 0.001–10 nm')
         if int(np.ceil(settings.thickness/(cfg.depth-1)/cfg.slice_step))*(cfg.depth-1)>200000:raise ValueError('Requested FFT propagation exceeds 200000 split steps; increase slice step or reduce thickness explicitly')
+        interval=settings.thickness/(cfg.depth-1)
+        substeps=int(np.ceil(interval/cfg.slice_step)) if interval else 0
+        info.update(requested_max_slice_step_nm=cfg.slice_step,
+            actual_slice_step_nm=interval/substeps if substeps else 0.,substeps_per_depth_interval=substeps)
+        if cfg.slice_step>.04:
+            info['numerical_warnings'].append('Requested maximum slice step exceeds 0.04 nm (an advisory reference, not a universal convergence threshold). '
+                'Large propagation steps may introduce split-step errors and are not automatically numerically converged. '
+                'Check convergence against smaller steps; accurate elastic intensities do not automatically guarantee converged EMCD signals. '
+                'The actual substep is also bounded by depth intervals; the requested maximum is unchanged.')
         geo=projected_geometry_for(settings,actual_geometry[0],cfg.fft_generators)
         harmonics,g=geo.harmonics(cfg.fft_grid,max(settings.beam_cutoff,settings.potential_cutoff))
         lookup={tuple(h):i for i,h in enumerate(harmonics)}

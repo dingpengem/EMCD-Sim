@@ -7,7 +7,7 @@ from .geometry import geometry, excitation
 from .emcd_forward import material_reason, ForwardSettings
 
 
-POLICY = 'automatic-starting-v3'
+POLICY = 'automatic-starting-v5'
 NUMERICAL_KEYS = ('beam','potential','fft_grid','depth','slice_step','grid','subpixels','halfwidth','energy')
 
 
@@ -18,7 +18,7 @@ def resolve_parameters(structure, settings, cfg):
     exact-Bragg [017] representative points. Other cases use released starting
     defaults. Even reference matches are not claims about full-field convergence.
     """
-    values = dict(beam=3.2,potential=2.5,fft_grid=32,depth=64,slice_step=.04,
+    values = dict(beam=3.2,potential=2.5,fft_grid=32,depth=64,slice_step=2.,
                   grid=97,subpixels=64,halfwidth=1.,energy=241,memory_budget_mib=2048)
     centers=((1/3.524,1/3.524),(1/3.524,-1/3.524))
     # Native-source identity is explicit; a filename/material resemblance is insufficient.
@@ -33,7 +33,7 @@ def resolve_parameters(structure, settings, cfg):
         and np.allclose(cfg.magnetization,(0,0,1),rtol=0,atol=1e-12)
         and cfg.eta==cfg.beta==1 and abs(cfg.l3-831.4778)<1e-6 and abs(cfg.l2-848.698)<1e-6
         and np.allclose(cfg.centers,centers,rtol=0,atol=1e-8) and abs(cfg.radius-.0908059024)<1e-8)
-    if reference:values.update(beam=4.6,potential=6.2,fft_grid=48,depth=257)
+    if reference:values.update(beam=4.6,potential=6.2,fft_grid=48,depth=257,slice_step=.04)
     resolved=replace(settings,beam_cutoff=values['beam'],potential_cutoff=values['potential'])
     hkl=geometry(structure,resolved,systematic_row=cfg.systematic_row)[2]
     if cfg.propagation!='bloch':
@@ -98,11 +98,13 @@ class NumericalSettingsUI:
 
     def change_numerical_mode(self, index):
         self._restore_auto_once=False
+        slice_step=self.spin['slice_step'].value()
         if index==0:
             self._manual_numerics=self.numerical_snapshot();self._numerical_cache=None
         else:
             if self._manual_numerics:self.set_numerical_values(self._manual_numerics)
             self._numerical_error=None
+        self.set_values(dict(slice_step=slice_step))
         self.apply_numerical_visibility();self.refresh()
 
     def resolve_numerical_ui(self):
@@ -128,6 +130,12 @@ class NumericalSettingsUI:
                     self._numerical_cache=key;self._restore_auto_once=False
                 elif key!=self._numerical_cache:
                     values,provenance=resolve_parameters(self.structure,s,cfg)
+                    if self._slice_step_override is not None:
+                        values['slice_step']=self._slice_step_override
+                        provenance=dict(provenance,slice_step_override_nm=self._slice_step_override)
+                        if provenance['source']=='Matching reference configuration' and self._slice_step_override!=.04:
+                            provenance.update(source='Reference configuration with explicit slice-step override',
+                                status='User override — convergence not established')
                     values['memory_budget_mib']=self.memory_budget.currentData()
                     self.set_numerical_values(values);self.numerical_provenance=provenance;self._numerical_cache=key
                 self.numerical_status.setText(self.numerical_provenance['source']+'\n'+self.numerical_provenance['status'])
@@ -146,12 +154,15 @@ class NumericalSettingsUI:
 
     def numerical_selection_snapshot(self):
         return dict(mode='automatic' if self.numerical_mode.currentIndex()==0 else 'manual',actual=self.numerical_snapshot(),
-                    manual_overrides=self._manual_numerics,provenance=self.numerical_provenance)
+                    manual_overrides=self._manual_numerics,provenance=self.numerical_provenance,
+                    slice_step_override_nm=self._slice_step_override)
 
     def restore_numerical_selection(self, metadata):
         saved=metadata.get('numerical_selection',{})
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(0 if saved.get('mode')=='automatic' else 1)
         self._manual_numerics=saved.get('manual_overrides');self._numerical_cache=None
+        # Loaded projects retain their explicit step, including legacy projects.
+        self._slice_step_override=self.spin['slice_step'].value()
         self.numerical_provenance=saved.get('provenance',dict(source='Manual configuration',policy=None))
         self._restore_auto_once=saved.get('mode')=='automatic'
         self.apply_numerical_visibility()

@@ -63,6 +63,24 @@ def run(output, orientation='017'):
             assert (s.voltage, s.beam_cutoff, s.potential_cutoff) == (300, 3.2, 2.5)
             assert w.spin['grid'].value() == 97 and w.memory_budget.currentData() == 2048
             assert w.worker_mode.currentIndex() == 0
+            assert w.spin['slice_step'].value() == 2.
+            edits=[]
+            for mode in (0,1):
+                w.numerical_mode.setCurrentIndex(mode)
+                w.propagation_box.setCurrentIndex(1)
+                assert w.spin['slice_step'].isEnabled() and not w.spin['slice_step'].isHidden()
+                for value in (.04,.5,1.,2.,5.,10.):
+                    w.spin['slice_step'].lineEdit().setText(str(value))
+                    w.spin['slice_step'].interpretText()
+                    assert w.forward_settings().slice_step == value
+                    for solver in (0,1,2):
+                        w.propagation_box.setCurrentIndex(solver)
+                        assert w.spin['slice_step'].value() == value
+                    edits.append(dict(mode=mode,value=value))
+                w.numerical_mode.setCurrentIndex(1-mode)
+                assert w.spin['slice_step'].value()==10.
+            w.new_project();assert w.spin['slice_step'].value()==2.
+            report['slice_step_control']=dict(default_nm=2.,range_nm=[.001,10.],edits=edits)
             report['defaults'] = dict(settings=asdict(s), grid=97, memory_budget_mib=2048,
                                       worker_mode='automatic')
             report['screen'] = dict(available=w.screen().availableGeometry().getRect(),
@@ -122,7 +140,7 @@ def run(output, orientation='017'):
             # Explicit, bounded acceptance settings; never change production defaults.
             w.numerical_mode.setCurrentIndex(1)
             w.set_values(dict(thickness=1, beam=.9, potential=1.8, grid=9, depth=5,
-                              energy=9, subpixels=4, fft_grid=24, slice_step=.25))
+                              energy=9, subpixels=4, fft_grid=24, slice_step=2.))
             # Include off-row beams in the two priority minor-zone smoke tests.
             if orientation in ('017', '117'):
                 w.set_values(dict(beam=3.2, potential=3.8, fft_grid=32))
@@ -174,6 +192,9 @@ def run(output, orientation='017'):
                 assert set(r['methods']) == {'bloch', 'fft-multislice'}
                 assert r['settings'].zone == tuple(map(int, orientation))
                 assert r['settings'].target == _TARGETS[orientation]
+                numerics=r['metadata']['numerics']
+                assert r['config'].slice_step==numerics['requested_max_slice_step_nm']==2.
+                assert numerics['actual_slice_step_nm']<=2.
                 for method in r['methods'].values():
                     assert np.isfinite(method['spectra']['I_A_plus']).all()
                 execution = r['metadata']['execution']
@@ -184,6 +205,8 @@ def run(output, orientation='017'):
                 opened = load_project(folder)
                 assert fingerprints(opened) == before
                 w.display_saved_result(opened)
+                w.use_result_settings()
+                assert w.forward_settings().slice_step==2.
                 for view in (w.maps_view, w.eels_view):
                     view.component_mode.setCurrentIndex(1); view.component_mode.setCurrentIndex(0)
                 assert fingerprints(opened) == before

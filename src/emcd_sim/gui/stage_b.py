@@ -84,14 +84,16 @@ class StageB(NumericalSettingsUI):
         self.channeling_box.currentIndexChanged.connect(self.emcd_stale)
         self.propagation_box=QtWidgets.QComboBox();self.propagation_box.addItems(['Bloch-wave','FFT Multislice','Both (BW / MS comparison)']);self.form.addRow('Propagation Method',self.propagation_box)
         self.propagation_box.currentIndexChanged.connect(self.emcd_stale)
+        self._slice_step_override=None
+        self.number('slice_step','Max slice step (nm)',2.,.001,10,self.slice_step_changed)
+        self.ms_slice_label=self.form.labelForField(self.spin['slice_step'])
         group=QtWidgets.QGroupBox('Multislice numerical settings');group.setCheckable(True);group.setChecked(False)
         self.ms_settings_group=group
         body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(group);outer.addWidget(body);self.form.addRow(group);body.setVisible(False);group.toggled.connect(body.setVisible)
         saved=self.form;self.form=QtWidgets.QFormLayout(body)
         box=QtWidgets.QSpinBox();box.setRange(12,128);box.setSingleStep(2);box.setValue(32);self.spin['fft_grid']=box;self.form.addRow('FFT grid (even)',box);box.valueChanged.connect(self.emcd_stale)
-        self.number('slice_step','Max slice step (nm)',.04,.001,1,self.emcd_stale)
         box.setToolTip('Controls the FFT representation of Multislice propagation. It must support the selected beam basis and potential Fourier bandwidth. Not the angular/detector q grid.')
-        self.spin['slice_step'].setToolTip('MS-only maximum split-step distance between requested depth planes. Depth integration nodes and angular sampling remain separate controls.')
+        self.spin['slice_step'].setToolTip('MS-only maximum split-step distance (0.001–10 nm) between requested depth planes, not a fixed slice thickness. Depth integration nodes and angular sampling remain separate controls. Large steps require convergence checks against smaller steps.')
         label=QtWidgets.QLabel('FFT: structure-derived projected ZOLZ, with a target-aligned crystal frame and bounded sampling. Full finite, explicit row, or ideal two-beam support. EMCD remains the Ni research model; agreement is not convergence.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
         self.solver_note=QtWidgets.QLabel();self.solver_note.setWordWrap(True);self.form.addRow(self.solver_note)
         self.sync_solver_controls()
@@ -101,8 +103,15 @@ class StageB(NumericalSettingsUI):
         ms=self.propagation_box.currentIndex()!=0
         manual=not hasattr(self,'numerical_mode') or self.numerical_mode.currentIndex()==1
         self.ms_settings_group.setVisible(ms and manual);self.ms_settings_group.setEnabled(ms and manual)
+        self.spin['slice_step'].setVisible(ms);self.ms_slice_label.setVisible(ms)
+        self.spin['slice_step'].setEnabled(ms)
         self.solver_note.setText(('FFT controls apply to MS propagation. ' if ms else 'No additional BW-only numerical controls. ')+
             'Elastic propagation: BW eigenmodes or MS FFT. Inelastic scattering: shared reciprocal-space MDFF. Common support and sampling are in Panel F.')
+
+    def slice_step_changed(self,value):
+        self._slice_step_override=value
+        self._numerical_cache=None
+        self.emcd_stale()
 
     def shared_group(self,title):
         section=CollapsibleSection(title,expanded=False);section.setObjectName('shared_'+title.replace(' ','_'));self.form.addRow(section)

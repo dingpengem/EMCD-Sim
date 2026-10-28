@@ -69,7 +69,7 @@ class ForwardSettings:
     window: tuple=(878.,882.)
     propagation: str='bloch'
     fft_grid: int=32
-    slice_step: float=.04
+    slice_step: float=2.
     memory_budget_mib: int=2048
     channeling_model: str='single'
     energy_scope: str='full'

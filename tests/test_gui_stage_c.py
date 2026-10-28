@@ -21,7 +21,7 @@ from emcd_sim.multislice_reference import project_fft_amplitudes,coherence_from_
 class PropagationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.structure=Structure.nickel();cls.settings=Settings(voltage=200,beam_cutoff=3.2,potential_cutoff=2.2,tilt=(-7.116725439974256,0));cls.cfg=ForwardSettings(propagation='both',energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True)
+        cls.structure=Structure.nickel();cls.settings=Settings(voltage=200,beam_cutoff=3.2,potential_cutoff=2.2,tilt=(-7.116725439974256,0));cls.cfg=ForwardSettings(propagation='both',energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True,slice_step=.04)
         cls.result=calculate(cls.structure,cls.settings,cls.cfg)
     def test_actual_oriented_potential_and_common_projection(self):
         r=self.result;geo=Ni017Geometry();u,hkl,g=_projected_ni_potential(32,200,0,2.2,geo)

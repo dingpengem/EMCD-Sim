@@ -49,7 +49,7 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
         values,_=resolve_parameters(Structure.nickel(),Settings(),cfg)
         assert values['fft_grid']==minimum
     assert [c.fft_grid for s,c in calls]==list(range(32,min(minimum,128)+1,2))
-    assert all(s.beam_cutoff==3.2 and s.potential_cutoff==2.5 and c.depth==64 and c.slice_step==.04 for s,c in calls)
+    assert all(s.beam_cutoff==3.2 and s.potential_cutoff==2.5 and c.depth==64 and c.slice_step==2. for s,c in calls)
 
 
 def test_pure_resolution_never_calls_scientific_solvers():
