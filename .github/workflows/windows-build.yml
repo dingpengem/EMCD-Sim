@@ -44,12 +44,15 @@ jobs:
           $validation = Join-Path (Get-Location) 'build/windows-beta3/validation'
           $env:PATH = "$env:SystemRoot/System32;$env:SystemRoot"
           Remove-Item Env:PYTHONPATH,Env:PYTHONHOME,Env:CONDA_PREFIX -ErrorAction SilentlyContinue
-          $process = Start-Process -FilePath $exe -ArgumentList @('--desktop-acceptance',$validation) -WorkingDirectory (Split-Path $exe) -WindowStyle Hidden -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "Frozen acceptance failed: $($process.ExitCode)" }
-          $report = Get-Content -LiteralPath "$validation/acceptance.json" -Raw | ConvertFrom-Json
-          if (-not $report.complete -or -not $report.frozen -or -not $report.closed_cleanly) { throw 'Invalid frozen acceptance report' }
-          if ($report.build.commit -ne '${{ github.sha }}') { throw 'Source commit mismatch' }
-          if ($report.build.application_version -ne '0.6.1b3') { throw 'Version mismatch' }
+          foreach ($orientation in @('017','117','001','111','710')) {
+            $destination = Join-Path $validation $orientation
+            $process = Start-Process -FilePath $exe -ArgumentList @('--desktop-acceptance',$destination,'--desktop-orientation',$orientation) -WorkingDirectory (Split-Path $exe) -WindowStyle Hidden -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw "Frozen acceptance $orientation failed: $($process.ExitCode)" }
+            $report = Get-Content -LiteralPath "$destination/acceptance.json" -Raw | ConvertFrom-Json
+            if (-not $report.complete -or -not $report.frozen -or -not $report.closed_cleanly) { throw 'Invalid frozen acceptance report' }
+            if ($report.build.commit -ne '${{ github.sha }}') { throw 'Source commit mismatch' }
+            if ($report.build.application_version -ne '0.6.1b3') { throw 'Version mismatch' }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: EMCD-Sim-v0.6.1-beta.3-Windows

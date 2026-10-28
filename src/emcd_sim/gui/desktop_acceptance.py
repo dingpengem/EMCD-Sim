@@ -10,8 +10,10 @@ import time
 import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
 
+_TARGETS = {'001': (2, 0, 0), '017': (2, 0, 0), '117': (2, -2, 0),
+            '111': (2, -2, 0), '710': (0, 0, 2)}
 
-def run(output):
+def run(output, orientation='017'):
     from .app import MainWindow, add_about_menu
     from .runtime import build_info
     from .project_io import fingerprints, load_project, save_project
@@ -121,11 +123,24 @@ def run(output):
             w.numerical_mode.setCurrentIndex(1)
             w.set_values(dict(thickness=1, beam=.9, potential=1.8, grid=9, depth=5,
                               energy=9, subpixels=4, fft_grid=24, slice_step=.25))
+            # Include off-row beams in the two priority minor-zone smoke tests.
+            if orientation in ('017', '117'):
+                w.set_values(dict(beam=3.2, potential=3.8, fft_grid=32))
+            w.zone.setText(' '.join(orientation)); w.target.setText(' '.join(map(str, _TARGETS[orientation])))
+            w.apply_orientation(); w.align(); w.restore_detectors()
             w.propagation_box.setCurrentIndex(2); w.energy_scope.setCurrentIndex(1)
             w.declaration.setChecked(True)
             w.refresh()
             report['smoke_profile'] = dict(settings=asdict(w.settings()), config=asdict(w.forward_settings()),
                                            scope='Tiny selected-energy smoke, not a convergence benchmark')
+            from .geometry import excitation
+            s = w.settings()
+            g = w.current[3][w.current[2].index(s.target)]
+            assert abs(float(excitation(g, s.tilt, s.voltage))) < 1e-10
+            report['bragg_verified'] = True
+            report['resource_preview'] = w.memory_label.text()
+            if orientation == '111':
+                assert '[111]' in report['resource_preview']
             state['stage'] = 'preview'
             w.start_preview()
             assert w.busy
@@ -157,6 +172,8 @@ def run(output):
                 assert w.run_outcome == 'completed', w.run_outcome
                 r = w.emcd_result
                 assert set(r['methods']) == {'bloch', 'fft-multislice'}
+                assert r['settings'].zone == tuple(map(int, orientation))
+                assert r['settings'].target == _TARGETS[orientation]
                 for method in r['methods'].values():
                     assert np.isfinite(method['spectra']['I_A_plus']).all()
                 execution = r['metadata']['execution']

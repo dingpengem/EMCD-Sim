@@ -339,12 +339,13 @@ def main():
     parser.add_argument('--parallel-project',type=Path,help='Optional checksummed saved case for diagnostic acceptance')
     parser.add_argument('--parallel-workers',type=int,help='Explicit supported detector-worker request for diagnostic acceptance')
     parser.add_argument('--desktop-acceptance',type=Path,help='Opt-in portable-build GUI and small BW/MS Single/Double acceptance')
+    parser.add_argument('--desktop-orientation',choices=['001','017','117','111','710'],default='017',help='Orientation for the bounded desktop acceptance only')
     args=parser.parse_args()
     from .runtime import configure_logging, LABEL, build_info
     configure_logging()
     if args.desktop_acceptance:
         from .desktop_acceptance import run
-        return run(args.desktop_acceptance)
+        return run(args.desktop_acceptance,args.desktop_orientation)
     if args.parallel_acceptance:
         from .parallel_acceptance import run
         return run(args.parallel_acceptance,args.parallel_project,args.parallel_workers)
