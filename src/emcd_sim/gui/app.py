@@ -48,6 +48,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         geometry_form=self.form;self.geometry_options=CollapsibleSection('Orientation / ZA options',expanded=False);self.geometry_options.setObjectName('geometry_options');self.geometry_options.header.setToolTip('Crystal orientation, target hkl, projected ZA coordinates and Bragg alignment lock');geometry_form.addRow(self.geometry_options);self.form=QtWidgets.QFormLayout(self.geometry_options.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         self.zone=QtWidgets.QLineEdit('0 1 7');self.zone.setToolTip('Direct-lattice [u v w]; changes the actual oriented cell.');self.form.addRow('Nominal zone [uvw]',self.zone)
         self.target=QtWidgets.QLineEdit('2 0 0');self.target.setToolTip('Target Miller indices; must belong to the oriented finite basis.');self.form.addRow('Target (hkl)',self.target)
+        self.basis_mode=QtWidgets.QComboBox();self.basis_mode.addItem('Full finite ZOLZ','full');self.basis_mode.addItem('Ideal [117] 000 + target','two-beam');self.form.addRow('Diffraction basis',self.basis_mode);self.basis_mode.currentIndexChanged.connect(self.refresh)
         self.button('Apply orientation / target',self.apply_orientation)
         self.mode=QtWidgets.QComboBox();self.mode.addItems(['Select reflection','Set projected ZA','Move detector A','Move detector B']);self.form.addRow('Click mode',self.mode)
         self.number('qx','ZA qx (Å⁻¹)',0,-20,20,self.za_changed)
@@ -114,7 +115,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
     def settings(self):
         return Settings(zone=indices(self.zone.text(),True),target=indices(self.target.text()),tilt=(self.spin['tx'].value(),self.spin['ty'].value()),voltage=self.spin['kv'].value(),
-            thickness=self.spin['thickness'].value(),beam_cutoff=self.spin['beam'].value(),potential_cutoff=self.spin['potential'].value(),b_factor=self.spin['b'].value())
+            thickness=self.spin['thickness'].value(),beam_cutoff=self.spin['beam'].value(),potential_cutoff=self.spin['potential'].value(),b_factor=self.spin['b'].value(),basis_mode=self.basis_mode.currentData())
 
     def set_values(self,values):
         for key,value in values.items():
@@ -165,7 +166,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             # Include marker geometry as well as the reciprocal basis. Intensity-
             # only refreshes keep the saved viewport; incompatible geometry also
             # clears Matplotlib's navigation history to prevent stale Home/Back.
-            view_geometry=(s.zone,s.target,s.tilt,s.voltage,s.beam_cutoff,self.row_projection.isChecked(),
+            view_geometry=(s.zone,s.target,s.tilt,s.voltage,s.beam_cutoff,s.basis_mode,self.row_projection.isChecked(),
                 self.structure.atoms.cell.array.tobytes(),self.structure.atoms.get_scaled_positions().tobytes(),
                 tuple(self.structure.atoms.get_chemical_symbols()),tuple(hkl),g.tobytes())
             if view_geometry!=self._basis_view_geometry:
@@ -240,6 +241,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             s=self.settings();_,_,hkl,g,_=geometry(self.structure,s,systematic_row=self.row_projection.isChecked());self.set_tilt(align_bragg(g[hkl.index(s.target)],s.tilt,s.voltage,self.lock.currentText()))
         except Exception as exc:self.error(str(exc))
     def reset_reference(self):
+        with QtCore.QSignalBlocker(self.basis_mode):self.basis_mode.setCurrentIndex(0)
         with QtCore.QSignalBlocker(self.row_projection):self.row_projection.setChecked(False)
         self.zone.setText('0 1 7');self.target.setText('2 0 0');self.set_tilt((0,0));self.lock.setCurrentText('Y');self.align();self.restore_detectors()
     def sync_detectors(self):self.set_values(dict(ax=self.detectors[0,0],ay=self.detectors[0,1],bx=self.detectors[1,0],by=self.detectors[1,1]))

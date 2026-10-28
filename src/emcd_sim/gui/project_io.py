@@ -214,8 +214,29 @@ def source_status(result):
     return status
 
 
+def frame_rerun_reason(result):
+    """Preserve viewing, but do not reinterpret old [117] local coordinates."""
+    if result['settings'].zone!=(1,1,7):return ''
+    frame=result.get('metadata',{}).get('frame')
+    snapshot=result.get('structure_snapshot')
+    if frame is None or snapshot is None:
+        return 'Saved [117] frame or crystal snapshot is missing; saved results remain viewable, but orientation-dependent inputs must be re-entered before rerunning.'
+    try:frame=np.asarray(frame,dtype=float)
+    except (TypeError,ValueError):return 'Saved [117] frame is invalid; re-enter orientation-dependent inputs before rerunning.'
+    if frame.shape!=(3,3) or not np.isfinite(frame).all():
+        return 'Saved [117] frame is invalid; re-enter orientation-dependent inputs before rerunning.'
+    from .geometry import orientation
+    expected=orientation(restore_structure(snapshot).atoms.cell.array,(1,1,7))
+    if not np.allclose(frame,expected,atol=1e-12,rtol=0):
+        return ('Saved [117] project uses an earlier local frame. Saved plots remain viewable; '
+                're-enter tilt and detector coordinates in the current [1,-1,0] / [7,7,-2] frame before rerunning.')
+    return ''
+
+
 def rerun_reason(result):
     if not result.get('structure_snapshot'):return 'Original numeric crystal snapshot is missing; legacy results are read-only.'
+    reason=frame_rerun_reason(result)
+    if reason:return reason
     for name,s in source_status(result).items():
         if not s['verified']:return name+' source unavailable or SHA256 mismatch; locate the original source before rerunning.'
     return ''

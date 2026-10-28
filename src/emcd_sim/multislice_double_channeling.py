@@ -35,7 +35,7 @@ class FFTSplitStep:
     Potential is real nm^-1, kinetic is real nm^-1 with optional batch axes.
     Negative dz is the exact adjoint of a positive step in this real potential.
     """
-    def __init__(self,potential,kinetic):
+    def __init__(self,potential,kinetic,*,retained_indices=None):
         self.u=np.asarray(potential,float)
         self.d=np.asarray(kinetic,float)
         if (self.u.ndim not in (1,2) or self.d.shape[-self.u.ndim:]!=self.u.shape
@@ -44,6 +44,41 @@ class FFTSplitStep:
         self.shape=self.u.shape
         self.size=self.u.size
         self._cached_dz=None
+        self._retained_mask=None
+        if retained_indices is not None:
+            indices=np.asarray(retained_indices,int)
+            if indices.shape!=(2,) or len(set(indices))!=2 or np.any(indices<0) or np.any(indices>=self.size):
+                raise ValueError('Explicit two-beam projection requires two distinct FFT indices')
+            self._retained_mask=np.zeros(self.size,bool);self._retained_mask[indices]=True
+            self._retained_mask=self._retained_mask.reshape(self.shape)
+            self._projected_indices=indices
+            coordinates=np.array(np.unravel_index(indices,self.shape)).T
+            difference=(coordinates[:,None,:]-coordinates[None,:,:])%np.asarray(self.shape)
+            coefficients=np.fft.fftn(self.u)/self.size
+            self._projected_potential=coefficients[tuple(difference[...,i] for i in range(self.u.ndim))]
+
+    def _projected_transmission(self,c,dz):
+        """exp(i dz P V P) via sparse FFT convolution, without BW eigenmodes.
+
+        Projection is inside every Taylor power, not after exp(i V dz).
+        Thus this is the explicitly requested finite two-beam model, rather
+        than a lossy crop of an unrestricted propagated wave. No normalization.
+        """
+        if np.max(abs(c[...,~self._retained_mask]),initial=0)>1e-13:
+            raise ValueError('Initial field lies outside the explicit two-beam subspace')
+        # The retained convolution kernel was sampled from FFT(U), independent
+        # of the BW Hamiltonian. Sparse multiplication exactly equals applying
+        # FFT(U * IFFT(c)) and projecting at *every* power, without large FFTs.
+        shape=c.shape[:-self.u.ndim]+(self.size,)
+        term=c.reshape(shape)[...,self._projected_indices].copy();out=term.copy()
+        for order in range(1,65):
+            term=(term@self._projected_potential.T)*(1j*dz/order)
+            out+=term
+            if np.max(abs(term))<=4*np.finfo(float).eps*max(float(np.max(abs(out))),np.finfo(float).tiny):
+                result=np.zeros(c.shape,complex)
+                result.reshape(shape)[...,self._projected_indices]=out
+                return result
+        raise ValueError('Projected transmission did not converge; reduce the explicit slice step')
 
     def advance(self,coefficients,steps,dz,*,cancelled=None):
         check_cancelled(cancelled)
@@ -61,9 +96,14 @@ class FFTSplitStep:
         # Positive step counts immediately produce private FFT outputs. Preserve
         # copy/ownership semantics for zero steps, without copying every depth
         # interval's input. No mutable scratch is shared between plans/workers.
-        if not steps:c=c.copy()
+        if not steps or self._retained_mask is not None:c=c.copy()
         for _ in range(steps):
             check_cancelled(cancelled)
+            if self._retained_mask is not None:
+                c*=self._kinetic
+                c=self._projected_transmission(c,dz)
+                c*=self._kinetic
+                continue
             wave=np.fft.ifftn(c*self._kinetic,axes=axes)
             wave*=self.size
             wave*=self._transmission
@@ -112,9 +152,10 @@ class ProjectedNiFFT:
     acceleration_kv: float
     carrier: np.ndarray
     reduction: bool
+    retained_indices: np.ndarray | None = None
 
     @classmethod
-    def build(cls,elastic,*,grid_points=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,projected_geometry=None):
+    def build(cls,elastic,*,grid_points=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,projected_geometry=None,retained_hkl=None):
         if not isinstance(grid_points,int) or grid_points<12 or grid_points%2:
             raise ValueError('Even FFT grid >=12 required')
         if not np.isfinite(potential_cutoff) or potential_cutoff<=0:
@@ -125,6 +166,7 @@ class ProjectedNiFFT:
             raise ValueError('Projected FFT currently requires cubic Ni [001] frame')
         if row_reduction and not systematic_row:
             raise ValueError('1D reduction requires explicit (200) systematic-row potential')
+        if retained_hkl is not None and row_reduction:raise ValueError('Two-beam projection is distinct from 1D row reduction')
         if projected_geometry is not None:
             if systematic_row or row_reduction:raise ValueError('Oriented full-2D geometry cannot use [001] row reduction')
             if not np.allclose(crystal.lattice_angstrom,projected_geometry.crystal.lattice_angstrom,atol=1e-13):
@@ -152,7 +194,9 @@ class ProjectedNiFFT:
                 raise ValueError('Potential is not invariant in y')
             keep=hkl[:,1]==0
             return cls(u[:,0].real,hkl[keep],g[keep],kv,elastic.microscope.incident_k_xy,True)
-        return cls(u.real,hkl,g,kv,elastic.microscope.incident_k_xy,False)
+        result=cls(u.real,hkl,g,kv,elastic.microscope.incident_k_xy,False)
+        if retained_hkl is not None:result.retained_indices=result.indices(retained_hkl)
+        return result
 
     def indices(self,hkl):
         lookup={tuple(h):i for i,h in enumerate(self.hkl)}
@@ -173,7 +217,8 @@ class ProjectedNiFFT:
         if carrier.shape[-1]!=2 or not np.isfinite(carrier).all():raise ValueError('Finite transverse carrier required')
         d=-10*np.pi*lam*(np.sum(self.g**2,axis=-1)+2*np.einsum('...a,ga->...g',carrier,self.g))
         d=d.reshape(d.shape[:-1]+self.potential.shape)
-        return FFTSplitStep(self.potential*ratio if elastic_potential else np.zeros_like(self.potential),d)
+        kwargs={} if self.retained_indices is None else dict(retained_indices=self.retained_indices)
+        return FFTSplitStep(self.potential*ratio if elastic_potential else np.zeros_like(self.potential),d,**kwargs)
 
 
 def incident_fields(grid,thickness_nm,*,depth_steps=257,slice_step_nm=.04,cancelled=None):

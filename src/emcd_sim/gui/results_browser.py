@@ -280,6 +280,9 @@ class ProjectWorkspace:
     def use_result_settings(self):
         if self.busy or self.emcd_result is None:return
         r=self.emcd_result;s=r['settings'];c=r['config']
+        from .project_io import frame_rerun_reason
+        frame_reason=frame_rerun_reason(r)
+        if frame_reason:self.error(frame_reason);return
         if c.worker_mode not in ('automatic','manual') or type(c.parallel_workers) is not int or not 1<=c.parallel_workers<=4:
             self.error('Saved parallel-worker request is unsupported (Automatic/Manual, 1–4). Saved results remain viewable; inputs were not replaced or clamped.');return
         try:structure=restore_structure(r.get('structure_snapshot'))
@@ -295,6 +298,7 @@ class ProjectWorkspace:
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
             for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),(self.energy_scope,('full','edges').index(c.energy_scope))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
+            with QtCore.QSignalBlocker(self.basis_mode):self.basis_mode.setCurrentIndex(self.basis_mode.findData(s.basis_mode))
             for widget,checked in ((self.row_projection,c.systematic_row),(self.angular_maps,c.angular_maps)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.mdff_stack.setCurrentIndex(self.model_box.currentIndex())

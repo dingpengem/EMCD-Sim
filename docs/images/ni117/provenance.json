@@ -1,0 +1,42 @@
+[
+  {
+    "preview": "audit_thales_circle.png",
+    "source": "outputs/ni_117_emcd_validation/root_cause/thales_circle_comparison.png",
+    "source_sha256": "fa74682e6d086bdc504d3c8f540ce80e102bc17650e76ea5fe59dce3d5a5de34"
+  },
+  {
+    "preview": "audit_raw_parity.png",
+    "source": "outputs/ni_117_emcd_validation/baseline_full_double_t8.png",
+    "source_sha256": "5689a7997732b04d56182902f4b225b08c751ef5b8416aad7c00e25b1692fa77"
+  },
+  {
+    "preview": "indexed_diffraction.png",
+    "source": "outputs/ni_117_final_symmetry_validation/indexed_diffraction.png",
+    "source_sha256": "9bd55f1f2b860123dce90fe2831479f23c5e8dc98e1112c6fffaa6dc8ec86c51"
+  },
+  {
+    "preview": "raw_mirror_decomposition_L3.png",
+    "source": "outputs/ni_117_final_symmetry_validation/raw_mirror_decomposition_L3.png",
+    "source_sha256": "d3768dc562fe7a5ed78dc977b96bdd2524bc39b6a12a83df6112eff46320faa1"
+  },
+  {
+    "preview": "thales_models_bw_ms.png",
+    "source": "outputs/ni_117_final_symmetry_validation/thales_models_bw_ms.png",
+    "source_sha256": "a7fb60a6d7e66ae7199c5de05a6a685c979f291bee972ddb995adc2da38c31a6"
+  },
+  {
+    "preview": "thales_raw_components.png",
+    "source": "outputs/ni_117_final_symmetry_validation/thales_raw_components.png",
+    "source_sha256": "02a0a524c12eab863c60912fce7810cfc80db7d8b4f415143998cc69451e0269"
+  },
+  {
+    "preview": "combined_convergence.png",
+    "source": "outputs/ni_117_final_symmetry_validation/combined_convergence.png",
+    "source_sha256": "35cac85fd567f1447265ccbfb3b2315c3726ab5e5b44b18a71be580dad2881f6"
+  },
+  {
+    "preview": "mistilt_physical_changes.png",
+    "source": "outputs/ni_117_final_symmetry_validation/mistilt_physical_changes.png",
+    "source_sha256": "39cedf9e26967f5f948650b7b5077b83b1de6d979ff9bb7f6eb5687c33502b03"
+  }
+]

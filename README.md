@@ -23,7 +23,9 @@ EMCD-Sim is a research simulation tool for **electron magnetic circular dichrois
 
 Elastic propagation uses an oriented **projected independent-atom-model (IAM) potential**. Single retains entrance channeling; Double also propagates the outgoing electron at its reduced post-loss energy. BW and MS are independent numerical implementations within matched physical approximations.
 
-The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An approximate atomic-ionization model is also available. A complete DFT-derived MDFF from complex core-to-band transition matrix elements is **not implemented**. CIF import supports structural inspection; it does not validate arbitrary materials for magnetic EELS. The verified GUI FFT geometries are Ni [017] full finite ZOLZ and the explicitly restricted [001] (200) systematic row.
+The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An approximate atomic-ionization model is also available. A complete DFT-derived MDFF from complex core-to-band transition matrix elements is **not implemented**. CIF import supports structural inspection; it does not validate arbitrary materials for magnetic EELS. Development source supports Ni [017] full finite ZOLZ, the explicitly restricted [001] (200) systematic row, and research Ni [117] / (2,-2,0) with full finite ZOLZ or explicit ideal two-beam support, for BW/MS Single/Double Channeling. These source additions are not in the preserved Windows packages.
+
+For [117], crystal-[001] magnetization is rotated once into the target-aligned frame; raw magnetic intensity need not be mirror-antisymmetric. The default potential cutoff 2.5 cycles/Å has no off-row [117] harmonics. Use explicit research settings and resource checks; Automatic does not establish convergence. See the [configuration guide](docs/USER_GUIDE.md#research-ni-117--2-20), [scientific validation](docs/NI_117_FINAL_SYMMETRY_VALIDATION.md) and [merge-readiness review](docs/NI_117_MERGE_READINESS.md). Validation is representative, not a universal convergence or experimental-accuracy claim.
 
 ## Installation
 

@@ -33,7 +33,8 @@ def orientation(cell,zone):
     """Rows transform Cartesian crystal vectors to a proper local frame."""
     zone=np.asarray(zone,int);z=zone@np.asarray(cell);z=z/np.linalg.norm(z)
     # Match the established [017], [001] and [710] cubic frame conventions.
-    candidates=[cell[2],cell[0],cell[1]] if tuple(zone)==(7,1,0) else [cell[0],cell[1],cell[2]]
+    candidates=([np.asarray(cell)[0]-np.asarray(cell)[1]] if tuple(zone)==(1,1,7) else
+                [cell[2],cell[0],cell[1]] if tuple(zone)==(7,1,0) else [cell[0],cell[1],cell[2]])
     for reference in candidates:
         x=reference-np.dot(reference,z)*z
         if np.linalg.norm(x)>1e-10:break
@@ -86,12 +87,16 @@ class Settings:
     beam_cutoff: float=3.2
     potential_cutoff: float=2.5
     b_factor: float=0.
+    basis_mode: str='full'
 
 
 def geometry(structure,settings,*,systematic_row=False):
     if not np.isfinite([*settings.tilt,settings.voltage,settings.thickness,settings.beam_cutoff,settings.potential_cutoff,settings.b_factor]).all():raise ValueError('Settings must be finite')
     if min(settings.voltage,settings.thickness,settings.beam_cutoff,settings.potential_cutoff)<=0 or settings.b_factor<0:raise ValueError('Positive voltage, thickness and cutoffs, and nonnegative B are required')
     cell=structure.atoms.cell.array;R=orientation(cell,settings.zone)
+    if settings.basis_mode not in ('full','two-beam'):raise ValueError('Diffraction basis must be full or two-beam')
+    if settings.basis_mode=='two-beam' and (settings.zone!=(1,1,7) or settings.target!=(2,-2,0) or systematic_row):
+        raise ValueError('Explicit ideal two-beam support requires [117], target (2,-2,0), without [001] row restriction')
     crystal=Crystal(cell@R.T,structure.atoms.get_scaled_positions(),tuple(structure.atoms.get_chemical_symbols()))
     # |h_i|=|g dot a_i| <= cutoff*|a_i| gives a complete finite search.
     bounds=np.ceil(settings.beam_cutoff*np.linalg.norm(cell,axis=1)).astype(int)
@@ -99,6 +104,7 @@ def geometry(structure,settings,*,systematic_row=False):
     items=[];has_factors=not structure.elastic_reason
     if systematic_row and settings.zone!=(0,0,1):raise ValueError('The explicit (200) systematic row requires Ni [001]')
     for h in product(*(range(-v,v+1) for v in bounds)):
+        if settings.basis_mode=='two-beam' and h not in ((0,0,0),settings.target):continue
         if systematic_row and (h[1] or h[2]):continue
         if np.dot(h,settings.zone)!=0:continue
         g=crystal.g_vector(h);length=np.linalg.norm(g)

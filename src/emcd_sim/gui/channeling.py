@@ -6,14 +6,15 @@ from time import perf_counter
 import numpy as np
 from ..double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch
 from ..multislice_double_channeling import ProjectedNiFFT, incident_fields, multislice_double_channeling_response
-from ..ni_017_geometry import Ni017Geometry
 from ..single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix
 
 
 def fft_geometry(elastic,settings,cfg):
+    from .propagation import projected_geometry_for
     return ProjectedNiFFT.build(elastic,grid_points=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
         systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
-        projected_geometry=Ni017Geometry() if settings.zone==(0,1,7) else None)
+        projected_geometry=projected_geometry_for(settings),
+        retained_hkl=elastic.beams.hkl if settings.basis_mode=='two-beam' else None)
 
 
 _windows_bw_lock=threading.Lock()
@@ -64,6 +65,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
     Double responses already include depth integration; Single needs thickness.
     """
     from .emcd_forward import Cancelled
+    from .propagation import projected_geometry_for
     qx,qy,weights,detector_support,selected=angular_schedule(model,cfg,energy)
     dq2=(qx[0,1]-qx[0,0])**2
     full_weights=np.stack([weights[k].ravel() for k in ('A','B')])
@@ -129,17 +131,18 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             def response(batch):
                 if cancelled():raise Cancelled()
                 if method=='bloch':
-                    return double_channeling_response(elastic,float(e),batch,settings.thickness,
+                    r=double_channeling_response(elastic,float(e),batch,settings.thickness,
                         method='analytic' if cfg.systematic_row else 'numerical',depth_steps=cfg.depth,
                         memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,cancelled=cancelled)
+                    return r,None
                 grid,incoming=prepared_incoming
                 r,diag=multislice_double_channeling_response(elastic,float(e),batch,settings.thickness,
                     fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
                     systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
-                    projected_geometry=Ni017Geometry() if settings.zone==(0,1,7) else None,
+                    projected_geometry=projected_geometry_for(settings),
                     depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,memory_budget_mib=cfg.memory_budget_mib,
                     prepared_grid=grid,prepared_incoming=incoming,cancelled=cancelled)
-                return r
+                return r,diag
             # MS chunks bound cancellation latency without retaining outgoing
             # depth stacks. BW retains its existing per-call dense admission.
             batches=([query[i:i+32] for i in range(0,len(query),32)] if method=='fft-multislice'
@@ -148,7 +151,10 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             with bw_executor_guard(method,cancelled):
                 with ThreadPoolExecutor(max_workers=workers) as pool:
                     responses=list(pool.map(response,batches))
-            r=np.concatenate(responses)
+            r=np.concatenate([item[0] for item in responses])
+            if method=='fft-multislice':
+                for key in ('incoming_norm_error','outgoing_norm_error','incoming_max_excluded_population','outgoing_max_excluded_population'):
+                    diagnostic[key]=max(item[1][key] for item in responses)
             diagnostic.update(outgoing_response_seconds=perf_counter()-start_response,response_batches=len(batches),outgoing_directions=len(query),workers=workers)
             start_contract=perf_counter()
             if inverse is not None:r=r[inverse]*sign[:,:,None]*sign[:,None,:]

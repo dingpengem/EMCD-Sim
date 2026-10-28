@@ -50,12 +50,16 @@ def resolve_parameters(structure, settings, cfg):
                     harmonics=Ni017Geometry().beams(max(resolved.beam_cutoff,resolved.potential_cutoff)).hkl
                     if max(max(abs(h[0]),abs(h[2])) for h in harmonics)>mesh//2-2:
                         raise ValueError('Two-index FFT guard band unavailable')
+                elif resolved.zone==(1,1,7):
+                    from ..ni_117_geometry import Ni117Geometry
+                    Ni117Geometry().harmonics(mesh-4,max(resolved.beam_cutoff,resolved.potential_cutoff))
                 elif max(resolved.beam_cutoff,resolved.potential_cutoff)>=(mesh//2-2)*2/3.524:
                     raise ValueError('Two-index FFT guard band unavailable')
                 values['fft_grid']=mesh;break
             except ValueError as exc:
                 last=str(exc)
-                if 'supports verified' in last or 'requires the verified' in last or 'frames differ' in last:raise
+                if ('no automatic fallback' in last or 'supports verified' in last
+                        or 'requires the verified' in last or 'frames differ' in last):raise
         else:raise ValueError('Automatic FFT setup unavailable for the selected cutoffs and geometry. Review Advanced Numerical Settings. '+last)
     return values,dict(policy=POLICY,source='Matching reference configuration' if reference else 'Automatic starting configuration',
         status='Automatic settings do not guarantee numerical convergence.' if reference else 'Automatic starting settings — convergence not established.',

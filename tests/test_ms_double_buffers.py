@@ -61,3 +61,16 @@ def test_parallel_calls_keep_buffers_independent(old):
     with ThreadPoolExecutor(max_workers=4) as pool:
         actual=list(pool.map(lambda q:ms.multislice_double_channeling_response(elastic,831.271,q,2,**kwargs)[0],batches))
     for a,b in zip(actual,expected):np.testing.assert_array_equal(a,b)
+
+
+def test_001_default_fft_path_remains_bitwise_identical(old):
+    settings=Settings(zone=(0,0,1),target=(2,0,0),thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
+    elastic=elastic_model(Structure.nickel(),settings,systematic_row=True)
+    q=np.array([[.28,.28],[.28,-.28]])
+    results=[];fields=[]
+    for impl in (old,ms):
+        grid=impl.ProjectedNiFFT.build(elastic,grid_points=24,potential_cutoff=1.8,systematic_row=True,row_reduction=True)
+        incoming=impl.incident_fields(grid,2,depth_steps=17,slice_step_nm=.04);fields.append(incoming[0])
+        results.append(impl.multislice_double_channeling_response(elastic,831.271,q,2,fft_grid=24,potential_cutoff=1.8,
+            systematic_row=True,row_reduction=True,depth_steps=17,slice_step_nm=.04,prepared_grid=grid,prepared_incoming=incoming)[0])
+    np.testing.assert_array_equal(fields[0],fields[1]);np.testing.assert_array_equal(results[0],results[1])

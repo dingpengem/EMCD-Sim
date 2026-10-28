@@ -99,10 +99,10 @@ def test_invalid_ms_geometry_remains_rejected(window):
     # Stay below the independent interactive beam cap to reach the MS guard.
     window.spin['beam'].setValue(.9)
     window.zone.setText('0 1 1');window.propagation_box.setCurrentIndex(1);window.emcd_stale()
-    assert 'FFT EMCD supports verified Ni [017]' in window.memory_label.text()
+    assert 'FFT EMCD supports Ni [017], [117]' in window.memory_label.text()
     assert not window.emcd_button.isEnabled()
     assert window.forward_settings().propagation=='fft-multislice'
-    with pytest.raises(ValueError,match='FFT EMCD supports verified'):
+    with pytest.raises(ValueError,match='FFT EMCD supports Ni'):
         numerical_info(Structure.nickel(),replace(Settings(),zone=(0,1,1),beam_cutoff=.9),replace(ForwardSettings(),propagation='fft-multislice'),check_memory=False)
 
 
@@ -143,17 +143,21 @@ def test_solver_configuration_and_physics_unchanged():
     ms_old=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for name in ('transition_modes','depth_quadrature','propagate_slices','forward_event_amplitudes','incident_fields'):
         assert ast.dump(find(ms_current,name))==ast.dump(find(ms_old,name))
-    cls=lambda tree:next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='ProjectedNiFFT')
-    assert ast.dump(cls(ms_current))==ast.dump(cls(ms_old))
+    # ProjectedNiFFT deliberately gained an opt-in two-beam subspace. Keep the
+    # unchanged index mapping guard; default-plan arrays/diagnostics are compared
+    # bit-for-bit with archived code in test_ms_double_buffers for [001]/[017].
+    assert ast.dump(find(ms_current,'indices'))==ast.dump(find(ms_old,'indices'))
     path='src/emcd_sim/gui/propagation.py'
     now=ast.parse(Path(path).read_text(encoding='utf-8-sig'));before=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for node in before.body:
-        if isinstance(node,ast.FunctionDef) and node.name!='numerical_info':assert ast.dump(find(now,node.name))==ast.dump(node)
-    # Persistence gained only the extracted array fingerprint utility.
+        if isinstance(node,ast.FunctionDef) and node.name not in ('numerical_info','propagate'):assert ast.dump(find(now,node.name))==ast.dump(node)
+    # Existing persistence is unchanged except the explicit old-[117] rerun guard.
     path='src/emcd_sim/gui/project_io.py'
     present=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
     archived=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
-    present.body=[n for n in present.body if not (isinstance(n,ast.FunctionDef) and n.name=='fingerprints')]
+    additions=('fingerprints','frame_rerun_reason','rerun_reason')
+    present.body=[n for n in present.body if not (isinstance(n,ast.FunctionDef) and n.name in additions)]
+    archived.body=[n for n in archived.body if not (isinstance(n,ast.FunctionDef) and n.name=='rerun_reason')]
     assert ast.dump(present)==ast.dump(archived)
     for path in ('src/emcd_sim/double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
         assert Path(path).read_text(encoding='utf-8-sig').replace('\r\n','\n')==subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig').replace('\r\n','\n')

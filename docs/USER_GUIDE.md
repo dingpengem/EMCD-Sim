@@ -2,6 +2,42 @@
 
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
 
+## Research Ni [117] / (2,-2,0)
+
+This development-source feature is not included in the preserved Windows ZIPs.
+Enter nominal zone `1 1 7` and target `2 -2 0`, apply orientation, and keep the
+explicit [001] systematic-row restriction off. The right-handed screen frame is
+x=[1,-1,0], y=[7,7,-2], z=[1,1,7], each normalized. Select **Full finite ZOLZ**
+or the explicitly ideal **[117] 000 + target** basis. Both support BW, MS, and
+Single/Double Channeling. Arbitrary-zone structural previews do not establish
+validated arbitrary-zone EMCD or FFT support; unsupported combinations fail
+explicitly.
+
+For the studied reference, choose 200 kV, lock Y at zero and align the signed
+target to Bragg; X is approximately -10.06456964 mrad. Restore physical Thales
+A/B detectors. The transmitted beam is (0,0), while ZA=-k_incident,perp lies
+at (0.40130918,0) cycles/Å. Inspect source metadata and declare **crystal-frame**
+magnetization; the audited local Ni source is [001], not the incident axis.
+With eta=beta=1 the native studied magnetic samples are 831.271/848.698 eV.
+No experimental energy shift or new DFT tensor is implied. Rotate the tensor
+once; raw reversal-odd intensity can have a mirror-even part from finite qz
+and transverse magnetization. Paired-detector differences are not a parity test.
+
+Use Manual (Advanced) to inspect provisional research settings: beam4.6,
+potential6.2 cycles/Å, FFT32–48, depth129, max slice0.02 nm, detector97–129 and
+fractional boundary subpixels128. Run memory/resource preflight and review
+runtime before calculating. Automatic leaves the released starting defaults
+unchanged and does not claim [117] convergence. Potential2.5 omits all off-row
+[117] Fourier terms; BW and MS now warn. Coarse sampling warns too: grid17
+versus97 changed detector asymmetry by0.2296 pp at30 nm; even33 was insufficient
+there. Neither grid97 nor BW/MS agreement guarantees universal convergence.
+
+Older [117] projects retain their saved views. Missing, invalid or different
+frame metadata blocks reuse of orientation-dependent inputs; re-enter tilt
+and physical detector positions explicitly. Existing [001]/[017] conventions
+and defaults are preserved. See [scope and numerical evidence](NI_117_FINAL_SYMMETRY_VALIDATION.md)
+and [review status](NI_117_MERGE_READINESS.md) before quantitative interpretation.
+
 **Current source / Actions candidate: v0.6.1-beta.3 (0.6.1b3).** See [Windows candidate installation and provenance](WINDOWS_BETA_3.md). No Beta 3 release/tag is created. Settings and Diffraction remain side by side with adjustable three-column splitters; chevrons collapse optional controls and the bottom Project Results browser. Narrow Results panels stack maps, preserve full context under Details and restore full context in exports. Layout preferences do not change scientific project parameters.
 
 

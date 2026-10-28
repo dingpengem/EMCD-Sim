@@ -4,10 +4,18 @@ import json
 import numpy as np
 from .geometry import geometry,orientation
 from ..ni_017_geometry import Ni017Geometry
+from ..ni_117_geometry import Ni117Geometry
 from ..multislice_reference import fft_multislice_ni
 from ..multislice_reference import project_fft_amplitudes,complex_wave_diagnostics
 
 METHOD_NAMES={'bloch':'Bloch-wave','fft-multislice':'FFT Multislice','difference':'BW-MS numerical difference'}
+
+
+def projected_geometry_for(settings):
+    if settings.zone==(0,1,7):return Ni017Geometry()
+    if settings.zone==(1,1,7):return Ni117Geometry()
+    if settings.zone==(0,0,1):return None
+    raise ValueError('No validated oriented FFT potential for this zone; no automatic fallback')
 
 
 def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True):
@@ -21,15 +29,26 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     info=dict(bw_beams=n,fft_harmonics=0,potential_nonzero_harmonics=0,single_complex_pair_mib=pair,dense_working_estimate_mib=dense,
         fft_storage_working_mib=0.,coherence_working_mib=16*cfg.depth*n*n/2**20,propagation=cfg.propagation,
         fft_grid=cfg.fft_grid,slice_step_nm=cfg.slice_step,depth_nodes=cfg.depth)
+    info['numerical_warnings']=[]
+    if settings.zone==(1,1,7):
+        geo=Ni117Geometry()
+        offrow=sum(abs(geo.crystal.g_vector(h)[1])>1e-12 for h in geo.beams(settings.potential_cutoff).hkl)
+        info['potential_nonzero_offrow_harmonics']=int(offrow)
+        info['potential_support_warning']=('Requested cutoff retains no off-row [117] harmonics (first approximately 2.894 cycles/Angstrom). '
+            'This is not a full 2D [117] potential; increase the cutoff explicitly.' if not offrow and settings.basis_mode=='full' else '')
+        if info['potential_support_warning']:info['numerical_warnings'].append(info['potential_support_warning'])
+        if cfg.grid<97:
+            info['numerical_warnings'].append('Coarse [117] detector sampling: grid17 differed from grid97 by 0.2296 percentage points at 30 nm. '
+                'Refine angular/aperture sampling; grid97 is not a general convergence guarantee.')
     if cfg.propagation!='bloch':
-        if settings.zone!=(0,1,7) and not (settings.zone==(0,0,1) and cfg.systematic_row):raise ValueError('FFT EMCD supports verified Ni [017] or the explicit [001] (200) systematic row; no automatic fallback.')
+        if settings.zone not in ((0,1,7),(1,1,7)) and not (settings.zone==(0,0,1) and cfg.systematic_row):raise ValueError('FFT EMCD supports Ni [017], [117], or the explicit [001] (200) systematic row; no automatic fallback.')
         from .emcd_forward import material_reason
         reason=material_reason(structure)
         if reason:raise ValueError(reason)
         if not isinstance(cfg.fft_grid,int) or not 12<=cfg.fft_grid<=128 or cfg.fft_grid%2:raise ValueError('FFT grid must be even, 12–128')
         if not np.isfinite(cfg.slice_step) or not .001<=cfg.slice_step<=1:raise ValueError('Maximum slice step must be 0.001–1 nm')
         if int(np.ceil(settings.thickness/(cfg.depth-1)/cfg.slice_step))*(cfg.depth-1)>200000:raise ValueError('Requested FFT propagation exceeds 200000 split steps; increase slice step or reduce thickness explicitly')
-        geo=Ni017Geometry() if settings.zone==(0,1,7) else None
+        geo=projected_geometry_for(settings)
         if geo is not None:
             if not np.allclose(orientation(structure.atoms.cell.array,settings.zone),geo.frame,atol=1e-14):raise ValueError('FFT and BW orientation frames differ')
             harmonics,g=geo.harmonics(cfg.fft_grid,max(settings.beam_cutoff,settings.potential_cutoff))
@@ -44,7 +63,9 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
         allowed=np.array([geo.crystal.is_allowed(tuple(h)) for h in harmonics]) if geo is not None else harmonics[:,1]==0
         count=int(np.sum(allowed & (np.linalg.norm(g,axis=1)<=settings.potential_cutoff) & np.any(harmonics!=0,axis=1)))
         info.update(fft_harmonics=mesh,potential_nonzero_harmonics=count,fft_storage_working_mib=(24*cfg.depth+160)*mesh/2**20,
-            projected_geometry='Actual oriented Ni [017] full 2D, or explicitly selected [001] (200) systematic row; exact common hkl, IAM, B and Fourier cutoff as BW')
+            projected_geometry='Actual oriented Ni '+str(settings.zone)+'; exact common hkl, IAM, B and Fourier cutoff as BW',
+            elastic_basis_mode=settings.basis_mode,
+            fft_projection='Explicit exp(i dz PVP) FFT-convolution two-beam Galerkin' if settings.basis_mode=='two-beam' else 'Unrestricted FFT propagation; finite incoming/outgoing MDFF beam support')
     methods=2 if cfg.propagation=='both' else 1
     info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20
     info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+info['retained_results_working_mib']
@@ -88,7 +109,7 @@ def propagate(elastic,settings,cfg,z,stage,*,cancelled=None):
     if cfg.propagation in ('bloch','both'):
         stage('Running Bloch-wave propagation');waves['bloch']=elastic.amplitudes(z)
     if cfg.propagation in ('fft-multislice','both'):
-        if cfg.channeling_model=='double' or cfg.systematic_row:
+        if cfg.channeling_model=='double' or cfg.systematic_row or settings.zone==(1,1,7):
             from .channeling import fft_geometry,incident_fields
             stage('Running incoming FFT propagation in the matched projected potential')
             grid=fft_geometry(elastic,settings,cfg)

@@ -1,3 +1,15 @@
+# Unreleased — Ni [117] research geometry
+
+- Target-aligned FCC Ni [117] / (2,-2,0), full finite ZOLZ and explicit ideal
+  incoming/outgoing two-beam support for BW/MS Single and Double Channeling.
+- Raw mirror-parity diagnostics and reproducible bounded scientific validation;
+  crystal-[001] magnetization remains fixed and rotates once into the local frame.
+- Solver-independent warnings for absent off-row potential terms and coarse
+  sampling; safe read-only viewing of older [117] projects with guarded input reuse.
+- Existing [001]/[017] defaults, XMCD data, physical conventions, package version
+  and Windows artifacts are unchanged. No universal convergence, genuine DFT
+  MDFF or calibrated experimental accuracy is claimed. See [review](NI_117_MERGE_READINESS.md).
+
 # v0.6.1-beta.3 - Windows Actions candidate
 
 Package `0.6.1b3`; no release or tag. Responsive simultaneous scientific panels,

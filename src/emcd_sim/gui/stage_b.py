@@ -92,7 +92,7 @@ class StageB(NumericalSettingsUI):
         self.number('slice_step','Max slice step (nm)',.04,.001,1,self.emcd_stale)
         box.setToolTip('Controls the FFT representation of Multislice propagation. It must support the selected beam basis and potential Fourier bandwidth. Not the angular/detector q grid.')
         self.spin['slice_step'].setToolTip('MS-only maximum split-step distance between requested depth planes. Depth integration nodes and angular sampling remain separate controls.')
-        label=QtWidgets.QLabel('Verified FFT: Ni [017], or explicit [001] (200) systematic row. Incoming/outgoing beam support is matched in Double Channeling.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
+        label=QtWidgets.QLabel('FFT: oriented Ni [017] / [117], or explicit [001] (200) systematic row. [117] offers full ZOLZ or explicit two-beam projection. Agreement is not convergence.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
         self.solver_note=QtWidgets.QLabel();self.solver_note.setWordWrap(True);self.form.addRow(self.solver_note)
         self.sync_solver_controls()
 
@@ -249,6 +249,7 @@ class StageB(NumericalSettingsUI):
             info=numerical_info(self.structure,s,cfg,enforce_execution=False)
             from .parallel_resources import preview_text
             self.memory_label.setText(preview_text(s,cfg,info))
+            if info.get('numerical_warnings'):self.memory_label.setText(self.memory_label.text()+'\n'+'\n'.join(info['numerical_warnings']))
             if info['execution']['blocked']:reason=reason or info['execution']['risk']+': '+' '.join(info['execution']['messages'])
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
             structure_matches=self.emcd_result is not None and self.emcd_result['metadata']['structure']==self.structure.description()
