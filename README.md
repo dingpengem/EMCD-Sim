@@ -39,6 +39,8 @@ The [111] residual is dominated by potential/beam support; larger-MS increments
 pass at the tested point, while the lower-support profile remains uncertified.
 Main and existing Windows packages have not been updated by this review.
 
+The subsequent [local main merge acceptance](docs/GENERALIZED_MULTISLICE_LOCAL_MERGE_ACCEPTANCE.md) records the authorized merge and post-merge checks. No GitHub push, Windows rebuild, version change or release was performed.
+
 ## Installation
 
 ### Beta 3 Windows candidate
