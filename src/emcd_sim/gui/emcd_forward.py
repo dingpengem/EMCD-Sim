@@ -38,7 +38,7 @@ def inspect_source(path):
               selected=selected,provenance='Five-column validated. User must declare source magnetic axis, RP/LP convention and edge assignment.',audit=None)
     suffixes=('raw1','raw2','broad1','broad2','rawxmcd','inso','injoint','inc')
     if Path(path).resolve()==DEFAULT_SOURCE.resolve() and all(Path(path).with_suffix('.'+k).exists() for k in suffixes):
-        from ..ni_017_geometry import energy_audit
+        from ..wien2k_source_audit import energy_audit
         info['audit']=energy_audit(path);info['selected']=info['audit']['selected_magnetic_energies_ev']
         info['provenance']='Original Ni companion audit passed; cubic [001], native unshifted L3/L2.'
     return info
@@ -77,6 +77,7 @@ class ForwardSettings:
     systematic_row: bool=False
     worker_mode: str='automatic'
     parallel_workers: int=1
+    fft_generators: tuple|None=None
 
 
 def material_reason(structure):
@@ -141,7 +142,8 @@ from ..cancellation import Cancelled, check_cancelled
 
 def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
     check_cancelled(cancelled)
-    from .propagation import numerical_info
+    from .propagation import numerical_info,resolve_fft_configuration
+    cfg=resolve_fft_configuration(structure,settings,cfg)
     from .memory_budget import reserve_memory
     info=numerical_info(structure,settings,cfg)
     if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:

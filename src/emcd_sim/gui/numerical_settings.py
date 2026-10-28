@@ -45,16 +45,9 @@ def resolve_parameters(structure, settings, cfg):
             candidate=replace(cfg,fft_grid=mesh,depth=values['depth'],slice_step=values['slice_step'])
             try:
                 numerical_info(structure,resolved,candidate,hkl=hkl,check_memory=False)
-                if resolved.zone==(0,1,7):
-                    from ..ni_017_geometry import Ni017Geometry
-                    harmonics=Ni017Geometry().beams(max(resolved.beam_cutoff,resolved.potential_cutoff)).hkl
-                    if max(max(abs(h[0]),abs(h[2])) for h in harmonics)>mesh//2-2:
-                        raise ValueError('Two-index FFT guard band unavailable')
-                elif resolved.zone==(1,1,7):
-                    from ..ni_117_geometry import Ni117Geometry
-                    Ni117Geometry().harmonics(mesh-4,max(resolved.beam_cutoff,resolved.potential_cutoff))
-                elif max(resolved.beam_cutoff,resolved.potential_cutoff)>=(mesh//2-2)*2/3.524:
-                    raise ValueError('Two-index FFT guard band unavailable')
+                from .propagation import projected_geometry_for
+                crystal=geometry(structure,resolved,systematic_row=cfg.systematic_row)[0]
+                projected_geometry_for(resolved,crystal,cfg.fft_generators).harmonics(mesh-4,max(resolved.beam_cutoff,resolved.potential_cutoff))
                 values['fft_grid']=mesh;break
             except ValueError as exc:
                 last=str(exc)
@@ -119,6 +112,7 @@ class NumericalSettingsUI:
             if self.numerical_mode.currentIndex()==0:
                 # Source validation is separate from configuration selection.
                 cfg=ForwardSettings(propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],
+                    fft_generators=self.saved_fft_generators(),
                     channeling_model=('single','double')[self.channeling_box.currentIndex()],systematic_row=self.row_projection.isChecked(),
                     model=('xmcd','atomic')[self.model_box.currentIndex()],source_sha256=(self.source_info or {}).get('sha256','') if self.validated_path==self.source_path.text() else '',
                     axis_declared=self.declaration.isChecked(),magnetization=tuple(float(x) for x in self.axis.text().replace(',',' ').split()),

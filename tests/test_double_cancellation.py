@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.ni_017_geometry import Ni017Geometry
+from legacy_geometry import Ni017Geometry
 from emcd_sim import double_channeling as bw, multislice_double_channeling as ms
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
 from emcd_sim.gui.emcd_forward import ForwardSettings,calculate
@@ -42,7 +42,10 @@ def test_ms_unchanged_and_outgoing_cancel(elastic):
     old=reference_module('src/emcd_sim/multislice_double_channeling.py','emcd_sim._baseline_ms')
     q=np.array([[.15,.2],[.15,-.2]])
     args=dict(projected_geometry=Ni017Geometry(),fft_grid=24,potential_cutoff=1.8,depth_steps=9,slice_step_nm=.04)
+    args['prepared_grid']=old.ProjectedNiFFT.build(elastic,grid_points=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry())
     expected,_=old.multislice_double_channeling_response(elastic,831.4778,q,2,**args)
+    g=args['prepared_grid']
+    args['prepared_grid']=ms.ProjectedFFT(g.potential,g.hkl,g.g,g.acceleration_kv,g.carrier,g.reduction)
     actual,_=ms.multislice_double_channeling_response(elastic,831.4778,q,2,cancelled=lambda:False,**args)
     np.testing.assert_array_equal(actual,expected)
     event=threading.Event();original=ms.FFTSplitStep.advance

@@ -16,7 +16,7 @@ from matplotlib.backend_bases import MouseEvent
 from emcd_sim.gui.geometry import (Structure,Settings,orientation,indices,geometry,
     elastic_model,preview,align_bragg,excitation,za_from_tilt,tilt_from_za)
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.ni_017_geometry import Ni017Geometry
+from legacy_geometry import Ni017Geometry
 
 
 class GeometryTests(unittest.TestCase):
@@ -32,8 +32,8 @@ class GeometryTests(unittest.TestCase):
 
     def test_actual_arbitrary_orientation_bragg_locks_and_coordinates(self):
         structure=Structure.nickel()
-        for zone in [(0,0,1),(7,1,0),(1,1,1),(0,1,7)]:
-            c,R,h,g,m=geometry(structure,replace(Settings(),zone=zone))
+        for zone,target in [((0,0,1),(2,0,0)),((7,1,0),(0,0,2)),((1,1,1),(2,-2,0)),((0,1,7),(2,0,0))]:
+            c,R,h,g,m=geometry(structure,replace(Settings(),zone=zone,target=target))
             np.testing.assert_allclose(R@R.T,np.eye(3),atol=1e-14);self.assertAlmostEqual(np.linalg.det(R),1.)
             self.assertTrue(all(np.dot(t,zone)==0 for t in h))
             self.assertTrue(all(abs(c.g_vector(t)[2])<1e-12 for t in h))
@@ -78,14 +78,15 @@ class InteractionTests(unittest.TestCase):
         np.testing.assert_allclose(w.settings().tilt,tilt_from_za(point,w.settings().voltage),atol=1e-8)
         self.assertEqual(w.settings().zone,(0,1,7))
         old_detectors=w.detectors.copy();w.set_tilt([0,10]);np.testing.assert_array_equal(w.detectors,old_detectors)
-        w.target.setText('-2 0 0');w.apply_orientation();w.mode.setCurrentIndex(0);w.canvas.draw()
+        w.target.setText('-2 0 0');w.apply_orientation();w.mode.setCurrentIndex(0);w.ax.set_xlim(-.8,.8);w.canvas.draw()
         g=w.current[3][w.current[2].index((2,0,0))];x,y=w.ax.transData.transform(g)
         w.clicked(MouseEvent('button_press_event',w.canvas,x,y,button=1));self.assertEqual(w.settings().target,(2,0,0))
         w.lock.setCurrentText('Y');w.align();self.assertEqual(w.settings().tilt[1],10)
+        g=w.current[3][w.current[2].index(w.settings().target)]
         self.assertAlmostEqual(float(excitation(g,w.settings().tilt,w.settings().voltage)),0.,places=10)
         # Unapplied text must never reuse the old zone's reciprocal geometry.
         w.zone.setText('7 1 0');w.target.setText('0 0 2');w.align()
-        np.testing.assert_allclose(w.current[1],orientation(w.structure.atoms.cell.array,(7,1,0)))
+        np.testing.assert_allclose(w.current[1],orientation(w.structure.atoms.cell.array,(7,1,0),(0,0,2)))
         self.assertIn((0,0,2),w.current[2])
         w.structure=Structure(bulk('Cu','fcc',a=3.6,cubic=True));w.refresh();self.assertFalse(w.run_button.isEnabled())
         self.assertTrue(all(not w.tabs.isTabEnabled(i) for i in (1,2,3)))

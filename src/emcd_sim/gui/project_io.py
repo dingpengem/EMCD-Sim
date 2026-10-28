@@ -53,8 +53,8 @@ def settings_from_dict(value):
 
 def config_from_dict(value):
     d=dict(value);d['atomic']=NiLocalConfig(**d.get('atomic',{}))
-    for k in ('magnetization','centers','window'):
-        if k in d:d[k]=tuple(tuple(v) if isinstance(v,list) else v for v in d[k])
+    for k in ('magnetization','centers','window','fft_generators'):
+        if k in d and d[k] is not None:d[k]=tuple(tuple(v) if isinstance(v,list) else v for v in d[k])
     return ForwardSettings(**d)
 
 
@@ -215,31 +215,57 @@ def source_status(result):
 
 
 def frame_rerun_reason(result):
-    """Preserve viewing, but do not reinterpret old [117] local coordinates."""
-    if result['settings'].zone!=(1,1,7):return ''
+    """Preserve saved viewing, but never reinterpret a changed structural frame."""
     frame=result.get('metadata',{}).get('frame')
     snapshot=result.get('structure_snapshot')
     if frame is None or snapshot is None:
-        return 'Saved [117] frame or crystal snapshot is missing; saved results remain viewable, but orientation-dependent inputs must be re-entered before rerunning.'
+        return 'Saved frame or crystal snapshot is missing; saved results remain viewable, but orientation-dependent inputs must be re-entered before rerunning.'
     try:frame=np.asarray(frame,dtype=float)
-    except (TypeError,ValueError):return 'Saved [117] frame is invalid; re-enter orientation-dependent inputs before rerunning.'
+    except (TypeError,ValueError):return 'Saved frame is invalid; re-enter orientation-dependent inputs before rerunning.'
     if frame.shape!=(3,3) or not np.isfinite(frame).all():
-        return 'Saved [117] frame is invalid; re-enter orientation-dependent inputs before rerunning.'
+        return 'Saved frame is invalid; re-enter orientation-dependent inputs before rerunning.'
     from .geometry import orientation
-    expected=orientation(restore_structure(snapshot).atoms.cell.array,(1,1,7))
+    try:expected=orientation(restore_structure(snapshot).atoms.cell.array,result['settings'].zone,result['settings'].target)
+    except (ValueError,TypeError,np.linalg.LinAlgError):
+        return 'Saved structural orientation/target is incompatible; saved results remain viewable, but re-enter geometry before rerunning.'
     if not np.allclose(frame,expected,atol=1e-12,rtol=0):
-        return ('Saved [117] project uses an earlier local frame. Saved plots remain viewable; '
-                're-enter tilt and detector coordinates in the current [1,-1,0] / [7,7,-2] frame before rerunning.')
+        return ('Saved project uses an earlier local frame. Saved plots remain viewable; '
+                're-enter tilt and detector coordinates in the current target-aligned frame before rerunning.')
     return ''
 
 
 def rerun_reason(result):
+    if result.get('fft_recipe_error'):return result['fft_recipe_error']
     if not result.get('structure_snapshot'):return 'Original numeric crystal snapshot is missing; legacy results are read-only.'
     reason=frame_rerun_reason(result)
     if reason:return reason
     for name,s in source_status(result).items():
         if not s['verified']:return name+' source unavailable or SHA256 mismatch; locate the original source before rerunning.'
     return ''
+
+
+def saved_fft_generators(arrays,mesh,*,row_complement=None):
+    """Recover an old full FFT cell from its ordered integer table, never a preset."""
+    direct=arrays.get('fft_full__generators')
+    h=arrays.get('fft_full__beam_hkl')
+    if direct is not None:
+        b=np.asarray(direct)
+    elif h is not None and h.shape==(mesh*mesh,3):
+        b=np.array([h[mesh],h[1]])
+    elif h is not None and h.shape==(mesh,3) and row_complement is not None:
+        b=np.array([h[1],row_complement])
+        f=np.rint(np.fft.fftfreq(mesh)*mesh).astype(int)
+        if not np.array_equal(h,f[:,None]*b[0]):raise ValueError('Saved reduced FFT table is inconsistent; results remain viewable only.')
+    else:
+        raise ValueError('Saved FFT cell cannot be verified; results remain viewable, but re-enter FFT sampling before rerunning.')
+    if b.shape!=(2,3) or not np.isfinite(b).all() or not np.array_equal(b,np.rint(b)) or np.linalg.matrix_rank(b)!=2:
+        raise ValueError('Saved FFT generators are invalid; re-enter FFT sampling before rerunning.')
+    if h is not None and h.shape==(mesh*mesh,3):
+        f=np.rint(np.fft.fftfreq(mesh)*mesh).astype(int)
+        m,n=np.meshgrid(f,f,indexing='ij')
+        if not np.array_equal(h,(m[...,None]*b[0]+n[...,None]*b[1]).reshape(-1,3)):
+            raise ValueError('Saved FFT table and cell disagree; results remain viewable only.')
+    return tuple(tuple(int(v) for v in row) for row in b)
 
 
 def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:None):
@@ -270,10 +296,22 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     cm=json.loads((root/'comparison_metadata.json').read_text(encoding='utf-8')) if (root/'comparison_metadata.json').exists() else {}
     snapshot=json.loads((root/'structure.json').read_text(encoding='utf-8')) if manifest else meta.get('structure_snapshot')
     labels=cm.get('method_labels',meta.get('method_labels',[meta.get('method','bloch')]))
-    methods={};q=angular['qx'];qy=angular['qy']
+    methods={};q=angular['qx'];qy=angular['qy'];fft_recipe_error=''
     for name in labels:
         check('Reconstructing saved '+name+' plotting context');mmeta=cm.get('methods',{}).get(name,meta)
         settings=settings_from_dict(mmeta['settings']);cfg=config_from_dict(mmeta['mdff'])
+        if cfg.propagation!='bloch' and cfg.fft_generators is None:
+            from dataclasses import replace
+            try:
+                complement=None
+                if cfg.systematic_row and snapshot:
+                    from ..crystal import Crystal
+                    from ..projected_geometry import ProjectedGeometry
+                    source=Crystal(np.asarray(snapshot['lattice_angstrom']),snapshot['fractional_positions'],tuple(snapshot['species']))
+                    cell=ProjectedGeometry.from_crystal(source,settings.zone,settings.target,frame=mmeta['frame'])
+                    complement=cell.generators[1]
+                cfg=replace(cfg,fft_generators=saved_fft_generators(diffraction,cfg.fft_grid,row_complement=complement))
+            except ValueError as exc:fft_recipe_error=str(exc)
         hkl=np.asarray(mmeta['beam_hkl']);g=np.asarray(mmeta['g']);frame=np.asarray(mmeta['frame']);za=np.asarray(mmeta['za_q'])
         if (hkl.ndim!=2 or hkl.shape[1]!=3 or g.shape!=(len(hkl),2) or len(set(map(tuple,hkl)))!=len(hkl)
             or settings.target not in set(map(tuple,hkl)) or frame.shape!=(3,3) or za.shape!=(2,)
@@ -313,7 +351,7 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     if result['fft']:result['fft']['summary']=result['comparison'].get('fft',{})
     warnings=list(manifest.get('limitations',[])) if manifest else ['Legacy read-only import: no integrity manifest; only available metadata retained.']
     if not snapshot:warnings.append('Missing numeric crystal snapshot: full reproducibility and Use These Settings/rerun are unavailable.')
-    result.update(project_path=str(root),project_manifest=manifest,project_warnings=warnings,structure_snapshot=snapshot,read_only_legacy=manifest is None)
+    result.update(project_path=str(root),project_manifest=manifest,project_warnings=warnings,structure_snapshot=snapshot,read_only_legacy=manifest is None,fft_recipe_error=fft_recipe_error)
     if manifest and 'display_state.json' in manifest['files']:result['display_state']=json.loads((root/'display_state.json').read_text(encoding='utf-8'))
     check('Saved results ready; no physical recalculation')
     return result

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from emcd_sim import multislice_double_channeling as ms
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
-from emcd_sim.ni_017_geometry import Ni017Geometry
+from legacy_geometry import Ni017Geometry
 
 
 def tool():

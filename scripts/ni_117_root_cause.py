@@ -138,7 +138,8 @@ def summarize():
 
 def incident_controls():
     from ni_117_emcd_validation import configurations,run_case,sha,PHYSICS_FILES
-    from emcd_sim.ni_117_geometry import Ni117Geometry
+    from emcd_sim.study_geometry import StudyGeometry
+    Ni117Geometry=lambda a_angstrom=3.524: StudyGeometry((1,1,7),(2,-2,0),a_angstrom)
     hashes={p:sha(ROOT/'src/emcd_sim'/p) for p in PHYSICS_FILES};records=[]
     for label,s,cfg in configurations():
         if not label.startswith('axis_control_'):continue

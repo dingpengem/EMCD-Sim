@@ -2,7 +2,7 @@
 from pathlib import Path
 import numpy as np
 import pytest
-from emcd_sim.ni_117_geometry import Ni117Geometry
+from legacy_geometry import Ni117Geometry
 from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
 from emcd_sim.geometry import characteristic_qz_angstrom_inv
 

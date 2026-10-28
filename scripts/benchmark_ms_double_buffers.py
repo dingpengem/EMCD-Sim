@@ -7,7 +7,8 @@ from emcd_sim import multislice_double_channeling as current
 from emcd_sim.double_channeling import intensities_from_response
 from emcd_sim.gui.prb_benchmark import relative_dichroism_percent
 from emcd_sim.gui.signal_normalization import divide_percent,MAP_FLOOR
-from emcd_sim.ni_017_geometry import Ni017Geometry
+from emcd_sim.study_geometry import StudyGeometry
+Ni017Geometry=lambda a_angstrom=3.524: StudyGeometry((0,1,7),(2,0,0),a_angstrom)
 import profile_ms_double as profile
 
 BASE='39aafb6701f7cf84643c10366afac59401e8d91e'

@@ -2,8 +2,8 @@
 from dataclasses import replace
 import numpy as np
 import pytest
-from emcd_sim.ni_117_geometry import Ni117Geometry
-from emcd_sim.ni_017_geometry import Ni017Geometry
+from legacy_geometry import Ni117Geometry
+from legacy_geometry import Ni017Geometry
 from emcd_sim.gui.geometry import Structure, Settings, geometry, orientation, indices, excitation, align_bragg, elastic_model
 from emcd_sim.gui.emcd_forward import ForwardSettings, calculate, tensors
 from emcd_sim.gui.project_io import save_project, load_project, fingerprints, settings_from_dict
@@ -76,7 +76,7 @@ def test_missing_or_invalid_saved_117_frame_blocks_input_reuse(frame):
     result=dict(settings=settings(),metadata=dict(frame=frame),structure_snapshot=structure_snapshot(Structure.nickel()))
     assert frame_rerun_reason(result)
     result['settings']=replace(result['settings'],zone=(0,1,7))
-    assert frame_rerun_reason(result)==''
+    assert frame_rerun_reason(result)
 
 
 @pytest.mark.parametrize('solver',['bloch','fft-multislice','both'])

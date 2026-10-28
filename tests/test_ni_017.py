@@ -2,7 +2,7 @@
 import unittest
 from pathlib import Path
 import numpy as np
-from emcd_sim.ni_017_geometry import Ni017Geometry,rotated_tensor,energy_audit
+from legacy_geometry import Ni017Geometry,rotated_tensor,energy_audit
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
 from emcd_sim.multislice_reference import fft_multislice_ni
 from emcd_sim.multislice_reference import project_fft_amplitudes

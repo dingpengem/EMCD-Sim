@@ -2,7 +2,7 @@
 import importlib.util
 from pathlib import Path
 import numpy as np
-from emcd_sim.ni_117_geometry import Ni117Geometry
+from legacy_geometry import Ni117Geometry
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
 from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
 from emcd_sim.single_channeling_tensor import _tensor_angular_maps,fcc_site_phase_matrix

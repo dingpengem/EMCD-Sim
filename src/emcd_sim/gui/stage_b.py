@@ -92,7 +92,7 @@ class StageB(NumericalSettingsUI):
         self.number('slice_step','Max slice step (nm)',.04,.001,1,self.emcd_stale)
         box.setToolTip('Controls the FFT representation of Multislice propagation. It must support the selected beam basis and potential Fourier bandwidth. Not the angular/detector q grid.')
         self.spin['slice_step'].setToolTip('MS-only maximum split-step distance between requested depth planes. Depth integration nodes and angular sampling remain separate controls.')
-        label=QtWidgets.QLabel('FFT: oriented Ni [017] / [117], or explicit [001] (200) systematic row. [117] offers full ZOLZ or explicit two-beam projection. Agreement is not convergence.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
+        label=QtWidgets.QLabel('FFT: structure-derived projected ZOLZ, with a target-aligned crystal frame and bounded sampling. Full finite, explicit row, or ideal two-beam support. EMCD remains the Ni research model; agreement is not convergence.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
         self.solver_note=QtWidgets.QLabel();self.solver_note.setWordWrap(True);self.form.addRow(self.solver_note)
         self.sync_solver_controls()
 
@@ -120,8 +120,8 @@ class StageB(NumericalSettingsUI):
         self.spin['potential'].setToolTip('BW: limits crystal-potential Fourier components used in diffraction-beam coupling. MS: limits Fourier components used to construct the projected real-space potential. U_(g−g′), |g−g′| ≤ cutoff. Distinct from beam radius, ionization momentum transfer and detector extent. Crystallographic g=1/d; no extra 2π.')
         self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
         self.spin['b'].setToolTip('Shared IAM elastic-potential damping for both BW and MS; not a solver-specific sampling control.')
-        self.row_projection=QtWidgets.QCheckBox('Explicit [001] (200)\nsystematic-row approximation');self.form.addRow(self.row_projection)
-        self.row_projection.setToolTip('Only for [001]. Excludes off-row ZOLZ beams and changes the projected elastic model. Exact (200) Bragg alignment does not establish physical two-beam isolation. [017] retains its full finite 2D ZOLZ basis.')
+        self.row_projection=QtWidgets.QCheckBox('Explicit target systematic-row\napproximation');self.form.addRow(self.row_projection)
+        self.row_projection.setToolTip('Retains beams and potential harmonics parallel to the selected target. This changes the elastic model and is distinct from an ideal two-beam truncation. Exact target Bragg alignment does not establish isolated two-beam diffraction.')
         self.row_projection.toggled.connect(self.refresh)
 
         self.form=shared_form
@@ -222,17 +222,27 @@ class StageB(NumericalSettingsUI):
             if show_error:self.error(str(exc))
         self.emcd_stale()
 
+    def fft_cell_key(self):
+        s=self.settings();a=self.structure.atoms
+        return (s.zone,s.target,a.cell.array.tobytes(),a.get_scaled_positions().tobytes(),tuple(a.get_chemical_symbols()))
+
+    def saved_fft_generators(self):
+        recipe=getattr(self,'_loaded_fft_recipe',None)
+        return recipe[1] if recipe is not None and recipe[0]==self.fft_cell_key() else None
+
     def forward_settings(self):
         if self.spin['grid'].value()%2==0:raise ValueError('Choose an odd angular / detector grid size so qy=0 is sampled exactly.')
         atomic=NiLocalConfig(**{k:self.spin['atomic_'+k].value() for k in asdict(NiLocalConfig())})
         mode='xmcd' if self.model_box.currentIndex()==0 else 'atomic';axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')
         if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):raise ValueError('Validate the current XMCD source first')
-        return ForwardSettings(worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+        cfg=ForwardSettings(fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
+        from .propagation import resolve_fft_configuration
+        return resolve_fft_configuration(self.structure,self.settings(),cfg)
 
     def emcd_stale(self,*_):
         if self.resolve_numerical_ui():

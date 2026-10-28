@@ -48,7 +48,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         geometry_form=self.form;self.geometry_options=CollapsibleSection('Orientation / ZA options',expanded=False);self.geometry_options.setObjectName('geometry_options');self.geometry_options.header.setToolTip('Crystal orientation, target hkl, projected ZA coordinates and Bragg alignment lock');geometry_form.addRow(self.geometry_options);self.form=QtWidgets.QFormLayout(self.geometry_options.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         self.zone=QtWidgets.QLineEdit('0 1 7');self.zone.setToolTip('Direct-lattice [u v w]; changes the actual oriented cell.');self.form.addRow('Nominal zone [uvw]',self.zone)
         self.target=QtWidgets.QLineEdit('2 0 0');self.target.setToolTip('Target Miller indices; must belong to the oriented finite basis.');self.form.addRow('Target (hkl)',self.target)
-        self.basis_mode=QtWidgets.QComboBox();self.basis_mode.addItem('Full finite ZOLZ','full');self.basis_mode.addItem('Ideal [117] 000 + target','two-beam');self.form.addRow('Diffraction basis',self.basis_mode);self.basis_mode.currentIndexChanged.connect(self.refresh)
+        self.basis_mode=QtWidgets.QComboBox();self.basis_mode.addItem('Full finite ZOLZ','full');self.basis_mode.addItem('Ideal 000 + target','two-beam');self.form.addRow('Diffraction basis',self.basis_mode);self.basis_mode.currentIndexChanged.connect(self.refresh)
         self.button('Apply orientation / target',self.apply_orientation)
         self.mode=QtWidgets.QComboBox();self.mode.addItems(['Select reflection','Set projected ZA','Move detector A','Move detector B']);self.form.addRow('Click mode',self.mode)
         self.number('qx','ZA qx (Å⁻¹)',0,-20,20,self.za_changed)
@@ -203,7 +203,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             limits=((-s.beam_cutoff-.2,s.beam_cutoff+.2),)*2 if fit else old_limits
             self.ax.set(xlim=limits[0],ylim=limits[1],aspect='equal',xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)',title='Elastic diffraction — exit intensities' if fresh else 'Current reciprocal geometry — no current intensities')
             self.ax.legend(fontsize=7,loc='upper right');self.canvas.draw_idle()
-            support='explicit (200) systematic row' if self.row_projection.isChecked() else 'full radial ZOLZ cutoff'
+            support='explicit target systematic row' if self.row_projection.isChecked() else 'full radial ZOLZ cutoff'
             self.info.setPlainText(self.structure.description()+f'\n\nNominal zone: {s.zone}\nR crystal-to-local:\n{R}\nIncluded beams: {len(hkl)} ({support})\n'
                 f'Current tilt: {s.tilt} mrad\nZA: {za} Å⁻¹\nSelected target: {s.target}\n'
                 'Stage C: BW / verified [017] FFT entrance-channeling EMCD/EELS through explicit Run EMCD / EELS.\nNi projected ZOLZ IAM; no outgoing channeling, absorption/TDS or physical CBED disks.\n'
@@ -241,6 +241,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             s=self.settings();_,_,hkl,g,_=geometry(self.structure,s,systematic_row=self.row_projection.isChecked());self.set_tilt(align_bragg(g[hkl.index(s.target)],s.tilt,s.voltage,self.lock.currentText()))
         except Exception as exc:self.error(str(exc))
     def reset_reference(self):
+        self._loaded_fft_recipe=None
         with QtCore.QSignalBlocker(self.basis_mode):self.basis_mode.setCurrentIndex(0)
         with QtCore.QSignalBlocker(self.row_projection):self.row_projection.setChecked(False)
         self.zone.setText('0 1 7');self.target.setText('2 0 0');self.set_tilt((0,0));self.lock.setCurrentText('Y');self.align();self.restore_detectors()

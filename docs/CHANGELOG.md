@@ -1,3 +1,15 @@
+# Unreleased ? generalized Projected ZOLZ development
+
+- Shared crystallographic orientation, exact integer reciprocal basis and
+  structure-derived IAM Fourier potential; no production [017]/[117] geometry imports.
+- Legacy algorithms retained as frozen test fixtures; saved FFT-cell metadata
+  and frame guards preserve viewing and prevent ambiguous reruns.
+- Representative [001]/[017]/[117]/[111]/[710] BW/MS Single/Double checks.
+  Independent [111] quadrature failures remain documented; no universal
+  production convergence claim. Atomic 3D B1 is deferred pending review.
+- No default/version change, Windows rebuild, merge or publication.
+  See [Milestone A validation](GENERAL_ZOLZ_MULTISLICE_VALIDATION.md).
+
 # Unreleased — Ni [117] research geometry
 
 - Target-aligned FCC Ni [117] / (2,-2,0), full finite ZOLZ and explicit ideal

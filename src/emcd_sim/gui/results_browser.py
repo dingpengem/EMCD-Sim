@@ -283,6 +283,7 @@ class ProjectWorkspace:
         from .project_io import frame_rerun_reason
         frame_reason=frame_rerun_reason(r)
         if frame_reason:self.error(frame_reason);return
+        if r.get('fft_recipe_error'):self.error(r['fft_recipe_error']);return
         if c.worker_mode not in ('automatic','manual') or type(c.parallel_workers) is not int or not 1<=c.parallel_workers<=4:
             self.error('Saved parallel-worker request is unsupported (Automatic/Manual, 1–4). Saved results remain viewable; inputs were not replaced or clamped.');return
         try:structure=restore_structure(r.get('structure_snapshot'))
@@ -320,6 +321,7 @@ class ProjectWorkspace:
             for name,status in source_status(r).items():
                 if name=='cif':self.input_source_requirements.append(status)
         finally:self._restoring=False
+        self._loaded_fft_recipe=(self.fft_cell_key(),c.fft_generators) if c.fft_generators is not None else None
         self.restore_numerical_selection(r['metadata'])
         self.refresh();self.statusBar().showMessage('Saved settings restored to Current Inputs. No calculation started. '+rerun_reason(r))
     def input_source_reason(self):

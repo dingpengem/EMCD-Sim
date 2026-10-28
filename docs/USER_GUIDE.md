@@ -892,3 +892,20 @@ Saved explicit memory budgets are preserved; New Project resets the budget.
 See [sampling and memory guidance](ANGULAR_MAP_RESOLUTION.md), including runtime
 limits and why High can be rejected under 2048 MiB. These controls are included
 in the fresh local candidate described in [release acceptance](V061_BETA_ACCEPTANCE.md).
+
+
+## Generalized Projected ZOLZ development branch
+
+The shared geometry engine derives local axes and the complete reciprocal plane
+from the structure, zone and signed target. A target defines positive local x;
+changing it can rotate screen coordinates. Tilt and detector coordinates are
+local to that frame. Magnetization remains specified in crystal Cartesian axes.
+New FFT results record their actual reciprocal generators. Older saved frames
+and FFT tables remain viewable; incompatible or ambiguous input recipes require
+explicit re-entry before rerunning.
+
+See [Milestone A validation](GENERAL_ZOLZ_MULTISLICE_VALIDATION.md) for the five
+representative orientations, accepted BW/MS comparisons and retained numerical
+failures. New zone support does not imply converged numerical defaults or a
+validated arbitrary-material MDFF. This development is not in the existing
+Windows packages; Atomic 3D remains a separately gated implementation plan.

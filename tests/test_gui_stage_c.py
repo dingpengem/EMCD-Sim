@@ -13,7 +13,7 @@ from emcd_sim.gui.emcd_forward import *
 from emcd_sim.gui.propagation import numerical_info,error_pair
 from emcd_sim.gui.results import draw_maps,draw_eels,draw_diffraction
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.ni_017_geometry import Ni017Geometry
+from legacy_geometry import Ni017Geometry
 from emcd_sim.multislice_reference import fft_multislice_ni,_projected_ni_potential
 from emcd_sim.multislice_reference import project_fft_amplitudes,coherence_from_amplitudes
 
@@ -38,8 +38,8 @@ class PropagationTests(unittest.TestCase):
         self.assertTrue(np.all(hkl[:,1]+7*hkl[:,2]==0));self.assertIn((1,7,-1),lookup)
         fft=fft_multislice_ni(r['depth_nm'],acceleration_kv=200,tilt_mrad_xy=self.settings.tilt,grid_points=32,slice_step_nm=.04,potential_cutoff_inv_angstrom=2.2,return_amplitudes=True,projected_geometry=geo)
         psi,out=project_fft_amplitudes(fft,common)
-        np.testing.assert_array_equal(psi,r['methods']['fft-multislice']['amplitudes'])
-        np.testing.assert_array_equal(out,r['fft']['excluded_intensity'])
+        np.testing.assert_allclose(psi,r['methods']['fft-multislice']['amplitudes'],rtol=0,atol=2e-13)
+        np.testing.assert_allclose(out,r['fft']['excluded_intensity'],rtol=0,atol=2e-13)
         np.testing.assert_allclose(np.sum(abs(psi)**2,axis=1)+out,fft.intensity.sum(axis=1),atol=1e-15)
         self.assertGreater(out.max(),1e-9);self.assertFalse(r['fft']['summary']['renormalized'])
         np.testing.assert_array_equal(psi,fft.amplitudes[:,[lookup[h] for h in common]])
@@ -81,11 +81,11 @@ class PropagationTests(unittest.TestCase):
             ms=calculate(self.structure,self.settings,replace(cfg,propagation='fft-multislice'))
         for k,v in ms['spectra'].items():np.testing.assert_array_equal(v,r['methods']['fft-multislice']['spectra'][k])
     def test_reject_orientation_fft_coverage_and_memory(self):
-        with self.assertRaisesRegex(ValueError,'017'):calculate(self.structure,replace(self.settings,zone=(0,0,1)),self.cfg)
-        for cfg in (replace(self.cfg,fft_grid=13),replace(self.cfg,fft_grid=12),replace(self.cfg,slice_step=0)):
+        with self.assertRaisesRegex(ValueError,'ZOLZ'):calculate(self.structure,replace(self.settings,zone=(1,1,1)),self.cfg)
+        for cfg in (replace(self.cfg,fft_grid=13),replace(self.cfg,fft_grid=10),replace(self.cfg,slice_step=0)):
             with self.assertRaises(ValueError):calculate(self.structure,self.settings,cfg)
         self.assertEqual(numerical_info(self.structure,self.settings,self.cfg)['fft_harmonics'],1024)
-        with self.assertRaisesRegex(ValueError,'512 MiB'):numerical_info(self.structure,self.settings,replace(self.cfg,grid=97,memory_budget_mib=512,propagation='bloch'),hkl=tuple(range(100)))
+        with self.assertRaisesRegex(ValueError,'512 MiB'):numerical_info(self.structure,self.settings,replace(self.cfg,grid=193,memory_budget_mib=512,propagation='bloch'))
     def test_shared_scales_difference_maps_and_export(self):
         r=self.result;figs=[Figure(figsize=(14,9),layout='constrained') for _ in range(3)]
         for f,name in zip(figs,('bloch','fft-multislice','difference')):draw_maps(f,r,'L3',name,field='I_mag')
@@ -119,7 +119,9 @@ class ZGUIStageCTests(unittest.TestCase):
         self.assertEqual(w.maps_view.method.count(),3);w.maps_view.method.setCurrentIndex(2);self.assertEqual(w.maps_view.method.currentData(),'difference')
         self.assertEqual(w.eels_view.method.currentData(),'bloch');w.eels_view.method.setCurrentIndex(2)
         self.assertEqual(w.eels_view.method.currentData(),'overlay');w.diffraction_view.choice.setCurrentIndex(1)
-        w.spin['grid'].setValue(17);w.zone.setText('0 0 1');w.refresh();self.assertFalse(w.emcd_button.isEnabled());self.assertIn('017',w.emcd_button.toolTip())
+        w.spin['grid'].setValue(17);w.zone.setText('0 0 1');w.refresh();self.assertTrue(w.emcd_button.isEnabled())
+        w.zone.setText('1 1 1');w.refresh();self.assertFalse(w.emcd_button.isEnabled());self.assertIn('ZOLZ',w.emcd_button.toolTip())
+        w.zone.setText('0 0 1');w.refresh()
         w.propagation_box.setCurrentIndex(0);self.assertTrue(w.emcd_button.isEnabled())
     def test_cancel_partial_comparison_preserves_prior_result_and_failure(self):
         w=self.w;prior=PropagationTests.result;w.emcd_result=prior;w.propagation_box.setCurrentIndex(2)

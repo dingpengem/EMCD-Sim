@@ -12,7 +12,7 @@ from emcd_sim.gui.emcd_forward import *
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.geometry import orientation
 from emcd_sim.elastic import depth_coherence
-from emcd_sim.ni_017_geometry import Ni017Geometry,rotated_tensor
+from legacy_geometry import Ni017Geometry,rotated_tensor
 from emcd_sim.ni_local_mdff import ni_local_transitions
 from emcd_sim.mdff_tensor import dipole_tensor_from_transitions
 from emcd_sim.single_channeling_tensor import run_tensor_with_coherence

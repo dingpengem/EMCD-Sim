@@ -8,7 +8,8 @@ from dataclasses import asdict,dataclass
 from pathlib import Path
 import argparse,hashlib,json,subprocess,time
 import numpy as np
-from emcd_sim.ni_117_geometry import Ni117Geometry
+from emcd_sim.study_geometry import StudyGeometry
+Ni117Geometry=lambda a_angstrom=3.524: StudyGeometry((1,1,7),(2,-2,0),a_angstrom)
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model,excitation
 from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
 from emcd_sim.geometry import characteristic_qz_angstrom_inv,VirtualDetector
@@ -92,7 +93,7 @@ def single_response(elastic,C,energy,q,thickness):
 
 
 def identities(profile,s,method,channel):
-    files=['ni_117_geometry.py','double_channeling.py','multislice_double_channeling.py',
+    files=['projected_geometry.py','crystallography.py','projected_potential.py','double_channeling.py','multislice_double_channeling.py',
         'single_channeling_tensor.py','physical_elastic.py','scattering.py','gui/geometry.py','gui/emcd_forward.py',
         'xmcd_effective_mdff.py','mdff_tensor.py','geometry.py','multislice_reference.py']
     return dict(profile=asdict(profile),settings=asdict(s),method=method,channeling=channel,

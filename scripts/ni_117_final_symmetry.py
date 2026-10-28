@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from ni_117_magnetization import OUT as CACHE,ROOT,ENERGIES,write_json,write_npz,sha
 from emcd_sim.geometry import VirtualDetector,electron_wavelength_angstrom
-from emcd_sim.ni_117_geometry import Ni117Geometry
+from emcd_sim.study_geometry import StudyGeometry
+Ni117Geometry=lambda a_angstrom=3.524: StudyGeometry((1,1,7),(2,-2,0),a_angstrom)
 import ni_117_magnetization_report as report
 
 OUT=ROOT/'outputs/ni_117_final_symmetry_validation'
