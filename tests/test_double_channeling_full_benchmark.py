@@ -14,7 +14,8 @@ def test_equivalent_sites_preserve_general_complex_average():
     hi=np.array([[0,0,0],[2,0,0],[1,7,-1]])
     positions=np.array([[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0],[.13,.27,.39]])
     phases,weights=equivalent_site_phases(hi,hi,positions)
-    delta=hi[None,:,:]-hi[:,None,:]
+    # Forward localized operator: exp(-i Q.R), Q=detector+h-g.
+    delta=hi[:,None,:]-hi[None,:,:]
     original=np.exp(2j*np.pi*np.einsum('ghc,sc->sgh',delta,positions))
     rng=np.random.default_rng(19);k=rng.normal(size=(3,3))+1j*rng.normal(size=(3,3))
     expected=np.mean([abs(np.sum(k*p))**2 for p in original])

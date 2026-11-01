@@ -35,7 +35,7 @@ def test_complex_contraction_equals_direct_transition_amplitude_sum():
     frac=sim.elastic.crystal.fractional_positions
     for r in frac:
         amplitude=np.sum(psi*np.exp(2j*np.pi*(np.asarray(sim.elastic.beams.hkl)@r))
-                          *(Q@d)/np.sum(Q**2,axis=1))
+                          *(Q@d.conj())/np.sum(Q**2,axis=1))
         direct+=abs(amplitude)**2/len(frac)
     assert (n+m).item()==pytest.approx(direct,rel=1e-11,abs=1e-14)
 

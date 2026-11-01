@@ -53,7 +53,11 @@ def test_orientation_source_reproduction_and_preservation():
     original=json.loads((OUT/'provenance.json').read_text())
     for mapping in original['previous_hashes'].values():
         for path,digest in mapping.items():assert hashlib.sha256(Path(path).read_bytes()).hexdigest()==digest
-    assert hashlib.sha256((ROOT/'data/wien2k_ni/Ni_fm.xmcd').read_bytes()).hexdigest()==original['source_sha256']
+    # Verify the actual historical input, not a later package-format copy.
+    identity=json.loads((ROOT/'tests/fixtures/ni_xmcd_provenance_v1.json').read_text(encoding='utf-8'))
+    historical=ROOT/'tests/fixtures'/identity['historical']['fixture']
+    assert identity['historical']['sha256']==original['source_sha256']
+    assert hashlib.sha256(historical.read_bytes()).hexdigest()==original['source_sha256']
 
 
 def test_gate_reports_unrun_work_and_never_invents_voltage_results():

@@ -1,6 +1,10 @@
 # P2 v0.4.3 — Complex MDFF tensor in entrance-only EMCD
 
+> Historical implementation-stage narrative and original validation numbers are retained for provenance. Only the explicitly corrected current formulas below supersede the former convention. For present behavior and acceptance, see [final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md).
+
 **Research status:** a real complex transition-tensor contraction is implemented, not a quantitatively calibrated Ni MDFF or absolute cross section. The previous Gaussian `magnetic_fraction=0.12` mode remains the default for compatibility.
+
+> Historical API examples describe v0.4.3. The current formula is stated below; this does not restore removed CLI options or defaults.
 
 ## Portable examples (Windows / macOS / Linux)
 
@@ -21,8 +25,10 @@ Transverse diffraction coordinates are 000-centered `q_g = q_detector - g` in cy
 For **equivalent localized FCC Ni core-loss sites**, `P_gh=mean_a exp[2πi(hkl_g-hkl_h)·fractional_site_a]`. The relative intensity kernel is
 
 ```
-I_rel(q,E) = t Re Σ_gh C_gh P_gh S_dip(Q_g,Q_h,E) / (|Q_g|² |Q_h|²)
+I_rel(q,E) = t Re Σ_gh C_gh P_gh S_dip(Q_h,Q_g,E) / (|Q_g|² |Q_h|²)
 ```
+
+**Correction note:** the pre-correction formula used S_dip(Q_g,Q_h). That ordering is superseded: forward excitation uses d*, hence S_dip(Q_h,Q_g) with the fixed C_gh above. T and the proper MDFF definition do not change. The old formula is retained in Git history; see [final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md).
 
 Equivalent core-loss sites are summed **incoherently**, but incident Bragg channels at each site interfere coherently. The site *mean* fixes only a relative per-atom scale. No fast-electron absolute cross-section prefactor, atomic density, detector solid-angle correction, absorption, thermal diffuse scattering, or outgoing propagation is present. The implementation rejects significantly negative total intensity.
 

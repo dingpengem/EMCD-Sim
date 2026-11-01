@@ -18,9 +18,9 @@ def test_factorized_complex_mdff_against_dense_reference():
     assert_allclose(l@l.conj().T,t,atol=1e-14)
     q=np.array([[.2,.3,-.1],[-.4,.3,-.1],[.6,.2,-.1]])
     k=dipole_kernel(q);a=np.array([1,.3j,-.2+.1j])
-    dense=k@t@k.T
+    dense=k@t.T@k.T
     reference=sum(a[g]*a[h].conjugate()*dense[g,h] for g in range(3) for h in range(3))
-    modes=a@k@l
+    modes=a@k@l.conj()
     assert_allclose(np.vdot(modes,modes),reference,atol=1e-14)
     assert not np.isclose(reference.real,np.sum(abs(a)**2*np.diag(dense).real))
     with pytest.raises(ValueError,match='Non-PSD'):transition_modes(np.diag([1,1,-.01]))
@@ -48,7 +48,7 @@ def test_forward_adjoint_complex_amplitudes_and_reversed_order():
     kernel=rng.normal(size=(3,4,3))+1j*rng.normal(size=(3,4,3))
     d=np.array([[1,-.3j,0],[.3j,1,0],[0,0,.7]])
     oi=np.array([0,1,3,5])
-    modes=transition_modes(d)
+    modes=transition_modes(d).conj()
     scattered=np.einsum('g,gha,af->fh',incoming,kernel,modes)
     wave=np.zeros((3,n),complex);wave[:,oi]=scattered
     expected=(direct@wave.T)[0]

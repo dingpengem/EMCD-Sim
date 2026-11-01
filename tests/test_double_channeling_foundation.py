@@ -25,8 +25,8 @@ def test_direct_transition_sum_vs_complex_mdff_contraction():
     q = rng.normal(size=(5,3))
     a = rng.normal(size=5)+1j*rng.normal(size=5)
     kernel = dipole_kernel(q)
-    reference = sum(abs(sum(a[g]*np.dot(kernel[g],dn) for g in range(5)))**2 for dn in d)
-    mdff = kernel@t@kernel.T
+    reference = sum(abs(sum(a[g]*np.dot(kernel[g],dn.conj()) for g in range(5)))**2 for dn in d)
+    mdff = kernel@t.T@kernel.T
     assert_allclose(np.einsum('g,h,gh',a,a.conj(),mdff),reference,atol=1e-12)
     assert_allclose(contract_cartesian(a@kernel,t),reference,atol=1e-12)
     assert reference >= 0
@@ -39,8 +39,8 @@ def test_momentum_units_and_phase_conjugation():
     assert_allclose(dipole_kernel(2*q),dipole_kernel(q)/2)
     v = np.array([1,1j,0])
     t = np.outer(v,v.conj())
-    assert_allclose(contract_cartesian(v,t),0,atol=1e-14)
-    assert_allclose(contract_cartesian(v.conj(),t),4)
+    assert_allclose(contract_cartesian(v,t),4,atol=1e-14)
+    assert_allclose(contract_cartesian(v.conj(),t),0)
     even = contract_cartesian(v,t.real)
     odd = contract_cartesian(v,1j*t.imag)
     assert_allclose(contract_cartesian(v,t),even+odd)
@@ -57,6 +57,6 @@ def test_atomic_transition_provider_uses_same_complex_contraction():
     tensor=dipole_tensor_from_transitions(ds,energy,.6)
     v=np.array([.2+.1j,.3-.4j,-.1+.02j])
     line=gaussian_broadening_ev(energy,ds.energy_ev,.6)
-    direct=line@(ds.weights*np.abs(ds.dipoles_angstrom@v)**2)
+    direct=line@(ds.weights*np.abs(ds.dipoles_angstrom.conj()@v)**2)
     assert_allclose([contract_cartesian(v,t) for t in tensor.tensor_angstrom2_per_ev],direct,rtol=1e-13)
     assert (direct>0).all()

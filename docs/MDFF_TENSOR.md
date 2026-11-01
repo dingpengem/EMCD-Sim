@@ -10,6 +10,13 @@ Define each transition's **complex** Cartesian dipole `d_n,a = <i|r_a|f>` in Ang
 
 `S_dip(Q,Q',E) = sum_ab Q_a T_ab(E) Q'_b`.
 
+For forward scattering with d=<i|r|f>, Q=k_out-k_in and fixed fast-electron
+coefficients, excitation contains d*. A response R_ab=v_a conj(v_b)
+therefore contracts with T_ba; equivalently the pair sum uses S_dip(Q',Q).
+The proper MDFF above and T=sum d conj(d) are unchanged. Excitation modes
+are L* when T=L L^dagger is factorized. The old same-index scattering
+contraction is superseded; see [final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md).
+
 Here `Q = 2*pi*g` converts the EMCD-Sim crystallographic **cycles/Angstrom** coordinate g to angular `rad/Angstrom`. Any matrix-element exporter needs to follow the stated `d=<i|r|f>` convention or conjugate its amplitudes accordingly. The MDFF itself **does not include** the Coulomb `1/(Q^2 Q'^2)` terms, physical scattering prefactors or site-specific crystal phases. The code emits units of **Angstrom²/eV** for the tensor (transition weights dimensionless), and a dipole MDFF in **1/eV** for angular Q in inverse Angstrom. It is not a measured cross section.
 
 The Hermitian Gram-matrix form guarantees `T(E)=T(E)†` and nonnegative eigenvalues for nonnegative weights; `S(Q,Q',E)=conj(S(Q',Q,E))` and `S(Q,Q,E)>=0`. `Im(T_xy)` is an example of a chiral component, whose sign depends on handedness and phase conventions. Replacing all dipoles with their complex conjugates reverses the imaginary components in the *toy model*; real magnetization reversal may also modify the underlying electronic structure.
