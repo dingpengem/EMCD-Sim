@@ -1,5 +1,7 @@
 # Bloch-wave double-channeling EMCD
 
+> Historical implementation-stage narrative and original validation numbers are retained for provenance. Only the explicitly corrected current formulas below supersede the former convention. For present behavior and acceptance, see [final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md).
+
 This opt-in solver includes coherent elastic propagation before and after one
 core-loss event. It leaves the entrance-only solver, its defaults, source
 spectrum, and previous numerical outputs unchanged. No multislice or GUI
@@ -63,6 +65,21 @@ are constructed once per loss energy. The detector shift changes only its
 kinetic diagonal by `-20*pi*lambda_out*(h dot q_detector)` in inverse nm.
 This identity is tested against full construction by `PhysicalElasticModel`.
 
+## Current corrected convention (supersedes the archived formulas below)
+
+For d_a=<core|r_a|final>, forward target excitation uses d_a*. Define
+Q_gh=2*pi*(q_detector+h-g,q_z), K_gha=Q_gh,a/Q_gh^2
+* exp(+2*pi*i*(g-h).u), and v_a=sum_gh a_g b_h* K_gha.
+With R_ab=average_sites integral v_a v_b* dz and T_ab=sum_n w_n d_na d_nb*,
+I=Re sum_ab R_ab T_ba=Re Tr(R T). The real/even part is unchanged for
+standard FCC phases; the imaginary/odd scattering term has the corrected sign.
+Incoming/outgoing propagation, relative normalization and continuous event
+sums are unchanged. See [final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md)
+and the versioned guard `tests/fixtures/physics_source_manifest_v1.json`.
+
+<details>
+<summary>Historical pre-correction formulas (superseded; preserved for provenance)</summary>
+
 For each incoming/outgoing pathway, define:
 
 ```
@@ -88,6 +105,9 @@ equivalently `Tr(R T^T)`, not `Tr(R T)`. This distinction fixes the magnetic
 sign for the repository's dipole convention. Hermitian PSD T gives nonnegative
 intensity because it is a sum of squared transition amplitudes. No q-q'
 interference is discarded and no empirical outgoing correction is applied.
+
+
+</details>
 
 ### Analytical and numerical depth integration
 

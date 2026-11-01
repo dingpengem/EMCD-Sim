@@ -1,5 +1,7 @@
 # FFT-multislice double-channeling EMCD
 
+> Historical implementation-stage narrative and original validation numbers are retained for provenance. Only the explicitly corrected current formulas below supersede the former convention. For present behavior and acceptance, see [final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md).
+
 The new opt-in CPU implementation propagates both the incident and post-loss
 wavefields by FFT split steps in the existing projected Ni IAM potential. It
 uses no elastic eigenmode decomposition. The BW solver and legacy entrance-only
@@ -85,6 +87,27 @@ The supplied tensor obeys `T_ab=sum_f d_fa*d_fb*`, where
 zero; a substantial negative eigenvalue raises an explicit error. No physical
 mode is dropped by a strength threshold.
 
+### Current forward-Born contraction
+
+The factorization remains T=L L^dagger, but excitation uses L*:
+
+```
+K_gha(u) = Q_gh,a/Q_gh^2 * exp(+2*pi*i*(g-h).u)
+psi_f,h(z) = sum_ga a_g(z) K_gha(u) conj(L_af)
+v_a(z,u) = sum_gh a_g(z) b_h*(z) K_gha(u)
+R_ab = average_sites sum_z w_z v_a conj(v_b)
+I = Re sum_ab R_ab T_ba = Re Tr(R T)
+```
+
+The target-mode amplitudes and response contraction now describe the same
+forward excitation for d=<core|r|final>. Keep both conjugation and site phase
+consistent; do not conjugate the fast fields or the whole kernel to compensate.
+Separate depths/sites/target modes still add as intensities. See
+[final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md).
+
+<details>
+<summary>Historical pre-correction formulas (superseded; not the current algorithm)</summary>
+
 For an event at site u, the shared kernel is
 
 ```
@@ -112,6 +135,9 @@ states, distinct sites and distinct depths are summed as **intensities**.
 Coherent mode amplitudes at separate depths are never added. Imaginary magnetic
 antisymmetric terms remain intact. Magnetization reversal uses `T -> T.conj()`
 against the same response, detector weights and elastic states.
+
+
+</details>
 
 Depth nodes include both surfaces with half endpoint weights and full interior
 weights. The weights sum to specimen thickness. Raw zero-thickness intensity

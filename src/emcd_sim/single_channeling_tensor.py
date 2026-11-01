@@ -54,7 +54,8 @@ def _tensor_angular_maps(model: EMCDSimulation, tensor_matrix: np.ndarray,
     weighted_coherence = coherence * site_phase
 
     def project(part: np.ndarray) -> np.ndarray:
-        mdff = np.einsum("...ia,ab,...jb->...ij", angular_q, part, angular_q, optimize=True)
+        # Forward excitation uses d*=<f|r|i>, hence S(Q_j,Q_i).
+        mdff = np.einsum("...ia,ba,...jb->...ij", angular_q, part, angular_q, optimize=True)
         return np.real(np.einsum("ij,...ij->...", weighted_coherence,
                                   mdff / denominator, optimize=True))
 

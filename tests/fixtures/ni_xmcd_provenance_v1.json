@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "historical": {
+    "fixture": "Ni_fm_historical_full_benchmark.xmcd",
+    "sha256": "a0e28ea6423b6c7832bb3cce6d69d71aa59336a221baeee3d2556b49ba501283",
+    "contract": "Exact original bytes of the source recorded by ni_double_channeling_full_benchmark/provenance.json; not the later formatted package copy."
+  },
+  "canonical_package": {
+    "path": "data/wien2k_ni/Ni_fm.xmcd",
+    "sha256": "bb9bdd478d54cc8de60403409f4d90e63deb11a64891bbac6754f867be14deda"
+  },
+  "numeric_equivalence": "Supplementary check only; never substitutes for either byte identity."
+}

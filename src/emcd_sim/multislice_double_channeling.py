@@ -128,7 +128,8 @@ def forward_event_amplitudes(incoming,kernel,tensor,outgoing_plan,slices,outgoin
     kernel[g,h,a] includes Coulomb factor and a single site's phase. Return
     complex exit amplitudes per independent target mode (never summed coherently).
     """
-    modes=transition_modes(tensor)
+    # T=L L^dagger is unchanged; excitation amplitudes use L*.
+    modes=transition_modes(tensor).conj()
     scattered=np.einsum('g,gha,af->fh',incoming,kernel,modes,optimize=True)
     full=np.zeros((3,outgoing_plan.size),complex)
     full[:,outgoing_indices]=scattered
@@ -387,7 +388,7 @@ def run_tensor_multislice_double_channeling(model,tensor,*,thickness_nm=30.,grid
                 spectra[k][i]=(total[masks[k]].sum() if integration_mode=='binary' else
                     (total*weights[k]).sum())*(q[1]-q[0])**2
             if i==selected:
-                even=np.einsum('pab,ab->p',response,t.real).real.reshape(qx.shape)
-                odd=np.einsum('pab,ab->p',response,1j*t.imag).real.reshape(qx.shape)
+                even=np.einsum('pab,ba->p',response,t.real).real.reshape(qx.shape)
+                odd=np.einsum('pab,ba->p',response,1j*t.imag).real.reshape(qx.shape)
         return SimulationResult(tensor.energy_ev,qx,qy,even,odd,spectra,masks,None,thickness_nm,
             0.,model.chiral_groups,weights,integration_mode,aperture_subpixels)

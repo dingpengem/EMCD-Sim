@@ -46,6 +46,8 @@ def test_released_configuration_exactly_preserved(window,tmp_path,app,channeling
         # Defaults intentionally changed; compare the same explicit legacy inputs.
         legacy=old.settings()
         window.set_values(dict(kv=legacy.voltage,tx=legacy.tilt[0],ty=legacy.tilt[1],beam=legacy.beam_cutoff,potential=legacy.potential_cutoff));window.refresh()
+        # Compare matched explicit inputs; the approved new-project default is 2 nm.
+        window.set_values(dict(slice_step=old.forward_settings().slice_step))
         assert window.settings()==old.settings()
         assert replace(window.forward_settings(),fft_generators=None)==old.forward_settings()
         assert window.forward_settings().fft_generators is None
@@ -71,7 +73,11 @@ def test_solver_visibility_and_classification(window,selection):
     assert 'Additional FFT harmonics' in window.spin['beam'].toolTip()
     for key in ('beam','potential'):assert window.spin[key].parentWidget()==window.shared_elastic_group
     for key in ('energy','grid','depth','subpixels','halfwidth'):assert window.spin[key].parentWidget()==window.shared_sampling_group
-    for key in ('fft_grid','slice_step'):assert window.ms_settings_group.isAncestorOf(window.spin[key])
+    assert window.ms_settings_group.isAncestorOf(window.spin['fft_grid'])
+    # Slice step is intentionally outside the collapsible manual-only group.
+    assert not window.ms_settings_group.isAncestorOf(window.spin['slice_step'])
+    assert window.spin['slice_step'].isEnabled()==(selection!=0)
+    assert window.spin['slice_step'].isHidden()==(selection==0)
     assert window.memory_budget.parentWidget()==window.shared_resources_group
     assert 'analytic' in window.spin['depth'].toolTip() and 'numerical' in window.spin['depth'].toolTip()
     assert 'not a required allocation' in window.memory_budget.toolTip()
@@ -140,8 +146,11 @@ def test_solver_configuration_and_physics_unchanged():
     path='src/emcd_sim/multislice_double_channeling.py'
     ms_current=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
     ms_old=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
-    for name in ('transition_modes','depth_quadrature','propagate_slices','forward_event_amplitudes'):
+    for name in ('transition_modes','depth_quadrature','propagate_slices'):
         assert ast.dump(find(ms_current,name))==ast.dump(find(ms_old,name))
+    # The versioned manifest guards the complete corrected forward-event code.
+    from physics_source_guard import assert_registered_sources
+    assert_registered_sources()
     # ProjectedNiFFT deliberately gained an opt-in two-beam subspace. Keep the
     # unchanged index mapping guard; default-plan arrays/diagnostics are compared
     # bit-for-bit with archived code in test_ms_double_buffers for [001]/[017].
@@ -157,5 +166,3 @@ def test_solver_configuration_and_physics_unchanged():
     archived=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for name in ('save_project','_read_npz','safe_path','structures_match','restore_structure'):
         assert ast.dump(find(present,name))==ast.dump(find(archived,name))
-    for path in ('src/emcd_sim/double_channeling.py','src/emcd_sim/single_channeling_tensor.py'):
-        assert Path(path).read_text(encoding='utf-8-sig').replace('\r\n','\n')==subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig').replace('\r\n','\n')

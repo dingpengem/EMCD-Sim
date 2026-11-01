@@ -1,0 +1,3 @@
+# Scientific input identities are byte-exact, including their recorded EOLs.
+data/wien2k_ni/Ni_fm.xmcd -text
+tests/fixtures/Ni_fm_historical_full_benchmark.xmcd -text

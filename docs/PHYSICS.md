@@ -91,3 +91,13 @@ Electrostatic bias can cause magnetic anisotropy changes, domains/reversal, char
 - Fang et al., *Physical Review B* **86**, 134114 (2012), https://web.science.uu.nl/SCM/Articles/2012/Fang_PhysRevB_2012.pdf (FCC Ni `a≈3.524 Å`, ~0.60 µB/Ni benchmark). This value is not a calibration of EMCD strength.
 
 - Elastic implementation reference: [PHYSICAL_ELASTIC.md](PHYSICAL_ELASTIC.md).
+
+## Current complex-transition convention
+
+The corrected forward-Born implementation uses d=<i|r|f>, Q=k_out-k_in,
+I=Re sum_ab R_ab T_ba, excitation modes L*, and site phase
+exp(+2*pi*i*(g-h).u). The tensor factory remains T=sum d conj(d).
+See [physics correction final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md)
+for source identities, independent validation and historical-result caveats.
+Earlier same-index/h-g formulas are retained only as explicitly superseded
+historical provenance, not as current numerical prescriptions.

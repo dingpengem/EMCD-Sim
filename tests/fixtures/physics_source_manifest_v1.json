@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "normalization": "UTF-8 without BOM, CRLF normalized to LF; no other changes",
+  "active": "forward_born_dagger_g_minus_h_v1",
+  "versions": {
+    "legacy_same_index_h_minus_g": {
+      "base_commit": "a77f7455f5fe57dad6bae5d948477b2390433bb0",
+      "intensity": "Re sum R_ab T_ab",
+      "excitation": "L",
+      "site_phase": "exp(+2pi i(h-g).u)",
+      "files": {
+        "src/emcd_sim/single_channeling_tensor.py": {
+          "git_blob_sha256": "6dc8ca4a88d417196bd2b379da26ce1dbb97b1a3e24584a8c1dfc26a18d0553a",
+          "canonical_sha256": "6dc8ca4a88d417196bd2b379da26ce1dbb97b1a3e24584a8c1dfc26a18d0553a",
+          "reviewed_pre_correction_worktree_sha256": "f6b9bd67ff1805861d518e105cd95e7deec31d7b16c3f961065f303f19956bfd"
+        },
+        "src/emcd_sim/double_channeling.py": {
+          "git_blob_sha256": "87bbadae896092f4e91c5a54a4ecc32df1a933e7bf8d79ddd9a5a7eadef7ba65",
+          "canonical_sha256": "87bbadae896092f4e91c5a54a4ecc32df1a933e7bf8d79ddd9a5a7eadef7ba65",
+          "reviewed_pre_correction_worktree_sha256": "3178ead86becdab4cd8e132f455e4ed392d1310d23b4a5d704e8b7951a15fa16"
+        },
+        "src/emcd_sim/multislice_double_channeling.py": {
+          "git_blob_sha256": "bf256520126a9cf6e4e8bd1af15b1ca0352e7f2c1a1148f8a293ff289ae31df6",
+          "canonical_sha256": "bf256520126a9cf6e4e8bd1af15b1ca0352e7f2c1a1148f8a293ff289ae31df6",
+          "reviewed_pre_correction_worktree_sha256": "b19cac56994a2e81333913bf0646d330f95a81d1879e9b993a1242c01634494c"
+        }
+      }
+    },
+    "forward_born_dagger_g_minus_h_v1": {
+      "base_commit": "a77f7455f5fe57dad6bae5d948477b2390433bb0",
+      "intensity": "Re sum R_ab T_ba",
+      "excitation": "L.conj(); T=L Ldagger unchanged",
+      "site_phase": "exp(+2pi i(g-h).u)",
+      "approval": "User-approved coordinated correction; docs/PHYSICS_MINIMAL_CORRECTION_PROPOSAL.md",
+      "files": {
+        "src/emcd_sim/single_channeling_tensor.py": {
+          "reviewed_worktree_bytes_sha256": "3c47bd37c8da7ec881441cb9cdee66c537b36b86dd2e5b0838251c04ce9e3d61",
+          "canonical_sha256": "ac8a150fd370615b74886aeb81564a2fdd6b15e3d5da94e58ea1982afba8610d"
+        },
+        "src/emcd_sim/double_channeling.py": {
+          "reviewed_worktree_bytes_sha256": "713945ace6630f95f8b4f461e6c137a8806b60212f744a81aec51cc46fb8f3de",
+          "canonical_sha256": "5b641bc918250b6402f4bcf6c31c1f3fec1425714098a1c99ed04e321b7ef06b"
+        },
+        "src/emcd_sim/multislice_double_channeling.py": {
+          "reviewed_worktree_bytes_sha256": "9ec1ba6c071ff751540f9ef4ac4c864d139cb8a458eb85cddc9ad04ba0a880df",
+          "canonical_sha256": "f7cc80b8de0898123813d6f1a284519df3790516ffa5660634bfccc838c437c5"
+        }
+      }
+    }
+  },
+  "correction_provenance": {
+    "approved_patch_sha256": "ad48143302631217b9354cc36be2240d3060920978aeff25ae2d7a6c7e484f31",
+    "acceptance_report_sha256": "f7c91d257fad3d38b5104d02f30b07a3963a36c346481836629d1644aafdf617",
+    "original_audit": "docs/PHYSICS_MATRIX_IMPLEMENTATION_AUDIT.md",
+    "original_validation": "docs/PHYSICS_CORRECTION_ACCEPTANCE.md"
+  }
+}

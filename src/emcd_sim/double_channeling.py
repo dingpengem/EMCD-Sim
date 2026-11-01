@@ -77,8 +77,8 @@ def dipole_kernel(q_cycles):
 
 
 def contract_cartesian(vectors, tensor):
-    """v T v*, matching existing d=<core|r|final>, T=d d* convention."""
-    return np.einsum('...a,ab,...b->...', vectors, tensor, vectors.conj()).real
+    """v T^T v*, for forward excitation with d=<core|r|final>."""
+    return np.einsum('...a,ba,...b->...', vectors, tensor, vectors.conj()).real
 
 
 def depth_response(incoming, outgoing, kernel, thickness_nm, *, method='analytic', depth_steps=257, cancelled=None):
@@ -152,7 +152,8 @@ def equivalent_site_phases(incoming_hkl,outgoing_hkl,positions):
     This removes repeated evaluations for equivalent FCC sites without dropping
     independent events or changing their incoherent per-atom normalization.
     """
-    delta=np.asarray(outgoing_hkl)[None,:,:]-np.asarray(incoming_hkl)[:,None,:]
+    # exp(-i Q.R), dropping only the common detector/longitudinal phase.
+    delta=np.asarray(incoming_hkl)[:,None,:]-np.asarray(outgoing_hkl)[None,:,:]
     cycles=np.remainder(np.einsum('ghc,sc->sgh',delta,np.asarray(positions)),1.)
     if not len(cycles):raise ValueError('At least one core site required')
     unique,counts=np.unique(cycles,axis=0,return_counts=True)
@@ -222,7 +223,7 @@ def intensities_from_response(response, tensor):
         raise ValueError('Finite Hermitian dipole tensor required')
     if np.linalg.eigvalsh(t).min() < -1e-12*max(np.linalg.norm(t), 1e-30):
         raise ValueError('Dipole tensor must be positive semidefinite')
-    return np.einsum('...ab,ab->...', response, t).real
+    return np.einsum('...ab,ba->...', response, t).real
 
 
 
@@ -264,8 +265,8 @@ def _run_tensor_double_channeling(model, tensor, *, thickness_nm=30., grid_size=
             spectra[k][ie]=(total[masks[k]].sum() if integration_mode=='binary'
                             else (total*weights[k]).sum())*(q[1]-q[0])**2
         if ie==selected:
-            even=np.einsum('pab,ab->p',response,t.real).real.reshape(qx.shape)
-            odd=np.einsum('pab,ab->p',response,1j*t.imag).real.reshape(qx.shape)
+            even=np.einsum('pab,ba->p',response,t.real).real.reshape(qx.shape)
+            odd=np.einsum('pab,ba->p',response,1j*t.imag).real.reshape(qx.shape)
     return SimulationResult(tensor.energy_ev,qx,qy,even,odd,spectra,masks,None,
         thickness_nm,0.,model.chiral_groups,weights,integration_mode,aperture_subpixels)
 
