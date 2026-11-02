@@ -1,3 +1,28 @@
+# v0.7.0-beta.1 - physics-corrected local Windows candidate
+
+> **Critical scientific compatibility notice:** legacy Windows packages before
+> **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
+> magnetic-odd EMCD signs. Historical signed L3/L2 magnetic spectra require
+> revalidation or recalculation before interpretation under the corrected
+> convention. This does not imply that all historical nonmagnetic EELS,
+> diffraction intensities or thickness trends are wrong. Preserve original
+> arrays, software/convention and source provenance; never silently flip or
+> relabel legacy arrays. Intermediate corrected source commits, including
+> `4f578156`, still used the old version label: exact commit/convention metadata
+> takes precedence over version alone. Missing convention is unknown or
+> legacy-unverified. Absolute experimental magnetic handedness is uncalibrated.
+
+- First Windows candidate of the corrected forward-Born implementation:
+  I=Re sum R_ab T_ba=Re Tr(RT), forward modes L* with T=L L-dagger,
+  Double site phase exp(+2*pi*i*(g-h).u); Single site phase unchanged.
+- Version/build/provenance metadata and legacy-result warnings; no solver,
+  numerical-default, worker-policy, GUI-layout or project-schema changes.
+- Historical releases and scientific arrays remain unchanged. See
+  [release notes](RELEASE_NOTES_0_7_0_BETA_1.md) and
+  [candidate acceptance](WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md).
+
+## Historical development entries (preserved)
+
 # Unreleased ? generalized Multislice final scientific review
 
 - Five targeted [111] detector-only controls identify potential/beam support as

@@ -1,9 +1,19 @@
-EMCD-Sim v0.6.1-beta.3 - Double-Channeling EMCD Simulation
-Windows x64 research prerelease; unsigned.
-Package version 0.6.1b3. Distributed as a GitHub Actions candidate artifact;
-no Beta 3 GitHub release or tag has been created. See docs/WINDOWS_BETA_3.md
-in the source repository for validation scope.
-Double Channeling already existed in published 0.4.5-beta.1.
+EMCD-Sim v0.7.0-beta.1 - Physics-Corrected Double-Channeling EMCD Simulation
+Windows x64 local research candidate; unsigned. Python package 0.7.0b1.
+Windows numeric file/product version 0.7.0.1.
+Physics convention: forward_born_dagger_g_minus_h_v1.
+No GitHub release, tag or Actions artifact is created by this local build.
+
+CRITICAL SCIENTIFIC COMPATIBILITY NOTICE
+Legacy Windows packages before v0.7.0-beta.1 used a superseded Born/MDFF
+convention affecting magnetic-odd EMCD signs. Revalidate or recalculate
+historical signed L3/L2 spectra before corrected interpretation. Do not
+silently flip/relabel old arrays. Preserve original arrays/source/version
+and convention provenance; missing convention is unknown/legacy-unverified.
+This does not imply that all historical nonmagnetic EELS, diffraction or
+thickness trends are wrong. Corrected source 4f578156 still used the old
+version label, so exact source/convention metadata is authoritative.
+Absolute experimental magnetic handedness remains uncalibrated.
 
 Extract the complete folder. Run EMCD-Sim.exe; keep _internal beside it.
 Python, Conda and WIEN2k are not required to run this application.

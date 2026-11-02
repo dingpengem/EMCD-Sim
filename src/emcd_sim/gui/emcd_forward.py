@@ -265,6 +265,7 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
         angular_evaluation_policy=prepared.get('angular_evaluation_policy','legacy_full_grid_per_energy') if prepared is not None else 'legacy_full_grid_per_energy',
         angular_evaluation=prepared.get('diagnostics',[]) if prepared is not None else [],
         solver='Bloch-wave depth-integrated entrance-only localized single ionization',software_commit=commit,software_worktree_dirty=dirty,
+        software_version=build['application_version'],software_display_version=build['display_version'],physics_convention=build['physics_convention'],
         implementation_sha256=build['implementation_sha256'],
         python=platform.python_version(),numpy=np.__version__,
         intensity_convention=('XMCD-effective; transverse source-maximum normalization; relative scattering units' if cfg.model=='xmcd' else 'Atomic length-gauge A^2/eV tensor; relative scattering units; no absolute cross-section calibration'),

@@ -1,5 +1,5 @@
 param([string]$Python = "$PSScriptRoot/../build/windows-rc/venv/Scripts/python.exe",
-      [string]$BuildRoot = "build/windows-beta-rc",
+      [string]$BuildRoot = "build/windows-v0.7.0-beta.1",
       [string]$BuildLabel = "",
       [string]$ArchiveName = "")
 $ErrorActionPreference = 'Stop'

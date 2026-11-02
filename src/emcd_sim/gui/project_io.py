@@ -350,8 +350,12 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     result['metadata']=meta;result['fft']={k[len('fft_full__'):]:v for k,v in diffraction.items() if k.startswith('fft_full__')}
     if result['fft']:result['fft']['summary']=result['comparison'].get('fft',{})
     warnings=list(manifest.get('limitations',[])) if manifest else ['Legacy read-only import: no integrity manifest; only available metadata retained.']
+    from .runtime import result_convention_status
+    convention_status=result_convention_status(meta)
+    if convention_status['warning'] and convention_status['warning'] not in warnings:warnings.append(convention_status['warning'])
     if not snapshot:warnings.append('Missing numeric crystal snapshot: full reproducibility and Use These Settings/rerun are unavailable.')
     result.update(project_path=str(root),project_manifest=manifest,project_warnings=warnings,structure_snapshot=snapshot,read_only_legacy=manifest is None,fft_recipe_error=fft_recipe_error)
+    result['project_convention_status']=convention_status
     if manifest and 'display_state.json' in manifest['files']:result['display_state']=json.loads((root/'display_state.json').read_text(encoding='utf-8'))
     check('Saved results ready; no physical recalculation')
     return result

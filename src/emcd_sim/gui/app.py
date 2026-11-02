@@ -340,9 +340,13 @@ def main():
     parser.add_argument('--parallel-workers',type=int,help='Explicit supported detector-worker request for diagnostic acceptance')
     parser.add_argument('--desktop-acceptance',type=Path,help='Opt-in portable-build GUI and small BW/MS Single/Double acceptance')
     parser.add_argument('--desktop-orientation',choices=['001','017','117','111','710'],default='017',help='Orientation for the bounded desktop acceptance only')
+    parser.add_argument('--scientific-acceptance',type=Path,help='Opt-in bounded matched Python/frozen Ni [017] raw-reversal reference')
     args=parser.parse_args()
     from .runtime import configure_logging, LABEL, build_info
     configure_logging()
+    if args.scientific_acceptance:
+        from .scientific_acceptance import run
+        return run(args.scientific_acceptance)
     if args.desktop_acceptance:
         from .desktop_acceptance import run
         return run(args.desktop_acceptance,args.desktop_orientation)

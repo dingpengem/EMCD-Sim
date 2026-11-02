@@ -1,8 +1,30 @@
 # Install EMCD-Sim on Windows
 
+> **Critical scientific compatibility notice:** legacy Windows packages before
+> **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
+> magnetic-odd EMCD signs. Historical signed L3/L2 magnetic spectra require
+> revalidation or recalculation before interpretation under the corrected
+> convention. This does not imply that all historical nonmagnetic EELS,
+> diffraction intensities or thickness trends are wrong. Preserve original
+> arrays, software/convention and source provenance; never silently flip or
+> relabel legacy arrays. Intermediate corrected source commits, including
+> `4f578156`, still used the old version label: exact commit/convention metadata
+> takes precedence over version alone. Missing convention is unknown or
+> legacy-unverified. Absolute experimental magnetic handedness is uncalibrated.
+
 ## Current Beta 3 Actions candidate
 
 The current candidate is **v0.6.1-beta.3**, package **0.6.1b3**, ZIP **EMCD-Sim-v0.6.1-beta.3-Windows.zip**. Download it from a successful [Windows Actions run](https://github.com/dingpengem/EMCD-Sim/actions/workflows/windows-build.yml), verify its own checksum, extract the full folder, and run `EMCD-Sim/EMCD-Sim.exe`. No Beta 3 release/tag exists. See [candidate provenance, layout and acceptance scope](WINDOWS_BETA_3.md). The new GUI keeps Settings and Diffraction side by side. Defaults remain 300 kV, 3.2/2.5 cycles/Angstrom, 97x97 and 2048 MiB.
+
+## Local v0.7.0-beta.1 candidate
+
+Use the local archive and SHA256 from [candidate acceptance](WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md),
+extract the complete portable folder and run `EMCD-Sim/EMCD-Sim.exe` with
+`_internal` beside it. About must report `0.7.0b1`, `v0.7.0-beta.1`, the build
+commit and `forward_born_dagger_g_minus_h_v1`. Do not use an older checksum.
+This local candidate is not a published GitHub release. Same-host native
+standalone acceptance and independent clean-machine installation are distinct;
+see the exact tested scope in the candidate report.
 
 ## Historical published Beta 2
 

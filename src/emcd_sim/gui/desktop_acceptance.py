@@ -30,6 +30,7 @@ def run(output, orientation='017'):
         app.setFont(QtGui.QFont(QtGui.QFontDatabase.applicationFontFamilies(font)[0], 9))
     w = MainWindow(output/'workspace')
     info = build_info()
+    assert info['physics_convention'] == 'forward_born_dagger_g_minus_h_v1'
     w.setWindowTitle(info['label'])
     about = add_about_menu(w)
     report = dict(build=info, frozen=bool(getattr(sys, 'frozen', False)), executable=sys.executable,
@@ -92,6 +93,7 @@ def run(output, orientation='017'):
                     fail('About dialog did not open'); return
                 assert info['application_version'] in box.text()
                 assert info['display_version'] in box.text()
+                assert info['physics_convention'] in box.text()
                 report['about_verified'] = True
                 box.accept()
             QtCore.QTimer.singleShot(150, dismiss_about)

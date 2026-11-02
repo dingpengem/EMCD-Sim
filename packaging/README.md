@@ -1,12 +1,20 @@
 # Windows candidate build
 
-Current candidate: **v0.6.1-beta.3 / 0.6.1b3**. Use the existing Conda-backed build venv or the pinned `requirements-windows.txt`.
+Current local candidate: **v0.7.0-beta.1 / 0.7.0b1**, convention
+`forward_born_dagger_g_minus_h_v1`. Reuse the existing Conda-backed build venv.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -BuildRoot build/windows-v061-beta3
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python C:/Users/peng863/EMCD-Sim/build/windows-rc/venv/Scripts/python.exe -BuildRoot build/windows-v0.7.0-beta.1
 ```
 
-The default archive is `EMCD-Sim-v0.6.1-beta.3-Windows.zip`. Native metadata uses numeric 0.6.1.3 and display v0.6.1-beta.3. Run the extracted EXE with `--desktop-acceptance NEW_OUTPUT_DIRECTORY` for bounded actual BW/MS Single/Double and GUI checks. See [scope and Actions artifacts](../docs/WINDOWS_BETA_3.md). No release/tag is created. Older commands below are historical.
+Default archive: `EMCD-Sim-v0.7.0-beta.1-Windows.zip`. Windows numeric version:
+0.7.0.1; ProductVersion: v0.7.0-beta.1. Use a new output root: previous
+packages must not be overwritten. The exact local source commit, clean/dirty
+state, convention, build environment and native validation are documented in
+[acceptance](../docs/WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md).
+No push, Actions dispatch, release or tag is performed. Native same-host
+standalone checks are not independent clean-machine installation.
+Older commands below are historical.
 
 
 Current source packaging still uses `emcd_gui.spec` and `launcher.py`; all

@@ -1,10 +1,30 @@
-# EMCD-Sim v0.6.1-beta.3 Windows Quick Start
+# EMCD-Sim v0.7.0-beta.1 Windows Quick Start
+
+> **Critical scientific compatibility notice:** legacy Windows packages before
+> **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
+> magnetic-odd EMCD signs. Historical signed L3/L2 magnetic spectra require
+> revalidation or recalculation before interpretation under the corrected
+> convention. This does not imply that all historical nonmagnetic EELS,
+> diffraction intensities or thickness trends are wrong. Preserve original
+> arrays, software/convention and source provenance; never silently flip or
+> relabel legacy arrays. Intermediate corrected source commits, including
+> `4f578156`, still used the old version label: exact commit/convention metadata
+> takes precedence over version alone. Missing convention is unknown or
+> legacy-unverified. Absolute experimental magnetic handedness is uncalibrated.
 
 Follow [installation](INSTALL_WINDOWS.md) first. This is a selected-energy Ni [017] example, not a timing guarantee or complete physical-convergence claim. See the [full tutorial and settings](USER_GUIDE.md#validated-ni-017-8-nm-double-example), [acceptance](V061_BETA_ACCEPTANCE.md) and [scientific analysis](NI_EMCD_THICKNESS_SCIENTIFIC_ANALYSIS.md).
 
 ## 1. Extract and open
 
-Download `EMCD-Sim-v0.6.1-beta.3-Windows.zip` and its `SHA256SUMS.txt` from a successful [Windows Actions artifact](https://github.com/dingpengem/EMCD-Sim/actions/workflows/windows-build.yml). No Beta 3 release/tag exists. Verify the checksum, extract the complete folder and launch **EMCD-Sim/EMCD-Sim.exe** with `_internal` beside it. See [candidate scope](WINDOWS_BETA_3.md). Independent clean-machine validation remains **NOT TESTED**. New projects use 300 kV and 3.2/2.5 cutoffs; this example explicitly selects 200 kV. Expand **Orientation / ZA options**, **MDFF Model**, **Shared Calculation Settings** and **Virtual detectors** when their controls are needed. Settings and Diffraction stay visible together; adjust splitters or collapse Project Results for space.
+Use the local `EMCD-Sim-v0.7.0-beta.1-Windows.zip` and its new SHA256 from
+[candidate acceptance](WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md). No new Actions artifact,
+release or tag is published. Extract the complete folder and launch
+`EMCD-Sim/EMCD-Sim.exe` with `_internal` beside it. Verify version and physics
+convention in About. Settings and Diffraction remain side-by-side; expand
+collapsible controls as needed. Source defaults remain 300 kV, beam/potential
+3.2/2.5, 97x97, 2048 MiB and max slice step 2 nm. The example below explicitly
+selects 200 kV and is not a complete physical-convergence certification.
+
 
 ## 2. Configure Ni [017], exact (200) Bragg
 

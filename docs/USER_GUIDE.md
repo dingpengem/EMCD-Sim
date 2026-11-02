@@ -1,5 +1,17 @@
 # EMCD-Sim Desktop User Manual
 
+> **Critical scientific compatibility notice:** legacy Windows packages before
+> **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
+> magnetic-odd EMCD signs. Historical signed L3/L2 magnetic spectra require
+> revalidation or recalculation before interpretation under the corrected
+> convention. This does not imply that all historical nonmagnetic EELS,
+> diffraction intensities or thickness trends are wrong. Preserve original
+> arrays, software/convention and source provenance; never silently flip or
+> relabel legacy arrays. Intermediate corrected source commits, including
+> `4f578156`, still used the old version label: exact commit/convention metadata
+> takes precedence over version alone. Missing convention is unknown or
+> legacy-unverified. Absolute experimental magnetic handedness is uncalibrated.
+
 Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
 
 ## Research Ni [117] / (2,-2,0)
@@ -38,7 +50,7 @@ and physical detector positions explicitly. Existing [001]/[017] conventions
 and defaults are preserved. See [scope and numerical evidence](NI_117_FINAL_SYMMETRY_VALIDATION.md)
 and [review status](NI_117_MERGE_READINESS.md) before quantitative interpretation.
 
-**Current source / Actions candidate: v0.6.1-beta.3 (0.6.1b3).** See [Windows candidate installation and provenance](WINDOWS_BETA_3.md). No Beta 3 release/tag is created. Settings and Diffraction remain side by side with adjustable three-column splitters; chevrons collapse optional controls and the bottom Project Results browser. Narrow Results panels stack maps, preserve full context under Details and restore full context in exports. Layout preferences do not change scientific project parameters.
+**Current local candidate: v0.7.0-beta.1 (0.7.0b1).** See [physics-corrected release notes](RELEASE_NOTES_0_7_0_BETA_1.md) and [local Windows acceptance](WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md). No new release or tag is published. Settings and Diffraction remain side by side with adjustable three-column splitters; chevrons collapse optional controls and the bottom Project Results browser. Narrow Results panels stack maps, preserve full context under Details and restore full context in exports. Layout preferences do not change scientific project parameters.
 
 
 

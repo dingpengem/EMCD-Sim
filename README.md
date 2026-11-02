@@ -1,9 +1,24 @@
 # EMCD-Sim
 
+> **Critical scientific compatibility notice:** legacy Windows packages before
+> **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
+> magnetic-odd EMCD signs. Historical signed L3/L2 magnetic spectra require
+> revalidation or recalculation before interpretation under the corrected
+> convention. This does not imply that all historical nonmagnetic EELS,
+> diffraction intensities or thickness trends are wrong. Preserve original
+> arrays, software/convention and source provenance; never silently flip or
+> relabel legacy arrays. Intermediate corrected source commits, including
+> `4f578156`, still used the old version label: exact commit/convention metadata
+> takes precedence over version alone. Missing convention is unknown or
+> legacy-unverified. Absolute experimental magnetic handedness is uncalibrated.
+
 EMCD-Sim is a research simulation tool for **electron magnetic circular dichroism (EMCD)** using Bloch-wave (BW) and independent FFT multislice (MS) propagation. It combines dynamical electron diffraction, approximate core-loss scattering tensors and virtual-detector EELS/EMCD analysis, with fcc Ni as the principal validated material.
 
-**Current source / Windows Actions candidate: v0.6.1-beta.3 (package 0.6.1b3).**
-[Beta 3 build and installation](docs/WINDOWS_BETA_3.md) ? [Download from a successful Windows Actions run](https://github.com/dingpengem/EMCD-Sim/actions/workflows/windows-build.yml). The candidate ZIP is `EMCD-Sim-v0.6.1-beta.3-Windows.zip`; no Beta 3 release or tag is created.
+**Local physics-corrected candidate: v0.7.0-beta.1 (Python 0.7.0b1).**
+[Release notes](docs/RELEASE_NOTES_0_7_0_BETA_1.md) and [local build/acceptance](docs/WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md).
+The new archive is `EMCD-Sim-v0.7.0-beta.1-Windows.zip`; no GitHub artifact,
+tag or release is published by this local candidate task. Earlier packages
+remain available under their original names and scientific provenance.
 
 **Latest published release: v0.6.1-beta.2 (preserved).**
 [Release and download](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2) · [Windows installation](docs/INSTALL_WINDOWS.md) · [Quick Start](docs/QUICK_START.md) · [User Manual](docs/USER_GUIDE.md) · [Release notes and acceptance](docs/RELEASE_NOTES_0_6_1_BETA_2.md).
