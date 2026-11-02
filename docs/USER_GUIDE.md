@@ -407,9 +407,9 @@ Memory estimates and admission failures remain visible. Automatic selection
 does not propagate waves, evaluate MDFF, run trial calculations or establish
 convergence. Pressing Run starts only the requested calculation.
 
-The deterministic `automatic-starting-v3` policy normally uses the development
+The deterministic `automatic-starting-v5` policy normally uses the development
 starting values: beam 3.2 Å⁻¹, potential 2.5 Å⁻¹, depth 64, maximum MS step
-0.04 nm, angular grid 97, 64 aperture subpixels, halfwidth 1 Å⁻¹, 241 energy
+2 nm, angular grid 97, 64 aperture subpixels, halfwidth 1 Å⁻¹, 241 energy
 samples and 2048 MiB budget. It retains the selected physical geometry, B,
 systematic-row approximation, source, magnetization and detector positions.
 These settings are labeled **Automatic starting settings — convergence not
@@ -472,7 +472,7 @@ Panel F groups Manual controls into **Elastic Potential and Beam Support**, **In
 | Estimated process memory budget | Shared execution/admission resource, **not a physical-model parameter or required allocation**; stored unchanged and checked against current available RAM. |
 | Memory estimate and solver explanation | Diagnostics-only presentation; estimates reflect the currently selected engines, basis/sampling, retained allocations and RAM. |
 
-The physical-model and angular/integration categories affect both engines; memory admission and worker scheduling are separate resources rather than scattering parameters. Only FFT mesh and maximum slice step are MS-only. New development-project defaults are **300 kV**, beam **3.2 cycles/Å**, potential **2.5 cycles/Å**, B = 0, 64 depth nodes, FFT 32, maximum step 0.04 nm, energy count 241, halfwidth 1 cycle/Å, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. New-project reference alignment follows the selected voltage; loading a saved project preserves its explicit voltage, tilt, cutoffs and sampling. Production reference settings are not substituted as ordinary defaults.
+The physical-model and angular/integration categories affect both engines; memory admission and worker scheduling are separate resources rather than scattering parameters. Only FFT mesh and maximum slice step are MS-only. New development-project defaults are **300 kV**, beam **3.2 cycles/Å**, potential **2.5 cycles/Å**, B = 0, 64 depth nodes, FFT 32, maximum step 2 nm, energy count 241, halfwidth 1 cycle/Å, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. New-project reference alignment follows the selected voltage; loading a saved project preserves its explicit voltage, tilt, cutoffs and sampling. Production reference settings are not substituted as ordinary defaults.
 
 ### Parallel Workers and pre-Run risk
 
@@ -531,7 +531,7 @@ ZOLZ disk. Exact Bragg alignment does not establish physical two-beam isolation.
 | Potential cutoff (cycles/A) | Fourier harmonics of the elastic projected IAM potential. It is a separate physical/numerical convergence question. |
 | Debye–Waller B (A²) | The existing potential damping parameter; record any change. |
 | Multislice numerical settings → FFT grid (even) | Real/reciprocal sampling mesh, default 32. Must include the exact common hkl basis; even 12–128 is the supported control range. |
-| Max slice step (nm) | Maximum propagation substep, default 0.04 nm; distinct from the ionization depth nodes. |
+| Max slice step (nm) | Maximum propagation substep, default 2 nm, editable range 0.001?10 nm in both Automatic and Manual modes; distinct from the ionization depth nodes. The actual substep can be smaller. Requests above 0.04 nm show a nonblocking accuracy advisory, not a universal convergence threshold; check smaller steps for EMCD convergence. |
 | Depth integration nodes | Ionization/coherence depth sampling, default 64. |
 | Angular Map Resolution / Angular / detector grid points (odd) / Map halfwidth | Actual reciprocal sampling and field of view: Quick Preview 33, Standard 97 (default), High 193, or odd Custom 9–193; halfwidth defaults to 1 cycle/Å. Shared with detector-EELS quadrature. |
 | Aperture boundary subpixels | Boundary sampling for fractional circular area weights, default 64. It does not refine a spatially varying intensity field itself. |
@@ -945,3 +945,25 @@ explicitly. Cached low-level MS fields must match microscope, frame, reciprocal
 support and physical depth quadrature; mismatches fail instead of silently
 mixing contexts. Very large cells are rejected before overflowing a search-size
 calculation. These checks do not change solver physics, defaults or saved arrays.
+
+Max Slice Step remains visible and independently editable when FFT Multislice or Both is selected, including Automatic numerical mode. Explicit edits survive refreshes, mode changes and BW/MS switching. Other numerical controls retain their Automatic/Manual rules. New projects start at 2 nm; saved projects and frozen reference profiles preserve their explicit steps. Coarse settings require convergence checks against smaller steps; elastic-intensity accuracy alone does not certify EMCD accuracy.
+
+
+## Forward-Born convention correction and historical results
+
+The corrected source uses d=<i|r|f>, Q=k_out-k_in and
+T_ab=sum_n w_n d_na conj(d_nb). With R_ab=v_a conj(v_b), forward intensity
+is I = Re sum_ab R_ab T_ba = Re Tr(RT). For one transition, T=d d^dagger. The factorization remains T=L L^dagger; forward transition
+amplitudes use L*. Double Channeling uses the localized site phase
+exp(+2*pi*i*(g-h).u), consistent with the Single Channeling convention.
+See [physics correction acceptance](PHYSICS_CORRECTION_FINAL_INTEGRATION.md)
+for independent controls, sign changes and numerical limitations. Historical
+scientific outputs and previously built Windows executables were not regenerated
+by this source correction; do not relabel their raw spectra or signed figures
+as corrected calculations. Corrected contrast remains distinct from intrinsic
+magnetic intensity.
+
+The editable maximum split-step range is 0.001 to 10 nm, with a 2 nm
+new-project default. This default is not a convergence certification. Explicit
+fine-step settings in saved/reference projects remain unchanged; verify EMCD
+convergence against smaller steps independently of elastic-intensity accuracy.
