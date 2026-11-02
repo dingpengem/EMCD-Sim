@@ -181,7 +181,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             except (OSError,ValueError):pass
         manifest=dict(schema_version=SCHEMA,complete=True,reproducible_structure=bool(snapshot),created_utc=created,saved_utc=stamp,software_commit=meta.get('software_commit'),
             model=result['config'].model,channeling_model=result['config'].channeling_model,methods=list(methods),files=files,arrays=shapes,
-            units=dict(reciprocal='Å^-1; crystallographic g=1/d; legacy cycles/angstrom values unchanged',energy='eV',depth='nm',intensity=meta.get('intensity_convention','relative research intensity; model-specific normalization')),
+            units=dict(reciprocal='Å⁻¹; crystallographic g=1/d, angular momentum transfer Q=2πg; numerical values unchanged',energy='eV',depth='nm',intensity=meta.get('intensity_convention','Intensity in a.u.; model-specific normalization')),
             source_provenance=dict(xmcd_path=result['config'].source if result['config'].model=='xmcd' else None,xmcd_sha256=(meta.get('source_audit',{}).get('sha256') if meta.get('source_audit') else result['config'].source_sha256) if result['config'].model=='xmcd' else None,
                 crystal_path=snapshot.get('source') if snapshot else None,crystal_sha256=snapshot.get('sha256') if snapshot else None),
             limitations=result.get('project_warnings',[]),array_convention='method__edge__field maps(qy,qx); method__field spectra(energy); method__amplitudes(depth,beam); explicit labels; no pickle')

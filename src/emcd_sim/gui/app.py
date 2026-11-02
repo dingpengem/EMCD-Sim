@@ -92,7 +92,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         layout.addWidget(self.canvas,1);self.selection=QtWidgets.QLabel();self.selection.setWordWrap(True);self.diffraction_details=CollapsibleSection('Diffraction details',self.selection,expanded=False);self.diffraction_details.setObjectName('diffraction_details');layout.addWidget(self.diffraction_details)
         self.progress=QtWidgets.QProgressBar();self.progress.setRange(0,1);self.progress.setValue(0);layout.addWidget(self.progress)
         self.splitter.addWidget(center);self.tabs=QtWidgets.QTabWidget();self.tabs.setMinimumWidth(300)
-        self.table=QtWidgets.QTableWidget(0,5);self.table.setHorizontalHeaderLabels(['hkl','qx','qy','s_g (1/A)','Exit I (last preview)'])
+        self.table=QtWidgets.QTableWidget(0,5);self.table.setHorizontalHeaderLabels(['hkl','qx (Å⁻¹)','qy (Å⁻¹)','s_g (Å⁻¹)','Exit I (a.u., last preview)'])
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers);self.tabs.addTab(self.table,'Diffraction')
         for title in ('EMCD Angular Maps','Virtual Detector EELS','Magnetic / Nonmagnetic'):
             index=self.tabs.addTab(QtWidgets.QLabel('Not calculated — later milestone.'),title);self.tabs.setTabEnabled(index,False)
@@ -194,7 +194,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
                 self.ax.add_patch(Circle(gg/2,np.linalg.norm(gg)/2,fill=False,color='teal',ls=':',label='Thales (000)—target'))
                 error=float(excitation(gg,s.tilt,s.voltage));j=hkl.index(s.target)
                 value=f'{self.last_result["intensity"][j]:.7g}' if fresh else 'not calculated for current inputs'
-                self.selection.setText(f'Target {s.target}: q=({gg[0]:.6f}, {gg[1]:.6f}) Å⁻¹; |g|={np.linalg.norm(gg):.6f}\ns={error:+.9g} 1/A; exit intensity={value}\nZA=({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; tilt=({s.tilt[0]:.8f}, {s.tilt[1]:.8f}) mrad')
+                self.selection.setText(f'Target {s.target}: q=({gg[0]:.6f}, {gg[1]:.6f}) Å⁻¹; |g|={np.linalg.norm(gg):.6f}\ns={error:+.9g} Å⁻¹; exit intensity={value} a.u.\nZA=({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; tilt=({s.tilt[0]:.8f}, {s.tilt[1]:.8f}) mrad')
             else:self.selection.setText('Target is not a nonzero reflection in this oriented basis. Click a valid spot or enter its hkl; no intensity is calculated.')
             if self.show_detectors.isChecked():
                 for name,p in zip(('A','B'),self.detectors):

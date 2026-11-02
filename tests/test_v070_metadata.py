@@ -25,7 +25,8 @@ def test_forward_computation_ast_is_unchanged_except_three_metadata_keys():
                 else:retained.append(item)
             node.keywords=retained
     assert sorted(removed)==['physics_convention','software_display_version','software_version']
-    assert ast.dump(current)==ast.dump(old)
+    from unit_metadata_guard import normalize_unit_metadata
+    assert ast.dump(normalize_unit_metadata(current))==ast.dump(old)
 
 
 def test_v070_windows_and_workflow_metadata_match_source():

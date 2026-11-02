@@ -260,7 +260,7 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
         systematic_row=cfg.systematic_row,incoming_hkl=[list(h) for h in hkl],outgoing_hkl=[list(h) for h in hkl] if cfg.channeling_model=='double' else None,
         outgoing_energy='incident energy minus actual energy loss' if cfg.channeling_model=='double' else None,
         normalization=dict(raw_components='D_mag=M_A-M_B; D_nonmag=N_A-N_B (a.u.)',components_percent='100 * signed component / (N_A+N_B)',prb='100 * (I_A_plus-I_B_plus)/(I_A_plus+I_B_plus)'),
-        precision='float64/complex128',reciprocal_convention='g=1/d, Å^-1; legacy cycles/Å values unchanged',
+        precision='float64/complex128',reciprocal_convention='Crystallographic g=1/d (Å⁻¹); angular momentum transfer Q=2πg (Å⁻¹). Numerical values unchanged.',
         detector_evaluation='Full angular grid at selected L3/L2; nonzero fractional-aperture union at other energies' if cfg.angular_maps else 'Only nonzero fractional-aperture support on the unchanged grid; angular maps not calculated',
         angular_evaluation_policy=prepared.get('angular_evaluation_policy','legacy_full_grid_per_energy') if prepared is not None else 'legacy_full_grid_per_energy',
         angular_evaluation=prepared.get('diagnostics',[]) if prepared is not None else [],
@@ -268,7 +268,7 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
         software_version=build['application_version'],software_display_version=build['display_version'],physics_convention=build['physics_convention'],
         implementation_sha256=build['implementation_sha256'],
         python=platform.python_version(),numpy=np.__version__,
-        intensity_convention=('XMCD-effective; transverse source-maximum normalization; relative scattering units' if cfg.model=='xmcd' else 'Atomic length-gauge A^2/eV tensor; relative scattering units; no absolute cross-section calibration'),
+        intensity_convention=('XMCD-effective; transverse source-maximum normalization; intensity in a.u.' if cfg.model=='xmcd' else 'Atomic length-gauge Å²/eV tensor; intensity in a.u.; no absolute cross-section calibration'),
         limitations='Projected IAM; '+('entrance-only, no outgoing channeling; ' if cfg.channeling_model=='single' else 'incoming and post-loss outgoing channeling; ')+ 'XMCD-effective is not full DFT MDFF; atomic non-DFT not quantitative Ni; arbitrary intensity units, no electron-count calibration; representative convergence controls do not certify all configurations.')
     stage('Preparing result visualizations')
     return dict(metadata=meta,model=model,settings=settings,config=cfg,maps=maps,spectra=spectra,qx=qx,qy=qy,weights=weights,coherence=C,depth_nm=z,amplitudes=psi)

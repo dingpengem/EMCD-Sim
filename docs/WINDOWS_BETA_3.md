@@ -1,5 +1,11 @@
 # EMCD-Sim v0.6.1-beta.3 Windows candidate
 
+> Historical candidate record. The version, numerical defaults and original
+> package descriptions below refer to that candidate. The subsequent source-only
+> unit-label standardization is not present in this executable. Current unit
+> definitions are in [Physical units](PHYSICAL_UNITS.md); a separately approved
+> Windows build is required to display the new labels.
+
 Package version: **0.6.1b3**. Display/ProductVersion: **v0.6.1-beta.3**.
 Windows numeric file/product version: **0.6.1.3**, marked prerelease.
 This candidate is distributed through [Windows Beta candidate Actions](https://github.com/dingpengem/EMCD-Sim/actions/workflows/windows-build.yml).

@@ -1,5 +1,10 @@
 # EMCD-Sim
 
+See [physical units and reciprocal conventions](docs/PHYSICAL_UNITS.md):
+crystallographic |g|=1/d and angular Q=2πg both use Å⁻¹, with no rescaling of saved values.
+These labels are a source-only update. The accepted Windows EXE predates them;
+a separately approved Windows build is required to display them.
+
 > **Critical scientific compatibility notice:** legacy Windows packages before
 > **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
 > magnetic-odd EMCD signs. Historical signed L3/L2 magnetic spectra require
@@ -40,7 +45,7 @@ Elastic propagation uses an oriented **projected independent-atom-model (IAM) po
 
 The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An approximate atomic-ionization model is also available. A complete DFT-derived MDFF from complex core-to-band transition matrix elements is **not implemented**. CIF import supports structural inspection; it does not validate arbitrary materials for magnetic EELS. The separate generalized-multislice development branch uses one structure-derived Projected ZOLZ engine for bounded crystallographic directions, with [001]/[017]/[117]/[111]/[710] BW/MS Single/Double comparisons. Orientation-specific geometry modules are retained only as frozen test references. See the [architecture](docs/GENERALIZED_MULTISLICE_ARCHITECTURE.md), [validation and explicit convergence failures](docs/GENERAL_ZOLZ_MULTISLICE_VALIDATION.md), and [Atomic 3D integration plan](docs/ATOMIC_3D_MULTISLICE_DEVELOPMENT.md). Atomic 3D is not implemented by this milestone. These source additions are not in the preserved Windows packages.
 
-For [117], crystal-[001] magnetization is rotated once into the target-aligned frame; raw magnetic intensity need not be mirror-antisymmetric. The default potential cutoff 2.5 cycles/Å has no off-row [117] harmonics. Use explicit research settings and resource checks; Automatic does not establish convergence. See the [configuration guide](docs/USER_GUIDE.md#research-ni-117--2-20), [scientific validation](docs/NI_117_FINAL_SYMMETRY_VALIDATION.md) and [merge-readiness review](docs/NI_117_MERGE_READINESS.md). Validation is representative, not a universal convergence or experimental-accuracy claim.
+For [117], crystal-[001] magnetization is rotated once into the target-aligned frame; raw magnetic intensity need not be mirror-antisymmetric. The default potential cutoff 2.5 Å⁻¹ has no off-row [117] harmonics. Use explicit research settings and resource checks; Automatic does not establish convergence. See the [configuration guide](docs/USER_GUIDE.md#research-ni-117--2-20), [scientific validation](docs/NI_117_FINAL_SYMMETRY_VALIDATION.md) and [merge-readiness review](docs/NI_117_MERGE_READINESS.md). Validation is representative, not a universal convergence or experimental-accuracy claim.
 
 The generalized branch now has [normal-GUI end-to-end validation](docs/GENERALIZED_MULTISLICE_EMCD_VALIDATION.md)
 for all five representative orientations in Single/Double BW/MS. The [111]
@@ -60,7 +65,7 @@ The subsequent [local main merge acceptance](docs/GENERALIZED_MULTISLICE_LOCAL_M
 
 ### Beta 3 Windows candidate
 
-Use the [Actions installation instructions](docs/WINDOWS_BETA_3.md#download-and-install). The three adjustable scientific panels keep Settings and Diffraction visible together; chevron sections and Project Results collapse to release plot space. Layout preferences persist independently of scientific projects. Defaults remain 300 kV, beam/potential cutoffs 3.2/2.5 cycles/Angstrom, 97x97 and 2048 MiB. No physics changes or new full-curve convergence claims are introduced.
+Use the [Actions installation instructions](docs/WINDOWS_BETA_3.md#download-and-install). The three adjustable scientific panels keep Settings and Diffraction visible together; chevron sections and Project Results collapse to release plot space. Layout preferences persist independently of scientific projects. Defaults remain 300 kV, beam/potential cutoffs 3.2/2.5 Å⁻¹, 97x97 and 2048 MiB. No physics changes or new full-curve convergence claims are introduced.
 
 ### Historical published Beta 2 portable application
 

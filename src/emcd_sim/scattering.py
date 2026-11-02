@@ -1,6 +1,6 @@
 """Neutral-atom elastic electron scattering factors and crystal structure factors.
 
-Reciprocal magnitude ``g`` means |h b1 + k b2 + l b3| in cycles/Å.
+Crystallographic reciprocal magnitude ``g`` is |h b1 + k b2 + l b3| in Å⁻¹, with |g|=1/d.
 The tabulated Lobato--Van Dyck electron form factors are *non-relativistic*
 Born scattering amplitudes in Å. The microscope gamma factor is applied when
 building the relativistic elastic propagation matrix, not inside f(g).
@@ -32,7 +32,7 @@ def nickel_lobato_factor(g_angstrom_inv: float | np.ndarray) -> float | np.ndarr
     """
     g = np.asarray(g_angstrom_inv, dtype=float)
     if not np.all(np.isfinite(g)) or np.any(g < 0):
-        raise ValueError("g must be finite and nonnegative (cycles/angstrom)")
+        raise ValueError("Crystallographic g=1/d must be finite and nonnegative (Å⁻¹)")
     t = g[..., None] ** 2 * _NI_B
     value = np.sum(_NI_A * (2.0 + t) / (1.0 + t) ** 2, axis=-1)
     return float(value) if g.ndim == 0 else value

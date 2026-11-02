@@ -20,7 +20,7 @@ python -m emcd_sim --mdff-model gaussian --output outputs/legacy
 
 The transition convention is `d_a=<core|r_a|final>` in Å, `T_ab(E)=Σ_n w_n d_na conj(d_nb) L(E-E_n)`, with `S_dip(Q_g,Q_h,E) = Q_g^T T(E) Q_h`. This is the *proper* dipole MDFF without Coulomb denominators.
 
-Transverse diffraction coordinates are 000-centered `q_g = q_detector - g` in cycles/Å; `q_z=-E/(h v)`. Convert all components to **angular** `Q_g=2πq_g` in rad/Å before tensor contraction or Coulomb normalization. The incoming coherence is `C_gh(t)=1/t∫ψ_g(z)conj(ψ_h(z))dz`.
+Transverse diffraction coordinates are 000-centered `q_g = q_detector - g` in Å⁻¹; `q_z=-E/(h v)`. The existing kernel converts all components once to **angular** `Q_g=2πq_g` (Å⁻¹, with the 2π included) before tensor contraction or Coulomb normalization. A unit-label update adds no conversion. The incoming coherence is `C_gh(t)=1/t∫ψ_g(z)conj(ψ_h(z))dz`.
 
 For **equivalent localized FCC Ni core-loss sites**, `P_gh=mean_a exp[2πi(hkl_g-hkl_h)·fractional_site_a]`. The relative intensity kernel is
 

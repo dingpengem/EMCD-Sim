@@ -40,7 +40,7 @@ z_local = [0, 1,  7] / sqrt(50) = [017]
 m_crystal = [001]  ->  m_local = (0, -1/sqrt(50), 7/sqrt(50))
 ```
 
-The zero-order Laue-zone rule is **k + 7l = 0**, alongside FCC allowed-reflection parity. **(200)** is allowed and perpendicular to [017]: `[017]·(200)=0`. The first off-row projected reflections lie at about **sqrt(51)/a = 2.027 cycles/Å**, so a minor-zone row dominates over some off-row scattering near the reference, although multiple beams remain in the physical model.
+The zero-order Laue-zone rule is **k + 7l = 0**, alongside FCC allowed-reflection parity. **(200)** is allowed and perpendicular to [017]: `[017]·(200)=0`. The first off-row projected reflections lie at about **sqrt(51)/a = 2.027 Å⁻¹**, so a minor-zone row dominates over some off-row scattering near the reference, although multiple beams remain in the physical model.
 
 At **200 kV**, `a=3.524 Å`, the reference is the **exact paraxial (200) Bragg alignment**:
 ```text
@@ -66,7 +66,7 @@ Thus `(delta_x,delta_y)=(0,0)` is the exact-(200)-Bragg reference, **not** [017]
 
 X mistilt primarily changes `s200`, whereas a local Y tilt leaves `s200` unchanged within the present paraxial convention (`g200,y=0`) but changes excitation of **off-row** reflections and the y-reflection symmetry of the wavefield. The projected zone-axis marker is `q_ZA=-k_incident,perp` in the transmitted-(000)-centered detector frame. The (000)/(200) points, Thales circle, and A/B aperture outlines stay fixed; **only ZA moves with incident tilt**. Thales geometry by itself is not a prediction of the strongest EMCD.
 
-The existing default numerical study is 200 kV, 30 nm, 27 BW beams at cutoff 3.2 cycles/Å, FFT32, potential cutoff 2.2 cycles/Å, depth64, step≤0.04 nm, detector33 and fractional aperture weights. Both propagators use the same projected potential; the same energy-dependent tensor is contracted with each incoming depth coherence. It sums localized single-ionization contributions through specimen thickness but **does not** propagate the inelastic wave through the remaining specimen (no outgoing/double channeling).
+The existing default numerical study is 200 kV, 30 nm, 27 BW beams at cutoff 3.2 Å⁻¹, FFT32, potential cutoff 2.2 Å⁻¹, depth64, step≤0.04 nm, detector33 and fractional aperture weights. Both propagators use the same projected potential; the same energy-dependent tensor is contracted with each incoming depth coherence. It sums localized single-ionization contributions through specimen thickness but **does not** propagate the inelastic wave through the remaining specimen (no outgoing/double channeling).
 
 ## 4. What pictures to look at and how to interpret them
 
@@ -89,7 +89,7 @@ Selected **actual simulation figures are hosted in the gallery below** under [`d
 
 ### 4.1 Hosted overview: magnetic, even and raw/corrected contrast
 
-All previews below come from the **200 kV, 30 nm, potential-cutoff 2.2 cycles/Å** survey with fixed crystal-[001] magnetization. Coordinates `(delta_x,delta_y)` are **Bragg offsets in mrad**, not absolute incidence angles. The map samples are the native **831.271 eV L3 / 848.698 eV L2** magnetic features; the energy axis has not been experimentally calibrated. Click an image to inspect its original-resolution preview.
+All previews below come from the **200 kV, 30 nm, potential-cutoff 2.2 Å⁻¹** survey with fixed crystal-[001] magnetization. Coordinates `(delta_x,delta_y)` are **Bragg offsets in mrad**, not absolute incidence angles. The map samples are the native **831.271 eV L3 / 848.698 eV L2** magnetic features; the energy axis has not been experimentally calibrated. Click an image to inspect its original-resolution preview.
 
 ![Actual BW and FFT multislice L3 XY maps of intrinsic magnetic asymmetry, reversal-even detector asymmetry and relative shot-noise proxy](images/ni017/xy_overview.png)
 
@@ -109,7 +109,7 @@ All previews below come from the **200 kV, 30 nm, potential-cutoff 2.2 cycles/Å
 
 ![Actual L3 BW and FFT multislice intrinsic and paired-detector angular maps at zero Bragg offset](images/ni017/reference_l3_angular.png)
 
-**Figure 4 — Reference L3 angular panels.** Absolute tilt is `(-7.116725,0)` mrad. The six columns are intrinsic magnetic-odd intensity, reversal-even intensity, total `+M` intensity, raw paired difference, corrected paired difference and scaled even residual; rows are BW/MS. Reciprocal axes are **cycles/Å**. The transmitted cross, indexed (200), ZA [017], Thales circle and A/B apertures identify the actual geometry. ZA differs from (000) at this reference. Signed maps retain common comparison scales; weak color is not independently amplified. **Paired-difference maps are A-supported comparisons with reflected B pixels**: white outside that support is masked, not zero contrast over the whole plane. The even intensity map can be strong while its integrated A−B difference is nearly zero.
+**Figure 4 — Reference L3 angular panels.** Absolute tilt is `(-7.116725,0)` mrad. The six columns are intrinsic magnetic-odd intensity, reversal-even intensity, total `+M` intensity, raw paired difference, corrected paired difference and scaled even residual; rows are BW/MS. Reciprocal coordinates follow **g=1/d (Å⁻¹)**; the historical images retain their original axis wording and have not been redrawn. The transmitted cross, indexed (200), ZA [017], Thales circle and A/B apertures identify the actual geometry. ZA differs from (000) at this reference. Signed maps retain common comparison scales; weak color is not independently amplified. **Paired-difference maps are A-supported comparisons with reflected B pixels**: white outside that support is masked, not zero contrast over the whole plane. The even intensity map can be strong while its integrated A−B difference is nearly zero.
 
 ![Actual full BW and FFT multislice A/B EELS, intrinsic odd and even differences and post-edge-corrected spectra at zero Bragg offset](images/ni017/reference_eels.png)
 
@@ -155,7 +155,7 @@ D_corrected = (M_A - alpha*M_B) + (N_A - alpha*N_B)
 
 Here the `alpha` factor comes from the actual +M A/B integrals over **878–882 eV** *separately at each orientation and method*. A small nonmagnetic difference may be created by the correction itself when `D_nonmag≈0`. Thus **corrected EMCD must never be relabeled as intrinsically magnetic**. The intrinsic asymmetry uses the common reversal-averaged `Sigma_ref=N_A+N_B`; reported percentage `100*D_mag/Sigma_ref`. The detectability proxy uses `abs(D_mag)/sqrt(Sigma_ref)`, without experimental noise/dose calibration.
 
-**Observed representative model results (BW, potential cutoff 2.2 cycles/Å, native magnetic features):**
+**Observed representative model results (BW, potential cutoff 2.2 Å⁻¹, native magnetic features):**
 
 | Offset `(delta_x,delta_y)` mrad | L3 magnetic asymmetry | L2 magnetic asymmetry | Interpretation |
 | --- | ---: | ---: | --- |
@@ -171,7 +171,7 @@ The observed postedge correction reduces error versus intrinsic magnetic differe
 
 The original data are **model outputs** (relative units), not validated measured Ni cross sections. The model uses a projected (z-independent) IAM elastic potential, single/incoming channeling only, circular-intensity-derived XMCD-effective dipole tensor rather than full complex DFT MDFF, fixed original virtual apertures, and no HOLZ/outgoing channeling/TDS/experimental energy calibration.
 
-A matched BW/FFT difference of up to **0.6025%** across the coarse survey does **not** resolve physical-potential convergence. At exact Bragg, increasing cutoff from 2.2 to 3.2 cycles/Å changes the selected L3 magnetic difference by about **21.8%**; it also **reverses the ordering** of the `(−6,0)` versus `(0,−25)` absolute-signal candidates. These are **candidate orientations**, not a converged global optimum.
+A matched BW/FFT difference of up to **0.6025%** across the coarse survey does **not** resolve physical-potential convergence. At exact Bragg, increasing cutoff from 2.2 to 3.2 Å⁻¹ changes the selected L3 magnetic difference by about **21.8%**; it also **reverses the ordering** of the `(−6,0)` versus `(0,−25)` absolute-signal candidates. These are **candidate orientations**, not a converged global optimum.
 
 Reproduce from the repository root with your validated WIEN2k input files present in `data/wien2k_ni/`:
 

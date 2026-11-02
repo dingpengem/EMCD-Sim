@@ -191,7 +191,7 @@ def draw_component_maps(fig,result,edge,method=None,signal_mode='raw'):
         fig.colorbar(im,ax=ax,shrink=.7).set_label(units)
         if not np.isfinite(v).any():ax.text(.1,.5,'All pixels undefined / masked',transform=ax.transAxes)
     e=r['config'].l3 if edge=='L3' else r['config'].l2
-    sampling=f'Angular Grid: {qx.shape[1]} x {qx.shape[0]}; q spacing: {dx:.6g}, {dy:.6g} inverse Angstrom'
+    sampling=f'Angular Grid: {qx.shape[1]} x {qx.shape[0]}; q spacing: {dx:.6g}, {dy:.6g} Å⁻¹'
     fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry\n'+sampling,fontsize=10)
     fig._emcd_display_metadata=dict(kind='primary angular components',edge=edge,method=method,**meta,shared_color_scale=True,
         angular_grid_shape=list(qx.shape),q_spacing_inv_angstrom=[float(dx),float(dy)],display_interpolation='nearest')

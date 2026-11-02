@@ -13,7 +13,7 @@ Use a visibly labeled `approximation: entrance_only` in all saved results. Never
 
 ### Stage SC0 — Freeze units, coordinate and chiral signs
 
-- Fix `g` in cycles/Angstrom for diffraction; use angular wavevector `Q=2*pi*g` in `exp(i Q·r)`. Document `q_z(E)`, energy-loss sign, 000-centered detector coordinate, crystal/lab frames and detector handedness.
+- Fix `g` in Å⁻¹ for diffraction; use angular wavevector `Q=2*pi*g` in `exp(i Q·r)`. Document `q_z(E)`, energy-loss sign, 000-centered detector coordinate, crystal/lab frames and detector handedness.
 - Distinguish sample bias in V from microscope accelerating voltage in kV, and keep sample magnetization as a vector.
 - Test ideal 2BC, near-2BC, symmetric-3BC and 2D ZOLZ indexing, tilt/excitation errors, Thales positions, four-quadrant differences and magnetic reversal. A nominal 3BC systematic row is **not** an experimentally validated 3BC alignment.
 - Test nonmagnetic symmetry cancellation for ideal paired apertures and observe when finite-basis/tilt geometry legitimately breaks it.

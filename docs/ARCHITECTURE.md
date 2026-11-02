@@ -96,7 +96,7 @@ propagation backends                      |               transition matrix elem
 | `DetectorModel` | physical aperture(s), spectrometer response, acquisition/noise | Does not hard-code 2BC/3BC apertures into MDFF |
 | `SimulationResult` | energies, reciprocal axes, spectra/maps, diffraction indices, units, approximation/provenance | Self-describing, machine-readable and reproducible |
 
-Keep coordinates separate: crystallographic **g** is currently in cycles/Angstrom (no 2 pi), while dipole plane-wave exponents must use **Q = 2 pi g** in inverse Angstrom if writing exp(i Q·r). Document conversions at interfaces; do not silently mix momentum-transfer conventions. Explicitly distinguish a physical `MDFF` from the Coulomb denominators `1/(q² q'²)` multiplying it in the cross section.
+Keep coordinates separate: crystallographic **g** is currently in Å⁻¹ (no 2 pi), while dipole plane-wave exponents must use **Q = 2 pi g** in Å⁻¹ if writing exp(i Q·r). Document conversions at interfaces; do not silently mix momentum-transfer conventions. Explicitly distinguish a physical `MDFF` from the Coulomb denominators `1/(q² q'²)` multiplying it in the cross section.
 
 Recommended base serialization: JSON metadata + NPZ arrays for no-extra-dependency compatibility; optional HDF5/Zarr for high-dimensional or HPC calculations. Record software/DFT versions, potential source, sample state, orientation, beam basis, units, broadening, detector definitions, approximation level and convergence settings. Avoid Python pickle for shared scientific datasets.
 

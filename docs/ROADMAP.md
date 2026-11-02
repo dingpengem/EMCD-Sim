@@ -18,7 +18,7 @@ EMCD-Sim is independent of QCBED (separate code, Git history and `emcd-python` e
 
 ## P0 — Geometry / physical definitions
 
-- Freeze 000-centered reciprocal maps, [uvw]/(hkl), specimen orientation, electron angular versus cycles/Angstrom wavevector, diffraction excitation error and magnetic sign conventions.
+- Freeze 000-centered reciprocal maps, [uvw]/(hkl), specimen orientation, electron angular versus Å⁻¹ wavevector, diffraction excitation error and magnetic sign conventions.
 - Verify 2BC and 3BC Thales/double-difference apertures including systematic-row truncation limitations.
 - Separate pure MDFF from fast-electron Coulomb denominators, cross-section normalization and detector integration.
 

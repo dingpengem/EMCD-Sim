@@ -1,5 +1,10 @@
 # EMCD-Sim Desktop User Manual
 
+[Physical units and conventions](PHYSICAL_UNITS.md) distinguish crystallographic
+g=1/d from angular Q=2πg. Unit-label updates preserve all saved numerical values.
+The standardized labels describe current source; the accepted Windows EXE
+predates this update and requires a separately approved build to display them.
+
 > **Critical scientific compatibility notice:** legacy Windows packages before
 > **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
 > magnetic-odd EMCD signs. Historical signed L3/L2 magnetic spectra require
@@ -28,7 +33,7 @@ explicitly.
 For the studied reference, choose 200 kV, lock Y at zero and align the signed
 target to Bragg; X is approximately -10.06456964 mrad. Restore physical Thales
 A/B detectors. The transmitted beam is (0,0), while ZA=-k_incident,perp lies
-at (0.40130918,0) cycles/Å. Inspect source metadata and declare **crystal-frame**
+at (0.40130918,0) Å⁻¹. Inspect source metadata and declare **crystal-frame**
 magnetization; the audited local Ni source is [001], not the incident axis.
 With eta=beta=1 the native studied magnetic samples are 831.271/848.698 eV.
 No experimental energy shift or new DFT tensor is implied. Rotate the tensor
@@ -36,7 +41,7 @@ once; raw reversal-odd intensity can have a mirror-even part from finite qz
 and transverse magnetization. Paired-detector differences are not a parity test.
 
 Use Manual (Advanced) to inspect provisional research settings: beam4.6,
-potential6.2 cycles/Å, FFT32–48, depth129, max slice0.02 nm, detector97–129 and
+potential6.2 Å⁻¹, FFT32–48, depth129, max slice0.02 nm, detector97–129 and
 fractional boundary subpixels128. Run memory/resource preflight and review
 runtime before calculating. Automatic leaves the released starting defaults
 unchanged and does not claim [117] convergence. Potential2.5 omits all off-row
@@ -56,7 +61,7 @@ and [review status](NI_117_MERGE_READINESS.md) before quantitative interpretatio
 
 The [source cleanup audit](SOURCE_CLEANUP.md) defines the current GUI/tensor runtime and supported commands. Historical research CLI/scan drivers are retired from current source; their numerical results and original Git revisions remain preserved. Published Windows packages are unchanged.
 
-**Historical published Windows prerelease: v0.6.1-beta.2.** It includes the worker-safety and GUI/performance developments described below. See [Beta 2 release notes and acceptance](RELEASE_NOTES_0_6_1_BETA_2.md). Beta 1 statements and acceptance below document the preserved historical package. Post-release source projects use 300 kV and 3.2/2.5 cycles/Å beam/potential cutoffs; the published Beta 2 ZIP retains 3.0/2.0. Explicitly choose 200 kV for the locked scientific example.
+**Historical published Windows prerelease: v0.6.1-beta.2.** It includes the worker-safety and GUI/performance developments described below. See [Beta 2 release notes and acceptance](RELEASE_NOTES_0_6_1_BETA_2.md). Beta 1 statements and acceptance below document the preserved historical package. Post-release source projects use 300 kV and 3.2/2.5 Å⁻¹ beam/potential cutoffs; the published Beta 2 ZIP retains 3.0/2.0. Explicitly choose 200 kV for the locked scientific example.
 
 **Main and Beta 2 developments** include Automatic / Manual settings, the reversible **Show full basis / Restore previous view** control, energy-dependent angular scheduling and MS Double allocation improvements. They are newer than the unchanged historical Beta 1. See [Beta 2 installation](INSTALL_WINDOWS.md) and the historical [integration record](GUI_PERFORMANCE_INTEGRATION.md). New projects use Automatic, 97 x 97 angular sampling and a 2048 MiB process budget; legacy projects retain explicit saved numerical values in Manual. These convenience and execution changes do not establish convergence for arbitrary parameters.
 **v0.6.1-beta.1 Windows research Beta.** The [acceptance report](V061_BETA_ACCEPTANCE.md) records the validated executable, unchanged checksum and local test scope. Independent clean-machine installation remains **NOT TESTED**. See [release notes](RELEASE_NOTES_0_6_1_BETA_1.md). Double Channeling already existed in earlier releases; this version adds full-field presentation and actual angular-grid controls without changing the solvers.
@@ -195,7 +200,7 @@ and diffraction controls. Use this numbered reading order:
    and **G. Output Settings**. Changing an input does not calculate a new result.
 2. **Center: diffraction viewer.** The **Click mode** selects what a click does.
    The toolbar provides pan/zoom; its coordinates belong to the current local
-   reciprocal frame in cycles/Å. **Preview diffraction** calculates elastic
+   reciprocal frame in Å⁻¹. **Preview diffraction** calculates elastic
    intensities. **Run EMCD / EELS** explicitly starts core-loss calculation.
 3. **Right: results.** Tabs include **Diffraction (last preview)**,
    **EMCD Angular Maps**, **Virtual Detector EELS**, **Magnetic / Nonmagnetic**,
@@ -222,19 +227,19 @@ This reproduces the geometry and physical/numerical profile of the representativ
 
 | Setting | Value |
 | --- | --- |
-| Beam cutoff | 4.6 cycles/Å, incoming/outgoing matched, 59 beams for [017] |
-| Potential cutoff | 6.2 cycles/Å |
+| Beam cutoff | 4.6 Å⁻¹, incoming/outgoing matched, 59 beams for [017] |
+| Potential cutoff | 6.2 Å⁻¹ |
 | Debye–Waller B | 0 Å² |
 | Angular Map Resolution | Standard - 97x97 |
-| Map halfwidth | 0.5 cycles/Å |
+| Map halfwidth | 0.5 Å⁻¹ |
 | Depth integration nodes | 257 |
 | Aperture boundary subpixels | 64, fractional integration |
 | FFT grid (even), if switching to MS | 48 |
 | Max slice step (nm), if switching to MS | 0.04 |
 | Estimated process memory budget | 2048 MiB; admission still checks actual available RAM |
-| Physical detector A center | (+0.2837684449489217, +0.2837684449489217) cycles/Å |
-| Physical detector B center | (+0.2837684449489217, -0.2837684449489217) cycles/Å |
-| Aperture radius | 0.0908059024 cycles/Å |
+| Physical detector A center | (+0.2837684449489217, +0.2837684449489217) Å⁻¹ |
+| Physical detector B center | (+0.2837684449489217, -0.2837684449489217) Å⁻¹ |
+| Aperture radius | 0.0908059024 Å⁻¹ |
 | Optional post-edge A/B correction window | 878–882 eV, a separate observable; use full spectra for post-edge diagnostics |
 
 4. Click **Restore Thales A/B** and confirm detector coordinates/radius. Click **Run EMCD / EELS** once. The budget is a ceiling, not an allocation or promise of admission; a rejection must be resolved explicitly, never by an undocumented physical reduction. MS/Both and full spectra can be substantially slower than this BW selected-energy example.
@@ -259,10 +264,10 @@ See [angular convergence](ANGULAR_MAP_CONVERGENCE.md), [complete thickness analy
    for this purpose. This is exact Bragg incidence, **not** zero-tilt [017].
 4. Find transmitted **(000)** (cross), **ZA [017]** (star), target (200), and
    the **Thales** circle. At the reference, ZA is approximately
-   `(+0.283768, 0)` cycles/Å relative to transmitted (000). It is not a plot
+   `(+0.283768, 0)` Å⁻¹ relative to transmitted (000). It is not a plot
    displacement in mrad; convert with the electron wavelength.
 5. Click **Restore Thales A/B**. The physical apertures are centered near
-   `(+0.283768, ±0.283768)` cycles/Å, radius `0.0908059` cycles/Å.
+   `(+0.283768, ±0.283768)` Å⁻¹, radius `0.0908059` Å⁻¹.
 6. Select and validate an MDFF source/model as below. Choose **Propagation
    Method → Bloch-wave** and the default numerical settings. For corrected
    curves, explicitly enable post-edge A/B correction with the 878–882 eV
@@ -305,8 +310,8 @@ q_ZA = −k_incident,perp = −(tilt_x_rad, tilt_y_rad) / lambda
 tilt_mrad = −1000 lambda q_ZA
 ```
 
-The existing relativistic wavelength and cycles/Å convention are used; no
-extra 2π factor applies. Editing **ZA qx/qy (cycles/A)** or **Tilt X/Y (mrad)**
+The existing relativistic wavelength and Å⁻¹ convention are used; no
+extra 2π factor applies. Editing **ZA qx/qy (Å⁻¹)** or **Tilt X/Y (mrad)**
 performs the same conversion. **Tilt step (mrad)** sets the spin-box increments.
 At zero tilt, ZA and transmitted (000) coincide. **Reset to zone axis** gives
 that zero tilt; **Reset to reference geometry** restores the built-in [017]
@@ -484,7 +489,7 @@ Panel F groups Manual controls into **Elastic Potential and Beam Support**, **In
 | Estimated process memory budget | Shared execution/admission resource, **not a physical-model parameter or required allocation**; stored unchanged and checked against current available RAM. |
 | Memory estimate and solver explanation | Diagnostics-only presentation; estimates reflect the currently selected engines, basis/sampling, retained allocations and RAM. |
 
-The physical-model and angular/integration categories affect both engines; memory admission and worker scheduling are separate resources rather than scattering parameters. Only FFT mesh and maximum slice step are MS-only. New development-project defaults are **300 kV**, beam **3.2 cycles/Å**, potential **2.5 cycles/Å**, B = 0, 64 depth nodes, FFT 32, maximum step 2 nm, energy count 241, halfwidth 1 cycle/Å, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. New-project reference alignment follows the selected voltage; loading a saved project preserves its explicit voltage, tilt, cutoffs and sampling. Production reference settings are not substituted as ordinary defaults.
+The physical-model and angular/integration categories affect both engines; memory admission and worker scheduling are separate resources rather than scattering parameters. Only FFT mesh and maximum slice step are MS-only. New development-project defaults are **300 kV**, beam **3.2 Å⁻¹**, potential **2.5 Å⁻¹**, B = 0, 64 depth nodes, FFT 32, maximum step 2 nm, energy count 241, halfwidth 1 Å⁻¹, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. New-project reference alignment follows the selected voltage; loading a saved project preserves its explicit voltage, tilt, cutoffs and sampling. Production reference settings are not substituted as ordinary defaults.
 
 ### Parallel Workers and pre-Run risk
 
@@ -540,12 +545,12 @@ ZOLZ disk. Exact Bragg alignment does not establish physical two-beam isolation.
 | Control | Meaning and care |
 | --- | --- |
 | Beam / MDFF basis cutoff (Å⁻¹) | Shared retained BW and MS/MDFF basis, not a two-beam restriction. MS may propagate additional FFT harmonics. Increasing the common basis also enlarges the inelastic contraction. |
-| Potential cutoff (cycles/A) | Fourier harmonics of the elastic projected IAM potential. It is a separate physical/numerical convergence question. |
+| Potential cutoff (Å⁻¹) | Fourier harmonics of the elastic projected IAM potential. It is a separate physical/numerical convergence question. |
 | Debye–Waller B (A²) | The existing potential damping parameter; record any change. |
 | Multislice numerical settings → FFT grid (even) | Real/reciprocal sampling mesh, default 32. Must include the exact common hkl basis; even 12–128 is the supported control range. |
 | Max slice step (nm) | Maximum propagation substep, default 2 nm, editable range 0.001?10 nm in both Automatic and Manual modes; distinct from the ionization depth nodes. The actual substep can be smaller. Requests above 0.04 nm show a nonblocking accuracy advisory, not a universal convergence threshold; check smaller steps for EMCD convergence. |
 | Depth integration nodes | Ionization/coherence depth sampling, default 64. |
-| Angular Map Resolution / Angular / detector grid points (odd) / Map halfwidth | Actual reciprocal sampling and field of view: Quick Preview 33, Standard 97 (default), High 193, or odd Custom 9–193; halfwidth defaults to 1 cycle/Å. Shared with detector-EELS quadrature. |
+| Angular Map Resolution / Angular / detector grid points (odd) / Map halfwidth | Actual reciprocal sampling and field of view: Quick Preview 33, Standard 97 (default), High 193, or odd Custom 9–193; halfwidth defaults to 1 Å⁻¹. Shared with detector-EELS quadrature. |
 | Aperture boundary subpixels | Boundary sampling for fractional circular area weights, default 64. It does not refine a spatially varying intensity field itself. |
 | Energy sampling points | Saved spectral sampling, with selected edge points additionally included; default 241 can yield 243 saved energies. |
 

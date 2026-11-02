@@ -45,7 +45,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
         offrow=sum(abs(geo.crystal.g_vector(h)[1])>1e-12 for h in geo.hkl_within(settings.potential_cutoff))
         info['potential_nonzero_offrow_harmonics']=int(offrow)
         first=min((np.linalg.norm(geo.crystal.g_vector(h)) for h in geo.hkl_within(np.linalg.norm(geo.crystal.g_vector(geo.support_generators[1]))) if abs(geo.crystal.g_vector(h)[1])>1e-12),default=float('inf'))
-        info['potential_support_warning']=(f'Requested cutoff retains no off-row ZOLZ harmonics (first approximately {first:.3f} cycles/Angstrom). '
+        info['potential_support_warning']=(f'Requested cutoff retains no off-row ZOLZ harmonics (first approximately {first:.3f} Å⁻¹). '
             'This is not a full 2D potential; increase the cutoff explicitly.' if not offrow else '')
         if info['potential_support_warning']:info['numerical_warnings'].append(info['potential_support_warning'])
     else:info['potential_support_warning']=''

@@ -39,7 +39,7 @@ def orientation(cell,zone,target=None):
 @dataclass
 class Structure:
     atoms: object
-    source: str='Built-in FCC Ni, a=3.524 A'
+    source: str='Built-in FCC Ni, a=3.524 Å'
     sha256: str=''
     import_warnings: str=''
 
@@ -64,7 +64,7 @@ class Structure:
     def description(self):
         a=self.atoms;sg=a.info.get('spacegroup','Not determined (no symmetry inference)')
         return (f'Source: {self.source}\nSHA256: {self.sha256 or "internally generated"}\nFormula: {a.get_chemical_formula()}\n'
-                f'Cell a,b,c (A), alpha,beta,gamma (deg): {a.cell.cellpar().tolist()}\nSpecies: {sorted(set(a.get_chemical_symbols()))}\n'
+                f'Cell a,b,c (Å), alpha,beta,gamma (deg): {a.cell.cellpar().tolist()}\nSpecies: {sorted(set(a.get_chemical_symbols()))}\n'
                 f'Atoms: {len(a)}\nSpace group supplied by CIF: {sg}\nFractional positions:\n'
                 +'\n'.join(f'{s}: {p[0]:.8f} {p[1]:.8f} {p[2]:.8f}' for s,p in zip(a.get_chemical_symbols(),a.get_scaled_positions()))
                 + ('\nImport warnings:\n'+self.import_warnings if self.import_warnings else ''))

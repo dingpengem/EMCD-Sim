@@ -73,7 +73,7 @@ class StageB(NumericalSettingsUI):
         self.number('sigma','Gaussian sigma (eV)',.8,.05,5,self.emcd_stale)
         advanced=QtWidgets.QGroupBox('Advanced atomic radial controls');advanced.setCheckable(True);advanced.setChecked(False);body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(advanced);outer.addWidget(body);self.form.addRow(advanced);body.setVisible(False);advanced.toggled.connect(body.setVisible);self.form=QtWidgets.QFormLayout(body)
         self.number('atomic_zeff_2p','Zeff 2p',25,1,40,self.emcd_stale);self.number('atomic_zeff_3d','Zeff 3d',9,1,40,self.emcd_stale)
-        self.radial_override=QtWidgets.QCheckBox('Use explicit radial dipole (Angstrom)');self.form.addRow(self.radial_override);self.number('radial','Radial dipole',.05,.00001,10,self.emcd_stale)
+        self.radial_override=QtWidgets.QCheckBox('Use explicit radial dipole (Å)');self.form.addRow(self.radial_override);self.number('radial','Radial dipole (Å)',.05,.00001,10,self.emcd_stale)
         self.form=saved;self.button('Preview source / tensor spectrum...',self.preview_mdff)
         self.model_box.currentIndexChanged.connect(self.model_changed)
         self.axis.textChanged.connect(self.emcd_stale);self.declaration.toggled.connect(self.emcd_stale);self.source_path.textChanged.connect(self.source_changed);self.radial_override.toggled.connect(self.emcd_stale)

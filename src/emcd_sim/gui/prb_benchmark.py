@@ -92,7 +92,7 @@ def benchmark_readout(result, *, selection='l3-peak', energy_ev=None, windows=No
     else:
         mismatches.append('Saved target vector unavailable; Thales geometry cannot be checked.')
     record = dict(selected_edge='L3', selection=selection, definition=DEFINITION,
-        denominator='I_A_plus(E) + I_B_plus(E)', units='percent', evaluation_energy_ev=None,
+        denominator='I_A_plus(E) + I_B_plus(E)', units='%', evaluation_energy_ev=None,
         requested_energy_ev=None, prb_relative_dichroism_percent=None, magnetic_only_percent=None,
         nonmagnetic_imbalance_percent=None, undefined_reason=None,
         diagnostic_definitions=dict(magnetic='100 * (M_A-M_B)/(N_A+N_B)', even='100 * (N_A-N_B)/(N_A+N_B)',

@@ -165,4 +165,5 @@ def test_solver_configuration_and_physics_unchanged():
     present=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
     archived=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for name in ('save_project','_read_npz','safe_path','structures_match','restore_structure'):
-        assert ast.dump(find(present,name))==ast.dump(find(archived,name))
+        from unit_metadata_guard import normalize_unit_metadata
+        assert ast.dump(normalize_unit_metadata(find(present,name)))==ast.dump(find(archived,name))
