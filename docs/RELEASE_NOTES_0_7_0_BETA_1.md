@@ -1,6 +1,6 @@
 # EMCD-Sim v0.7.0-beta.1 release notes
 
-Status: local Windows research candidate preparation; no tag, release, push or
+Status: clean-commit Windows research candidate validated locally; no tag, release, push or
 Actions dispatch is authorized by this milestone. Python version 0.7.0b1;
 Windows numeric file/product version 0.7.0.1. Archive:
 EMCD-Sim-v0.7.0-beta.1-Windows.zip. Artifact label:
@@ -104,3 +104,9 @@ An accepted dirty-tree build is not relabeled as a clean-commit executable.
 GO for bounded same-host candidate testing does not certify independent
 clean-machine installation, experimental accuracy or universal convergence.
 Publication requires separate approval and review of the recorded limitations.
+
+## Clean-commit candidate acceptance
+
+Built from clean source `f80a96f6e9f36c63dd6f673e70bc54ce4030963e`, Git tree `88d2fac2c5358578f0dbf0adc3f260a441c0cf49`, with unchanged runtime-source SHA256 `e66ee196ef7b55ee0e623a89f50f9d04b573d0e13505279de7c1757affa473e6`. Full regression:611passed/2expected skips; affected tests:37passed; five new frozen orientation cases and8/8 exact Python/EXE comparisons passed. Three fresh-process real cancellation runs passed9/9scenarios each. The final archive and exact binary hashes are recorded in the acceptance document; a later documentation-only commit does not change the build-source identity.
+
+Independent clean-machine installation/manual acceptance remains untested. GO for bounded local RC testing and source-push review; prerelease publication is not recommended until that gap is addressed or explicitly waived for a disclosed research beta. No push, tag or release was performed.
