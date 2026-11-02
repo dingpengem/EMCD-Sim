@@ -187,11 +187,9 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.run_button.setEnabled(supported and not self.busy);self.align_button.setEnabled(target_valid and not self.busy)
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'Ni IAM BW elastic preview supported.'))
             old_limits=(self.ax.get_xlim(),self.ax.get_ylim()) if self.ax.has_data() else ((-1.3,1.3),(-1.3,1.3))
-            self.ax.clear();fresh=self.last_result is not None and self.last_result['settings']==asdict(s) and self.last_result.get('systematic_row',False)==self.row_projection.isChecked() and self.last_result['source']==self.structure.source and self.last_result['source_sha256']==self.structure.sha256
-            self.tabs.setTabText(0,'Diffraction (current)' if fresh else 'Diffraction (last preview)')
-            if fresh:
-                intensity=self.last_result['intensity'];self.ax.scatter(g[:,0],g[:,1],s=20+550*intensity,c=intensity,cmap='viridis',vmin=0,vmax=1,edgecolors='black',linewidths=.5,zorder=3)
-            else:self.ax.scatter(g[:,0],g[:,1],s=28,facecolors='none',edgecolors='.5',zorder=3)
+            self.ax.clear();fresh=self.preview_is_current(s)
+            self._diffraction_spots=self.ax.scatter(g[:,0],g[:,1],s=28,facecolors='none',edgecolors='.5',zorder=3)
+            self.update_preview_status(s)
             for h,(gx,gy) in zip(hkl,g):self.ax.annotate(str(h),(gx,gy),xytext=(4,5),textcoords='offset points',fontsize=7,zorder=4)
             self.ax.plot(0,0,'kx',ms=7,label='Transmitted (000)',zorder=4)
             za=za_from_tilt(s.tilt,s.voltage);zone_label='['+' '.join(map(str,s.zone))+']'
@@ -228,6 +226,22 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
         self.emcd_stale()
 
+    def preview_is_current(self,s):
+        return self.last_result is not None and self.last_result['settings']==asdict(s) and self.last_result.get('systematic_row',False)==self.row_projection.isChecked() and self.last_result['source']==self.structure.source and self.last_result['source_sha256']==self.structure.sha256
+
+    def update_preview_status(self,s):
+        fresh=self.preview_is_current(s)
+        self.tabs.setTabText(0,'Diffraction (current)' if fresh else 'Diffraction (last preview)')
+        spots=self._diffraction_spots
+        if fresh:
+            intensity=self.last_result['intensity']
+            spots.set_facecolor('C0');spots.set_array(intensity);spots.set_cmap('viridis');spots.set_clim(0,1)
+            spots.set_sizes(20+550*intensity);spots.set_edgecolor('black');spots.set_linewidth(.5)
+        else:
+            spots.set_array(None);spots.set_sizes(np.full(len(self.current[2]),28))
+            spots.set_facecolor('none');spots.set_edgecolor('.5')
+        return fresh
+
     def update_diffraction_legend(self):
         handles,labels=self.ax.get_legend_handles_labels()
         visible=[(h,l) for h,l in zip(handles,labels) if h.get_visible()]
@@ -249,23 +263,49 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         if not self._za_drag:return
         if self.busy or self.toolbar.mode or self.mode.currentIndex()!=1:
             self.release_za(event);return
-        if event.inaxes is not self.ax or event.xdata is None or event.ydata is None:return
-        tilt=tilt_from_za((event.xdata,event.ydata),self.spin['kv'].value())
-        if max(abs(tilt))>100:
-            self.statusBar().showMessage('ZA request exceeds ±100 mrad GUI range; unchanged.');return
-        self.set_values(dict(tx=tilt[0],ty=tilt[1]));self.sync_za()
+        if not self.apply_za_event(event):return
         s=self.settings();za=za_from_tilt(s.tilt,s.voltage)
         self._za_artist.set_data([za[0]],[za[1]])
         self._laue_circle.set_center(za);self._laue_circle.set_radius(np.linalg.norm(za))
         self._laue_circle.set_visible(self.show_laue.isChecked() and np.linalg.norm(za)>1e-12)
-        self.update_diffraction_details(s);self.update_diffraction_legend()
-        self.ax.set_title('Projected ZA positioning — no current intensities')
+        fresh=self.update_preview_status(s)
+        self.update_diffraction_details(s,fresh=fresh);self.update_diffraction_legend()
+        self.ax.set_title('Elastic diffraction — exit intensities' if fresh else 'Projected ZA positioning — no current intensities')
+        # Recheck dependent result labels on the first movement and when a
+        # cached configuration is entered/left, not on every mouse event.
+        signature=(fresh,self.emcd_result is not None and self.emcd_result['settings']==s)
+        if signature!=self._za_drag_status:
+            self.emcd_stale()
+            # Automatic settings may require a normal geometry refresh once;
+            # keep positioning active if that refresh produced a valid view.
+            self._za_drag=self._basis_view_geometry is not None
+            now=self.settings()
+            self._za_drag_status=(self.preview_is_current(now),self.emcd_result is not None and self.emcd_result['settings']==now)
+        text=self.info.toPlainText().splitlines()
+        preview_text='Current inputs match last completed preview.' if fresh else 'Inputs differ from last preview, or no preview exists. Right diffraction table is the last completed result.'
+        self.info.setPlainText('\n'.join(f'Current tilt: {s.tilt} mrad' if line.startswith('Current tilt:') else
+            f'ZA: {za} Å⁻¹' if line.startswith('ZA:') else preview_text if line.startswith(('Current inputs match last completed preview.','Inputs differ from last preview,')) else line for line in text))
         self.statusBar().showMessage('Positioning ZA; release to apply geometry. No calculation started.')
         self.canvas.draw_idle()
 
+    def apply_za_event(self,event):
+        """Validate and apply one pointer position, without refreshing the plot."""
+        if event.inaxes is not self.ax or event.xdata is None or event.ydata is None:return False
+        point=np.array([event.xdata,event.ydata],float)
+        if not np.isfinite(point).all():return False
+        tilt=tilt_from_za(point,self.spin['kv'].value())
+        if not np.isfinite(tilt).all() or max(abs(tilt))>100:
+            self.statusBar().showMessage('ZA request exceeds ±100 mrad GUI range; unchanged.');return False
+        before=(self.spin['tx'].value(),self.spin['ty'].value())
+        self.set_values(dict(tx=tilt[0],ty=tilt[1]));self.sync_za()
+        return before!=(self.spin['tx'].value(),self.spin['ty'].value())
+
     def release_za(self,event):
         if self._za_drag:
-            self._za_drag=False;self.refresh()
+            self._za_drag=False
+            if not self.busy and not self.toolbar.mode and self.mode.currentIndex()==1 and getattr(event,'button',None)==1:
+                self.apply_za_event(event)
+            if self.settings()!=self.drawn_settings:self.refresh()
 
     def clicked(self,event):
         if self.busy or event.inaxes is not self.ax or event.button!=1 or self.toolbar.mode:return
@@ -275,9 +315,12 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
                 self.refresh();self.statusBar().showMessage('Inputs changed: geometry refreshed. Click again in the updated view.');return
         except Exception as exc:self.error(str(exc));return
         point=np.array([event.xdata,event.ydata]);mode=self.mode.currentIndex()
+        if not np.isfinite(point).all():return
         try:
             if mode==1:
-                self.set_tilt(tilt_from_za(point,self.spin['kv'].value()));self._za_drag=True
+                tilt=tilt_from_za(point,self.spin['kv'].value())
+                if max(abs(tilt))>100:return
+                self.set_tilt(tilt);self._za_drag=True;self._za_drag_status=None
             elif mode in (2,3):self.detectors[mode-2]=point;self.sync_detectors();self.refresh()
             else:
                 hkl,g=self.current[2:4];delta=g-point;pixel_delta=self.ax.transData.transform(g)-self.ax.transData.transform(point)

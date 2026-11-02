@@ -76,3 +76,49 @@ not packaged-EXE acceptance. Only `gui/app.py`, this document and the focused
 overlay test file are changed. Geometry functions, solver kernels, numerical
 defaults, worker policies, saved-project schemas and historical scientific
 outputs are untouched. No large calculation or production scan was run.
+
+## Live-drag correction and acceptance
+
+The integration review of `e12f8acbfc929e1c8fadff840528da7dec1dcd99`
+identified two GUI defects, both independently reproduced before correction:
+
+1. Motion updated the ZA artists but bypassed cached-result freshness handling,
+   leaving a current diffraction tab and old intensity colors for changed inputs.
+2. Release refreshed the last motion position without reading release coordinates.
+
+Normal refresh and motion now share `preview_is_current()`, comparing the complete
+cached settings, systematic-row mode and structure source identity. During motion,
+stale spots become neutral outlines, the diffraction tab/readout/information say
+last preview or uncomputed, and completed EMCD views are marked stale. The table
+remains explicitly the last completed preview. Cached arrays and results are kept
+intact; returning exactly to their configuration restores current status and the
+original intensity rendering. Dependent preflight/status checks run on freshness
+transitions, not every stale-to-stale motion event. Existing Automatic-mode
+refreshes retain valid active positioning without changing the numerical policy.
+
+Motion and release share a finite-coordinate and ±100 mrad validation path using
+the existing ZA-to-tilt conversion. An in-axes left-button release applies its own
+position before the final refresh. Outside/missing/nonfinite/out-of-range release
+coordinates retain the last valid position. An unchanged click or repeated release
+does not commit the same position twice. Detector positions and toolbar priority
+remain unchanged. No solver or worker starts through these interactions.
+
+The original two review probes first reproduced **2 failures**. After correction,
+the targeted set passed **28 tests**. The combined acceptance set passed **63
+tests, 0 failures, 0 skips**: the original 43 focused regressions, nine new drag-state
+cases and eleven unchanged independent review probes. This includes geometry,
+source guards, viewport controls, project save/reopen and real PNG/SVG export.
+The run reported 170 Qt high-DPI deprecation/offscreen layout warnings, retained
+in the logs; assertions and numerical tolerances were not changed.
+
+Geometry and visual definitions above remain unchanged. At exact Bragg, the Laue
+and Thales circles both pass through (000) and the target, but fully coincide only
+when `q_ZA = g_target/2`. Perpendicular off-row tilt can preserve `s_g=0` without
+complete circle overlap. Controls cover both cases at 200/300 kV for [017] and [117].
+
+Fix evidence is in the feature worktree's ignored `outputs/laue_drag_fix/`.
+The isolated integration preview is refreshed separately; actual main remains
+unchanged. The three physics-kernel hashes above still apply. No numerical default,
+project schema, physical algorithm, scientific output or Windows binary changed.
+These are source/offscreen GUI checks, not native packaged-EXE acceptance; a
+separately authorized build and native testing remain required for distribution.
