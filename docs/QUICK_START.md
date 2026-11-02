@@ -16,15 +16,39 @@ Follow [installation](INSTALL_WINDOWS.md) first. This is a selected-energy Ni [0
 
 ## 1. Extract and open
 
-Use the local `EMCD-Sim-v0.7.0-beta.1-Windows.zip` and its new SHA256 from
-[candidate acceptance](WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md). No new Actions artifact,
-release or tag is published. Extract the complete folder and launch
+Use `EMCD-Sim-v0.7.0-beta.1-Windows.zip` from
+[Windows Actions run 41516996056](https://github.com/dingpengem/EMCD-Sim/actions/runs/41516996056)
+or the matching supplied candidate. This development artifact is not an official
+v0.7.0 GitHub Release. If downloading an Actions artifact, extract the outer
+artifact to obtain the portable ZIP first. Verify the portable ZIP SHA256:
+
+```powershell
+Get-FileHash .\EMCD-Sim-v0.7.0-beta.1-Windows.zip -Algorithm SHA256
+```
+
+Expected: `8d157d8b62fb6570d201360cdae85f44aa4cea2c1478f1949eb4336a135e17bc`.
+See [candidate acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md).
+Extract the complete portable ZIP into a writable folder, then launch
 `EMCD-Sim/EMCD-Sim.exe` with `_internal` beside it. Verify version and physics
-convention in About. Settings and Diffraction remain side-by-side; expand
+convention `forward_born_dagger_g_minus_h_v1` and build source
+`97b2220e5329dad6f98eedec61f58a6cf07d9da8` in About/build information.
+Keep all runtime files together; no separate Python installation is required.
+This candidate displays standardized physical units. The yellow ZA star can be
+dragged to update the darkorange dashed ZOLZ Laue circle in real time; the teal
+dotted circle is Thales. Dragging makes old diffraction intensities stale, so
+use **Preview diffraction** to calculate a new preview.
+Settings and Diffraction remain side-by-side; expand
 collapsible controls as needed. Source defaults remain 300 kV, beam/potential
 3.2/2.5, 97x97, 2048 MiB and max slice step 2 nm. The example below explicitly
 selects 200 kV and is not a complete physical-convergence certification.
 
+
+
+**Candidate acceptance:** native automated Windows acceptance **PASSED**;
+independent clean-machine acceptance **NOT TESTED**; official public v0.7.0
+release **NOT PUBLISHED**. This remains beta research software. Linux CI has
+outstanding line-ending/hash and interpreter-shutdown issues; macOS validation
+remains pending. These limitations do not invalidate native Windows acceptance.
 
 ## 2. Configure Ni [017], exact (200) Bragg
 

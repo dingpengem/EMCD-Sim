@@ -21,6 +21,18 @@
   [release notes](RELEASE_NOTES_0_7_0_BETA_1.md) and
   [candidate acceptance](WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md).
 
+## Windows candidate from 97b2220e (same application version)
+
+Native automated acceptance: **PASSED**. Independent clean-machine acceptance:
+**NOT TESTED**. Official public v0.7.0 release: **NOT PUBLISHED**. Linux CI
+line-ending/hash and interpreter-shutdown issues remain unresolved; macOS
+validation remains pending. This remains a beta research candidate, without a
+complete complex DFT-derived MDFF or universal numerical convergence.
+
+- [Windows Actions run 41516996056](https://github.com/dingpengem/EMCD-Sim/actions/runs/41516996056) produced a development candidate containing standardized physical-unit labels and the reviewed live ZOLZ/ZA overlay and drag fixes. Thales remains teal dotted; Laue is darkorange dashed; stale intensities are invalidated during dragging.
+- Five native orientation checks, eight exact scientific reference comparisons and two fresh-process nine-scenario cancellation/worker-safety runs passed. See [candidate acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md) for scope and limitations.
+- Binary source remains `97b2220e5329dad6f98eedec61f58a6cf07d9da8`; portable ZIP SHA256 is `8d157d8b62fb6570d201360cdae85f44aa4cea2c1478f1949eb4336a135e17bc`. Documentation updates do not create a new binary or scientific candidate. No v0.7.0 Release or tag is published by this update.
+
 ## Historical development entries (preserved)
 
 # Unreleased ? generalized Multislice final scientific review

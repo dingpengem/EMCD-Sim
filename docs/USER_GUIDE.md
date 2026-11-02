@@ -2,8 +2,25 @@
 
 [Physical units and conventions](PHYSICAL_UNITS.md) distinguish crystallographic
 g=1/d from angular Q=2πg. Unit-label updates preserve all saved numerical values.
-The standardized labels describe current source; the accepted Windows EXE
-predates this update and requires a separately approved build to display them.
+The Windows development candidate built from `97b2220e` displays these labels.
+See [current candidate acceptance and exact ZIP identity](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md);
+older executables retain their original labels and provenance.
+
+The candidate also includes live ZA dragging and a ZOLZ Laue circle centered on
+the projected ZA with radius |q_ZA|. ZA is a yellow star; the Laue circle is
+darkorange dashed (width 1.8, alpha 0.95), and Thales is teal dotted
+(width 1.2, alpha 0.75). Dragging invalidates cached diffraction intensities
+without launching a calculation or moving detectors. Release applies the final
+valid coordinates; preview diffraction again to refresh elastic intensities.
+PNG/SVG exports retain the overlay styling. Off-row exact Bragg does not imply
+that the two circles coincide.
+
+
+**Candidate acceptance:** native automated Windows acceptance **PASSED**;
+independent clean-machine acceptance **NOT TESTED**; official public v0.7.0
+release **NOT PUBLISHED**. This remains beta research software. Linux CI has
+outstanding line-ending/hash and interpreter-shutdown issues; macOS validation
+remains pending. These limitations do not invalidate native Windows acceptance.
 
 > **Critical scientific compatibility notice:** legacy Windows packages before
 > **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
@@ -55,7 +72,7 @@ and physical detector positions explicitly. Existing [001]/[017] conventions
 and defaults are preserved. See [scope and numerical evidence](NI_117_FINAL_SYMMETRY_VALIDATION.md)
 and [review status](NI_117_MERGE_READINESS.md) before quantitative interpretation.
 
-**Current local candidate: v0.7.0-beta.1 (0.7.0b1).** See [physics-corrected release notes](RELEASE_NOTES_0_7_0_BETA_1.md) and [local Windows acceptance](WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md). No new release or tag is published. Settings and Diffraction remain side by side with adjustable three-column splitters; chevrons collapse optional controls and the bottom Project Results browser. Narrow Results panels stack maps, preserve full context under Details and restore full context in exports. Layout preferences do not change scientific project parameters.
+**Current validated development candidate: v0.7.0-beta.1 (0.7.0b1).** See [physics-corrected release notes](RELEASE_NOTES_0_7_0_BETA_1.md) and [current Windows acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md). No new release or tag is published. Settings and Diffraction remain side by side with adjustable three-column splitters; chevrons collapse optional controls and the bottom Project Results browser. Narrow Results panels stack maps, preserve full context under Details and restore full context in exports. Layout preferences do not change scientific project parameters.
 
 
 

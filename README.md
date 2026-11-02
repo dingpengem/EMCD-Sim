@@ -2,8 +2,8 @@
 
 See [physical units and reciprocal conventions](docs/PHYSICAL_UNITS.md):
 crystallographic |g|=1/d and angular Q=2πg both use Å⁻¹, with no rescaling of saved values.
-These labels are a source-only update. The accepted Windows EXE predates them;
-a separately approved Windows build is required to display them.
+The Windows development candidate built from `97b2220e` includes these standardized
+labels and the live ZOLZ Laue overlay; older binaries retain their original labels.
 
 > **Critical scientific compatibility notice:** legacy Windows packages before
 > **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
@@ -19,11 +19,21 @@ a separately approved Windows build is required to display them.
 
 EMCD-Sim is a research simulation tool for **electron magnetic circular dichroism (EMCD)** using Bloch-wave (BW) and independent FFT multislice (MS) propagation. It combines dynamical electron diffraction, approximate core-loss scattering tensors and virtual-detector EELS/EMCD analysis, with fcc Ni as the principal validated material.
 
-**Local physics-corrected candidate: v0.7.0-beta.1 (Python 0.7.0b1).**
-[Release notes](docs/RELEASE_NOTES_0_7_0_BETA_1.md) and [local build/acceptance](docs/WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md).
-The new archive is `EMCD-Sim-v0.7.0-beta.1-Windows.zip`; no GitHub artifact,
-tag or release is published by this local candidate task. Earlier packages
-remain available under their original names and scientific provenance.
+**Validated Windows development candidate: v0.7.0-beta.1 (Python 0.7.0b1).**
+[Candidate acceptance and provenance](docs/WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md)
+and [physics-corrected release notes](docs/RELEASE_NOTES_0_7_0_BETA_1.md).
+The archive `EMCD-Sim-v0.7.0-beta.1-Windows.zip` was built from
+`97b2220e5329dad6f98eedec61f58a6cf07d9da8` in
+[Windows Actions run 41516996056](https://github.com/dingpengem/EMCD-Sim/actions/runs/41516996056).
+This is a development artifact, not a published v0.7.0 GitHub Release or tag.
+Earlier packages retain their original names and scientific provenance.
+
+
+**Candidate acceptance:** native automated Windows acceptance **PASSED**;
+independent clean-machine acceptance **NOT TESTED**; official public v0.7.0
+release **NOT PUBLISHED**. This remains beta research software. Linux CI has
+outstanding line-ending/hash and interpreter-shutdown issues; macOS validation
+remains pending. These limitations do not invalidate native Windows acceptance.
 
 **Latest published release: v0.6.1-beta.2 (preserved).**
 [Release and download](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.6.1-beta.2) · [Windows installation](docs/INSTALL_WINDOWS.md) · [Quick Start](docs/QUICK_START.md) · [User Manual](docs/USER_GUIDE.md) · [Release notes and acceptance](docs/RELEASE_NOTES_0_6_1_BETA_2.md).
@@ -43,27 +53,31 @@ remain available under their original names and scientific provenance.
 
 Elastic propagation uses an oriented **projected independent-atom-model (IAM) potential**. Single retains entrance channeling; Double also propagates the outgoing electron at its reduced post-loss energy. BW and MS are independent numerical implementations within matched physical approximations.
 
-The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An approximate atomic-ionization model is also available. A complete DFT-derived MDFF from complex core-to-band transition matrix elements is **not implemented**. CIF import supports structural inspection; it does not validate arbitrary materials for magnetic EELS. The separate generalized-multislice development branch uses one structure-derived Projected ZOLZ engine for bounded crystallographic directions, with [001]/[017]/[117]/[111]/[710] BW/MS Single/Double comparisons. Orientation-specific geometry modules are retained only as frozen test references. See the [architecture](docs/GENERALIZED_MULTISLICE_ARCHITECTURE.md), [validation and explicit convergence failures](docs/GENERAL_ZOLZ_MULTISLICE_VALIDATION.md), and [Atomic 3D integration plan](docs/ATOMIC_3D_MULTISLICE_DEVELOPMENT.md). Atomic 3D is not implemented by this milestone. These source additions are not in the preserved Windows packages.
+The principal Ni MDFF is an **XMCD-constrained effective Hermitian tensor**. An approximate atomic-ionization model is also available. A complete DFT-derived MDFF from complex core-to-band transition matrix elements is **not implemented**. CIF import supports structural inspection; it does not validate arbitrary materials for magnetic EELS. The integrated generalized-multislice implementation uses one structure-derived Projected ZOLZ engine for bounded crystallographic directions, with [001]/[017]/[117]/[111]/[710] BW/MS Single/Double comparisons. Orientation-specific geometry modules are retained only as frozen test references. See the [architecture](docs/GENERALIZED_MULTISLICE_ARCHITECTURE.md), [validation and explicit convergence failures](docs/GENERAL_ZOLZ_MULTISLICE_VALIDATION.md), and [Atomic 3D integration plan](docs/ATOMIC_3D_MULTISLICE_DEVELOPMENT.md). Atomic 3D is not implemented by this milestone. These additions are included in the current 97b2220e candidate, but not in the preserved v0.6.1 Windows packages.
 
 For [117], crystal-[001] magnetization is rotated once into the target-aligned frame; raw magnetic intensity need not be mirror-antisymmetric. The default potential cutoff 2.5 Å⁻¹ has no off-row [117] harmonics. Use explicit research settings and resource checks; Automatic does not establish convergence. See the [configuration guide](docs/USER_GUIDE.md#research-ni-117--2-20), [scientific validation](docs/NI_117_FINAL_SYMMETRY_VALIDATION.md) and [merge-readiness review](docs/NI_117_MERGE_READINESS.md). Validation is representative, not a universal convergence or experimental-accuracy claim.
 
-The generalized branch now has [normal-GUI end-to-end validation](docs/GENERALIZED_MULTISLICE_EMCD_VALIDATION.md)
+The generalized implementation has [normal-GUI end-to-end validation](docs/GENERALIZED_MULTISLICE_EMCD_VALIDATION.md)
 for all five representative orientations in Single/Double BW/MS. The [111]
 angular/aperture refinements pass at the tested 2 nm point, but a joint raw-intensity
 check still fails; general production convergence remains uncertified. No Atomic
-3D implementation, packaged EXE update or release is included.
+3D implementation or public release is claimed by that scientific validation; current packaged-runtime acceptance is recorded separately above.
 
 The [final scientific merge review](docs/GENERALIZED_MULTISLICE_MERGE_READINESS.md)
 recommends merging this bounded research implementation with explicit limits.
 The [111] residual is dominated by potential/beam support; larger-MS increments
 pass at the tested point, while the lower-support profile remains uncertified.
-Main and existing Windows packages have not been updated by this review.
+That review did not itself update main or Windows packages; subsequent integration and candidate acceptance are recorded separately.
 
 The subsequent [local main merge acceptance](docs/GENERALIZED_MULTISLICE_LOCAL_MERGE_ACCEPTANCE.md) records the authorized merge and post-merge checks. No GitHub push, Windows rebuild, version change or release was performed.
 
 ## Installation
 
-### Beta 3 Windows candidate
+### Current v0.7.0-beta.1 Windows development candidate
+
+Download the artifact from [Windows run 41516996056](https://github.com/dingpengem/EMCD-Sim/actions/runs/41516996056) while available (GitHub sign-in may be required), or use the separately supplied matching portable ZIP. Extract the Actions artifact first, then extract the complete portable application ZIP. Follow the [current Quick Start](docs/QUICK_START.md#1-extract-and-open). The candidate includes standardized units, corrected Born/MDFF conventions, a real-time ZOLZ Laue circle and live ZA dragging with stale-preview invalidation. A later documentation-only commit does not change this binary or its source identity.
+
+### Historical Beta 3 Windows candidate
 
 Use the [Actions installation instructions](docs/WINDOWS_BETA_3.md#download-and-install). The three adjustable scientific panels keep Settings and Diffraction visible together; chevron sections and Project Results collapse to release plot space. Layout preferences persist independently of scientific projects. Defaults remain 300 kV, beam/potential cutoffs 3.2/2.5 Å⁻¹, 97x97 and 2048 MiB. No physics changes or new full-curve convergence claims are introduced.
 
