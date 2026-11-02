@@ -37,10 +37,22 @@ def run(output,source):
         if not value:raise AssertionError(message)
     try:
         w.reset_reference();w.source_path.setText(str(source));w.validate_xmcd();w.declaration.setChecked(True)
+        # This bounded diagnostic profile must survive solver/geometry refreshes.
+        w.numerical_mode.setCurrentIndex(1)
         w.set_values(dict(thickness=2,beam=.9,potential=1.8,xl3=831.4778,xl2=848.698,halfwidth=.5))
         for key,value in dict(energy=9,grid=9,depth=17,subpixels=16,fft_grid=24).items():w.spin[key].setValue(value)
         w.correction.setChecked(False);w.angular_maps.setChecked(False);w.energy_scope.setCurrentIndex(0)
         w.channeling_box.setCurrentIndex(1);w.propagation_box.setCurrentIndex(0);w.align();w.refresh()
+        check(w.numerical_mode.currentIndex()==1, 'Cancellation profile stays Manual')
+        expected=dict(beam=.9,potential=1.8,grid=9,depth=17,subpixels=16,fft_grid=24,energy=9,halfwidth=.5)
+        actual=w.numerical_snapshot()
+        check(all(actual[k]==v for k,v in expected.items()), 'Bounded cancellation profile preserved')
+        from .geometry import geometry
+        hkl=geometry(w.structure,w.settings(),systematic_row=w.forward_settings().systematic_row)[2]
+        check(len(hkl)==3, 'Bounded cancellation profile has three retained beams')
+        report['requested_numerical_settings']=expected
+        report['initial_numerical_settings']=actual
+        report['initial_beam_basis']=dict(count=len(hkl),hkl=hkl)
         w.start_emcd();idle();check(w.run_outcome=='completed','Initial real Double run')
         previous=w.emcd_result;before=fingerprints(previous)
         save_project(previous,output/'preserved_project')

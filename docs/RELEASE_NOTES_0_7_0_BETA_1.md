@@ -8,7 +8,7 @@ EMCD-Sim-v0.7.0-beta.1-Windows.
 
 ## Critical scientific compatibility notice
 
-Legacy Windows versions before v0.7.0-beta.1 used a superseded Born/MDFF
+Earlier released v0.6.1 Windows beta packages used a superseded Born/MDFF
 convention affecting calculated magnetic-odd EMCD signs. Historical signed
 L3/L2 magnetic spectra must be revalidated or recalculated before corrected
 interpretation. Preserve original raw arrays and source/version/convention
@@ -82,3 +82,25 @@ See [Windows candidate acceptance](WINDOWS_0_7_0_BETA_1_ACCEPTANCE.md) for the
 actual candidate SHA, regression results, native checks and local archive path.
 No independent clean-machine installation is inferred from offscreen or
 same-host native checks. No official prerelease has been published.
+
+## Reproducible candidate and cancellation acceptance
+
+The local version/packaging commit `8d55721` is preserved. The subsequently
+validated cancellation harness explicitly selects Manual numerical mode for
+its bounded diagnostic profile and rejects a mismatched grid or retained beam
+basis before starting a worker. Production Automatic mode, numerical defaults,
+worker policy, memory limits and all three corrected physics kernels are
+unchanged. The correction and its two negative regression tests are committed
+separately from the original version milestone.
+
+The precommit candidate passed 611 tests with two expected skips, 37 focused
+checks, five native orientation cases, eight exact Python/EXE comparisons and
+three fresh-process cancellation runs. It remains preserved with its checksum.
+A separate candidate is rebuilt from an exactly identified clean commit;
+its source Git tree, raw runtime-source hashes, toolchain, native acceptance
+and final ZIP checksum are recorded in the acceptance document and manifests.
+An accepted dirty-tree build is not relabeled as a clean-commit executable.
+
+GO for bounded same-host candidate testing does not certify independent
+clean-machine installation, experimental accuracy or universal convergence.
+Publication requires separate approval and review of the recorded limitations.
