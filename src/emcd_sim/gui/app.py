@@ -51,6 +51,9 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.basis_mode=QtWidgets.QComboBox();self.basis_mode.addItem('Full finite ZOLZ','full');self.basis_mode.addItem('Ideal 000 + target','two-beam');self.form.addRow('Diffraction basis',self.basis_mode);self.basis_mode.currentIndexChanged.connect(self.refresh)
         self.button('Apply orientation / target',self.apply_orientation)
         self.mode=QtWidgets.QComboBox();self.mode.addItems(['Select reflection','Set projected ZA','Move detector A','Move detector B']);self.form.addRow('Click mode',self.mode)
+        self.show_laue=QtWidgets.QCheckBox('Show ZOLZ Laue circle');self.show_laue.setChecked(True)
+        self.show_laue.setToolTip('Zero-excitation-error circle centered on projected ZA; not a Thales circle or intensity contour.')
+        self.show_laue.toggled.connect(self.refresh);self.form.addRow(self.show_laue)
         self.number('qx','ZA qx (Å⁻¹)',0,-20,20,self.za_changed)
         self.number('qy','ZA qy (Å⁻¹)',0,-20,20,self.za_changed)
         self.lock=QtWidgets.QComboBox();self.lock.addItems(['None','X','Y']);self.form.addRow('Lock for Bragg alignment',self.lock)
@@ -99,6 +102,9 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.info=QtWidgets.QPlainTextEdit();self.info.setReadOnly(True);self.tabs.addTab(self.info,'Calculation Information')
         self.splitter.addWidget(self.tabs);self.splitter.setSizes([340,820,390]);self.saved_sizes=None
         self.canvas.mpl_connect('button_press_event',self.clicked)
+        self._za_drag=False
+        self.canvas.mpl_connect('motion_notify_event',self.drag_za)
+        self.canvas.mpl_connect('button_release_event',self.release_za)
         self.zone.returnPressed.connect(self.apply_orientation);self.target.returnPressed.connect(self.apply_orientation)
         self.sync_za();self.restore_detectors();self.refresh();self.setup_stage_b();self.setup_stage_d(workspace)
         self.responsive=ResponsiveLayout(self)
@@ -160,6 +166,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
     def refresh(self,*_,fit=False):
         if not hasattr(self,'canvas'):return
+        self._za_drag=False
         self.resolve_numerical_ui()
         try:
             s=self.settings();self.current=geometry(self.structure,s,systematic_row=self.row_projection.isChecked());self.drawn_settings=s;crystal,R,hkl,g,microscope=self.current
@@ -183,26 +190,28 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.ax.clear();fresh=self.last_result is not None and self.last_result['settings']==asdict(s) and self.last_result.get('systematic_row',False)==self.row_projection.isChecked() and self.last_result['source']==self.structure.source and self.last_result['source_sha256']==self.structure.sha256
             self.tabs.setTabText(0,'Diffraction (current)' if fresh else 'Diffraction (last preview)')
             if fresh:
-                intensity=self.last_result['intensity'];self.ax.scatter(g[:,0],g[:,1],s=20+550*intensity,c=intensity,cmap='viridis',vmin=0,vmax=1,edgecolors='black',linewidths=.5)
-            else:self.ax.scatter(g[:,0],g[:,1],s=28,facecolors='none',edgecolors='.5')
-            for h,(gx,gy) in zip(hkl,g):self.ax.annotate(str(h),(gx,gy),xytext=(4,5),textcoords='offset points',fontsize=7)
-            self.ax.plot(0,0,'kx',ms=7,label='Transmitted (000)')
+                intensity=self.last_result['intensity'];self.ax.scatter(g[:,0],g[:,1],s=20+550*intensity,c=intensity,cmap='viridis',vmin=0,vmax=1,edgecolors='black',linewidths=.5,zorder=3)
+            else:self.ax.scatter(g[:,0],g[:,1],s=28,facecolors='none',edgecolors='.5',zorder=3)
+            for h,(gx,gy) in zip(hkl,g):self.ax.annotate(str(h),(gx,gy),xytext=(4,5),textcoords='offset points',fontsize=7,zorder=4)
+            self.ax.plot(0,0,'kx',ms=7,label='Transmitted (000)',zorder=4)
             za=za_from_tilt(s.tilt,s.voltage);zone_label='['+' '.join(map(str,s.zone))+']'
-            self.ax.plot(*za,marker='*',color='gold',mec='black',ms=12,ls='',label=f'ZA {zone_label}')
+            self._za_artist,=self.ax.plot(*za,marker='*',color='gold',mec='black',ms=12,ls='',label=f'ZA {zone_label}',zorder=6)
+            self._laue_circle=Circle(za,np.linalg.norm(za),fill=False,color='darkorange',ls='--',lw=1.8,alpha=.95,
+                label='ZOLZ Laue circle (s_g = 0)',zorder=2)
+            self._laue_circle.set_visible(self.show_laue.isChecked() and np.linalg.norm(za)>1e-12)
+            self.ax.add_patch(self._laue_circle)
             if target_valid:
-                gg=g[hkl.index(s.target)];self.ax.plot(*gg,'rs',mfc='none',ms=12,label=f'Target {s.target}')
-                self.ax.add_patch(Circle(gg/2,np.linalg.norm(gg)/2,fill=False,color='teal',ls=':',label='Thales (000)—target'))
-                error=float(excitation(gg,s.tilt,s.voltage));j=hkl.index(s.target)
-                value=f'{self.last_result["intensity"][j]:.7g}' if fresh else 'not calculated for current inputs'
-                self.selection.setText(f'Target {s.target}: q=({gg[0]:.6f}, {gg[1]:.6f}) Å⁻¹; |g|={np.linalg.norm(gg):.6f}\ns={error:+.9g} Å⁻¹; exit intensity={value} a.u.\nZA=({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; tilt=({s.tilt[0]:.8f}, {s.tilt[1]:.8f}) mrad')
-            else:self.selection.setText('Target is not a nonzero reflection in this oriented basis. Click a valid spot or enter its hkl; no intensity is calculated.')
+                gg=g[hkl.index(s.target)];self.ax.plot(*gg,'rs',mfc='none',ms=12,label=f'Target {s.target}',zorder=6)
+                self.ax.add_patch(Circle(gg/2,np.linalg.norm(gg)/2,fill=False,color='teal',ls=':',lw=1.2,alpha=.75,
+                    label='Thales circle (000–target)',zorder=1))
+            self.update_diffraction_details(s,fresh=fresh)
             if self.show_detectors.isChecked():
                 for name,p in zip(('A','B'),self.detectors):
-                    self.ax.add_patch(Circle(p,self.spin['radius'].value(),fill=False,color='purple',ls='-' if name=='A' else '--'));self.ax.annotate(name,p,xytext=(6,-10),textcoords='offset points')
+                    self.ax.add_patch(Circle(p,self.spin['radius'].value(),fill=False,color='purple',ls='-' if name=='A' else '--',zorder=5));self.ax.annotate(name,p,xytext=(6,-10),textcoords='offset points',zorder=5)
             self.pair_label.setText('Exact y-mirrored A/B pair.' if np.allclose(self.detectors[0],[self.detectors[1,0],-self.detectors[1,1]],atol=1e-9,rtol=0) else 'Manual / non-y-mirrored A/B pair. Mirrored-map analysis will require validation.')
             limits=((-s.beam_cutoff-.2,s.beam_cutoff+.2),)*2 if fit else old_limits
             self.ax.set(xlim=limits[0],ylim=limits[1],aspect='equal',xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)',title='Elastic diffraction — exit intensities' if fresh else 'Current reciprocal geometry — no current intensities')
-            self.ax.legend(fontsize=7,loc='upper right');self.canvas.draw_idle()
+            self.update_diffraction_legend();self.canvas.draw_idle()
             support=('explicit ideal 000 + target two-beam basis' if s.basis_mode=='two-beam' else
                 'explicit target systematic row' if self.row_projection.isChecked() else 'full radial ZOLZ cutoff')
             self.info.setPlainText(self.structure.description()+f'\n\nNominal zone: {s.zone}\nR crystal-to-local:\n{R}\nIncluded beams: {len(hkl)} ({support})\n'
@@ -219,6 +228,45 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
         self.emcd_stale()
 
+    def update_diffraction_legend(self):
+        handles,labels=self.ax.get_legend_handles_labels()
+        visible=[(h,l) for h,l in zip(handles,labels) if h.get_visible()]
+        if visible:self.ax.legend(*zip(*visible),fontsize=7,loc='upper right')
+
+    def update_diffraction_details(self,s,*,fresh=False):
+        hkl,g=self.current[2:4];za=za_from_tilt(s.tilt,s.voltage);radius=float(np.linalg.norm(za))
+        if s.target in hkl and s.target!=(0,0,0):
+            j=hkl.index(s.target);gg=g[j];error=float(excitation(gg,s.tilt,s.voltage))
+            value=f'{self.last_result["intensity"][j]:.7g}' if fresh else 'not calculated for current inputs'
+            text=f'Target {s.target}: q=({gg[0]:.6f}, {gg[1]:.6f}) Å⁻¹; |g|={np.linalg.norm(gg):.6f}\ns={error:+.9g} Å⁻¹; exit intensity={value} a.u.'
+        else:text='Target is not a nonzero reflection in this oriented basis. Click a valid spot or enter its hkl; no intensity is calculated.'
+        text+=f'\nZA=({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; tilt=({s.tilt[0]:.8f}, {s.tilt[1]:.8f}) mrad'
+        text+=f'\nLaue center: ({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; Laue radius: {radius:.6f} Å⁻¹'
+        if radius<=1e-12:text+=' — On zone axis'
+        self.selection.setText(text)
+
+    def drag_za(self,event):
+        if not self._za_drag:return
+        if self.busy or self.toolbar.mode or self.mode.currentIndex()!=1:
+            self.release_za(event);return
+        if event.inaxes is not self.ax or event.xdata is None or event.ydata is None:return
+        tilt=tilt_from_za((event.xdata,event.ydata),self.spin['kv'].value())
+        if max(abs(tilt))>100:
+            self.statusBar().showMessage('ZA request exceeds ±100 mrad GUI range; unchanged.');return
+        self.set_values(dict(tx=tilt[0],ty=tilt[1]));self.sync_za()
+        s=self.settings();za=za_from_tilt(s.tilt,s.voltage)
+        self._za_artist.set_data([za[0]],[za[1]])
+        self._laue_circle.set_center(za);self._laue_circle.set_radius(np.linalg.norm(za))
+        self._laue_circle.set_visible(self.show_laue.isChecked() and np.linalg.norm(za)>1e-12)
+        self.update_diffraction_details(s);self.update_diffraction_legend()
+        self.ax.set_title('Projected ZA positioning — no current intensities')
+        self.statusBar().showMessage('Positioning ZA; release to apply geometry. No calculation started.')
+        self.canvas.draw_idle()
+
+    def release_za(self,event):
+        if self._za_drag:
+            self._za_drag=False;self.refresh()
+
     def clicked(self,event):
         if self.busy or event.inaxes is not self.ax or event.button!=1 or self.toolbar.mode:return
         if event.xdata is None or event.ydata is None:return
@@ -228,7 +276,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         except Exception as exc:self.error(str(exc));return
         point=np.array([event.xdata,event.ydata]);mode=self.mode.currentIndex()
         try:
-            if mode==1:self.set_tilt(tilt_from_za(point,self.spin['kv'].value()))
+            if mode==1:
+                self.set_tilt(tilt_from_za(point,self.spin['kv'].value()));self._za_drag=True
             elif mode in (2,3):self.detectors[mode-2]=point;self.sync_detectors();self.refresh()
             else:
                 hkl,g=self.current[2:4];delta=g-point;pixel_delta=self.ax.transData.transform(g)-self.ax.transData.transform(point)
