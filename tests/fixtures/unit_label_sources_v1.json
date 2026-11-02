@@ -1,0 +1,147 @@
+{
+  "archive_sha256": "5cbc066ad681e765b0478b2c56300c53a5f197e67ad075704460b4be68c378a1",
+  "commits": {
+    "pre_unit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+    "unit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+    "zolz": "dfd60115e73cf0fcfc4c7d7c44432c667c771b34"
+  },
+  "entries": {
+    "pre_unit/docs/WINDOWS_BETA_3.md": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "188eb081ff229ebfec605303b19dfba98757fabb",
+      "path": "docs/WINDOWS_BETA_3.md",
+      "sha256": "699bf2bd44ff858001bcb97c7fc3557e6a8b7a56b5cd20603a05db69664a11f2"
+    },
+    "pre_unit/src/emcd_sim/gui/app.py": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "fc2a712a7ce6dca519f64babcf32afdbdf0827f3",
+      "path": "src/emcd_sim/gui/app.py",
+      "sha256": "ffd842ff814206bf3d36f6fadb9ae7b57d6a8fa1ed7bcdb0d4d395dda671b6aa"
+    },
+    "pre_unit/src/emcd_sim/gui/emcd_forward.py": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "4541dab05c16c26cfb1847e23b317e8b3454b9e1",
+      "path": "src/emcd_sim/gui/emcd_forward.py",
+      "sha256": "1e3dbdb678917dd7c126c089bcc4bf923b4bf9d8bf1d9038e9e56f94e8a3237b"
+    },
+    "pre_unit/src/emcd_sim/gui/geometry.py": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "7567125170f83f412bbbd56ca13a6d8bba0a4f39",
+      "path": "src/emcd_sim/gui/geometry.py",
+      "sha256": "bbafb5e231b6555267ccbf72e383d219657b99ea40c60604f7c41a8f4dbc7bf3"
+    },
+    "pre_unit/src/emcd_sim/gui/prb_benchmark.py": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "480e42b2a4cf805789bf41c65e1c337659aa2080",
+      "path": "src/emcd_sim/gui/prb_benchmark.py",
+      "sha256": "734ad6e26c2a72649c2bb6882b3d64be38d2eb60fe41b8adffe4c4c9f6b7b887"
+    },
+    "pre_unit/src/emcd_sim/gui/project_io.py": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "6517d5407df242770d31b55bee2ac8bfeef855a2",
+      "path": "src/emcd_sim/gui/project_io.py",
+      "sha256": "4e900be0542210660b0798d2e64eaca331a6cf9f838409b31297326ab56df168"
+    },
+    "pre_unit/src/emcd_sim/gui/propagation.py": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "f5b4cabab4b4b0232e20332f38b7530777b2b2a9",
+      "path": "src/emcd_sim/gui/propagation.py",
+      "sha256": "347a18bf342c88fd4486204d1c1b174aec8aefc23e54ef2df27c7e99d34669cb"
+    },
+    "pre_unit/src/emcd_sim/gui/results.py": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "8a7689332f966b5c5852c6ba1466d011942359fd",
+      "path": "src/emcd_sim/gui/results.py",
+      "sha256": "177a55d4a5b426569b737aef0fc1eeea7824bcfb14e41e8492879a54ed035407"
+    },
+    "pre_unit/src/emcd_sim/gui/stage_b.py": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "fbe8b39e072798ea9770cff20b30e58acd231ccf",
+      "path": "src/emcd_sim/gui/stage_b.py",
+      "sha256": "4893ad679e2a95a29fc46ad567cac47d427379f14a9e41c3d51ff7bc679f488f"
+    },
+    "pre_unit/src/emcd_sim/scattering.py": {
+      "commit": "cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5",
+      "git_blob": "05e515e8ecf4ff0fbdde1829da28930c4d7656eb",
+      "path": "src/emcd_sim/scattering.py",
+      "sha256": "6cd4daef464efb6cb573428f9c2635d1ab5e0f9eac143e3705756417ed68819b"
+    },
+    "unit/src/emcd_sim/gui/app.py": {
+      "commit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+      "git_blob": "e335f5e8608e07676c2b92d0aef68a485bb79cb8",
+      "path": "src/emcd_sim/gui/app.py",
+      "sha256": "ef581116ee71f9ebaedeb09dfd95cf180c6fce104b046fab251d73c465689f8d"
+    },
+    "unit/src/emcd_sim/gui/emcd_forward.py": {
+      "commit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+      "git_blob": "cbbef847880a1122d5a9c4aec26ed3cc8887ab74",
+      "path": "src/emcd_sim/gui/emcd_forward.py",
+      "sha256": "5b7dd707ff6c2701b0376224a56a2a7b8f85b7e7448ddb8d7764c431f787c374"
+    },
+    "unit/src/emcd_sim/gui/geometry.py": {
+      "commit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+      "git_blob": "7b5a273e19d53e2fc852f91a77c5f57f37773d04",
+      "path": "src/emcd_sim/gui/geometry.py",
+      "sha256": "4e59547b6e0f7a624e3cc3c7083b85c5ae5b8b78e66872c023f7e0785a07238e"
+    },
+    "unit/src/emcd_sim/gui/prb_benchmark.py": {
+      "commit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+      "git_blob": "8c278be217e0a7a41f322a2d50a218f0297eb8fd",
+      "path": "src/emcd_sim/gui/prb_benchmark.py",
+      "sha256": "c3c5af4b9c243a89f2ced3552217a849c5310718afc92a9cfaf95fc88f013da5"
+    },
+    "unit/src/emcd_sim/gui/project_io.py": {
+      "commit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+      "git_blob": "070c416568d681c3bed48bde75a285a184f777fc",
+      "path": "src/emcd_sim/gui/project_io.py",
+      "sha256": "702cb29a758af837304a14266ca37f7459f73343d1b8feb429d284a36693c350"
+    },
+    "unit/src/emcd_sim/gui/propagation.py": {
+      "commit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+      "git_blob": "d378d0a0911bf23fb643f719db77ebcdb357175d",
+      "path": "src/emcd_sim/gui/propagation.py",
+      "sha256": "b0d8cd9cd5bd0d6b6172f69944e20ef47ee5400b935098a730a92249824a0076"
+    },
+    "unit/src/emcd_sim/gui/results.py": {
+      "commit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+      "git_blob": "0b0e6cb85cbffbec9577b2ccca6942a7508fa64d",
+      "path": "src/emcd_sim/gui/results.py",
+      "sha256": "145b336349ebe88bebc10286854a6da5dc2385eb412987d9504d8a701c76e4a0"
+    },
+    "unit/src/emcd_sim/gui/stage_b.py": {
+      "commit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+      "git_blob": "20f3dcbe793e1b25257d733f9e31f268a5d97b0f",
+      "path": "src/emcd_sim/gui/stage_b.py",
+      "sha256": "3359771f8458db3b55fffa41f56f51d0fb4b339512cd486d1933d0eb1b272257"
+    },
+    "unit/src/emcd_sim/scattering.py": {
+      "commit": "b3edf65e8f539b6f4e37e35b8b35144566b7838a",
+      "git_blob": "e803bd9b2abb214be9a75bac93d6533229a270f5",
+      "path": "src/emcd_sim/scattering.py",
+      "sha256": "e7adb46af1702e753bd2a1463d956ae4d493a7dd81be3c65e8a8e618252a9319"
+    },
+    "zolz/src/emcd_sim/gui/app.py": {
+      "commit": "dfd60115e73cf0fcfc4c7d7c44432c667c771b34",
+      "git_blob": "ed6a2249b99df0d4d9b132dd6f9aa933b6925e15",
+      "path": "src/emcd_sim/gui/app.py",
+      "sha256": "83a0328e58680e8f9fd473512e2a3d173c50bcfd9ac170db06739f8e1d1cdb49"
+    }
+  },
+  "files": [
+    "gui/app.py",
+    "gui/geometry.py",
+    "gui/propagation.py",
+    "gui/emcd_forward.py",
+    "gui/project_io.py",
+    "gui/stage_b.py",
+    "gui/results.py",
+    "gui/prb_benchmark.py",
+    "scattering.py"
+  ],
+  "schema": 1,
+  "trees": {
+    "pre_unit": "3bd9978cfed62b3551216e0aadf7d3535b380dbb",
+    "unit": "fc73b0027c7e3fdd7dda5b683693256ab94a943e",
+    "zolz": "7be4d0fde316c387a0667a674c1324d3a4d22d4e"
+  }
+}

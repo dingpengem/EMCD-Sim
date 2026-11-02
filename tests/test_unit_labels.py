@@ -2,12 +2,13 @@
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from pathlib import Path
-import ast,hashlib,subprocess,json,re,sys
+import ast,hashlib,json,re,sys
 from dataclasses import asdict
 import numpy as np
 import pytest
 from PySide6 import QtWidgets
 from unittest.mock import patch
+from unit_source_snapshots import load_snapshots,assert_reviewed_current_sources
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src'))
@@ -20,11 +21,51 @@ class Labels(ast.NodeTransformer):
         return node
 
 def test_only_string_literals_changed_no_numeric_or_execution_changes():
+    manifest,sources=load_snapshots()
+    assert manifest['files']==FILES
     for name in FILES:
         rel='src/emcd_sim/'+name
-        old=subprocess.check_output(['git','show','cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5:'+rel],cwd=ROOT).decode('utf-8')
-        new=(ROOT/rel).read_text(encoding='utf-8')
+        old=sources['pre_unit/'+rel].decode('utf-8')
+        new=sources['unit/'+rel].decode('utf-8')
         assert ast.dump(Labels().visit(ast.parse(old)))==ast.dump(Labels().visit(ast.parse(new))),name
+
+
+def test_current_sources_match_separately_reviewed_scope():
+    assert_reviewed_current_sources()
+
+
+@pytest.mark.parametrize('component',['manifest','archive'])
+def test_snapshot_guard_rejects_unreviewed_fixture_changes(component):
+    from unit_source_snapshots import FIXTURES
+    path=FIXTURES/('unit_label_sources_v1.json' if component=='manifest' else 'unit_label_sources_v1.zip')
+    data=path.read_bytes()+b'changed'
+    with pytest.raises(AssertionError,match='Unreviewed snapshot'):
+        load_snapshots(**{component+'_bytes':data})
+
+
+@pytest.mark.parametrize('name,before,after',[
+    ('gui/geometry.py','.5*lam*','.6*lam*'),
+    ('gui/emcd_forward.py','slice_step: float=2.','slice_step: float=3.'),
+    ('gui/emcd_forward.py',"worker_mode: str='automatic'","worker_mode: str='manual'"),
+    ('gui/geometry.py','np.asarray(tilt)*.001/','np.asarray(tilt)*.002/'),
+    ('gui/project_io.py',"manifest.get('schema_version')","manifest.get('renamed_schema')"),
+    ('gui/app.py','self.show_laue.setChecked(True)','self.show_laue.setChecked(False)'),
+])
+def test_current_source_guard_rejects_unapproved_changes(name,before,after):
+    _,sources=load_snapshots();path='src/emcd_sim/'+name
+    text=sources[('zolz' if name=='gui/app.py' else 'unit')+'/'+path].decode('utf-8')
+    assert before in text
+    with pytest.raises(AssertionError,match='Unreviewed current source'):
+        assert_reviewed_current_sources({path:text.replace(before,after).encode('utf-8')})
+
+
+def test_historical_and_current_guards_work_without_git():
+    # Block every external process, including Git, rather than skipping on an
+    # installed/exported tree with no .git directory or historical objects.
+    with patch('subprocess.Popen',side_effect=AssertionError('No Git/process allowed')):
+        test_only_string_literals_changed_no_numeric_or_execution_changes()
+        test_historical_windows_identity_and_original_units_preserved()
+        assert_reviewed_current_sources()
 
 def test_approved_physics_kernel_bytes_unchanged():
     for name,sha in KERNELS.items():assert hashlib.sha256((ROOT/'src/emcd_sim'/name).read_bytes()).hexdigest()==sha
@@ -74,7 +115,8 @@ def test_current_guides_explain_reciprocal_conventions_without_rescaling():
 
 def test_historical_windows_identity_and_original_units_preserved():
     rel='docs/WINDOWS_BETA_3.md'
-    old=subprocess.check_output(['git','show','cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5:'+rel],cwd=ROOT).decode('utf-8')
+    _,sources=load_snapshots()
+    old=sources['pre_unit/'+rel].decode('utf-8')
     new=(ROOT/rel).read_text(encoding='utf-8')
     for line in old.splitlines():
         if any(k in line for k in ('Package version:','Windows numeric','Defaults remain')):assert line in new

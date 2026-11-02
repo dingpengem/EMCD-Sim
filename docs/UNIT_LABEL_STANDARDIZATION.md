@@ -1,5 +1,13 @@
 # Unit-label standardization acceptance
 
+The historical unit-only AST regression now uses verified immutable source
+fixtures for cf8fa647 versus b3edf65e, including all nine audited modules. It does
+not compare later approved GUI features to the pre-unit baseline. A separate
+current-source guard pins the reviewed unit sources plus the approved ZOLZ app
+version, preserving protection of numerical defaults, worker policy and project
+contracts. Unit-label tests need no Git executable or historical objects. Fixture
+provenance and maintenance are documented in `tests/fixtures/UNIT_LABEL_SNAPSHOTS.md`.
+
 This section records the original pre-integration evidence, when the patch was uncommitted. Baseline `cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5`, tree `3bd9978cfed62b3551216e0aadf7d3535b380dbb`; isolated worktree `C:\Users\peng863\EMCD-Sim\build\v070b1-unit-standardization`. Original reviewed patch SHA256 `a2192bfb3d95bf073fd9e8a11966040422f9aa2a33f3d3f3cafa917bf2a6dd0c`. No commit, push, version change, EXE build or release occurred during that validation.
 
 ## Changes
