@@ -1,9 +1,12 @@
 from pathlib import Path
 import json, subprocess, hashlib, sys, os, platform
-from importlib.metadata import distribution, version
+from importlib.metadata import version
 from datetime import datetime, timezone
 
 root = Path(SPECPATH).parent
+sys.path.insert(0, str(root / 'packaging'))
+from check_windows_metadata import LICENSE_DISTRIBUTIONS, require_metadata
+checked_distributions = require_metadata()
 sys.path.insert(0, str(root / 'src'))
 stage = root / os.environ.get('EMCD_GUI_BUILD_ROOT','build/windows-rc') / 'resources'
 stage.mkdir(parents=True, exist_ok=True)
@@ -30,8 +33,8 @@ if base_dlls.is_dir():
 runtime_binaries = [(str(base_dlls/name),'.') for name in
     ('libcrypto-3-x64.dll','libssl-3-x64.dll','libexpat.dll') if (base_dlls/name).is_file()]
 licenses=[]
-for package in ('numpy','scipy','matplotlib','ase','PySide6','PySide6_Essentials','PySide6_Addons','shiboken6','pillow','contourpy','cycler','fonttools','kiwisolver','packaging','pyparsing','python-dateutil','six'):
-    dist=distribution(package)
+for package in LICENSE_DISTRIBUTIONS:
+    dist=checked_distributions[package]
     for entry in dist.files or []:
         if any(token in str(entry).lower() for token in ('license','copying','notice')) and '.dist-info/' in str(entry):
             p=Path(dist.locate_file(entry))
@@ -39,7 +42,7 @@ for package in ('numpy','scipy','matplotlib','ase','PySide6','PySide6_Essentials
 a = Analysis([str(root/'packaging/launcher.py')], pathex=[str(root/'src')],
     binaries=runtime_binaries,
     datas=[(str(reference),'data/wien2k_ni'), (str(stage/'build_info.json'),'.'), (str(root/'LICENSE'),'.'),
-           (str(distribution('ase').locate_file('ase/spacegroup/spacegroup.dat')),'ase/spacegroup')]+licenses,
+           (str(checked_distributions['ase'].locate_file('ase/spacegroup/spacegroup.dat')),'ase/spacegroup')]+licenses,
     hiddenimports=['matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg','ase.io.cif','ase.io.jsonio','ase.io.extxyz'],
     hooksconfig={'matplotlib': {'backends': ['Agg', 'QtAgg', 'svg']}},
     excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow'], noarchive=False)

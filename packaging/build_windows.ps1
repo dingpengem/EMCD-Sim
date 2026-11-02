@@ -8,6 +8,8 @@ Push-Location $root
 $previousPythonPath = $env:PYTHONPATH
 $env:PYTHONPATH = "$root/src" + $(if ($previousPythonPath) { ";$previousPythonPath" } else { "" })
 try {
+    & $Python "$PSScriptRoot/check_windows_metadata.py"
+    if ($LASTEXITCODE -ne 0) { throw 'Windows build metadata preflight failed; install the declared build requirements into the selected interpreter.' }
     $applicationVersion = (& $Python -c "from emcd_sim import __version__; print(__version__)").Trim()
     if ($LASTEXITCODE -ne 0 -or -not $applicationVersion) { throw 'Cannot read source application version' }
     $displayVersion = (& $Python -c "from emcd_sim import __display_version__; print(__display_version__)").Trim()

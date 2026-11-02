@@ -1,10 +1,25 @@
 # Windows candidate build
 
 Current local candidate: **v0.7.0-beta.1 / 0.7.0b1**, convention
-`forward_born_dagger_g_minus_h_v1`. Reuse the existing Conda-backed build venv.
+`forward_born_dagger_g_minus_h_v1`. Use a fresh Python 3.11 Windows build venv
+without `--system-site-packages`. Install the same declared inputs as Actions:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python C:/Users/peng863/EMCD-Sim/build/windows-rc/venv/Scripts/python.exe -BuildRoot build/windows-v0.7.0-beta.1
+python -m venv build/windows-build-env
+build/windows-build-env/Scripts/python.exe -m pip install -e ".[dev,gui]" -r packaging/requirements-windows.txt
+build/windows-build-env/Scripts/python.exe packaging/check_windows_metadata.py
+```
+
+The spec collects licenses for 17 distributions. `six==1.17.0` is an explicit
+build requirement even when no current transitive dependency installs it.
+The preflight checks those distributions plus PyInstaller, lists every missing
+metadata name with the installation command, and fails before invoking
+PyInstaller. Direct spec builds use the same mandatory check and license list;
+missing metadata is not ignored and license collection is not removed.
+The scientific dependency pins, package version and production code are unchanged.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python ./build/windows-build-env/Scripts/python.exe -BuildRoot build/windows-v0.7.0-beta.1-fresh-candidate
 ```
 
 Default archive: `EMCD-Sim-v0.7.0-beta.1-Windows.zip`. Windows numeric version:
@@ -15,6 +30,14 @@ state, convention, build environment and native validation are documented in
 No push, Actions dispatch, release or tag is performed. Native same-host
 standalone checks are not independent clean-machine installation.
 Older commands below are historical.
+
+Fresh-environment validation may use the official
+[CPython Windows NuGet CI package](https://docs.python.org/3.11/using/windows.html#the-nuget-org-packages)
+as the Python 3.11 base without installing a launcher or changing system PATH.
+Record interpreter origin, `pyvenv.cfg`, pip installation report/freeze,
+preflight output, per-distribution license inventory, build fingerprints and
+native acceptance. A clean build environment is not an independent
+clean-machine installation test of the finished application.
 
 
 Current source packaging still uses `emcd_gui.spec` and `launcher.py`; all
