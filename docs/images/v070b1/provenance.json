@@ -1,0 +1,216 @@
+{
+  "binary_source": "97b2220e5329dad6f98eedec61f58a6cf07d9da8",
+  "tag_commit": "481fed14b78f5439bb417bdc53d38d845a6b2592",
+  "actions_run": 41516996056,
+  "study_source": "08d04fc35fca2071cc7e73af0aaa1de45e49a3f4",
+  "physics_convention": "forward_born_dagger_g_minus_h_v1",
+  "study_relative_directory": "outputs\\ni_300kv_exact_bragg_y15_spectra\\20261102T232115Z",
+  "study_acceptance_sha256": "0d0a898e5e9a461f0640abf2d3bf21c99e32459375ea6532a00f737704944b2d",
+  "study_original_output_manifest_sha256": "b524c57e117e1151f7833a127909759d6cb116696d002bb61bba97e5bbc40bc3",
+  "selected_csv_sha256": "c62af40eea3e98230e5724cde4b5e68052bb81042fe6af3051cfed5047d97de2",
+  "spectra_npz_sha256": {
+    "9": "11584a3fe00c864eece4b34fc872a52f3921114fe1b1fd4f98d686199d077aa4",
+    "30": "04551265244df3680b06144025119597f44bd98abe3d6a5e52066d5faf750112"
+  },
+  "settings": {
+    "zone": [
+      0,
+      1,
+      7
+    ],
+    "target": [
+      2,
+      0,
+      0
+    ],
+    "tilt": [
+      -5.586688140406263,
+      15.0
+    ],
+    "voltage": 300.0,
+    "thickness": 9.0,
+    "beam_cutoff": 5.0,
+    "potential_cutoff": 6.2,
+    "b_factor": 0.0,
+    "basis_mode": "full"
+  },
+  "frame": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.9899494936611665,
+      -0.1414213562373095
+    ],
+    [
+      0.0,
+      0.1414213562373095,
+      0.9899494936611665
+    ]
+  ],
+  "config": {
+    "model": "xmcd",
+    "source": "data/wien2k_ni/Ni_fm.xmcd",
+    "source_sha256": "bb9bdd478d54cc8de60403409f4d90e63deb11a64891bbac6754f867be14deda",
+    "axis_declared": true,
+    "magnetization": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "eta": 1.0,
+    "beta": 1.0,
+    "l3": 831.271,
+    "l2": 848.698,
+    "atomic": {
+      "l3_ev": 852.7,
+      "l2_ev": 870.0,
+      "zeff_2p": 25.0,
+      "zeff_3d": 9.0,
+      "crystal_field_10dq_ev": 0.8,
+      "exchange_split_ev": 0.2,
+      "eg_up_holes": 0.2,
+      "eg_down_holes": 0.4,
+      "t2g_up_holes": 0.2,
+      "t2g_down_holes": 0.4
+    },
+    "sigma": 0.8,
+    "radial": null,
+    "energy_points": 241,
+    "grid": 65,
+    "depth": 129,
+    "subpixels": 128,
+    "halfwidth": 0.5,
+    "centers": [
+      [
+        0.2837684449489217,
+        0.2837684449489217
+      ],
+      [
+        0.2837684449489217,
+        -0.2837684449489217
+      ]
+    ],
+    "radius": 0.0908059024,
+    "correction": false,
+    "window": [
+      878.0,
+      882.0
+    ],
+    "propagation": "bloch",
+    "fft_grid": 32,
+    "slice_step": 2.0,
+    "memory_budget_mib": 8192,
+    "channeling_model": "double",
+    "energy_scope": "full",
+    "angular_maps": false,
+    "systematic_row": false,
+    "worker_mode": "manual",
+    "parallel_workers": 2,
+    "fft_generators": null
+  },
+  "energy_samples": 243,
+  "energy_sampling": "User-approved standard full-spectrum grid: 241 linear samples over native source bounds plus selected L3/L2; unchanged effective tensor evaluates source at each energy; not the 4329-point original source grid",
+  "convergence_scope": "Eight selected-energy depth/grid checks passed; not full spectral, basis, cutoff or experimental convergence",
+  "items": [
+    {
+      "file": "gui_overview.png",
+      "source_path": "build\\windows-zolz-97b2220-actions41516996056\\native_acceptance\\orientation_017\\double_completed.png",
+      "source_sha256": "94c335601506804e8835d043bfaf0c8c5335e3fde4f702f8ee5a4a11d6333fff",
+      "preview_sha256": "ca0c4edeb0fbb44abe2f7b70e16e18c469269c8473836c8eda301527d210039d",
+      "original_pixels": [
+        1365,
+        750
+      ],
+      "description": "Unaltered actual packaged EXE capture: 1 nm, selected energies, coarse 9x9 smoke profile; not research convergence",
+      "processing": "PNG lossless optimization; above 1800 px width, Lanczos image-preview downsampling only. No scientific arrays or original files changed."
+    },
+    {
+      "file": "laue_drag.png",
+      "source_path": "build\\windows-zolz-97b2220-actions41516996056\\uia\\dragged.png",
+      "source_sha256": "f866267b1e7033b8649b337d2e19e0b30a54a724648d8c3436c5377b249d19d5",
+      "preview_sha256": "abc679b4b3082fc19137f60023a4a0e15a62dae5a61cffcf51ffd3a50a5a4144",
+      "original_pixels": [
+        833,
+        700
+      ],
+      "description": "Actual packaged EXE export after dragging ZA; neutral spots indicate stale preview, not current intensities",
+      "processing": "PNG lossless optimization; above 1800 px width, Lanczos image-preview downsampling only. No scientific arrays or original files changed."
+    },
+    {
+      "file": "angular_smoke.png",
+      "source_path": "build\\windows-zolz-97b2220-actions41516996056\\native_acceptance\\orientation_017\\double_maps.png",
+      "source_sha256": "2d6e603deb7643f7dd099643b5939e76c93cee865635a4b79f0d0fda0521affb",
+      "preview_sha256": "761e937358a6d743e2b90527d4e7dfefa4a9bf0b05b8754b77b7a3359d9f4f15",
+      "original_pixels": [
+        2000,
+        1600
+      ],
+      "description": "Actual packaged EXE 9x9 magnetic/nonmagnetic mirrored-point map; deliberately coarse acceptance case",
+      "processing": "PNG lossless optimization; above 1800 px width, Lanczos image-preview downsampling only. No scientific arrays or original files changed."
+    },
+    {
+      "file": "ni017_raw.png",
+      "source_path": "outputs\\ni_300kv_exact_bragg_y15_spectra\\20261102T232115Z\\01_raw_emcd_components.png",
+      "source_sha256": "226c40bef47f451e1287eec93fdcbdc2e2d5e8813e5ce0ae117071e8fa721c5a",
+      "preview_sha256": "7c0ed858201ffd64a229bf46c2bb00f685578283ec9e834bbb765e510f319c8b",
+      "original_pixels": [
+        3600,
+        1410
+      ],
+      "description": "Existing actual BW Double spectral study; signed raw differences",
+      "processing": "PNG lossless optimization; above 1800 px width, Lanczos image-preview downsampling only. No scientific arrays or original files changed."
+    },
+    {
+      "file": "ni017_asymmetry.png",
+      "source_path": "outputs\\ni_300kv_exact_bragg_y15_spectra\\20261102T232115Z\\02_normalized_emcd_components.png",
+      "source_sha256": "c970b640dc06021e07dc80058dbd04dbb12be69beb2e2b770a32f6570a90c117",
+      "preview_sha256": "c4c9100d6100ebd62e19f454fae0d3587d505140e21cd8426ec617a2e813a1c7",
+      "original_pixels": [
+        3600,
+        1410
+      ],
+      "description": "Existing actual BW Double study; common conventional denominator for A/B components, own denominator for Flip-M A",
+      "processing": "PNG lossless optimization; above 1800 px width, Lanczos image-preview downsampling only. No scientific arrays or original files changed."
+    },
+    {
+      "file": "ni017_contamination.png",
+      "source_path": "outputs\\ni_300kv_exact_bragg_y15_spectra\\20261102T232115Z\\04_contamination_regions.png",
+      "source_sha256": "2513fe30fbb8ecc476dbdfd45e666c2d481d71ac2acbcc0a6f2eaf6ece8255ad",
+      "preview_sha256": "6287cf2d0f0fd9a20a6bb307e004242f3054b3b097f69757c1e5634690f67ec1",
+      "original_pixels": [
+        3600,
+        1410
+      ],
+      "description": "Existing actual study: orange nonmagnetic dominance; red opposite conventional/magnetic sign",
+      "processing": "PNG lossless optimization; above 1800 px width, Lanczos image-preview downsampling only. No scientific arrays or original files changed."
+    },
+    {
+      "file": "ni017_eels.png",
+      "source_path": "outputs\\ni_300kv_exact_bragg_y15_spectra\\20261102T232115Z\\05_underlying_eels.png",
+      "source_sha256": "7f232f1160c948d5e62a78b0f327e710d87d874dcc1f5a1df45c6186d51c14ab",
+      "preview_sha256": "835fccddee75aba10b18dd88af43cfd9d73db53fd160270ea11dee2a1e9e1933",
+      "original_pixels": [
+        3600,
+        1410
+      ],
+      "description": "Existing actual study: all four raw A/B reversal spectra",
+      "processing": "PNG lossless optimization; above 1800 px width, Lanczos image-preview downsampling only. No scientific arrays or original files changed."
+    },
+    {
+      "file": "diffraction_preview.svg",
+      "source_path": "build\\windows-zolz-97b2220-actions41516996056\\uia\\before.svg",
+      "source_sha256": "8d0ff23fdd3a01182058a17e094cdc34c410b00e1ec142c0e4c3ff0f2fba8b46",
+      "preview_sha256": "d4069ccfa1ba82b9d8d9da0518d8acfe50da57232bc15c4e0e12fbf37f78a511",
+      "description": "Native EXE current elastic-intensity preview before dragging; documentation copy has trailing whitespace removed only.",
+      "processing": "Trailing whitespace cleanup only; normalized XML element, text and geometry/style attribute tokens verified identical. Original source file unchanged.",
+      "preview_git_blob_sha256": "d4069ccfa1ba82b9d8d9da0518d8acfe50da57232bc15c4e0e12fbf37f78a511"
+    }
+  ],
+  "source_path_note": "Source path expressed relative to the repository for public documentation; original settings/output manifest hashes preserve the actual local-run record.",
+  "selected_csv_git_blob_sha256": "2a1394009e67ec7a75e49504ea5619bd1a6593dd8eee94276a88347e3d624840",
+  "text_hash_note": "selected_csv_sha256 is the original local Windows source/copy byte hash (CRLF). selected_csv_git_blob_sha256 is the Git-index/public source LF byte hash. Git autocrlf may change checkout text line endings; values are unchanged. SVG has preview_git_blob_sha256 for the same explicit distinction. PNG hashes are byte-identical across these contexts."
+}

@@ -1,5 +1,7 @@
 # Physical units and numerical conventions
 
+[Documentation index](INDEX.md) · [Physics](PHYSICS.md) · [User Manual](USER_GUIDE.md)
+
 The unit labels below apply to the active application, new exports and current
 guides. Label changes do not rescale any value or change a numerical default.
 
@@ -39,7 +41,9 @@ projects does not rewrite saved metadata or scientific arrays. Historical
 research records, accepted package reports and previously generated figures
 are preserved with their original labels.
 
-The new thickness study explicitly uses **200 kV**. The completed corrected
-Stage 4.2 and previous corrected thickness study use **300 kV**; unit-label
-standardization does not change those calculations or their convergence
-flags. A study's explicit configuration takes precedence over GUI defaults.
+Study voltages remain dataset-specific: the corrected **200 kV thickness
+study** uses 200 kV; the corrected Stage 4.2 survey and earlier corrected
+thickness study use **300 kV**. The separate **9/30 nm Ni [017], Y = +15 mrad
+spectral case study** also uses **300 kV**. Unit-label standardization changes
+none of those calculations or convergence flags. A study's saved configuration
+takes precedence over GUI defaults; "new study" is not a voltage definition.

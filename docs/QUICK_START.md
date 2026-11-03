@@ -1,91 +1,87 @@
-# EMCD-Sim v0.7.0-beta.1 Windows Quick Start
+# Quick Start: a small FCC Ni calculation
 
-> **Critical scientific compatibility notice:** legacy Windows packages before
-> **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
-> magnetic-odd EMCD signs. Historical signed L3/L2 magnetic spectra require
-> revalidation or recalculation before interpretation under the corrected
-> convention. This does not imply that all historical nonmagnetic EELS,
-> diffraction intensities or thickness trends are wrong. Preserve original
-> arrays, software/convention and source provenance; never silently flip or
-> relabel legacy arrays. Intermediate corrected source commits, including
-> `4f578156`, still used the old version label: exact commit/convention metadata
-> takes precedence over version alone. Missing convention is unknown or
-> legacy-unverified. Absolute experimental magnetic handedness is uncalibrated.
+[Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Tutorial](TUTORIAL.md) · [User Manual](USER_GUIDE.md)
 
-Follow [installation](INSTALL_WINDOWS.md) first. This is a selected-energy Ni [017] example, not a timing guarantee or complete physical-convergence claim. See the [full tutorial and settings](USER_GUIDE.md#validated-ni-017-8-nm-double-example), [acceptance](V061_BETA_ACCEPTANCE.md) and [scientific analysis](NI_EMCD_THICKNESS_SCIENTIFIC_ANALYSIS.md).
+This 5–10 minute walkthrough targets the **released v0.7.0-beta.1 Windows Research Beta**. Setup and runtime depend on the machine. It is a deliberately small functional demonstration—not a quantitatively converged Ni result or the advanced 9/30 nm spectral study.
 
 ## 1. Extract and open
 
-Use `EMCD-Sim-v0.7.0-beta.1-Windows.zip` from
-[Windows Actions run 41516996056](https://github.com/dingpengem/EMCD-Sim/actions/runs/41516996056)
-or the matching supplied candidate. This development artifact is not an official
-v0.7.0 GitHub Release. If downloading an Actions artifact, extract the outer
-artifact to obtain the portable ZIP first. Verify the portable ZIP SHA256:
+Install the verified [public Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1) using the [Installation Guide](INSTALL_WINDOWS.md). Launch the extracted `EMCD-Sim.exe` with `_internal` beside it. Confirm version/convention in **Help → About**. No Python installation is needed.
 
-```powershell
-Get-FileHash .\EMCD-Sim-v0.7.0-beta.1-Windows.zip -Algorithm SHA256
-```
+If necessary, select **View → Restore Default Layout**. Settings scroll vertically; use the blue section headers/chevrons to expand controls. These instructions name the controls in the released EXE.
 
-Expected: `8d157d8b62fb6570d201360cdae85f44aa4cea2c1478f1949eb4336a135e17bc`.
-See [candidate acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md).
-Extract the complete portable ZIP into a writable folder, then launch
-`EMCD-Sim/EMCD-Sim.exe` with `_internal` beside it. Verify version and physics
-convention `forward_born_dagger_g_minus_h_v1` and build source
-`97b2220e5329dad6f98eedec61f58a6cf07d9da8` in About/build information.
-Keep all runtime files together; no separate Python installation is required.
-This candidate displays standardized physical units. The yellow ZA star can be
-dragged to update the darkorange dashed ZOLZ Laue circle in real time; the teal
-dotted circle is Thales. Dragging makes old diffraction intensities stale, so
-use **Preview diffraction** to calculate a new preview.
-Settings and Diffraction remain side-by-side; expand
-collapsible controls as needed. Source defaults remain 300 kV, beam/potential
-3.2/2.5, 97x97, 2048 MiB and max slice step 2 nm. The example below explicitly
-selects 200 kV and is not a complete physical-convergence certification.
+## 2. Set the crystal and diffraction geometry
 
+1. Choose **File → New**, then **A. Crystal Structure → FCC Ni default**. This is the conventional four-atom FCC Ni cell, a = 3.524 Å. **Load CIF…** is available, but arbitrary CIFs do not acquire a validated Ni inelastic model.
+2. Expand **B. Zone Axis & Diffraction → Orientation / ZA options**. Enter **Nominal zone [uvw]** `0 1 7` and **Target (hkl)** `2 0 0`; click **Apply orientation / target**.
+3. Leave **Diffraction basis** at **Full finite ZOLZ**. This is not an artificial two-beam truncation.
+4. Under **C. Microscope & Sample**, explicitly set **Voltage (kV)** = **300** and **Thickness (nm)** = **1**.
+5. Click **Reset to reference geometry**. The exact (200) Bragg reference is approximately **Tilt X = −5.5866881404 mrad**, **Tilt Y = 0** at 300 kV. Zero tilt is zone-axis incidence, a different condition. To align another selected beam, use **Align to selected Bragg** and inspect its excitation error.
+6. Click **Virtual detectors → Restore Thales A/B**. Keep radius **0.0908059024 Å⁻¹**. For this target, centers are approximately **(0.283768445, ±0.283768445) Å⁻¹**.
 
+The transmitted (000) cross and yellow projected-ZA star generally differ under tilt. The teal dotted circle is Thales; the darkorange dashed circle is the ZOLZ Laue locus. **Set projected ZA** click mode allows live dragging, which makes old diffraction intensities stale. It does not start a calculation or move detectors.
 
-**Candidate acceptance:** native automated Windows acceptance **PASSED**;
-independent clean-machine acceptance **NOT TESTED**; official public v0.7.0
-release **NOT PUBLISHED**. This remains beta research software. Linux CI has
-outstanding line-ending/hash and interpreter-shutdown issues; macOS validation
-remains pending. These limitations do not invalidate native Windows acceptance.
+## 3. Select and validate the inelastic model
 
-## 2. Configure Ni [017], exact (200) Bragg
+Expand **D. MDFF Model**:
 
-1. **File → New**, then **FCC Ni default** (a = 3.524 Å). Use **View → Restore Default Layout** if needed.
-2. Set **Nominal zone [uvw]** `0 1 7`, **Target (hkl)** `2 0 0`, and **Apply orientation / target**. Set **Voltage (kV)** = 200 and **Thickness (nm)** = 8.
-3. **Reset to reference geometry** gives **Tilt X (mrad)** = -7.116725439974256 and **Tilt Y (mrad)** = 0. **Preview diffraction** computes elastic intensities. **Select reflection** / **Align to selected Bragg** displays s200 approximately zero. Keep the explicit [001] systematic-row checkbox off.
-4. **Restore Thales A/B** sets centers (+0.2837684449489217, ±0.2837684449489217) Å⁻¹, radius 0.0908059024 Å⁻¹. Transmitted (000) is the cross; projected ZA [017] is the star at (+0.2837684449489217, 0), not the origin. The Thales circle spans (000) to (200). Exact Bragg is not an isolated two-beam wavefield.
+1. Select **XMCD-constrained (WIEN2k)** and retain the bundled **Five-column XMCD** source.
+2. Click **Validate source / native features**. The bundled source's selected magnetic energies are **L3 = 831.271 eV** and **L2 = 848.698 eV**.
+3. Keep **Crystal Cartesian M axis** `0 0 1`, **eta = 1**, **beta = 1**. Check **I declare M axis, RP/LP convention and edge assignments** for this documented reference. Do not use that declaration as a substitute for checking a new source.
 
-![Verified earlier Windows geometry view](images/gui/v060_release/startup.png)
+These are native model energies, not experimentally calibrated Ni edge positions. The model is an effective tensor constrained by XMCD, not full complex DFT transition data. Each calculation evaluates both reversal states at fixed A/B detectors; no second manual detector move is needed.
 
-This is an existing v0.6.0 frozen screenshot showing geometry controls; it is not a screenshot of the new 97-grid preset interface.
+## 4. Choose a small numerical profile
 
-## 3. Select the tensor and calculate
+Under **E. Propagation Method**, choose **Single Channeling** and **Bloch-wave**. Single omits outgoing elastic channeling. After this first run, **Double Channeling**, **FFT Multislice** or **Both (BW / MS comparison)** can be explored as separate saved runs; they need different resource and convergence checks.
 
-1. In **D. MDFF Model**, choose **XMCD-constrained (WIEN2k)**. The bundled source is `EMCD-Sim/_internal/data/wien2k_ni/Ni_fm.xmcd`; use **Browse XMCD...** if needed, then **Validate source / native features**.
-2. Keep **Crystal Cartesian M axis** `0 0 1`, eta = beta = 1. Explicitly set **L3 native feature (eV)** = **831.4778** and L2 = **848.698** for this locked benchmark. The source audit's 831.271 eV extremum is different. Do not shift the native energy axis. Inspect and check **I declare M axis, RP/LP convention and edge assignments**.
-3. Choose **Channeling Model → Double Channeling**, **Propagation Method → Bloch-wave** and **Spectral coverage → Selected L3/L2 samples only (not full EELS)**. Enable **Calculate angular maps**. Disable **Enable post-edge A/B correction** for this two-energy workflow; use a genuine full spectrum for post-edge diagnostics.
-4. Set beam cutoff 4.6 Å⁻¹, potential Fourier cutoff 6.2 Å⁻¹, B = 0 Å², **Depth integration nodes** = 257, **Map halfwidth** = 0.5 Å⁻¹, **Aperture boundary subpixels** = 64. Choose **Angular Map Resolution → Standard - 97x97** and **Estimated process memory budget → 2048 MiB**. If switching to MS/Both, set **FFT grid (even)** = 48 and **Max slice step (nm)** = 0.04.
-5. Click **Run EMCD / EELS** once. **Cancel** requests cooperative cleanup and preserves the last completed result; wait for completion before another run. No numerical settings are silently reduced. Memory rejection reports the limiting estimate. MS/Both, High resolution or full spectra can take much longer.
+Under **F. Shared Calculation Settings**, choose **Numerical Settings → Manual (Advanced)** **before** entering the following values. Automatic would select its own starting configuration.
 
-The [manual](USER_GUIDE.md#validated-ni-017-8-nm-double-example) records source hashes and numerical precision. Standard 97 is a routine starting point for this tested case, not a universal convergence guarantee.
+|Control|Demonstration value|
+|---|---:|
+|Beam / MDFF basis cutoff (Å⁻¹)|3.2|
+|Potential Fourier cutoff (Å⁻¹)|3.8|
+|Explicit target systematic-row approximation|Off|
+|Angular Map Resolution|Custom; set grid below|
+|Angular / detector grid points (odd)|17|
+|Map halfwidth (Å⁻¹)|0.5|
+|Depth integration nodes|33|
+|Aperture boundary subpixels|32|
+|Spectral coverage|Selected L3/L2 samples only (not full EELS)|
+|Calculate angular maps|On|
+|Estimated process memory budget|2048 MiB|
+|Parallel Workers|Manual; Requested workers = 1|
+|Enable post-edge A/B correction|Off, under Advanced post-edge diagnostics|
 
-## 4. Read the results
+The sampling controls are in **Inelastic and Angular Sampling**; support/cutoffs are in **Elastic Potential and Beam Support**. Resource controls are separate. This [017] profile retains 27 beams. **Max slice step** and FFT mesh do not affect this BW run. Inspect **Resource estimate** before Run; admission may reject a job on a RAM-constrained machine rather than silently coarsening it.
 
-- **Virtual Detector EELS:** original +M A/B spectra share one intensity scale. **Signal Display → Raw (a.u.)** shows magnetic and nonmagnetic signed differences. **EMCD Asymmetry (%)** shows the total +M difference/sum, which may contain nonmagnetic imbalance. Selected-energy results remain points, not full white-line spectra.
-- **EMCD Angular Maps:** choose L3/L2 and Raw/Asymmetry. Full-field maps use actual saved (qx,qy)/(qx,-qy) pairs; detector circles are overlays. Invalid denominators remain NaN. Do not average local percentages to approximate finite-detector EMCD: integrate raw intensities first.
-- **Advanced Diagnostics** retains intrinsic magnetic/even fields, magnetic-only/even percentages and legacy corrected/residual contrasts. Corrected contrast is not intrinsically magnetic.
-- With Both results, **BW/MS Diffraction**, **BW/MS Overview** and the method selector's **BW-MS numerical difference** compare the independent solvers. Comparing Single and Double instead compares physical models.
+For research, refine one source of numerical error at a time. These coarse settings are not a certification, and BW/MS agreement alone would not make them converged.
 
-Changing display settings does not rerun propagation. See [signal definitions](USER_GUIDE.md#signal-definitions-in-061).
+## 5. Calculate and inspect
 
-## 5. Save, reopen and export
+1. Click **Preview diffraction**. Inspect the indexed spots, **Diffraction details** and the **Diffraction** table, including `s_g` for the target. Preview is elastic, not EELS.
+2. Click **Run EMCD / EELS**. **Cancel** requests cooperative shutdown; wait until the interface returns idle before another run.
+3. Open **Virtual Detector EELS**. Two selected samples are displayed as points; they are **not a full white-line spectrum**.
+4. **Signal Display → Raw (a.u.)** shows original magnetic/nonmagnetic A/B differences. **EMCD Asymmetry (%)** shows conventional +M A/B difference divided by its sum; nonmagnetic imbalance can contribute.
+5. Open **EMCD Angular Maps** and select L3 or L2. Maps use the actual calculated 17×17 samples. Zooming does not add numerical resolution. A map pixel percentage is not a detector-integrated percentage.
+6. Read **Calculation Information** and the numerical warnings. A warning is not a convergence certificate or necessarily a fatal error.
 
-Use **File → Save Project As...** and keep the entire project folder. **Open Project** or **Results Browser → View Selected** reopens arrays without a calculation. **Use These Settings** separately restores controls. Existing explicit grid/memory settings remain intact; **File → New** resets 97 x 97 / 2048 MiB.
+For a complete spectrum later, choose **Full native energy-resolved spectrum** and set **Energy sampling points**. The existing model is evaluated independently at every requested energy; this is not interpolation of the two calculated edge points. It can be much slower. See [energy sampling](USER_GUIDE.md#energy-sampling).
 
-Use **Export current plot PNG / SVG…**, **Export completed EMCD / EELS...**, or **Export derived NPZ/CSV + metadata**. Derived percentages accompany original raw arrays; exports do not overwrite the source project. See the [export guide](USER_GUIDE.md#export-figures-and-data).
+## 6. Save, reopen and export
 
-## Limits to keep with your figures
+Choose **File → Save Project As...**, select a writable parent folder and a new name. Preserve the **whole** project folder. Then **File → Open Project...** and select that folder: reopening saved arrays does not run the solver.
 
-Approximate XMCD-constrained MDFF, projected IAM and documented longitudinal-transfer approximation remain. No complete DFT transition tensor, globally converged physics, calibrated absolute EELS intensity or experimental SNR is claimed. [001] restricted-row results are not full-ZOLZ exact two-beam validation; [017] is the preferred reference. Independent clean-machine installation is **NOT TESTED**. See the [case-study gallery](NI_017_CASE_STUDY_GUIDE.md) and [release notes](RELEASE_NOTES_0_6_1_BETA_1.md).
+Current Inputs and saved results are separate. Use **Use These Settings** explicitly if you want to restore the saved controls; changing inputs alone does not rewrite existing results. Unsaved in-memory runs are not a backup.
+
+- **Export current plot PNG / SVG…** or **Results → Export Current Figure** saves a figure.
+- **Export completed EMCD / EELS...** saves a numerical/figure bundle.
+- **Export derived NPZ/CSV + metadata** saves derived views alongside preserved raw data.
+
+Keep denominators and source/convention metadata with figures. The GUI's advanced magnetic/nonmagnetic percentages use `N_A+N_B`; the tutorial separately explains the common conventional denominator needed to reconstruct total A/B percentages. See [exports](USER_GUIDE.md#export-figures-and-data).
+
+## Troubleshooting
+
+If Run is disabled, inspect source validation/declaration, material, geometry and resource status. If only gray spots are shown, request a fresh diffraction preview. If controls are hidden, expand the section and confirm Manual mode; use **View → Restore Default Layout** if needed. A source, memory or FFT-support error is not permission to silently change scientific settings. See [installation troubleshooting](INSTALL_WINDOWS.md#i-troubleshooting).
+
+**Next:** [Complete Tutorial](TUTORIAL.md). It explains the measurements and shows a verified advanced 9/30 nm case without requiring a long spectral run.

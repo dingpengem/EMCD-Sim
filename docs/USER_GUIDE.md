@@ -1,1003 +1,332 @@
-# EMCD-Sim Desktop User Manual
+# EMCD-Sim User Manual
 
-[Physical units and conventions](PHYSICAL_UNITS.md) distinguish crystallographic
-g=1/d from angular Q=2πg. Unit-label updates preserve all saved numerical values.
-The Windows development candidate built from `97b2220e` displays these labels.
-See [current candidate acceptance and exact ZIP identity](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md);
-older executables retain their original labels and provenance.
+[Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [Index](INDEX.md)
 
-The candidate also includes live ZA dragging and a ZOLZ Laue circle centered on
-the projected ZA with radius |q_ZA|. ZA is a yellow star; the Laue circle is
-darkorange dashed (width 1.8, alpha 0.95), and Thales is teal dotted
-(width 1.2, alpha 0.75). Dragging invalidates cached diffraction intensities
-without launching a calculation or moving detectors. Release applies the final
-valid coordinates; preview diffraction again to refresh elastic intensities.
-PNG/SVG exports retain the overlay styling. Off-row exact Bragg does not imply
-that the two circles coincide.
+This is the control/reference manual for the public **v0.7.0-beta.1 Windows Research Beta**. Binary source: `97b2220e5329dad6f98eedec61f58a6cf07d9da8`; release-tag commit: `481fed14b78f5439bb417bdc53d38d845a6b2592`. Later documentation does not change the binary. Native Windows acceptance passed; separate clean-machine installation remains untested. These pages do not certify arbitrary scientific configurations.
 
+> **Legacy magnetic results:** earlier released v0.6.1 packages used a superseded Born/MDFF convention. Preserve their raw arrays, source and convention; revalidate signed magnetic results before comparison. Loading a project does not update its physics. Missing convention metadata is unknown/legacy-unverified.
 
-**Candidate acceptance:** native automated Windows acceptance **PASSED**;
-independent clean-machine acceptance **NOT TESTED**; official public v0.7.0
-release **NOT PUBLISHED**. This remains beta research software. Linux CI has
-outstanding line-ending/hash and interpreter-shutdown issues; macOS validation
-remains pending. These limitations do not invalidate native Windows acceptance.
+Use the [Quick Start](QUICK_START.md) for a small first run and the [Tutorial](TUTORIAL.md) for the physical workflow and equations. This manual is a reference, not a request to run a large study.
 
-> **Critical scientific compatibility notice:** legacy Windows packages before
-> **v0.7.0-beta.1** used a superseded Born/MDFF convention affecting calculated
-> magnetic-odd EMCD signs. Historical signed L3/L2 magnetic spectra require
-> revalidation or recalculation before interpretation under the corrected
-> convention. This does not imply that all historical nonmagnetic EELS,
-> diffraction intensities or thickness trends are wrong. Preserve original
-> arrays, software/convention and source provenance; never silently flip or
-> relabel legacy arrays. Intermediate corrected source commits, including
-> `4f578156`, still used the old version label: exact commit/convention metadata
-> takes precedence over version alone. Missing convention is unknown or
-> legacy-unverified. Absolute experimental magnetic handedness is uncalibrated.
+<a id="find-your-way-around"></a>
+## 1. Interface and layout
 
-Start with [Windows installation](INSTALL_WINDOWS.md) and [Quick Start](QUICK_START.md).
+The main window has three adjustable regions: **Settings**, the central **Diffraction viewer**, and **EMCD Results**. The bottom **Project Results / Results Browser** lists runs. Blue headers and chevrons collapse sections; scroll Settings to reach controls. Use **Maximize / restore viewer**, **Maximize / restore results**, splitter handles and **View → Restore Default Layout** to adapt to the monitor. Layout preferences are independent of scientific project parameters.
 
-## Research Ni [117] / (2,-2,0)
+|Settings section|Purpose|
+|---|---|
+|A. Crystal Structure|Select FCC Ni, load/inspect CIF|
+|B. Zone Axis & Diffraction|Orientation, target, tilt, Bragg alignment and interaction mode|
+|C. Microscope & Sample|Voltage and thickness|
+|D. MDFF Model|Source, magnetic axis, model parameters and validation|
+|E. Propagation Method|Single/Double, BW/MS/Both and MS-only controls|
+|F. Shared Calculation Settings|Automatic/Manual numerics, physical support, sampling and resources|
+|Virtual detectors|A/B positions, radius and visibility|
+|G. Output Settings|Current-figure, preview and completed-result exports|
 
-This development-source feature is not included in the preserved Windows ZIPs.
-Enter nominal zone `1 1 7` and target `2 -2 0`, apply orientation, and keep the
-explicit [001] systematic-row restriction off. The right-handed screen frame is
-x=[1,-1,0], y=[7,7,-2], z=[1,1,7], each normalized. Select **Full finite ZOLZ**
-or the explicitly ideal **[117] 000 + target** basis. Both support BW, MS, and
-Single/Double Channeling. Arbitrary-zone structural previews do not establish
-validated arbitrary-zone EMCD or FFT support; unsupported combinations fail
-explicitly.
+Results include **Diffraction**, **EMCD Angular Maps**, **Virtual Detector EELS**, **Magnetic / Nonmagnetic**, **Calculation Information**, and additional saved diffraction/comparison views when available. Disabled views generally lack calculated data; enabling a display cannot manufacture missing maps or spectra.
 
-For the studied reference, choose 200 kV, lock Y at zero and align the signed
-target to Bragg; X is approximately -10.06456964 mrad. Restore physical Thales
-A/B detectors. The transmitted beam is (0,0), while ZA=-k_incident,perp lies
-at (0.40130918,0) Å⁻¹. Inspect source metadata and declare **crystal-frame**
-magnetization; the audited local Ni source is [001], not the incident axis.
-With eta=beta=1 the native studied magnetic samples are 831.271/848.698 eV.
-No experimental energy shift or new DFT tensor is implied. Rotate the tensor
-once; raw reversal-odd intensity can have a mirror-even part from finite qz
-and transverse magnetization. Paired-detector differences are not a parity test.
+![Released Windows application with collapsible settings, diffraction viewer and results](images/v070b1/gui_overview.png)
 
-Use Manual (Advanced) to inspect provisional research settings: beam4.6,
-potential6.2 Å⁻¹, FFT32–48, depth129, max slice0.02 nm, detector97–129 and
-fractional boundary subpixels128. Run memory/resource preflight and review
-runtime before calculating. Automatic leaves the released starting defaults
-unchanged and does not claim [117] convergence. Potential2.5 omits all off-row
-[117] Fourier terms; BW and MS now warn. Coarse sampling warns too: grid17
-versus97 changed detector asymmetry by0.2296 pp at30 nm; even33 was insufficient
-there. Neither grid97 nor BW/MS agreement guarantees universal convergence.
+*Actual native packaged EXE, using a deliberately small 1 nm, selected-energy acceptance profile. The plot shows two energy samples, not a full spectrum.*
 
-Older [117] projects retain their saved views. Missing, invalid or different
-frame metadata blocks reuse of orientation-dependent inputs; re-enter tilt
-and physical detector positions explicitly. Existing [001]/[017] conventions
-and defaults are preserved. See [scope and numerical evidence](NI_117_FINAL_SYMMETRY_VALIDATION.md)
-and [review status](NI_117_MERGE_READINESS.md) before quantitative interpretation.
+## 2. Structure import
 
-**Current validated development candidate: v0.7.0-beta.1 (0.7.0b1).** See [physics-corrected release notes](RELEASE_NOTES_0_7_0_BETA_1.md) and [current Windows acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md). No new release or tag is published. Settings and Diffraction remain side by side with adjustable three-column splitters; chevrons collapse optional controls and the bottom Project Results browser. Narrow Results panels stack maps, preserve full context under Details and restore full context in exports. Layout preferences do not change scientific project parameters.
+**FCC Ni default** creates the conventional cubic Ni reference, a = 3.524 Å. **Load CIF…** reads a CIF through ASE; **Inspect structure…** reports source hash, cell, sites and warnings. The GUI file-import route is CIF, not a general browser for every ASE-supported format.
 
+Reciprocal geometry can be inspected more broadly than inelastic scattering. The bundled elastic factors support Ni; non-Ni structures can produce explicit geometry-only messages. Disordered/partial occupancies and unsupported cells are not silently replaced. Current EELS/EMCD additionally requires the verified conventional FCC Ni structure. Importing an arbitrary CIF does not construct a material-specific MDFF or validate its magnetic response.
 
+## 3. Diffraction settings
 
-The [source cleanup audit](SOURCE_CLEANUP.md) defines the current GUI/tensor runtime and supported commands. Historical research CLI/scan drivers are retired from current source; their numerical results and original Git revisions remain preserved. Published Windows packages are unchanged.
+**Tilt X/Y (mrad)** are absolute local transverse incidence parameters relative to the nominal zone. Actual voltage and tilt determine excitation errors. They are not a calibrated mechanical holder-angle transformation. **Tilt step (mrad)** selects spin-box increments (0.01, 0.1 or 1 mrad); changing the step alone neither changes tilt nor starts a scan/solver. Record the actual X/Y values for reproducibility.
 
-**Historical published Windows prerelease: v0.6.1-beta.2.** It includes the worker-safety and GUI/performance developments described below. See [Beta 2 release notes and acceptance](RELEASE_NOTES_0_6_1_BETA_2.md). Beta 1 statements and acceptance below document the preserved historical package. Post-release source projects use 300 kV and 3.2/2.5 Å⁻¹ beam/potential cutoffs; the published Beta 2 ZIP retains 3.0/2.0. Explicitly choose 200 kV for the locked scientific example.
+- **Reset to zone axis** sets zero X/Y tilt.
+- **Reset to reference geometry** restores **[017]/(200), Full finite ZOLZ**, zero Y, Y-locked target Bragg alignment and Thales apertures at the current voltage. It is not a generic reset for another orientation.
+- **Align to selected Bragg** aligns the current target subject to **Lock for Bragg alignment → None/X/Y**. Use Y lock to preserve a specified perpendicular mistilt.
+- **Preview diffraction** computes elastic intensities for current inputs. It is separate from **Run EMCD / EELS**.
 
-**Main and Beta 2 developments** include Automatic / Manual settings, the reversible **Show full basis / Restore previous view** control, energy-dependent angular scheduling and MS Double allocation improvements. They are newer than the unchanged historical Beta 1. See [Beta 2 installation](INSTALL_WINDOWS.md) and the historical [integration record](GUI_PERFORMANCE_INTEGRATION.md). New projects use Automatic, 97 x 97 angular sampling and a 2048 MiB process budget; legacy projects retain explicit saved numerical values in Manual. These convenience and execution changes do not establish convergence for arbitrary parameters.
-**v0.6.1-beta.1 Windows research Beta.** The [acceptance report](V061_BETA_ACCEPTANCE.md) records the validated executable, unchanged checksum and local test scope. Independent clean-machine installation remains **NOT TESTED**. See [release notes](RELEASE_NOTES_0_6_1_BETA_1.md). Double Channeling already existed in earlier releases; this version adds full-field presentation and actual angular-grid controls without changing the solvers.
-For the preserved old executable use the
-[0.4.5 manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.4.5-beta.1/docs/USER_GUIDE.md).
+Inspect `s_g`, retained hkl, q and exit populations in **Diffraction details**, the **Diffraction** table and **Calculation Information**. The table can describe the last completed preview while new geometry is stale. An exact target `s_g = 0` is not evidence that other beams are absent.
 
+<a id="change-zone-axis-bragg-alignment-and-mistilt"></a>
+## 4. Zone axis and reflection indexing
 
+Expand **Orientation / ZA options**; enter three signed integers in **Nominal zone [uvw]** and **Target (hkl)**, then **Apply orientation / target**. The target must be nonzero, satisfy the zone condition and belong to the allowed retained basis. For cubic Ni, FCC reflections have all-even or all-odd indices. A too-small cutoff can exclude a valid target.
 
-## Development source: energy-dependent angular sampling
+|Diffraction choice|Interpretation|
+|---|---|
+|Full finite ZOLZ|Finite allowed zone-plane basis within the beam radius|
+|Ideal 000 + target|Explicit ideal two-beam truncation|
+|Explicit target systematic-row approximation|Row-restricted beams/potential; distinct from the ideal two-beam choice|
 
-The source calculation automatically schedules full-field angular evaluation
-only at the selected native L3/L2 energies. All other spectral energies evaluate
-the union of nonzero fractional A/B aperture weights on the **same q grid**.
-Full spectral resolution, raw detector states, magnetic/nonmagnetic components
-and detector-integrated EELS are retained. L3/L2 detector integrals use the
-already computed full-field values, without repeating detector-support work.
+Do not combine ideal two-beam and explicit row restriction. The general orientation engine supplies signed indexing and the same physical crystal frame to BW/MS. Five orientations have bounded acceptance: [001], [017], [117], [111], [710]. Other supported directions remain subject to finite-search, target, resource and FFT-support checks; unsupported configurations raise errors rather than falling back to another crystal orientation.
 
-| Spectral coverage | Angular maps | Evaluation |
-| --- | --- | --- |
-| Full spectrum | On | Full field at L3/L2; detector-only at all other energies |
-| Full spectrum | Off | Detector-only at all energies |
-| Selected L3/L2 | On | Full field at both selected energies |
-| Selected L3/L2 | Off | Detector-only at both energies |
+<a id="research-ni-117--2-20"></a>
+### Ni [117] and other research orientations
 
-This applies to BW/MS Single/Double and Both. It skips only unrequested,
-zero-weight pixels; it adds no interpolation or physical-model approximation.
-No non-selected full-field maps are fabricated. Cutoffs, FFT/slice/depth
-settings, precision, energy coordinates and the existing symmetry restrictions
-remain unchanged. Automatic/Manual parameter selection is unchanged. See the
-[bounded performance comparison](ENERGY_ANGULAR_SAMPLING_PERFORMANCE.md).
-This development update is not in the published v0.6.1-beta.1 executable.
+Use zone `1 1 7`, target `2 -2 0`; do not substitute (220). The target lies in the ZOLZ and is FCC-allowed. Default potential cutoff 2.5 Å⁻¹ retains no off-row [117] harmonics, so the visible basis alone does not imply a full multibeam potential. Read the potential-support warning and inspect actual harmonics. Coarse [117] angular sampling can produce significant errors. [111] lower-support quantitative convergence remains uncertified. See the [117 validation](NI_117_FINAL_SYMMETRY_VALIDATION.md) and [generalized merge review](GENERALIZED_MULTISLICE_MERGE_READINESS.md) before interpreting research cases.
 
-## Signal definitions in 0.6.1
+## 5. Interactive diffraction visualization
+
+The origin cross is **transmitted (000)**. The yellow star is the **projected crystallographic ZA**, `q_ZA = −tilt_rad/λ`, in the 000-centered coordinates. It generally differs from the origin under tilt. Read **ZA qx/qy (Å⁻¹)** for off-screen coordinates.
+
+|Overlay|Definition|Style in the live viewer|
+|---|---|---|
+|Thales|Center G/2, radius norm(G)/2; diameter 000–target|Teal dotted, width 1.2, alpha 0.75|
+|ZOLZ Laue|Center q_ZA, radius norm(q_ZA); zero-excitation-error locus|Darkorange dashed, width 1.8, alpha 0.95|
+
+The Laue circle is above Thales but below diffraction spots/markers/apertures. Use **Show ZOLZ Laue circle** to toggle it. At exact target Bragg both circles pass through 000 and G, but they need not coincide when there is off-row tilt. Zero incident tilt gives a zero-radius Laue locus. Neither overlay is an intensity contour or a guarantee of magnetic symmetry.
+
+![Native current elastic diffraction preview with indexed reflections and overlays](images/v070b1/diffraction_preview.svg)
+
+*SVG exported by the accepted EXE before dragging, with trailing whitespace cleaned in the documentation copy only. Geometry/styles are unchanged. This is an actual elastic preview, not an experimental diffraction pattern.*
+
+**Click mode** offers **Select reflection**, **Set projected ZA**, **Move detector A**, **Move detector B**. Set-ZA mode supports click and continuous drag. Release uses the final valid position; an out-of-axes/invalid release keeps the last valid position. Dragging removes cached intensity coloring and marks the prior preview stale; it starts no computation worker and does not change detectors. Request **Preview diffraction** to obtain current intensities.
+
+Matplotlib Pan/Zoom takes priority over geometry clicks. **Show full basis** expands to the selected beam-cutoff bounds and changes to **Restore previous view**; the second click restores saved limits. Geometry changes invalidate incompatible stored views. This is a view operation, not a numerical-setting reset. A large Laue circle can extend beyond the basis bounds; pan/zoom or inspect numeric ZA coordinates rather than moving it artificially.
+
+## 6. Detector positioning
+
+Numeric A/B qx/qy and **Radius (Å⁻¹)** define physical circular apertures. **Restore Thales A/B** uses `G/2 ± (−G_y,G_x)/2` in target-aligned coordinates. A is drawn solid, B dashed. **Show physical A/B apertures** changes visibility only; it does not disable integration.
+
+Integration is `sum(weights * intensity) * dq²` using fixed fractional circle/pixel weights. All reversal states share the same physical apertures. Boundary subpixels improve circle area weighting but not the resolution of a varying intensity field. Fully contain both apertures inside **Map halfwidth**. A manually moved non-mirrored pair is valid for detector spectra but can disable symmetry-dependent diagnostics.
+
+## 7. Magnetization settings
+
+**Crystal Cartesian M axis** is a finite nonzero direction, normalized internally. For cubic Ni, `0 0 1` specifies crystal [001]. Its local components change with the proper orientation transform; it is not implicitly beam-aligned. This prescription does not establish the specimen surface normal, magnetic domain structure or equilibrium orientation.
+
+The XMCD model reverses eta in the crystal frame before `R T Rᵀ`. Atomic reversal uses its transition/spin convention. Each calculation retains +M/−M spectra at unchanged detectors. Absolute experimental polarization/magnetic handedness is not independently calibrated; declare source conventions intentionally.
+
+<a id="xmcd-constrained-effective-mdff"></a>
+## 8. MDFF models
+
+**XMCD-constrained (WIEN2k):** select a **Five-column XMCD** file, then **Validate source / native features**. This reports source SHA256, range/features and available audit information. Check **I declare M axis, RP/LP convention and edge assignments** only for a verified source. `eta` controls dichroic sign/scale; `beta` controls the unmeasured longitudinal response. Invalid/non-positive tensor configurations are rejected.
+
+The bundled source has native range **823.625–882.521 eV** and selected magnetic samples **831.271/848.698 eV**. These calculated energies are not experimentally calibrated Ni thresholds. The five-column source does not supply the complex site/band/k-resolved transitions needed for full DFT MDFF. **Preview source / tensor spectrum...** inspects the model; it is not an EMCD calculation.
+
+<a id="atomic-ionization-mdff"></a>
+**Atomic ionization (Ni 2p -> 3d):** non-DFT approximation with L3/L2 energies, 10Dq, exchange, hole counts, Gaussian width and advanced radial settings. Crystal [001] magnetization only is supported in this model. It is not a quantitative metallic-Ni spectral model. Its nominal L3/L2 parameters do not shift or calibrate the XMCD source.
+
+## 9. Single and Double Channeling
+
+|Model|What is included|
+|---|---|
+|Single Channeling|Incoming elastic propagation followed by localized inelastic scattering; no outgoing elastic diffraction|
+|Double Channeling|Incoming propagation, depth-distributed localized inelastic transitions and outgoing elastic propagation at incident energy minus actual energy loss|
+
+They are distinct approximations, not independent experimental switches. Both retain a single inelastic event; Double is not double ionization/plural scattering. Their thickness trends can differ because post-loss propagation changes the depth-dependent detector response. Maxima observed at sampled thicknesses are not automatically continuous/global optima.
+
+<a id="bloch-wave-fft-multislice-and-numerical-settings"></a>
+## 10. BW and FFT Multislice
+
+**Propagation Method** selects **Bloch-wave**, **FFT Multislice** or **Both (BW / MS comparison)**. BW uses a finite reciprocal eigenproblem; MS uses a structure-derived projected ZOLZ potential and FFT propagation. Single/Double apply to both. BW/MS comparisons require matched physical structure, frame, support, detector, MDFF, energy and depth conventions.
+
+MS-only controls are in panel E; they hide/disable appropriately for BW and retain their values for MS/Both. Invalid FFT bandwidth/support produces an explicit error. MS may propagate additional FFT harmonics beyond the retained diffraction/MDFF basis. Agreement is neither independent basis convergence nor experimental validation. Atomic-3D potential propagation is not a released backend.
+
+<a id="development-source-shared-and-solver-specific-settings"></a>
+<a id="automatic-and-manual-numerical-settings"></a>
+## 11. Automatic and Manual numerical settings
+
+**Automatic** selects deterministic starting values and performs configuration/FFT-support checks without trial scattering calculations. Inspect **View Numerical Parameters**; do not assume a literature/research profile was matched merely because the material or zone name agrees. **Manual (Advanced)** exposes explicit support/sampling controls. Preserve and report actual effective values, including numerical-selection metadata.
+
+|Control|Released starting value|Role|
+|---|---:|---|
+|Voltage / thickness|300 kV / 30 nm|Physical inputs; set explicitly for each study|
+|Beam / MDFF basis cutoff|3.2 Å⁻¹|Shared retained hkl support|
+|Potential Fourier cutoff|2.5 Å⁻¹|Shared elastic potential harmonics, norm(g−g′) cutoff|
+|Debye–Waller B|0 Å²|Shared IAM damping parameter; not comprehensive TDS|
+|Angular / detector grid|97×97|Physical q samples, independent of FFT mesh|
+|Map halfwidth|1 Å⁻¹|Inelastic q extent; must contain apertures|
+|Energy sampling points|241|Full-spectrum request, with native feature insertions|
+|Depth integration nodes|64|Shared depth/coherence sampling; not “64 propagation steps”|
+|Aperture boundary subpixels|64|Fractional boundary-area approximation|
+|FFT grid|32×32 starting mesh|MS only; Automatic can enlarge to support geometry|
+|Max slice step|2 nm|MS upper bound, editable 0.001–10 nm|
+|Memory budget|2048 MiB|Estimated process-peak admission allowance|
+
+Automatic can resolve different values for a narrowly matched reference or required FFT support. Existing saved configurations and explicit slice overrides must be inspected; starting values are not a universal production recommendation. Old projects without a numerical-mode field restore explicit settings in Manual.
+
+**Max slice step remains editable in Automatic and Manual.** Explicit user overrides are retained across mode selection. Actual propagation distance between depth planes is split into `ceil(interval/max_step)` equal substeps, where `interval = t/(N_depth−1)`. Record requested and actual step when applicable. A warning above the 0.04 nm advisory reference does not claim a universal convergence threshold or force a smaller step. The actual interval may already be smaller; inspect metadata. The 200,000-step safety bound still applies.
+
+Research refinement must separate beam support, potential cutoff, FFT sampling, depth integration, MS step, q grid/extent, aperture weighting and energy sampling. This manual changes none of them.
+
+<a id="parallel-workers-and-pre-run-risk"></a>
+## 12. Worker parallelism and resource safety
+
+**Parallel Workers** is independent of Automatic/Manual Numerical Settings. **Automatic (Recommended)** applies the existing evidence-scoped resource policy. **Manual** requests 1–4 detector workers; native BLAS/LAPACK threading is separate from that count and the calculation QThread. Unsupported/unsafe manual requests are blocked rather than silently replaced.
+
+Budgets are **512, 1024, 2048, 4096 or 8192 MiB**. **Resource estimate** separates dense-kernel and estimated process memory, additional allocations, retained results and worker concurrency. It checks available physical RAM and a conservative 50% available-RAM limit, with margin/reserve. The budget is neither a required allocation nor a guarantee of native stability. A rejected configuration is not automatically run with fewer beams, lower precision, a coarser grid or a different solver.
+
+Read statuses such as **UNVERIFIED COMBINATION**, support errors or **Memory admission rejected** before Run. A caution is not a convergence certificate; successful admission is not a universal crash guarantee. Close competing memory-heavy jobs or explicitly revise supported settings, recording every scientific change. Do not enlarge memory limits merely to hide a missing convergence check.
+
+<a id="development-source-energy-dependent-angular-sampling"></a>
+<a id="energy-sampling"></a>
+## 13. Energy sampling
+
+**Spectral coverage** offers:
+
+- **Selected L3/L2 samples only (not full EELS):** evaluate exactly the selected energies; display points, not a fabricated white-line shape.
+- **Full native energy-resolved spectrum:** use the native source range with the requested number of evenly spaced samples, inserting selected L3/L2 energies if absent. A 241-point request normally becomes 243 evaluated energies. This is not necessarily every original source sample.
+
+For each requested loss, the model/source and scattering response are evaluated; full Double spectra are not interpolated from two selected-edge calculations. The source tensor uses interpolation of the **original tabulated spectral input**, a different operation. Extrapolation beyond its source range is not allowed. There is no silent experimental energy shift or extra smoothing.
+
+**Calculate angular maps** requests full fields only at selected L3/L2 samples. Other spectral energies integrate nonzero physical detector support on the unchanged q grid. With maps off, detector-only support is used at every energy. No non-selected full-field maps are manufactured or exported. These savings do not establish energy/grid convergence.
+
+<a id="first-simulation-fcc-ni-017-exact-200-bragg"></a>
+## 14. EELS and EMCD calculation
+
+The [Quick Start](QUICK_START.md) supplies a small Manual Ni example. In general: set crystal/frame and physical geometry → set fixed apertures → validate model/axis → choose channeling and propagation → review effective numerics/resources → **Preview diffraction** → **Run EMCD / EELS**.
+
+Both reversal tensors are computed using the same geometry, not by moving detectors. Raw `I_A_plus`, `I_A_minus`, `I_B_plus`, `I_B_minus` are retained. In Both mode, finish one solver before preparing the other; do not treat an interrupted/failed run as completed evidence. Numerical selection, source verification, memory and unsupported-configuration errors are reported rather than bypassed.
+
+**Cancel** requests cooperative interruption. Wait for idle/acknowledgement before another Run. Large native operations can bound responsiveness; the packaged acceptance has specific active-worker evidence, not a universal timing guarantee. Closing while busy requests cancellation and defers closure; close again after idle if needed. Previously completed results remain separate from the interrupted calculation. The GUI does not promise automatic resumption of arbitrary unsaved jobs from per-energy research checkpoints.
+
+<a id="read-angular-maps"></a>
+## 15. Angular maps
+
+The maps use stored physical q samples; display zoom and nearest-pixel rendering do not add numerical resolution. **Angular Map Resolution** offers **Quick Preview - 33x33**, **Standard - 97x97**, **High Resolution - 193x193**, and **Custom**. In Manual, inspect **Angular / detector grid points (odd)** and halfwidth. Refining a saved map requires a new explicitly configured calculation, not image enlargement.
+
+The primary **Raw (a.u.)** angular view shows magnetic and nonmagnetic **mirrored-point differences** at `q=(qx,qy)` and `q′=(qx,−qy)`. **EMCD Asymmetry (%)** uses `100*[I_plus(q)−I_plus(q′)]/[I_plus(q)+I_plus(q′)]`. Detector outlines are overlays; they do not limit the full field. These are not finite-aperture detector ratios.
+
+Advanced fields distinguish `I_mag=(I_plus−I_minus)/2`, `I_nonmag=(I_plus+I_minus)/2`, total +M intensity, paired differences and post-edge diagnostics. An antisymmetric paired difference is not evidence that the **original raw magnetic map** obeys mirror antisymmetry. Crystal magnetization, mistilt and multibeam geometry matter.
+
+![Actual 9x9 native acceptance map showing magnetic and nonmagnetic mirrored-point differences](images/v070b1/angular_smoke.png)
+
+*Deliberately coarse 9×9, 1 nm packaged acceptance result. It demonstrates field/coordinate presentation, not research-quality sampling or physical convergence. Current full maps retain their actual sample count.*
+
+Missing full-field data disables/unavailable fields; it is not reconstructed from detector spectra. Unsupported mirror coverage produces a diagnostic instead of fabricated values. Undefined percentage pixels remain masked/gray. To calculate a detector ratio, integrate raw A/B intensities first; never average pixel percentages.
 
 <a id="signal-definitions-in-060"></a>
+<a id="signal-definitions-in-061"></a>
+<a id="interpret-percentages"></a>
+## 16. Raw and normalized signal definitions
 
-The legacy link above is retained for older documentation.
-
-Both Virtual Detector EELS and EMCD Angular Maps have exactly two primary
-**Signal Display** choices: **Raw (a.u.)** (default) and **EMCD Asymmetry (%)**.
-The upper EELS panel always retains original +M detector A/B intensities on
-one shared scale. Raw displays two signed differences below it; Asymmetry
-replaces those with one total curve. No individual peak normalization,
-factor of two, absolute value or hidden post-edge correction is applied.
-
-For each detector J, N_J=(I_J_plus+I_J_minus)/2 and
-M_J=(I_J_plus-I_J_minus)/2. The definitions are:
-
-| Quantity | Formula | Location |
-| --- | --- | --- |
-| Magnetic raw difference | D_mag=M_A-M_B | Primary Raw |
-| Nonmagnetic raw difference | D_nonmag=N_A-N_B | Primary Raw |
-| Total raw difference | D_raw=I_A_plus-I_B_plus=D_mag+D_nonmag | Advanced/export |
-| EMCD Asymmetry (%) | 100*(I_A_plus-I_B_plus)/(I_A_plus+I_B_plus) | Primary Asymmetry, L3/L2 scalar |
-| Magnetic-only Asymmetry (%) | 100*D_mag/(N_A+N_B) | Advanced Diagnostics |
-| Nonmagnetic Asymmetry (%) | 100*D_nonmag/(N_A+N_B) | Advanced Diagnostics |
-
-The total ratio can include nonmagnetic diffraction asymmetry. Its denominator
-also differs from N_A+N_B when M_A+M_B is nonzero, even if D_nonmag=0.
-The scalar **EMCD Asymmetry** group retains native L3/L2 samples, evaluation
-energy and energy lock. Rusz et al., PRB 75, 214425 (2007), remains the
-historical theoretical reference; matching a normalization does not imply
-complete physical equivalence to that calculation.
-
-Raw angular mode shows M(q)-M(q') and N(q)-N(q') on a common signed,
-zero-centered scale; total angular Asymmetry is
-100*(I_plus(q)-I_plus(q'))/(I_plus(q)+I_plus(q')). Here q'=(qx,-qy) is an
-actual validated saved sample. These are angular intensity densities and
-point-pair percentages, **not detector-integrated EELS**. Integrate the raw
-A/B intensities with physical aperture weights first, then take their ratio;
-do not average percentage pixels. Existing denominator floors are retained:
-invalid/near-zero samples remain NaN. No scientific values are clipped.
-Unavailable mirror coordinates, incomplete intensity arrays or incompatible
-grids produce an explanation, not a fabricated reflection. Physical A/B
-apertures are overlays only for the primary full-field map: even nonmirrored
-manual detectors do not invalidate its mathematical point pairs. They still
-change the separately integrated detector EELS. Legacy aperture-restricted
-Advanced Diagnostics retain their physical A/B mirror/weight validation. Exact Bragg
-alignment alone does not guarantee mirror geometry. Restricted-row and full
-finite ZOLZ results remain distinct.
-
-Advanced views preserve magnetic-only/even paired asymmetries, intrinsic
-magnetic/nonmagnetic intensities, local magnetic fraction, raw total difference,
-four reversal spectra, corrected contrast, residual even signal, legacy fixed
-peak normalization, detectability proxy and BW/MS difference diagnostics.
-Post-edge correction is a separate observable, not intrinsic magnetic recovery.
-Large percentages alone do not establish detectability. Arbitrary-unit
-intensity has no electron-count calibration; experimental SNR requires dose,
-efficiency, bin width, background and variance propagation for the actual
-measurement estimator. The existing proxy is arbitrary-scale only.
-
-Legacy projects and all original scientific NPZ/CSV keys (including PRB names)
-remain unchanged. Supplemental `signal_display.npz` and per-method
-`*_signal_display.csv` carry explicit descriptive aliases and denominators;
-`figure_display.json` records definitions and selected displays. The new
-`emcd_asymmetry_percent` aliases historical `prb_relative_dichroism_percent`;
-`nonmagnetic_asymmetry_percent` aliases `nonmagnetic_imbalance_percent`.
-Angular aliases use edge-qualified method prefixes and never replace old maps.
-PNG/SVG follow the chosen mode. Sidecars are derived exports, separate from
-the checksummed original project arrays. Exporting never overwrites its source
-project. Source hashes, native energies, geometry and numerical settings remain
-in original provenance.
-
-Old saved Raw preferences remain Raw. Old `relative` preferences open the
-explicit Magnetic-only / Nonmagnetic Asymmetry advanced view with a migration
-notice and Raw as primary; they are never silently interpreted as total
-asymmetry. New display-state schema 2 records separate EELS/map modes and
-preserves energy locking. Presentation changes do not run the solvers.
-
-## What the application calculates
-
-EMCD-Sim combines elastic incident-wave diffraction with a core-loss
-ionization tensor, integrating contributions from depths through the foil.
-It produces selected-energy magnetic/even/total angular intensities and
-full-energy virtual-detector EELS, for both magnetization states. Bloch-wave
-(BW) and the independent FFT multislice (MS) support Single and Double
-Channeling. Single retains entrance-only propagation; Double includes actual
-post-ionization outgoing propagation at the reduced electron energy.
-Elastic diffraction, core-loss intensity and detector A−B contrast are
-different quantities: a bright elastic spot is not itself an EMCD spectrum.
-
-Two alternative MDFF descriptions are available: an **XMCD-constrained
-effective tensor** and an **approximate atomic-ionization tensor**. Neither
-provides a fully quantitative experimental metallic-Ni cross section.
-
-## Find your way around
-
-![Actual Windows main interface](images/gui/v060_release/startup.png)
-
-Actual accepted 0.6.0 frozen capture at native 150% scaling, showing the current input
-and diffraction controls. Use this numbered reading order:
-
-1. **Left: Inputs.** Expand/collapse **A. Crystal Structure**, **B. Zone Axis
-   & Diffraction**, **C. Microscope & Sample**, **D. MDFF Model**,
-   **E. Propagation Method**, **F. Calculation Settings**, **Virtual detectors**,
-   and **G. Output Settings**. Changing an input does not calculate a new result.
-2. **Center: diffraction viewer.** The **Click mode** selects what a click does.
-   The toolbar provides pan/zoom; its coordinates belong to the current local
-   reciprocal frame in Å⁻¹. **Preview diffraction** calculates elastic
-   intensities. **Run EMCD / EELS** explicitly starts core-loss calculation.
-3. **Right: results.** Tabs include **Diffraction (last preview)**,
-   **EMCD Angular Maps**, **Virtual Detector EELS**, **Magnetic / Nonmagnetic**,
-   **Calculation Information**, **BW/MS Diffraction** and **BW/MS Overview**.
-   Some tabs remain disabled until appropriate data exist. A last-preview or
-   stale-result label distinguishes completed data from edited current inputs.
-4. **Bottom: Results Browser.** Saved/in-memory completed runs, selection,
-   viewing, source reconnection, metadata and comparison. The **Projects**
-   toolbar provides Open Project, Save Project, Use These Settings, Compare
-   Results and Export Figure.
-
-Use **Maximize / restore results** to expand the result pane, **Maximize /
-restore viewer** for the center, or **View → Restore Default Layout**. Input
-and plot areas scroll when the window is narrow. Complete exported figures
-are more readable than a cramped three-pane window.
-
-## Validated Ni [017], 8 nm Double example
-
-This reproduces the geometry and physical/numerical profile of the representative angular study with **97 x 97** sampling. It does not run the full thickness scan. The source audit may initially select L3 = 831.271 eV; explicitly set **L3 native feature (eV)** to **831.4778** to match this benchmark. Do not shift the source spectrum.
-
-1. **File → New**, then **FCC Ni default** (fcc Ni, a = 3.524 Å). Set **Nominal zone [uvw]** to `0 1 7`, **Target (hkl)** to `2 0 0`, and **Apply orientation / target**. Set **Voltage (kV)** = 200 and **Thickness (nm)** = 8. **Reset to reference geometry** gives **Tilt X (mrad)** = -7.116725439974256 and **Tilt Y (mrad)** = 0. Exact s200 = 0 is the paraxial Bragg reference; competing beams remain in the full finite 2D basis. Leave **Explicit [001] (200) systematic-row approximation** unchecked.
-2. Under **D. MDFF Model**, choose **XMCD-constrained (WIEN2k)**. Use the bundled `EMCD-Sim/_internal/data/wien2k_ni/Ni_fm.xmcd`, click **Validate source / native features**, set **Crystal Cartesian M axis** = `0 0 1`, eta = beta = 1, L3 = **831.4778 eV**, L2 = **848.698 eV**, and check **I declare M axis, RP/LP convention and edge assignments** after inspecting the convention. Cubic [001] rotates to local `[0,-1/sqrt(50),7/sqrt(50)]`; it is not local [017].
-3. Choose **Channeling Model → Double Channeling**, **Propagation Method → Bloch-wave**, **Spectral coverage → Selected L3/L2 samples only (not full EELS)**, and enable **Calculate angular maps**. Disable **Enable post-edge A/B correction** for these two-energy samples; use full spectra for post-edge diagnostics. Set the controls below explicitly rather than relying on preview defaults.
-
-| Setting | Value |
-| --- | --- |
-| Beam cutoff | 4.6 Å⁻¹, incoming/outgoing matched, 59 beams for [017] |
-| Potential cutoff | 6.2 Å⁻¹ |
-| Debye–Waller B | 0 Å² |
-| Angular Map Resolution | Standard - 97x97 |
-| Map halfwidth | 0.5 Å⁻¹ |
-| Depth integration nodes | 257 |
-| Aperture boundary subpixels | 64, fractional integration |
-| FFT grid (even), if switching to MS | 48 |
-| Max slice step (nm), if switching to MS | 0.04 |
-| Estimated process memory budget | 2048 MiB; admission still checks actual available RAM |
-| Physical detector A center | (+0.2837684449489217, +0.2837684449489217) Å⁻¹ |
-| Physical detector B center | (+0.2837684449489217, -0.2837684449489217) Å⁻¹ |
-| Aperture radius | 0.0908059024 Å⁻¹ |
-| Optional post-edge A/B correction window | 878–882 eV, a separate observable; use full spectra for post-edge diagnostics |
-
-4. Click **Restore Thales A/B** and confirm detector coordinates/radius. Click **Run EMCD / EELS** once. The budget is a ceiling, not an allocation or promise of admission; a rejection must be resolved explicitly, never by an undocumented physical reduction. MS/Both and full spectra can be substantially slower than this BW selected-energy example.
-5. In **EMCD Angular Maps**, choose L3/L2 and **Signal Display → Raw (a.u.) / EMCD Asymmetry (%)**. All valid saved q samples are displayed; circles do not clip the map. In **Virtual Detector EELS**, selected-energy results remain points. Expand **Advanced Diagnostics** for intrinsic magnetic/even fields or magnetic-only percentages. With Both results, the method selector offers **BW-MS numerical difference**; this numerical difference is not a Single-versus-Double model comparison.
-6. Use **Export current plot PNG / SVG…**, the figure toolbar, **Export derived NPZ/CSV + metadata** or **Export completed EMCD / EELS...** as appropriate. Save the full project folder with **File → Save Project As...** and reopen using **Open Project**. Results Browser **View Selected** loads arrays; **Use These Settings** restores input controls separately. Display changes do not propagate the wavefield.
-
-The tracked/bundled source SHA256 is `4fd517af3e54db94588a76b7a6ed9c2f9a1b745cd8fe52b9fca0f87fc4938db3`; the study file SHA256 is `a0e28ea6423b6c7832bb3cce6d69d71aa59336a221baeee3d2556b49ba501283`. Their difference is the terminal newline, not numerical spectrum values, verified in this release documentation audit. Preserve the actual hash of the file used; do not rewrite provenance to make hashes agree. The 97-grid saved BW reference detector asymmetry is about -13.0591%, while the 193-grid reference is about -13.0601%; this is a case-specific numerical comparison, not a universal expected output.
-
-See [angular convergence](ANGULAR_MAP_CONVERGENCE.md), [complete thickness analysis](NI_EMCD_THICKNESS_SCIENTIFIC_ANALYSIS.md), [Ni case study](NI_017_CASE_STUDY_GUIDE.md) and [acceptance scope](V061_BETA_ACCEPTANCE.md). The older screenshots below show their original verified releases and are not mislabeled as captures of this new preset interface.
-
-## First simulation: FCC Ni [017], exact (200) Bragg
-
-1. Launch the application; choose **File → New** for a fresh current selection.
-   **FCC Ni default** selects conventional FCC Ni, **a=3.524 Å**. **Inspect
-   structure…** shows the cell, species, fractional sites, source and hash.
-2. Set **Nominal zone [uvw]** `0 1 7`, **Target (hkl)** `2 0 0`, then **Apply
-   orientation / target**. Retain 200 kV and 30 nm.
-3. Use **Reset to reference geometry** and **Preview diffraction**. The local
-   incident tilts are approximately **X=−7.11672544 mrad, Y=0**. In **Select
-   reflection** mode click indexed (200), then **Align to selected Bragg**.
-   The selection readout should show `s200≈0`; roundoff near 1e-14 Å⁻¹ is zero
-   for this purpose. This is exact Bragg incidence, **not** zero-tilt [017].
-4. Find transmitted **(000)** (cross), **ZA [017]** (star), target (200), and
-   the **Thales** circle. At the reference, ZA is approximately
-   `(+0.283768, 0)` Å⁻¹ relative to transmitted (000). It is not a plot
-   displacement in mrad; convert with the electron wavelength.
-5. Click **Restore Thales A/B**. The physical apertures are centered near
-   `(+0.283768, ±0.283768)` Å⁻¹, radius `0.0908059` Å⁻¹.
-6. Select and validate an MDFF source/model as below. Choose **Propagation
-   Method → Bloch-wave** and the default numerical settings. For corrected
-   curves, explicitly enable post-edge A/B correction with the 878–882 eV
-   window, independently of display peak normalization.
-7. Click **Run EMCD / EELS**. The worker reports stages; **Cancel** requests a
-   cooperative stop and immediately shows **Cancelling...**, then
-   **Calculation cancelled.** when the worker has released its resources.
-   A failed/cancelled calculation does not replace a completed result.
-   After cancellation, change settings or run again normally. Individual
-   native numerical calls must finish before cancellation can be acknowledged;
-   see [measured cancellation acceptance](DOUBLE_CHANNELING_CANCELLATION.md).
-   Completion enables maps, EELS and comparison information.
-8. Inspect L3/L2 and signed metrics, then **File → Save Project As...** into a
-   new user research folder. Keep the entire folder.
-
-Why [017]? It is a genuine minor-zone orientation approximately **8.13°**
-from crystal [001], the source magnetization direction. Its local axes are
-x=[100], y=[0,7,−1]/sqrt(50), z=[0,1,7]/sqrt(50). Cubic M=[001] becomes
-local `(0, −1/sqrt(50), 7/sqrt(50))`; it is not reassigned parallel to the beam.
-The nominal zone defines crystal orientation; incident tilt defines beam
-direction within that frame; the projected ZA star locates the crystal zone
-direction relative to the transmitted beam. Exact s200=0 does **not** guarantee
-an isolated two-beam wavefield. Propagation retains the full finite 2D basis.
-
-## Change zone axis, Bragg alignment and mistilt
-
-Changing **Nominal zone [uvw]** changes the actual crystal projection. Enter
-three integers, such as `0 1 7`, and apply the orientation. Choose a supported
-nonzero target (hkl) in the displayed basis. In **Select reflection** mode,
-click a spot; the target and excitation error update. **Align to selected
-Bragg** solves its paraxial excitation-error condition. **Lock for Bragg
-alignment → X** holds X fixed and solves Y; **Y** holds Y fixed and solves X;
-**None** permits the nearest adjustment. An impossible locked alignment is
-reported, rather than silently violating the lock.
-
-In **Set projected ZA** click mode, clicking changes beam tilt using
+Let `ap=I_A(+M)`, `am=I_A(−M)`, `bp=I_B(+M)`, `bm=I_B(−M)` at one energy:
 
 ```text
-q_ZA = −k_incident,perp = −(tilt_x_rad, tilt_y_rad) / lambda
-tilt_mrad = −1000 lambda q_ZA
+N_A=(ap+am)/2; M_A=(ap-am)/2
+N_B=(bp+bm)/2; M_B=(bp-bm)/2
+D_mag=M_A-M_B; D_nonmag=N_A-N_B
+D_conv=ap-bp=D_mag+D_nonmag
+D_flip,A=ap-am=2*M_A
 ```
 
-The existing relativistic wavelength and Å⁻¹ convention are used; no
-extra 2π factor applies. Editing **ZA qx/qy (Å⁻¹)** or **Tilt X/Y (mrad)**
-performs the same conversion. **Tilt step (mrad)** sets the spin-box increments.
-At zero tilt, ZA and transmitted (000) coincide. **Reset to zone axis** gives
-that zero tilt; **Reset to reference geometry** restores the built-in [017]
-(200) reference, including its nonzero X tilt. Do not use them interchangeably.
-
-For a Ni [017] mistilt, define offsets from the Bragg reference:
-
-```text
-theta_x = theta_Bragg,200 + delta_x
-theta_y = delta_y
-```
-
-For +1 mrad X offset, enter about **−6.11672544 mrad absolute X**, not +1 mrad.
-Keep Y=0 for an X scan. Positive/negative X offsets move across s200=0 and
-redistribute the wavefield. Y offsets can excite off-row reflections and
-break detector mirror balance. Because g200 has local gy=0, changing Y alone
-can leave s200=0 in this convention while changing other beams substantially.
-Predicting an EMCD sign or useful intensity requires calculation, not the
-target excitation error alone. Existing larger-mistilt examples are in the
-[Ni case-study guide](NI_017_CASE_STUDY_GUIDE.md).
-
-## Import a CIF
-
-1. Click **Load CIF…**, select the CIF, then **Inspect structure…**.
-2. Check lattice lengths/angles, sites, occupancies, supplied space group,
-   import warnings and SHA256. The importer uses ASE; it does not infer a new
-   space group for an arbitrary input.
-3. Set nominal zone and target, apply, and inspect reciprocal indexing.
-4. Read availability messages before starting a numerical calculation.
-
-Import success is not an assertion of validated EMCD support. The bundled
-elastic IAM factors support Ni; other species can be inspected in reciprocal
-geometry without numerical Ni scattering. Partial/disordered occupancies are
-unsupported. MDFF calculations require the verified conventional FCC Ni cell
-(a=3.524 Å and equivalent sites); arbitrary Ni structures are not automatically
-accepted. Current GUI FFT support is restricted to verified FCC Ni [017].
-
-## XMCD-constrained effective MDFF
-
-Expand **D. MDFF Model**, select **XMCD-constrained (WIEN2k)**, then **Browse
-XMCD...** if necessary. The portable example is
-`_internal/data/wien2k_ni/Ni_fm.xmcd` beside the application resources. Click
-**Validate source / native features**. The reader checks the five-column
-format and native energy range, reports a source SHA256 and finds candidate
-L3/L2 magnetic features. The bundled example contains calculated spectra,
-not WIEN2k executable/source code or the original companion calculation.
-
-For that Ni example use **Crystal Cartesian M axis** `0 0 1`, eta=beta=1,
-**L3 native feature (eV)** `831.271`, **L2 native feature (eV)** `848.698`.
-Check **I declare M axis, RP/LP convention and edge assignments** after
-reviewing these conventions. An original local companion audit can supply
-additional provenance; ordinary five-column validation does not claim it.
-Bundled validation therefore does not automatically check the declaration or
-guarantee that post-edge correction is on.
-
-With N=(RP+LP)/2 and D=(RP−LP)/2, the axis-aligned proxy is
-Txx=Tyy=N, Txy=+i eta D, Tyx=−i eta D, Tzz=beta N, with the existing source
-maximum normalization. Eta controls magnetic sign/scale; beta describes the
-unmeasured longitudinal response. They are assumptions, not fitted absolute
-cross sections. Excessive |eta| can fail positive-semidefinite tensor checks.
-Magnetization reversal is performed in the source/crystal frame before the
-tensor is rotated into the selected local crystal frame.
-
-**Preview source / tensor spectrum...** shows RP+LP (XAS), RP−LP (XMCD), edge
-markers, and Full spectrum/L3/L2 zoom. A magnetic extremum need not coincide
-with the XAS maximum or the saved detector-even EELS maximum. The selected Ni
-features are calculated energies on the **unshifted native WIEN2k axis**,
-not experimentally calibrated absolute edge positions. Do not replace them
-with 852.7/870 eV merely because those are atomic-model defaults.
-
-The effective axisymmetric tensor is not a complete complex Cartesian
-core-to-band DFT-derived MDFF. RP/LP intensities alone do not recover missing
-complex transition amplitudes or arbitrary longitudinal response.
-
-![Actual bundled Ni source preview](images/gui/stage_g_xmcd_source.png)
-
-Actual native Stage G source-preview capture of the bundled example. The two
-curves use source spectral units; these are not detector-integrated EELS and
-are not percentages. Dashed markers locate selected magnetic feature samples.
-
-## Atomic-ionization MDFF
-
-Choose **Atomic ionization (Ni 2p -> 3d)**. This non-DFT model combines 2p
-core spin–orbit coupling (L3 j=3/2, L2 j=1/2), cubic 3d orbitals, **10Dq (eV)**,
-**Exchange (eV)** and spin-dependent **eg/t2g up/down holes**. **Gaussian sigma
-(eV)** broadens the transitions. **Advanced atomic radial controls** expose
-screened-hydrogenic effective charges or an explicit effective radial dipole.
-They do not install a self-consistent metallic-Ni electronic structure or
-many-body multiplet solver. The GUI currently restricts this model to cubic
-crystal [001] magnetization.
-
-Reversal exchanges spin-hole populations and reverses exchange shifts in the
-fixed core-SOC basis; tensors are then transformed into the local frame.
-**Preview source / tensor spectrum...** plots tensor components rather than an
-imported XMCD file. Defaults L3=852.7 and L2=870 eV belong to this separate
-approximation. Atomic and XMCD-effective magnetic amplitudes/signs can differ
-because their electronic populations, spectral assumptions and conventions
-differ. Successful execution is not experimental validation of either model;
-their relative intensity units are not an absolute cross-model calibration.
-
-## Development source: shared and solver-specific settings
-
-### Automatic and Manual numerical settings
-
-New source projects default to **Numerical Settings → Automatic** in Panel F.
-Expand **View Numerical Parameters** to inspect the actual read-only cutoffs,
-depth nodes, angular grid and memory budget passed to the calculation. MS/Both
-also shows FFT mesh and maximum slice step; BW omits those unused entries.
-Memory estimates and admission failures remain visible. Automatic selection
-does not propagate waves, evaluate MDFF, run trial calculations or establish
-convergence. Pressing Run starts only the requested calculation.
-
-The deterministic `automatic-starting-v5` policy normally uses the development
-starting values: beam 3.2 Å⁻¹, potential 2.5 Å⁻¹, depth 64, maximum MS step
-2 nm, angular grid 97, 64 aperture subpixels, halfwidth 1 Å⁻¹, 241 energy
-samples and 2048 MiB budget. It retains the selected physical geometry, B,
-systematic-row approximation, source, magnetization and detector positions.
-These settings are labeled **Automatic starting settings — convergence not
-established**. An unavailable geometry is reported without substituting a solver.
-
-The narrowly matched [Ni reference](DOUBLE_CHANNELING_UNIFORM_BASIS.md) uses
-beam 4.6 Å⁻¹, potential 6.2 Å⁻¹, FFT 48, depth 257 and 0.04 nm maximum step.
-Matching requires the conventional Ni cell, [017], full finite ZOLZ, exact (200)
-Bragg with zero vertical tilt, 200 kV, B=0, thickness exactly 8/12/30/100 nm,
-the archived source SHA256, declared crystal [001] magnetization, eta=beta=1,
-native 831.4778/848.698 eV samples, original Thales detectors/radius and no radial
-override. Both supported channeling models and all three propagation choices
-can use this profile. Changed conditions fall back to starting values, with no
-inherited convergence claim. A match refers to representative native-edge
-detector observables, **not** certification of arbitrary angular maps, full
-spectra, other thicknesses or global extrema. The summary always states that
-Automatic settings do not guarantee numerical convergence.
-
-MS mesh selection starts at 32 (48 for the matched reference), then checks even
-meshes through 128 using the existing geometry-specific exact-hkl, reciprocal
-coordinate and Nyquist checks. It additionally requires a two-index boundary
-guard band for physical support. It never increases potential bandwidth or
-truncates the beam basis to fit. Passing these checks establishes representation,
-not FFT/slice convergence. Memory admission is unchanged and may reject even a
-reference profile; Automatic never reduces settings to fit a budget.
-
-Choose **Manual (Advanced)** to edit all existing numerical controls and budget
-choices. The first switch copies the resolved values. Later switches back to
-Manual restore the session's last overrides; returning to Automatic resolves
-against current physical conditions. Physical B and systematic-row controls stay
-accessible in either mode. The existing independent solver, energy-coverage,
-map and post-edge controls retain their meanings.
-
-Saved result metadata includes mode, actual numerical values, manual overrides
-and selection policy/source. Old projects with no mode are **Manual**, retaining
-their original values. Viewing any saved result performs no recalculation.
-**Use These Settings** restores the saved mode and exact values; restored
-Automatic values remain intact until a relevant input changes. New Project
-returns to Automatic. The published v0.6.1-beta.1 ZIP is unchanged.
-
-This UI organization is the next **source development update after v0.6.1-beta.1**. No Windows binary is rebuilt, no version changes, and the published ZIP retains its original Panel F layout. Scientific configuration keys and explicit Manual values are unchanged; Automatic follows the policy above. Panel E remains **E. Propagation Method**; Panel F becomes **F. Shared Calculation Settings**.
-
-Panel E retains **Channeling Model** (Single/Double) and **Propagation Method** (Bloch-wave / FFT Multislice / Both). In Manual mode, **Multislice numerical settings** appears and is enabled only for MS or Both; expand it for **FFT grid (even)** and **Max slice step (nm)**. Automatic displays these values in Panel F's summary. BW currently has no additional BW-only numerical controls. Manual solver switching preserves stored settings; Automatic reruns its inexpensive selection policy. Invalid MS geometries still fail rather than falling back to BW.
-
-Panel F groups Manual controls into **Elastic Potential and Beam Support**, **Inelastic and Angular Sampling**, and **Computational Resources**. B and the explicit [001] systematic-row checkbox stay accessible in both modes because they affect the physical potential/basis. The row approximation remains inappropriate for [017]. Physical A/B detector positions and radius remain in **Virtual detectors**.
-
-| Actual control | Classification and effect |
-| --- | --- |
-| Channeling Model / Propagation Method | Shared model/solver selection, not sampling; Both runs the independent engines for the same selected model. |
-| Beam / MDFF basis cutoff (Å⁻¹) | Shared support: BW retained elastic basis and MS common diffraction/MDFF basis. MS propagation may retain additional FFT harmonics; projection does not renormalize away their population. |
-| Potential Fourier cutoff / Debye–Waller B (A²) | Shared projected-IAM Fourier support and damping, used by both solvers. Potential support is not the beam radius or EELS collection limit. |
-| Explicit [001] (200) systematic-row approximation | Shared physical approximation, not a BW-only numerical option. Excludes off-row basis/potential support in the supported [001] path. |
-| Depth integration nodes | Shared sampling with path-dependent use; see the depth explanation below. |
-| FFT grid (even) / Max slice step (nm) | **MS-only** propagation mesh/harmonic support and maximum split-step distance; not angular q resolution or a BW substep. |
-| Spectral coverage / Energy sampling points | Shared energy sampling. Full mode uses the stored count plus locked native features; selected-edge mode uses the two locked energies while retaining the count for later full-mode use. |
-| Angular Map Resolution / Angular / detector grid points (odd) / Map halfwidth (Å⁻¹) | Shared actual q samples/extent for angular maps and detector-EELS quadrature. Presets map to the same serialized `grid` key. |
-| Aperture boundary subpixels | Shared fractional circular-aperture boundary integration, not FFT refinement or new intensity samples. |
-| Calculate angular maps | Shared evaluation support: full q field at selected L3/L2, nonzero A/B detector-support union elsewhere; when off, detector-only at every energy. The q grid and fractional weights are unchanged. |
-| Advanced post-edge diagnostics / Enable post-edge A/B correction / Window start/end | Derived diagnostics/postprocessing: affects corrected/residual contrasts, not propagation, MDFF or original raw detector states. |
-| Estimated process memory budget | Shared execution/admission resource, **not a physical-model parameter or required allocation**; stored unchanged and checked against current available RAM. |
-| Memory estimate and solver explanation | Diagnostics-only presentation; estimates reflect the currently selected engines, basis/sampling, retained allocations and RAM. |
-
-The physical-model and angular/integration categories affect both engines; memory admission and worker scheduling are separate resources rather than scattering parameters. Only FFT mesh and maximum slice step are MS-only. New development-project defaults are **300 kV**, beam **3.2 Å⁻¹**, potential **2.5 Å⁻¹**, B = 0, 64 depth nodes, FFT 32, maximum step 2 nm, energy count 241, halfwidth 1 Å⁻¹, aperture subpixels 64, angular grid **97** and budget **2048 MiB**. New-project reference alignment follows the selected voltage; loading a saved project preserves its explicit voltage, tilt, cutoffs and sampling. Production reference settings are not substituted as ordinary defaults.
-
-### Parallel Workers and pre-Run risk
-
-Panel F's **Computational Resources** stays visible in both numerical modes.
-**Parallel Workers → Automatic (Recommended) / Manual** is independent of
-Automatic/Manual numerical settings. Manual requests are preserved, including
-when blocked; the preview distinguishes requested and effective counts for
-BW/MS/Both. Single Channeling currently uses one serial detector contraction;
-Double supports 1–4 detector workers subject to runtime/resource checks.
-
-The calculation QThread keeps Qt responsive. Its Python detector workers are
-separate from the native BLAS/LAPACK threads shown by runtime introspection.
-CPU count or an environment variable alone is not used as a BLAS-thread reading.
-An unidentified runtime is **Unknown**, not verified safe. Beam-basis cost can
-grow sharply: analytic BW Double includes N⁴ temporaries; MS estimates include
-FFT/depth/batch arrays. Peak admission also considers current RSS, active
-reservations and available RAM. Automatic may reduce detector workers to fit;
-Manual is rejected rather than silently changed. Scientific inputs are retained.
-
-Windows BW Double defaults to the bounded-tested single-detector-worker policy.
-Multiple Windows BW workers are allowed only when native BLAS is verified to
-have one thread; the GUI never mutates its process-global thread limit. Start a
-fresh source process with `OPENBLAS_NUM_THREADS=1` if you intentionally want to
-test that execution strategy. It is not assumed faster. MS retains its separate
-worker policy. Effective counts are rechecked before Run and pinned for the job.
-
-**KNOWN UNSAFE** blocks matching crash evidence. **RESOURCE REJECTED** blocks
-memory-budget/RAM violations. **UNVERIFIED COMBINATION** warns, or blocks an
-unsupported parallel strategy; acceptable memory alone is not stability proof.
-**VALIDATED POLICY** refers only to matching bounded tests, not an impossible-to-
-crash promise or physical convergence. There is no universal unsafe cutoff at
-3.0 Å⁻¹. See [worker safety and diagnostic EXE](BW_PARALLEL_WORKER_SAFETY.md).
-
-**Depth treatment:** BW evaluates elastic amplitudes analytically at the requested planes, but the GUI's Single-channeling coherence is formed by trapezoidal integration of those samples. MS Single likewise integrates sampled coherence, with propagation subdivided between planes according to the maximum slice step. BW Double uses analytic depth response for the explicit systematic row and numerical depth integration for the general path (including full [017]); the node count still supports preparation, stored amplitudes/coherence, diagnostics and memory estimates in the analytic path. MS Double samples incoming/outgoing/inelastic depth contributions and uses MS substeps. Therefore depth nodes must not be labeled universally analytic for BW or exclusively MS-specific.
-
-Values flow through unchanged `Settings` / `ForwardSettings` keys to the existing geometry/potential, propagation, coherence/MDFF contraction and saved metadata. The current-to-saved mapping and `settings_from_dict` / `config_from_dict` schemas do not change. Opening saved data does not run propagation; **Use These Settings** restores the original values and applicable-control visibility separately.
-
-## Bloch-wave, FFT Multislice and numerical settings
-
-Select **Bloch-wave**, **FFT Multislice** or **Both (BW / MS comparison)**.
-BW evolves amplitudes in a finite diffraction basis; MS alternates real-space
-potential and reciprocal-space propagation in the oriented projected IAM.
-Choose **Channeling Model → Single Channeling / Double Channeling** separately
-from the solver. Both integrate localized ionization throughout foil depth,
-retaining complex tensor interference and fractional physical apertures.
-Double also propagates the outgoing electron at E_incident minus the actual
-energy loss. Both runs independent BW/MS calculations for the selected model;
-it never substitutes Single spectra for Double. FFT supports FCC Ni [017]
-and the explicitly selected [001] (200) systematic-row approximation.
-The [001] checkbox excludes off-row support; [017] retains its full finite
-ZOLZ disk. Exact Bragg alignment does not establish physical two-beam isolation.
-
-| Control | Meaning and care |
-| --- | --- |
-| Beam / MDFF basis cutoff (Å⁻¹) | Shared retained BW and MS/MDFF basis, not a two-beam restriction. MS may propagate additional FFT harmonics. Increasing the common basis also enlarges the inelastic contraction. |
-| Potential cutoff (Å⁻¹) | Fourier harmonics of the elastic projected IAM potential. It is a separate physical/numerical convergence question. |
-| Debye–Waller B (A²) | The existing potential damping parameter; record any change. |
-| Multislice numerical settings → FFT grid (even) | Real/reciprocal sampling mesh, default 32. Must include the exact common hkl basis; even 12–128 is the supported control range. |
-| Max slice step (nm) | Maximum propagation substep, default 2 nm, editable range 0.001?10 nm in both Automatic and Manual modes; distinct from the ionization depth nodes. The actual substep can be smaller. Requests above 0.04 nm show a nonblocking accuracy advisory, not a universal convergence threshold; check smaller steps for EMCD convergence. |
-| Depth integration nodes | Ionization/coherence depth sampling, default 64. |
-| Angular Map Resolution / Angular / detector grid points (odd) / Map halfwidth | Actual reciprocal sampling and field of view: Quick Preview 33, Standard 97 (default), High 193, or odd Custom 9–193; halfwidth defaults to 1 Å⁻¹. Shared with detector-EELS quadrature. |
-| Aperture boundary subpixels | Boundary sampling for fractional circular area weights, default 64. It does not refine a spatially varying intensity field itself. |
-| Energy sampling points | Saved spectral sampling, with selected edge points additionally included; default 241 can yield 243 saved energies. |
-
-**Calculation Information** reports current/saved settings and memory estimates.
-Select a process-memory budget of **512, 1024, 2048 (default), 4096 or
-8192 MiB**. Admission includes current process RSS, concurrent allocations,
-retained arrays, 25% allocation margin and a 128 MiB reserve. It separately
-reports the dense kernel and rejects estimates above either the selected
-budget or 50% of currently available RAM. Parameters are never silently reduced.
-The estimate is conservative, not a measured peak-memory guarantee.
-The validated Ni reference profile uses beam 4.6 Å⁻¹, potential Fourier
-cutoff 6.2 Å⁻¹, FFT 48, 257 depth nodes, maximum step 0.04 nm and
-float64/complex128. These are reference settings, not mandatory GUI defaults.
-Both reciprocal cutoffs use crystallographic g=1/d, without an extra 2π.
-Good agreement of BW/MS amplitudes, coherence, elastic intensities, EELS and
-maps checks numerical propagation at matched settings. It does not establish
-physical Fourier-cutoff convergence, full DFT accuracy or absolute calibration.
-
-![Actual accepted BW/MS overview](images/gui/stage_e_bw_ms.png)
-
-Reused native Stage E capture at 150% scaling. Numerical solver discrepancy
-values always refer to original arrays, regardless of display normalization.
-
-## Read angular maps
-
-The primary **Full-field mirrored-point EMCD** display uses the complete
-calculated intensity grid, independently of A/B aperture locations or weights.
-The default **Raw (a.u.)** view shows magnetic and nonmagnetic mirrored
-point-pair differences on a common signed original-intensity scale. Select
-**EMCD Asymmetry (%)** for one total +M difference/sum map. The saved samples
-at (qx,qy) and (qx,-qy) must be valid mirrors; these are not finite-aperture
-integrated EELS percentages. Read the exact definitions above.
-The actual ZA, transmitted beam, hkl, target, Thales circle and physical A/B
-apertures retain their saved geometry in either solver/model.
-
-Choose L3/L2 and method (or BW-MS numerical difference). Expand
-**Advanced Diagnostics** for intrinsic fields and legacy paired/corrected maps;
-**All six fields** restores the legacy multi-panel view described below.
-
-| Field | Interpretation |
-| --- | --- |
-| Magnetic odd | Intrinsic I_mag(q)=[I_plus(q)−I_minus(q)]/2; signed local magnetic intensity. |
-| Nonmagnetic even | Intrinsic I_nonmag(q)=[I_plus(q)+I_minus(q)]/2; not itself detector imbalance. |
-| Total +M | I_plus=I_nonmag+I_mag. |
-| Magnetic / Nonmagnetic paired | D_mag or D_nonmag comparing q with reflect_y(q), only on original A support. |
-| Raw paired A−B | Single-state paired difference, containing magnetic and even terms. |
-| Corrected paired A−B | A−alpha B after the separately chosen post-edge scaling. |
-| Residual even | Even contribution remaining after that same alpha; not intrinsic magnetic intensity. |
-
-![Actual L3 maps](images/gui/stage_e_l3_maps.png)
-
-Actual exported L3 intensity maps at 831.271 eV. The physical A/B circles,
-indexed hkl, transmitted (000), projected ZA and Thales circle refer to saved
-geometry. L2 is selected at 848.698 eV for this native example. Maps are
-reciprocal intensity densities; detector spectra are area-weighted integrals.
-
-The Thales circle has the diameter (000)–target. Its symmetric off-row A/B
-positions sample opposite magnetic handedness in the intended geometry;
-the circle alone does not guarantee a pure magnetic signal. Mistilt can
-produce reversal-even A/B imbalance. **Move detector A/B** click modes or
-the numeric aperture centers change the physical integration. If they cease
-to be validated nonoverlapping y mirrors, paired angular subtraction and
-paired percentages are unavailable with an explanation. Physical integrated
-A/B EELS can still be meaningful. Use **Restore Thales A/B** to restore the
-standard pair, not an artificial reflected signal outside the actual support.
-
-![0.6.0 raw detector spectra and signed components](images/gui/v060/eels_raw.png)
-
-![0.6.0 total EMCD Asymmetry spectrum](images/gui/v060/eels_asymmetry.png)
-
-Actual source-GUI figures from the same saved 2 nm Double BW [017] dispatch
-reference. All native saved samples and intensity scales are retained. This
-small numerical profile illustrates controls, not production convergence.
-
-![0.6.0 raw paired angular differences](images/gui/v060/angular_raw.png)
-
-![0.6.0 total paired angular Asymmetry](images/gui/v060/angular_asymmetry.png)
-
-Actual saved 9x9-grid L3 point-pair maps; block structure reflects the original
-grid, without interpolation. Magnetic and nonmagnetic raw panels share a scale.
-The total percentage panel is a different observable. Physical target (200)
-lies at the edge of this saved field of view; it is not relocated.
-
-## Read virtual-detector EELS and post-edge correction
-
-**Virtual Detector EELS** offers Full spectrum, L3 zoom, L2 zoom and
-BW/MS/overlay choices. The primary Raw / EMCD Asymmetry presentation follows
-[the definitions above](#signal-definitions-in-060). Saved two-energy results
-remain points; partial native coverage is labelled a subset. No continuous
-spectrum is invented from selected-energy results.
-
-For detector J=A or B:
-
-```text
-N_J = (I_J_plus + I_J_minus)/2
-M_J = (I_J_plus − I_J_minus)/2
-D_mag = M_A − M_B
-D_nonmag = N_A − N_B
-D_raw = I_A_plus − I_B_plus = D_mag + D_nonmag
-Sigma_ref = N_A + N_B
-```
-
-Raw contrast can therefore be dominated by diffraction-induced even
-imbalance. In **F. Calculation Settings**, **Enable post-edge A/B correction**
-and its **Window start/end (eV)** define a separate observable:
-
-```text
-alpha = integral_window I_A_plus(E)dE / integral_window I_B_plus(E)dE
-D_corrected = I_A_plus − alpha I_B_plus
-            = (M_A − alpha M_B) + (N_A − alpha N_B)
-              processed magnetic      residual even
-```
-
-The fit uses observed +M A/B spectra, not an oracle magnetic subtraction.
-Nonzero magnetic post-edge tails can bias alpha. Correction may reduce an
-even imbalance and still distort the magnetic term or leave a residual.
-The reference window, alpha and disabled/undefined reasons are recorded;
-changing this window requires an explicit new calculation of the observable,
-whereas changing a **display peak window** only reprocesses saved arrays.
-
-![Actual full virtual-detector spectra](images/gui/beta_rc/full_double_spectrum_150pct.png)
-
-Actual accepted GUI capture of a genuine saved full-energy Double BW result.
-It preserves native energies and the raw detector intensity scale.
-
-![Historical 0.4.5 raw magnetic and nonmagnetic components](images/gui/beta_rc/double_both_raw.png)
-
-![Historical 0.4.5 relative magnetic and nonmagnetic components](images/gui/beta_rc/double_both_relative.png)
-
-These historical 0.4.5 Beta BW/MS Double captures use the same small dispatch-test
-profile in Raw and Relative modes. They illustrate signed component definitions,
-not production BW/MS convergence. The shared raw EELS scale above is unchanged;
-the separate PRB readout is not the lower-panel component normalization.
-
-![Historical 0.4.5 Results Browser after cancellation and restart](images/gui/beta_rc/cancellation_restart.png)
-
-Actual cancellation-fixed frozen GUI after successful restart. Cancelled work
-did not add incomplete browser entries; only completed results are registered.
-
-## Interpret percentages
-
-The primary spectral selector offers Raw and total EMCD Asymmetry with the
-definitions above; the scalar group uses that same total definition. The following **Intensity
-Display** modes remain available in **Advanced Diagnostics** and saved-run
-comparisons. They are optional legacy displays, not additional primary modes:
-
-| Mode | Denominator for a signed difference D |
-| --- | --- |
-| Raw (a.u.) | None; original relative calculated units. |
-| Asymmetry (%) | 100 D(E)/(N_A(E)+N_B(E)); energy-dependent. |
-| EELS Peak (%) | 100 D(E)/P_edge; one fixed positive P_edge=max_window(N_A+N_B). |
-
-Every selected magnetic, even, raw, corrected, processed and bias curve uses
-the same chosen reference. A/B spectra also use that sum reference, not
-independent detector maxima. **Auto: Full/L3 -> L3; L2 -> L2** keeps one L3
-denominator over the entire full spectrum; a L2-zoom default uses P_L2.
-Explicit **Peak reference: L3/L2** overrides it. The L2 feature in a full
-L3-referenced spectrum is not divided by P_L2 partway through the line.
-
-Expand **Peak windows (native eV)** to edit L3/L2 bounds, **Auto-detect peaks
-in windows** or **Reset source/model defaults**. Bounds must lie in the saved
-range, stay in the appropriate side of the L3/L2 midpoint, contain at least
-two finite samples and have a positive finite maximum. Peak extraction uses
-saved samples, not shifted/interpolated source peaks. Post-edge alpha windows
-and EELS reference-peak windows serve different purposes.
-
-Shared BW P_edge is the default for direct BW/MS comparison, even when MS
-alone is visible. Independent method peaks are labeled presentation-only
-because they can hide amplitude changes. Saved-run comparisons default to a
-selected shared run peak; **Per-run peak reference** is explicit. Incompatible
-models/source normalizations/units cannot share a quantitative peak. Qualitative
-independent overlays retain warnings and do not bypass map-difference gates.
-
-In the historical Stage F saved profile, the BW magnetic peak contrasts
-are **−0.37556% (L3, P_L3=0.2508784247)** and **+0.61516% (L2,
-P_L2=0.1662582163)**. They are simulated relative contrasts, not measured Ni
-EMCD. The L3 energy-dependent asymmetry is instead about **−0.37966%**.
-**Magnetic / Nonmagnetic** lists signed scalar metrics, peak windows and the
-separate historical raw-plus denominator I_A_plus+I_B_plus. Relative detectability
-|D_mag|/sqrt(Sigma_ref) remains a distinct proxy, not calibrated experimental SNR.
-
-Angular display modes mean different quantities:
-
-- **Local magnetic fraction (%)** = 100 I_mag(q)/I_nonmag(q), intrinsic local
-  fraction, not paired-detector EMCD asymmetry.
-- **Paired angular asymmetry (%)** = 100 D(q)/[N(q)+N(reflect_y(q))], retaining
-  only original A support and validated mirrored apertures.
-- Integrated EELS P_edge is not divided directly into an angular density;
-  those units differ, so that peak-percent map is intentionally unsupported.
-
-Denominators must be positive and finite, greater than 1e-8 (spectra) or 1e-6
-(maps) times their positive finite 95th percentile. Undefined pixels remain
-NaN and appear grey; they are not true zero. Signed maps use zero-centered
-diverging colors and default shared BW/MS scales. **Independent color scales**
-are available but must be stated when comparing magnitudes.
-
-![Actual native percentage display](images/gui/stage_f_emcd_percentage.png)
-
-Actual Stage F acceptance tab combines saved paired magnetic/even maps and
-BW/MS EELS with a fixed BW L3 reference. It is a verification layout; normal
-map/EELS tabs provide the selectors described above. The reference even map
-is numerical zero, not evidence that all mistilts have zero even imbalance.
-
-Percentage normalization changes only the displayed derived quantities. It does not modify the simulated cross section, MDFF, dynamical scattering or underlying numerical data.
-
-## Save, reopen and reconnect inputs
-
-**File → Save Project As...** chooses a parent and a new project folder name.
-**Save Project** updates a selected existing project; a new condition should
-normally have a new name. Replacing an existing project through Save As asks
-for explicit confirmation. Spectral Raw/Relative mode, view/method selection,
-selected PRB energy and its lock are saved in an optional checksummed
-`display_state.json`. Legacy projects without it still load. These are
-presentation settings and never rescale saved scientific arrays.
-Keep each project folder complete:
-
-```text
-Ni017_reference/
-    project.json
-    structure.cif
-    structure.json
-    input_parameters.json
-    metadata.json
-    comparison_metadata.json
-    validity.json
-    angular_maps.npz
-    virtual_detector_eels.npz
-    diffraction_pattern.npz
-```
-
-`project.json` records schema, completeness, provenance and file checksums;
-do not edit it to bypass a failed load. **Open Project** selects this folder,
-not an NPZ. Reopening reads saved numeric data and does not propagate or
-recompute tensors. **Results → Import Existing Result** accepts older Stage
-B/C exports read-only; missing legacy structure metadata can limit restoration.
-
-**Results Browser → View Selected** displays a selected completed run.
-**Use These Settings** restores its inputs separately and never starts a run.
-Changing inputs leaves old results visible with **STALE RESULT**; plots
-continue to use the completed geometry and spectra. **File → New** clears the
-current completed selection and resets inputs; it does not delete browser
-entries or files. **Remove from Browser** removes its index entry, not the
-scientific project folder.
-
-Original external XMCD/CIF files need not be available for viewing or export.
-Rerunning requires the original SHA256-matching source. Use **Results → Locate
-Original Source...**, reconnect the matching file, and **Use These Settings**.
-Do not substitute a same-named but different spectrum. Copying projects to a
-colleague transfers saved results, not automatically every external input.
-
-## Compare two conditions
-
-Use the existing exact-Bragg and +1 mrad X projects if provided. Full numerical
-Stage D/E project folders are local validation artifacts, **not bundled in the
-portable ZIP or downloadable from the screenshot gallery**. Alternatively:
-
-1. Save the tutorial reference separately.
-2. Set X to `−6.11672544` mrad, Y=0, keep the same model/source, detector,
-   numerical and potential settings, then explicitly run and **Save Project
-   As...** under a second name. This is one mistilt, not a parameter sweep.
-3. Ctrl-select the two completed rows in **Results Browser**, click **Compare
-   Selected** or the toolbar **Compare Results**. Select the method for each run.
-4. Choose L3/L2, **Magnetic odd**, **Nonmagnetic even**, or a paired field.
-   The spectrum selector offers **D_mag**, **A/B +M**, **D_nonmag**, **D_raw**,
-   **D_corrected**; select zoom and normalization independently.
-5. For quantitative within-model changes retain **Shared reference peak**
-   and choose the reference run. Inspect **Signed scalar metrics** and the
-   map difference only when the compatibility note permits it.
-
-![Actual saved-run comparison and browser](images/gui/stage_e_results_browser.png)
-
-Reused native comparison of saved reference and mistilt. Stage F adds the
-percentage controls to this same comparison workflow. First two selected
-results supply maps; spectra/metrics include all selections.
-
-Direct map differences require compatible reciprocal grids, local frames,
-selected native energies, models/source hashes, intensity units and magnetic
-sign conventions. Paired fields also require matching supports/integration;
-correction windows matter for corrected fields. No interpolation, energy
-alignment or sign fitting is silently applied. Incompatible runs can remain
-side-by-side/qualitative; a percent label does not make their scales equivalent.
-Use **Both** within a run for BW/MS numerical solver comparison; comparing
-different mistilts is a physical-condition comparison, not a solver error.
-
-## Export figures and data
-
-- **Export Figure** / **Results → Export Current Figure** saves the active
-  result plot as PNG or SVG. The center plot also has **Export current plot
-  PNG / SVG…** under Output Settings. Select the intended tab first.
-- **Export derived NPZ/CSV + metadata** in the result views, or **Export
-  NPZ/CSV** in a saved comparison, writes a **new** export folder. It includes
-  derived spectra, scalar percentages, original raw spectra/maps/coordinates/
-  weights, and normalization metadata JSON. Undefined values remain NaN.
-- **Export completed EMCD / EELS...** writes one checksummed project bundle,
-  per-method CSV and PNG/SVG spectral/map figures. CSV/NPZ retain all four
-  reversal spectra, raw differences, common denominators, magnetic/nonmagnetic
-  percentages and PRB values in either primary display mode (legacy component fields retain their definitions).
-  No independent detector peak normalization or redundant default difference
-  figure is added. Advanced derived exports retain their explicit definitions.
-
-PNG is convenient for previews; SVG preserves vector lines/text for editing
-and publication preparation. Always verify font sizes and complete axes.
-NPZ preserves typed numerical arrays; CSV is convenient for tabular plotting.
-JSON/figure sidecars identify denominator, reference run/method, native window,
-mask policy and provenance. Keep them with the figure/data. Derived percentages
-do not overwrite original physical arrays. Record geometry, energy/model,
-units, sign conventions, aperture integration and shared/independent color
-scales in a scientific caption; reciprocal indices alone are insufficient.
-
-## Scientific limitations and responsible interpretation
-
-The elastic field uses a **projected independent-atom potential**. Single is
-entrance-only; Double includes incoming, depth-distributed ionization and
-reduced-energy outgoing channeling. The GUI has **no atomic-3D electrostatic
-multislice**. Longitudinal transfer varies with loss energy but remains frozen
-across branches; no new branch/angular correction is included.
-The XMCD-effective tensor is not a complete complex DFT-derived
-MDFF; the atomic-ionization model is non-DFT. Absolute experimental cross
-sections/dose are uncalibrated, and native WIEN2k energies are not absolute
-experimental calibration. Current GUI FFT support covers FCC Ni [017] and
-the explicit [001] row model. Representative numerical controls do not
-establish convergence at every thickness, geometry or energy. Full-[001]
-elastic off-row scattering is substantial in the tested geometry; its saved
-row-restricted EMCD is not a full-ZOLZ [001] prediction. See the
-[full-spectrum](DOUBLE_CHANNELING_FULL_SPECTRA.md) and
-[geometry](NI_TWO_BEAM_GEOMETRY_COMPARISON.md) reports for the numerical scope.
-Neither arbitrary CIF import nor good BW/MS agreement establishes quantitative
-experimental EMCD. Keep raw, intrinsic magnetic, even imbalance, corrected,
-asymmetry and peak-normalized signals distinct.
-
-See [physics](PHYSICS.md), [GUI technical reference](EMCD_GUI.md),
-[installation troubleshooting](INSTALL_WINDOWS.md#troubleshooting) and
-[Beta acceptance status](WINDOWS_BETA_RELEASE_ACCEPTANCE.md) for further detail.
-
-## Complete 200 kV thickness workflow
-
-The completed [full-field/thickness study](FULL_FIELD_EMCD_THICKNESS_200KV.md)
-is a preserved scientific record, not a current source CLI. Its standalone
-scan/resume driver has been retired. All 204 production checkpoints remain
-unchanged; saved projects remain viewable without recalculation. Reproduction
-of the historical workflow requires its original recorded Git revision. The
-current GUI still supports Single/Double BW/MS at explicitly selected thickness,
-full EELS, angular maps and export; this cleanup adds no GUI scan framework.
-
-### v0.6.1-beta.1 acceptance
-
-Full-field angular maps use physical qy-reflected point pairs independently of detector overlays. Total asymmetry can contain reversal-even diffraction. Detector-integrated EELS remains a separate observable. See [200 kV scientific audit](NI_EMCD_THICKNESS_SCIENTIFIC_ANALYSIS.md) for raw magnetic intensity, contamination, explicit denominator definitions and the full saved thickness study. Original checkpoints are not bundled.
-# Angular-map resolution update
-
-New calculations default to **Standard 97 x 97** and **2048 MiB**. Quick Preview
-33 x 33, High 193 x 193 and odd Custom sizes remain available. The angular grid
-currently shares detector-EELS quadrature; it is separate from the multislice
-FFT grid and circular-aperture boundary subpixels. Saved maps show their actual
-dimensions and spacing; larger PNG/SVG exports do not add calculated samples.
-Saved explicit memory budgets are preserved; New Project resets the budget.
-See [sampling and memory guidance](ANGULAR_MAP_RESOLUTION.md), including runtime
-limits and why High can be rejected under 2048 MiB. These controls are included
-in the fresh local candidate described in [release acceptance](V061_BETA_ACCEPTANCE.md).
-
-
-## Generalized Projected ZOLZ development branch
-
-The shared geometry engine derives local axes and the complete reciprocal plane
-from the structure, zone and signed target. A target defines positive local x;
-changing it can rotate screen coordinates. Tilt and detector coordinates are
-local to that frame. Magnetization remains specified in crystal Cartesian axes.
-New FFT results record their actual reciprocal generators. Older saved frames
-and FFT tables remain viewable; incompatible or ambiguous input recipes require
-explicit re-entry before rerunning.
-
-See [Milestone A validation](GENERAL_ZOLZ_MULTISLICE_VALIDATION.md) for the five
-representative orientations, accepted BW/MS comparisons and retained numerical
-failures. New zone support does not imply converged numerical defaults or a
-validated arbitrary-material MDFF. This development is not in the existing
-Windows packages; Atomic 3D remains a separately gated implementation plan.
-
-
-### Generalized EMCD GUI workflow and numerical scope
-
-In Manual mode, enter a valid zone and signed ZOLZ target, apply orientation,
-set the fixed tilt component, and align Bragg with the appropriate lock.
-Restore Thales detectors, then select Single/Double and BW/MS/Both. The same
-coherent MDFF and detector pipeline serves every supported orientation; source
-magnetization remains declared in crystal Cartesian coordinates.
-
-[End-to-end GUI validation](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md#normal-gui-acceptance-and-usage)
-covers [001]/[017]/[117]/[111]/[710], raw/relative displays, exports and project
-roundtrips. A full-spectrum post-edge window needs at least three sampled energy
-points; Selected L3/L2 samples cannot provide post-edge correction. Relative
-magnetic and nonmagnetic components share N_A+N_B; corrected contrast is not
-intrinsically magnetic. Scientific support is resource-bounded and remains Ni
-MDFF-specific. [111] joint/support convergence is still conditional, despite
-passing BW/MS and refined quadrature comparisons. Existing Windows packages
-have not been rebuilt with these development changes.
-
-
-### Final generalized-Multislice review warnings
-
-The GUI now explicitly labels [111] quantitative convergence as unestablished,
-including equivalent [222] input, for BW, MS and Both. The measured lower-profile
-joint raw change was 0.1094%, beyond the unchanged 0.1% limit. Subsequent larger
-MS support/cutoff increments pass at one 200 kV/2 nm detector configuration;
-that is not enlarged-BW, full-spectrum or thickness-curve certification. See
-[merge readiness](GENERALIZED_MULTISLICE_MERGE_READINESS.md) for the exact settings.
-[117] off-row-cutoff and coarse-grid warnings remain in effect.
-
-An ideal two-beam live diffraction preview now identifies its truncation
-explicitly. Cached low-level MS fields must match microscope, frame, reciprocal
-support and physical depth quadrature; mismatches fail instead of silently
-mixing contexts. Very large cells are rejected before overflowing a search-size
-calculation. These checks do not change solver physics, defaults or saved arrays.
-
-Max Slice Step remains visible and independently editable when FFT Multislice or Both is selected, including Automatic numerical mode. Explicit edits survive refreshes, mode changes and BW/MS switching. Other numerical controls retain their Automatic/Manual rules. New projects start at 2 nm; saved projects and frozen reference profiles preserve their explicit steps. Coarse settings require convergence checks against smaller steps; elastic-intensity accuracy alone does not certify EMCD accuracy.
-
-
-## Forward-Born convention correction and historical results
-
-The corrected source uses d=<i|r|f>, Q=k_out-k_in and
-T_ab=sum_n w_n d_na conj(d_nb). With R_ab=v_a conj(v_b), forward intensity
-is I = Re sum_ab R_ab T_ba = Re Tr(RT). For one transition, T=d d^dagger. The factorization remains T=L L^dagger; forward transition
-amplitudes use L*. Double Channeling uses the localized site phase
-exp(+2*pi*i*(g-h).u), consistent with the Single Channeling convention.
-See [physics correction acceptance](PHYSICS_CORRECTION_FINAL_INTEGRATION.md)
-for independent controls, sign changes and numerical limitations. Historical
-scientific outputs and previously built Windows executables were not regenerated
-by this source correction; do not relabel their raw spectra or signed figures
-as corrected calculations. Corrected contrast remains distinct from intrinsic
-magnetic intensity.
-
-The editable maximum split-step range is 0.001 to 10 nm, with a 2 nm
-new-project default. This default is not a convergence certification. Explicit
-fine-step settings in saved/reference projects remain unchanged; verify EMCD
-convergence against smaller steps independently of elastic-intensity accuracy.
+|Observable|Definition and actual scope|
+|---|---|
+|GUI Raw components|Signed `D_mag`, `D_nonmag` in original a.u.; not separately peak-normalized|
+|Conventional / PRB-compatible asymmetry|`100*(ap−bp)/(ap+bp)`; default **EMCD Asymmetry (%)**; may include nonmagnetic imbalance|
+|GUI advanced magnetic/nonmagnetic diagnostics|`100*D_mag/(N_A+N_B)` and `100*D_nonmag/(N_A+N_B)`; common even denominator, **not** the conventional denominator|
+|Conventional percentage contributions, tutorial case|`100*D_mag/(ap+bp)` and `100*D_nonmag/(ap+bp)`; these sum to the conventional percentage|
+|Fixed-detector Flip-M A, derived from exports|`100*(ap−am)/(ap+am)`; own denominator; raw signal is full `2*M_A`|
+|Mean-normalized contrast|Replacing a sum denominator with half that sum doubles the percentage; label as a different convention|
+
+The main **Signal Display** offers **Raw (a.u.)** and **EMCD Asymmetry (%)**. Extra legacy/relative views are under **Advanced Diagnostics**; there is no default four-curve common-denominator/Flip-M panel. The [tutorial](TUTORIAL.md#part-vi-conventional-emcd-versus-flip-m) shows how to derive the requested measurement quantities from raw data without changing physics.
+
+The PRB scalar benchmark is a separately labeled raw +M A/B readout with selected-energy/edge controls. It does not establish quantitative reproduction of a literature figure; geometry, source, energy/collection settings and approximations must match independently.
+
+Legacy advanced **EELS Peak (%)** is another presentation normalization: a fixed `max_E in edge window [N_A+N_B]` reference, not an energy-by-energy difference/sum asymmetry. Its shared versus independent reference choices and **Peak windows (native eV)** must be recorded; independent peaks can conceal real amplitude differences. These controls do not alter raw arrays or solver-comparison metrics and are not used in the tutorial's four-curve case-study figures.
+
+The released EELS percentage helper masks nonpositive/nonfinite denominators and those below `1e−8 × positive-finite P95(denominator)`; maps use `1e−6`. Invalid support remains NaN/gray. Record actual export metadata. The advanced 9/30 nm study used a separately documented maximum-based `1e−12` mask; do not imply that criterion is a new GUI default. Percentages alone are not detectability or shot-noise SNR.
+
+<a id="read-virtual-detector-eels-and-post-edge-correction"></a>
+## 17. Magnetization reversal and decomposition
+
+Reversal-even and reversal-odd are defined by the four raw spectra; preserve the identity `D_conv=D_mag+D_nonmag`. Fixed-detector Flip-M A cancels even contributions only under unchanged geometry/intensity scale within the model. It is a different measurement from magnetic A/B; its magnitude can be larger or smaller. Real drift/background/counting variance requires separate experimental modeling.
+
+**Advanced post-edge diagnostics → Enable post-edge A/B correction** derives a +M A/B scaling from **Window start/end (eV)**. It does not change the MDFF, propagation or raw spectra. Its corrected contrast is **not intrinsically magnetic**; processed magnetic bias and residual even terms must be inspected separately. A selected-energy run may not contain the post-edge window and can report correction unavailable. Record the window, scale factors and definitions instead of calling every corrected signal magnetic.
+
+<a id="project-management"></a>
+## 18. Project management
+
+**File → New** clears the selected result and restores released starting controls; explicitly review physical/MDFF values for the next job. **Save Project / Save Project As...** acts on a **completed selected result**, not arbitrary uncalculated Current Inputs. Choose a parent directory and new folder name. Replacing an existing project requires explicit confirmation and verified save logic; make independent backups.
+
+A project contains `project.json`, `input_parameters.json`, `metadata.json`, `structure.json`, `comparison_metadata.json`, `validity.json`, the three NPZ bundles and optional structure/display files. Keep the complete folder. Source paths/checksums, configuration, coordinate frame, original arrays and method labels are preserved. Save/view does not silently regenerate science.
+
+**Open Project...** loads saved plotting context without the original source or a new solver run. Missing/changed external sources can disable **rerunning** while saved arrays remain viewable. **Results → Locate Original Source...** requires the recorded SHA256. **Import Existing Result** handles supported legacy exports read-only. Unsupported/corrupt/checksum-mismatched data produce errors rather than trusting arrays as a current calculation.
+
+<a id="save-reopen-and-reconnect-inputs"></a>
+Current Inputs and saved results are separate. **Use These Settings** explicitly restores configuration; viewing alone does not replace controls. Editing Current Inputs makes previews/results stale relative to those inputs, but does not modify a completed result's original settings or arrays. Save that result under its actual provenance, then run a new case if new inputs are intended.
+
+## 19. Results Browser and comparisons
+
+The bottom **Project Results / Results Browser** can filter and select runs. **View Selected** or double-click displays saved data. **Use These Settings** restores controls; **Compare Selected** / **Compare Selected Results** compares compatible saved contexts without rerunning. The compact layout moves secondary commands into **More actions**.
+
+**Import Result**, **Open Folder**, **Details**, **Rename**, **Locate Project** and **Remove From Browser** manage references/display identity. Removing a browser entry does not delete its scientific folder. The index stores paths to saved runs, not an independent backup; unsaved in-memory results should be saved before exit.
+
+<a id="compare-two-conditions"></a>
+Use separate project names for thickness/tilt/model changes. Review recorded differences, denominators and shared-scale options before comparing. There is no released one-click general thickness/mistilt sweep or automatic convergence campaign. Source-only research drivers and their checkpoints are not GUI controls.
+
+<a id="export-figures-and-data"></a>
+## 20. Export formats
+
+|Action|What is written|
+|---|---|
+|Export current plot PNG / SVG…|The current live diffraction figure, including visible overlays|
+|Results → Export Current Figure / Export Figure|Displayed result figure; supported result exports include display metadata/JSON sidecars|
+|Save elastic preview…|A new subfolder containing the last completed elastic preview, not EELS|
+|Export completed EMCD / EELS...|A new complete project/numerical/figure bundle with raw/percentage spectra retained|
+|Export derived NPZ/CSV + metadata|Derived result views together with preserved raw arrays, definitions, masks and provenance|
+
+Current project arrays are:
+
+- `virtual_detector_eels.npz`: method-prefixed spectra, for example `bloch__energy_ev`, `bloch__I_A_plus`, `bloch__I_A_minus`, `bloch__I_B_plus`, `bloch__I_B_minus`.
+- `angular_maps.npz`: q grids, fractional weights, calculated edge fields and coherence with method/edge prefixes.
+- `diffraction_pattern.npz`: retained hkl/frame, excitation errors, ZA coordinates, depths and amplitudes, with applicable FFT data.
+
+Ordinary completed-result exports additionally include `<method>_spectra.csv`, `<method>_signal_display.csv`, `signal_display.npz`, `figure_display.json`, EELS figures and calculated L3/L2 figures. Method IDs include `bloch` and `fft-multislice`. The raw four spectra, raw differences and percentage definitions survive display switching. Derived-export bundles use their own explicit `run0__raw__...` / derived prefixes and metadata; inspect keys rather than assuming formats are interchangeable.
+
+Conventional aliases such as `prb_relative_dichroism_percent` / `emcd_asymmetry_percent` use the raw +M sum. `magnetic_only_percent` / even-imbalance diagnostics use `N_A+N_B`. Use the tutorial's separately defined common-S_AB contributions when exact reconstruction of conventional percentages is needed. Do not rename a denominator or infer it solely from “%”.
+
+PNG/SVG files are visualizations, not full scientific backups. Preserve CSV/NPZ, source hashes and configuration. Exporting a figure does not change underlying arrays, solver settings or saved research results. No automatic experimental electron-count conversion is performed.
+
+## 21. Troubleshooting
+
+|Message/symptom|Interpretation and next step|
+|---|---|
+|Run disabled / source changed|Read source validation/declaration and rerun requirements; restore the checksum-matching source or configure a new verified source explicitly.|
+|Unsupported material/geometry|CIF inspection does not supply a Ni MDFF for arbitrary structures. Check zone/target selection and supported model bounds.|
+|FFT mesh does not contain common hkl / support error|The mesh/bandwidth is inconsistent. Review explicit FFT and potential/basis settings; no [001] or row fallback is applied.|
+|No off-row potential harmonics|The chosen potential cutoff omits those couplings; merely displaying off-row basis positions does not add them.|
+|Coarse sampling / [111] warning|Configuration-specific numerical uncertainty remains. Refine independently and preserve failed checks.|
+|Coarse maximum slice step warning|Advisory split-step accuracy risk, not a forced clamp or proof of failure; inspect actual step and test smaller values.|
+|Memory admission rejected / unsafe workers|Budget/available RAM or execution policy prevents admission. Do not silently alter physical settings to call the same case successful.|
+|Stale preview / gray geometry|Inputs changed; request a new **Preview diffraction**. The last table/result is not automatically current.|
+|Angular maps unavailable|Maps were not computed or mirror support is invalid; genuine full-field calculation is required.|
+|Legacy convention warning|Preserve old arrays; opening is not sign/convention revalidation.|
+
+For startup/security/log paths, use [installation troubleshooting](INSTALL_WINDOWS.md#i-troubleshooting). Runtime logs default to `%LOCALAPPDATA%\EMCD-Sim\logs`. Include version, source/convention, requested/effective settings and the exact error when reporting a problem.
+
+<a id="scientific-limitations-and-responsible-interpretation"></a>
+## 22. Scientific limitations and convergence
+
+The implemented model uses projected real IAM, finite ZOLZ support, localized single inelastic events and the documented energy-dependent but branch-frozen longitudinal transfer approximation. It is not a genuine atomic-3D potential, full HOLZ, comprehensive TDS/absorption, physical CBED/convergent-probe scan, complete DFT MDFF, domain/equilibrium-magnetization or calibrated detector/noise model.
+
+Check actual structure, frame, signed hkl, magnetization and detector geometry first. Then separate beam-basis, potential-cutoff, FFT, depth/step, angular/aperture and energy-sampling sensitivity. BW/MS agreement tests matched approximations, not every independent convergence direction. Existing [111] lower-profile and historical detector-grid failures remain explicit; no threshold is relaxed by this documentation. A successful run is not a claim of quantitative Ni EMCD at untested conditions.
+
+Keep raw reversal-even/odd fields separate from paired maps and normalization. Exact target Bragg is not physical beam isolation; a Thales circle does not enforce uniform signal or raw magnetic antisymmetry. Native energies, absolute handedness and arbitrary intensities require independent experimental calibration. Mean- and sum-normalized percentages differ by a factor two. Experimental SNR requires a count/dose/efficiency/background/noise model and correct variance propagation for the measurement estimator.
+
+Independent clean-machine Windows installation remains untested. Linux CI has unresolved hash/line-ending and interpreter-shutdown issues; macOS is not certified by this release. These do not erase the bounded passed native Windows acceptance.
+
+<a id="what-the-application-calculates"></a>
+<a id="forward-born-convention-correction-and-historical-results"></a>
+## 23. Version compatibility and provenance
+
+Current convention is **forward_born_dagger_g_minus_h_v1**, with `Re Tr(RT)`, conjugated forward transition modes and corrected Double site phase. Earlier same-index signed results cannot automatically be combined with it. Some intermediate corrected source commits still had old version labels, so exact commit/convention metadata takes precedence. Keep unknown metadata unknown; never relabel old arrays as corrected.
+
+|Identity|Current public Windows package|
+|---|---|
+|Display / Python / Windows numeric version|v0.7.0-beta.1 / 0.7.0b1 / 0.7.0.1|
+|Release tag target|481fed14b78f5439bb417bdc53d38d845a6b2592|
+|Binary source|97b2220e5329dad6f98eedec61f58a6cf07d9da8|
+|Validated Actions run|41516996056|
+|Portable ZIP SHA256|8d157d8b62fb6570d201360cdae85f44aa4cea2c1478f1949eb4336a135e17bc|
+|Physics/numerical source versus later main docs|No production-source difference at the documentation-review baseline 08d04fc3|
+
+Five native orientations, eight exact scientific comparisons, eighteen worker/cancellation scenarios and native overlay/export tests passed within their recorded profiles. These are bounded, partly overlapping inventories, not universal certification. See [public release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1) and [original acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md). Historical acceptance/release notes retain their milestone-specific “not published” statements; the public release entry is authoritative for current publication state.
+
+<a id="validated-ni-017-8-nm-double-example"></a>
+<a id="complete-200-kv-thickness-workflow"></a>
+### Historical study walkthroughs
+
+The earlier 8 nm, 200 kV walkthrough remains in the [pre-overhaul manual at its immutable source revision](https://github.com/dingpengem/EMCD-Sim/blob/08d04fc35fca2071cc7e73af0aaa1de45e49a3f4/docs/USER_GUIDE.md#validated-ni-017-8-nm-double-example). It is not the small current Quick Start. The completed 200 kV thickness and corrected 300 kV studies are separate datasets; neither is recalculated or relabeled here. The [new tutorial case study](TUTORIAL.md#part-vii-practical-ni-017-case-study) reuses verified existing 9/30 nm spectra with explicitly different percentage definitions.
+
+Historical development, validation reports and older galleries remain linked in the [Documentation Index](INDEX.md). Planned/experimental features must not be treated as available merely because a source or architecture document exists.

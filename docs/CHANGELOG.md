@@ -1,3 +1,12 @@
+# Changelog
+
+## 2026-11-03: user documentation for the public Windows Research Beta
+
+- Reorganized README, installation, small Quick Start and User Manual; added a complete scientific tutorial and documentation index for public v0.7.0-beta.1.
+- Verified released controls/source, live Laue/Thales behavior, energy sampling, fixed-detector reversal, raw differences and distinct percentage denominators against implementation and existing data.
+- Reused actual native EXE captures and completed 9/30 nm Ni spectra with compact preview/source hashes. No new simulations, binary build, physics/default/GUI changes, version, tag or release.
+- Publication and compatibility status are in the [public release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1), [current guides](INDEX.md) and [documentation review](DOCUMENTATION_REVIEW_0_7_0_BETA_1.md). Historical entries below retain their original milestone statements.
+
 # v0.7.0-beta.1 - physics-corrected local Windows candidate
 
 > **Critical scientific compatibility notice:** legacy Windows packages before
