@@ -12,6 +12,8 @@ EMCD-Sim combines dynamical electron diffraction, approximate core-loss scatteri
 
 This is **beta research software**, not a generally converged or experimentally calibrated EMCD predictor. The Windows package passed native automated acceptance; independent installation on a separate clean PC or VM has **not been tested**.
 
+Source development on the Iteration C feature branch adds [declared generalized atomic ionization](docs/GENERALIZED_ATOMIC_IONIZATION.md): an approximate research model with exact historical Ni regression and synthetic non-Ni demonstrations. It is not included in the released Windows package and does not establish quantitative Fe EMCD.
+
 ## Features
 
 |Area|Implemented in the released Windows application|

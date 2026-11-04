@@ -86,6 +86,17 @@ class ImportedMDFF:
             if not np.allclose(v,even.tensor_angstrom2_per_ev,rtol=1e-10,atol=1e-12*max(float(abs(v).max()),1e-300)):
                 raise ValueError('Explicit magnetic states do not share the declared nonmagnetic tensor')
         else:raise ValueError('Only nonmagnetic and uniform_fm states supported; AFM/ferrimagnetic/SDW unsupported')
+        # Atomic declarations are a reserved, complete schema. In particular,
+        # stripping only the model tag must not turn generated data into an
+        # unchecked ordinary import while retaining atomic provenance claims.
+        atomic_fields={key for key in d if key.startswith('atomic_')}
+        required_atomic={'atomic_model','atomic_parameters','atomic_parameter_document',
+            'atomic_parameter_source_utf8','atomic_parameter_sha256','atomic_parameter_path'}
+        if atomic_fields and atomic_fields!=required_atomic:
+            raise ValueError('Incomplete or unsupported atomic model provenance')
+        if atomic_fields:
+            from .atomic_ionization import validate_embedded_atomic
+            validate_embedded_atomic(d,plus,minus)
         return cls(e,plus,minus,even,d,digest,str(p.resolve()))
 
     def tensors(self,energy,crystal_to_microscope,magnetization):
@@ -106,4 +117,7 @@ class ImportedMDFF:
         return result
 
     def provenance(self):
-        return dict(path=self.path,sha256=self.sha256,energy_bounds_ev=self.energy_ev[[0,-1]].tolist(),**{k:self.metadata[k] for k in ('element','edge','selected_ev','units','normalization','basis','frame_to_crystal','magnetic_state','magnetization_crystal','reversal','source','validity','status','convention')})
+        result=dict(path=self.path,sha256=self.sha256,energy_bounds_ev=self.energy_ev[[0,-1]].tolist(),**{k:self.metadata[k] for k in ('element','edge','selected_ev','units','normalization','basis','frame_to_crystal','magnetic_state','magnetization_crystal','reversal','source','validity','status','convention')})
+        for key in ('atomic_model','atomic_parameters','atomic_parameter_document','atomic_parameter_source_utf8','atomic_parameter_sha256','atomic_parameter_path'):
+            if key in self.metadata:result[key]=self.metadata[key]
+        return result

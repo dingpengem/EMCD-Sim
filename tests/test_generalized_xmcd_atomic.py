@@ -36,11 +36,10 @@ def test_declared_element_xmcd_source_without_ni_calibration(tmp_path):
     with pytest.raises(ValueError,match='axis'):export_declared_xmcd(path,bad,tmp_path/'bad.json')
 
 
-def test_atomic_math_shared_ni_defaults_unchanged_and_non_ni_disabled():
+def test_atomic_math_shared_ni_defaults_unchanged():
     assert dipole_2p_to_3d is ni_2p_to_3d_dipole
     assert (NiLocalConfig().l3_ev,NiLocalConfig().zeff_2p)==(852.7,25.)
-    p=AtomicMaterialParameters('Fe',(710.,723.),.03,(.2,.6),.3,.8,1.,'Hypothetical explicit parameters; NOT validated Fe')
-    with pytest.raises(ValueError,match='not implemented/validated'):transitions_for_material(p)
+    with pytest.raises(TypeError):AtomicMaterialParameters(element='Fe')
 
 
 def test_xmcd_conversion_uses_only_the_declared_input_bytes(tmp_path,monkeypatch):

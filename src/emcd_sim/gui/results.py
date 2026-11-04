@@ -13,6 +13,8 @@ from .normalization_controls import NormalizationControls
 
 def mdff_label(result):
     if result['config'].model=='imported':
+        if result['metadata'].get('imported_mdff',{}).get('atomic_model'):
+            return result['metadata'].get('scientific_status','RESEARCH / APPROXIMATE')+'; approximate atomic '+result['config'].ionizing_element+' 2p-3d model; physically unvalidated parameters'
         return result['metadata'].get('scientific_status','RESEARCH / APPROXIMATE')+'; imported '+result['config'].ionizing_element+' dipole tensor'
     return 'XMCD-effective, native axis' if result['config'].model=='xmcd' else 'Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni'
 
