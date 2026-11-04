@@ -1,5 +1,7 @@
 # Verified v0.7.0-beta.1 documentation figures
 
+The spectral figures here preserve the historical `20261102T232115Z` study and its original provenance. The current tutorial uses the [fresh recalculated Ni example](../ni017_flipm_recomputed/README.md). Native GUI captures in this directory remain current documentation references.
+
 [Tutorial](../../TUTORIAL.md) · [User Manual](../../USER_GUIDE.md) · [Machine-readable provenance](provenance.json)
 
 These are previews of **existing actual outputs**, not fabricated GUI controls or new scattering calculations. Originals, full-resolution PNG/SVG, numerical arrays and checkpoints remain unchanged in their original local directories. Preview downsampling is image-only; it does not increase or alter the calculated angular grid.

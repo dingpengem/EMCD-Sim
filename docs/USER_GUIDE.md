@@ -223,14 +223,14 @@ The main **Signal Display** offers **Raw (a.u.)** and **EMCD Asymmetry (%)**. Ex
 
 The PRB scalar benchmark is a separately labeled raw +M A/B readout with selected-energy/edge controls. It does not establish quantitative reproduction of a literature figure; geometry, source, energy/collection settings and approximations must match independently.
 
-Legacy advanced **EELS Peak (%)** is another presentation normalization: a fixed `max_E in edge window [N_A+N_B]` reference, not an energy-by-energy difference/sum asymmetry. Its shared versus independent reference choices and **Peak windows (native eV)** must be recorded; independent peaks can conceal real amplitude differences. These controls do not alter raw arrays or solver-comparison metrics and are not used in the tutorial's four-curve case-study figures.
+Legacy advanced **EELS Peak (%)** is another presentation normalization: a fixed `max_E in edge window [N_A+N_B]` reference, not an energy-by-energy difference/sum asymmetry. Its shared versus independent reference choices and **Peak windows (native eV)** must be recorded; independent peaks can conceal real amplitude differences. These controls do not alter raw arrays or solver-comparison metrics and are not used in the tutorial's case-study figures.
 
 The released EELS percentage helper masks nonpositive/nonfinite denominators and those below `1e−8 × positive-finite P95(denominator)`; maps use `1e−6`. Invalid support remains NaN/gray. Record actual export metadata. The advanced 9/30 nm study used a separately documented maximum-based `1e−12` mask; do not imply that criterion is a new GUI default. Percentages alone are not detectability or shot-noise SNR.
 
 <a id="read-virtual-detector-eels-and-post-edge-correction"></a>
 ## 17. Magnetization reversal and decomposition
 
-Reversal-even and reversal-odd are defined by the four raw spectra; preserve the identity `D_conv=D_mag+D_nonmag`. Fixed-detector Flip-M A cancels even contributions only under unchanged geometry/intensity scale within the model. It is a different measurement from magnetic A/B; its magnitude can be larger or smaller. Real drift/background/counting variance requires separate experimental modeling.
+Reversal-even and reversal-odd are defined by the four raw spectra; preserve the identity `D_conv=D_mag+D_nonmag`. Fixed-detector Flip-M A has magnetic contribution `2*M_A` and exactly zero nonmagnetic residual under identical geometry and nonmagnetic conditions within the ideal model. The underlying `N_A(E)` remains nonzero. It is a different measurement from magnetic A/B; its magnitude can be larger or smaller. Real drift/background/counting variance requires separate experimental modeling.
 
 **Advanced post-edge diagnostics → Enable post-edge A/B correction** derives a +M A/B scaling from **Window start/end (eV)**. It does not change the MDFF, propagation or raw spectra. Its corrected contrast is **not intrinsically magnetic**; processed magnetic bias and residual even terms must be inspected separately. A selected-energy run may not contain the post-edge window and can report correction unavailable. Record the window, scale factors and definitions instead of calling every corrected signal magnetic.
 

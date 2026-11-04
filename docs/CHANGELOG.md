@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-03: recalculated Ni documentation example
+
+- Replaced current-facing Ni spectra with verified fresh `20261103T225908Z` results, twelve portrait previews and raw/percent 2x2 summaries.
+- Clarified fixed-detector Flip-M magnetic `2*M_A`, exact ideal zero even residual, and distinct normalization denominators.
+- Added independent four-spectrum validation, new selected-energy tables and hashed provenance. Historical figures/data are preserved; no kernels, GUI, defaults or release version changed.
+
 ## 2026-11-03: user documentation for the public Windows Research Beta
 
 - Reorganized README, installation, small Quick Start and User Manual; added a complete scientific tutorial and documentation index for public v0.7.0-beta.1.

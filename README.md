@@ -67,11 +67,13 @@ The default Ni spectral model constructs an **effective MDFF constrained by XMCD
 
 ## Example results
 
-![Verified 9 nm and 30 nm Ni spectra separating total, magnetic, nonmagnetic and fixed-detector Flip-M percentages](docs/images/v070b1/ni017_asymmetry.png)
+![Recalculated Ni conventional A/B and fixed-detector Flip-M asymmetries at 9 and 30 nm](docs/images/ni017_flipm_recomputed/summary_percent.png)
 
-*Actual completed Ni [017], 300 kV, exact (200) Bragg, Y = +15 mrad, BW Double case study. A/B components share the conventional +M sum denominator; Flip-M A uses its own reversal sum. At 30 nm, nonmagnetic imbalance reverses the conventional L3 sign even though the magnetic contribution remains positive. This is a two-thickness case study, not a universal thickness law or an extra GUI display mode.*
+*Ni [017], 300 kV, exact (200) Bragg, Y = +15 mrad, Bloch-wave Double Channeling; newly recalculated at both thicknesses. Dotted lines mark native L3/L2 energies.*
 
-The tutorial includes the [raw spectra and contamination analysis](docs/TUTORIAL.md#part-vii-practical-ni-017-case-study). Also see the [actual native diffraction preview](docs/images/v070b1/diffraction_preview.svg) and [coarse acceptance angular map](docs/images/v070b1/angular_smoke.png). Image/data origins and hashes are recorded in [figure provenance](docs/images/v070b1/README.md). Earlier galleries retain their original conventions and must not be presented as corrected results without revalidation.
+Conventional A/B EMCD includes nonmagnetic diffraction imbalance. Ideal magnetization reversal at fixed detector A cancels that reversal-even contribution, while the underlying nonmagnetic EELS remains nonzero. Magnetic-only A/B (`M_A-M_B`) and Flip-M (`2M_A`) measure different magnetic combinations and use different percentage denominators. Both retain diffraction dependence. Thickness changes the magnetic response and contamination: at 30 nm L3 the imbalance reverses the conventional sign. These two thicknesses establish no universal trend.
+
+See the [raw a.u. comparison](docs/images/ni017_flipm_recomputed/summary_raw.png), [full tutorial and native-energy values](docs/TUTORIAL.md#part-vii-practical-ni-017-case-study), and [figure provenance](docs/images/ni017_flipm_recomputed/README.md). These research plots are derived from saved spectra, not a new GUI plotting mode.
 
 ## Scientific limitations
 

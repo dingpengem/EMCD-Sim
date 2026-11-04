@@ -160,6 +160,8 @@ D_nonmag = N_A - N_B
 D_conv   = D_mag + D_nonmag
 
 D_flip,A = I_A(+M) - I_A(-M) = 2*M_A
+D_flip,mag = 2*M_A
+D_flip,nonmag = 0
 ```
 
 `D_flip,A` is **not** `D_mag`: they are different measurement geometries. Keep the full reversal difference; dividing it by two changes the observable.
@@ -173,12 +175,15 @@ A_mag    = 100 * D_mag / S_AB
 A_nonmag = 100 * D_nonmag / S_AB
 A_conv   = A_mag + A_nonmag
 
-A_flip,A = 100 * D_flip,A / [I_A(+M) + I_A(-M)]
+S_flip = I_A(+M) + I_A(-M)
+A_flip,A = 100 * D_flip,A / S_flip
+A_flip,mag = A_flip,A
+A_flip,nonmag = 0
 ```
 
 Using half of either sum (the mean intensity) as denominator gives **twice the percentage**. That is a different normalization, not a physical enhancement. Raw differences in a.u. cannot be mixed with percentages on the same axis.
 
-Flip-M cancels the magnetization-even part under unchanged geometry and intensity scale in this model. Its magnetic contrast still depends on diffraction, thickness, detector location and magnetization. It is not universally weaker or stronger than magnetic A/B. Drift, dose changes and counting statistics require separate experimental treatment.
+Flip-M cancellation is exact within the ideal model under identical geometry and nonmagnetic conditions: the reversal-even residual is zero at every energy. This does **not** mean `N_A(E)=0`; the nonmagnetic EELS remains nonzero. Its magnetic contrast still depends on diffraction, thickness, detector location and magnetization. It is not universally weaker or stronger than magnetic A/B. Drift, dose changes and counting statistics require separate experimental treatment.
 
 ### What the released GUI actually shows
 
@@ -186,7 +191,7 @@ Flip-M cancels the magnetization-even part under unchanged geometry and intensit
 - **EMCD Asymmetry (%)**: the conventional `A_conv` from raw +M detectors.
 - **Advanced Diagnostics → Magnetic-only / Nonmagnetic Asymmetry (%)**: `100*D_mag/(N_A+N_B)` and `100*D_nonmag/(N_A+N_B)`.
 
-The advanced pair uses a **reversal-even denominator**, so it does **not** sum to `A_conv` unless the denominators happen to coincide. The four-curve case-study figure below is a separately derived scientific visualization, **not a new released GUI mode or a fixed-detector Flip-M button**. Derive the common-S_AB components and Flip-M from exported raw arrays when needed.
+The advanced pair uses a **reversal-even denominator**, so it does **not** sum to `A_conv` unless the denominators happen to coincide. The case-study figures below are separately derived scientific visualizations, **not a new released GUI mode or a fixed-detector Flip-M button**. Derive the common-S_AB components and Flip-M from exported raw arrays when needed.
 
 Undefined percentages must stay masked. The released GUI uses positive finite denominator support and a relative floor based on its positive finite 95th percentile (1e−8 for EELS, 1e−6 for maps). The case study used an explicitly recorded `1e−12 * max(abs(denominator))` criterion for each denominator/thickness. Do not silently substitute one mask policy when comparing exports.
 
@@ -231,7 +236,7 @@ Keep all four raw spectra, the two denominator arrays and the masking rule with 
 
 ## Part VII: Practical Ni [017] case study
 
-This advanced example reuses the completed study at local path `outputs/ni_300kv_exact_bragg_y15_spectra/20261102T232115Z/` in the validated main worktree. The original arrays/checkpoints remain local and unchanged; only compact verified figure previews and selected values are included in the documentation. You need not rerun it.
+This example uses the completed **fresh full recalculation**, `outputs/ni_300kv_bragg_y15_full_recalculation/20261103T225908Z/`, in worktree `build/v070b1-unit-clean-main`. Both thicknesses evaluated all 243 outgoing energy-dependent responses afresh (486 total); no historical spectral arrays or checkpoints were inputs. The old `20261102T232115Z` study and its original provenance remain historical evidence. No simulations need to be rerun for these documentation plots.
 
 |Parameter|Actual study configuration|
 |---|---|
@@ -246,34 +251,62 @@ This advanced example reuses the completed study at local path `outputs/ni_300kv
 |Sampling|65×65 q grid; halfwidth 0.5 Å⁻¹; 128 boundary subpixels; 129 depth nodes|
 |Energy sampling|241 full-range energies + exact L3/L2 samples = 243; 823.625–882.521 eV; no added shift/smoothing|
 |Execution|Two detector workers, one native BLAS thread; 8192 MiB selected budget; not GUI defaults|
-|Source|`08d04fc35fca2071cc7e73af0aaa1de45e49a3f4`; production source identical to released binary source `97b2220e`|
+|Source|`3fdc9ab83e1aa3bc3629afab62b0c22a7a4adfe9`|
 
-The source tree's dirty flag reflects two pre-existing untracked documentation reports, not modified physics. The source hashes and original figure/data hashes are recorded in [provenance](images/v070b1/provenance.json).
+The [new provenance](images/ni017_flipm_recomputed/provenance.json) records completion, settings, XMCD SHA256, source-array and figure hashes, and independent four-spectrum checks. The recalculation independently reproduces the earlier selected-energy values; the table below is checked against the new arrays rather than copied from the old study.
 
-![Actual raw Ni spectra at 9 and 30 nm, showing conventional total, magnetic, nonmagnetic and full Flip-M A differences without individual rescaling](images/v070b1/ni017_raw.png)
+![Conventional and Flip-M percentages at both thicknesses](images/ni017_flipm_recomputed/summary_percent.png)
 
-*Raw differences retain a common a.u. scale across thicknesses. Fixed-detector Flip-M A is `2M_A`, not `M_A−M_B`.*
+Conventional panels use `S_AB` for all three contributions; fixed-A Flip-M panels use `S_flip`. The blue total and dashed red magnetic Flip-M curves overlap exactly; the green reversal-even residual is zero. The primary portrait figures below show each decomposition and the distinct magnetic combinations separately.
 
-![Actual sum-normalized Ni asymmetries, with one conventional denominator for the three A/B curves and a separate Flip-M denominator](images/v070b1/ni017_asymmetry.png)
+![Raw conventional and Flip-M differences at both thicknesses](images/ni017_flipm_recomputed/summary_raw.png)
 
-*A/B magnetic and nonmagnetic percentage-point contributions sum to the conventional percentage. Flip-M A is plotted for comparison, not added to that decomposition.*
+Raw panels share an a.u. axis across thicknesses; percentage panels share a percent axis. Neither uses individual peak rescaling. Raw magnetic intensity and normalized magnetic contrast are different quantities.
 
-|Thickness|Native sample|Conventional (%)|Magnetic contribution (pp)|Nonmagnetic contribution (pp)|Flip-M A (%)|
+### All twelve spectral figures
+
+Each linked preview derives from a 6 x 7 inch, 300 dpi PNG and vector SVG retained in the new study's `documentation_figures/raw_au/` or `documentation_figures/asymmetry_percent/` directory. All curves use the saved energy samples without smoothing or added spectral interpolation.
+
+|Measurement|Raw (a.u.)|Normalized (%)|
+|---|---|---|
+|9 nm Conventional|[Raw](images/ni017_flipm_recomputed/raw_au_01_9nm_conventional.png)|[Percent](images/ni017_flipm_recomputed/asymmetry_percent_01_9nm_conventional.png)|
+|9 nm Flip-M|[Raw](images/ni017_flipm_recomputed/raw_au_02_9nm_flipm.png)|[Percent](images/ni017_flipm_recomputed/asymmetry_percent_02_9nm_flipm.png)|
+|30 nm Conventional|[Raw](images/ni017_flipm_recomputed/raw_au_03_30nm_conventional.png)|[Percent](images/ni017_flipm_recomputed/asymmetry_percent_03_30nm_conventional.png)|
+|30 nm Flip-M|[Raw](images/ni017_flipm_recomputed/raw_au_04_30nm_flipm.png)|[Percent](images/ni017_flipm_recomputed/asymmetry_percent_04_30nm_flipm.png)|
+|9 nm Magnetic A/B vs Flip-M|[Raw](images/ni017_flipm_recomputed/raw_au_05_9nm_magcomponent_vs_flipm.png)|[Percent](images/ni017_flipm_recomputed/asymmetry_percent_05_9nm_magcomponent_vs_flipm.png)|
+|30 nm Magnetic A/B vs Flip-M|[Raw](images/ni017_flipm_recomputed/raw_au_06_30nm_magcomponent_vs_flipm.png)|[Percent](images/ni017_flipm_recomputed/asymmetry_percent_06_30nm_magcomponent_vs_flipm.png)|
+
+### Selected native L3/L2 results
+
+These are signed point samples at native calculated energies, not edge integrals or experimentally calibrated Ni thresholds. Conventional component percentages below use `S_AB`; Flip-M uses `S_flip`.
+
+|Thickness|Native edge (eV)|Conventional (%)|Magnetic A/B (pp)|Nonmagnetic A/B (pp)|Flip-M A (%)|
 |---|---|---:|---:|---:|---:|
-|9 nm|L3, 831.271 eV|+16.0577|+14.3838|+1.6740|+13.6022|
-|30 nm|L3, 831.271 eV|−2.9371|+1.7281|−4.6652|+0.6874|
-|9 nm|L2, 848.698 eV|−21.3505|−22.9958|+1.6453|−22.0086|
-|30 nm|L2, 848.698 eV|−7.2713|−2.7250|−4.5463|−1.1157|
+|9 nm|L3, 831.271|+16.057750|+14.383760|+1.673989|+13.602163|
+|9 nm|L2, 848.698|-21.350511|-22.995762|+1.645252|-22.008620|
+|30 nm|L3, 831.271|-2.937059|+1.728143|-4.665203|+0.687425|
+|30 nm|L2, 848.698|-7.271259|-2.724962|-4.546297|-1.115669|
 
-At 30 nm L3, the magnetic contribution is positive, but negative nonmagnetic imbalance makes the conventional result negative. That apparent conventional sign reversal is **not evidence of a reversed magnetization**. The absolute nonmagnetic/magnetic ratios increase from 0.116 to 2.70 at L3 and from 0.0715 to 1.67 at L2. The two tested thicknesses support cleaner magnetic features at 9 nm under this geometry, not a universal “thinner is better” rule.
+|Thickness|Edge|Conventional (a.u.)|Magnetic A/B (a.u.)|Nonmagnetic A/B (a.u.)|Flip-M A (a.u.)|
+|---|---|---:|---:|---:|---:|
+|9 nm|L3|+0.0113607840|+0.0101764443|+0.0011843396|+0.0098314856|
+|9 nm|L2|-0.0102652335|-0.0110562634|+0.0007910298|-0.0106709398|
+|30 nm|L3|-0.0069728067|+0.0041027467|-0.0110755534|+0.0015732525|
+|30 nm|L2|-0.0119059756|-0.0044618593|-0.0074441163|-0.0017130793|
 
-![Actual contamination plot with lightly shaded nonmagnetic-dominated and opposite-sign energy regions](images/v070b1/ni017_contamination.png)
+The [selected-energy CSV](images/ni017_flipm_recomputed/selected_native_L3_L2.csv) includes all four intensities, both denominators and both magnetic detector responses. At 30 nm L3, positive magnetic A/B is outweighed by negative nonmagnetic imbalance, reversing the conventional sign without reversing magnetization. Absolute nonmagnetic/magnetic ratios are 0.116 and 2.70 at L3 (9 and 30 nm), and 0.0715 and 1.67 at L2.
 
-*Even the 9 nm spectrum has contamination-dominated inter-edge/post-edge regions. Boundaries are sampled-energy diagnostics, not continuous optimized crossings or experimental detection limits.*
+In these samples, raw magnetic A/B intensity and normalized magnetic contrast are both smaller at 30 nm. The absolute Flip-M/magnetic-A/B percentage ratios are 0.946/0.957 (L3/L2) at 9 nm and 0.398/0.409 at 30 nm; raw ratios are about 0.966 and 0.384 respectively. Different magnetic combinations and denominators explain why these comparisons cannot be treated as identical signals. Two thicknesses do not establish a universal thickness law; Flip-M retains diffraction and detector dependence.
 
-Eight selected-energy depth/detector-grid checks passed the retained raw-intensity relative tolerance **0.1%** and asymmetry tolerance **0.01 pp**. Maximum observed changes were **0.00821%** and **0.005901 pp**. This does not certify every energy, basis/potential cutoff, FFT mesh, specimen thickness or experimental model. The case is BW-only; it does not add a new full-spectrum MS validation.
+The conventional nonmagnetic **raw** difference varies over energy: +0.000002007 to +0.00119722 a.u. at 9 nm, and -0.01119685 to -0.0000191234 a.u. at 30 nm. Its **normalized** contribution is nearly flat (+1.642827 to +1.675028 pp; -4.667347 to -4.545913 pp) because numerator and denominator share much of their spectral shape. This is the actual calculation, not an imposed constant or artificial variation. Fixed-A Flip-M instead has exactly zero nonmagnetic residual under ideal reversal, while `N_A` remains positive.
 
-Selected-energy values are not edge-window integrals. The local study separately integrated L3 [826,840] eV and L2 [843,860] eV by trapezoids over the included evaluated samples and used ratios of integrated numerator to integrated denominator—not averages of percentages. Effective endpoints/counts and full CSV/NPZ arrays remain with the original output. The [small selected-value CSV](images/v070b1/ni017_selected_values.csv) is provided for checking the table; it is not the full dataset or a new release asset.
+### Numerical validation and limits
+
+Both thicknesses have complete identical 243-point grids and four finite nonnegative EELS spectra. Independent recomputation verifies conventional raw/percentage sums at every energy (maximum residuals 1.39e-17 a.u. and 1.07e-14 pp), and `D_flip=2M_A` exactly. Flip-M magnetic percentages equal total percentages and their ideal nonmagnetic residuals are zero.
+
+Eight newly calculated selected-energy controls passed: depth 129 to 257 and detector grid 65 to 97 at L3/L2 for both thicknesses. Maximum changes were 0.008212% in raw intensity and 0.005901 pp in asymmetry, below 0.1% and 0.01 pp thresholds. This is limited depth/grid evidence, not full spectral, beam/potential-cutoff or experimental convergence. Two-worker admission carried an **UNVERIFIED COMBINATION** caution; successful completion is not universal native stability certification.
+
+The model uses finite projected IAM/ZOLZ and XMCD-effective tensors, not full complex DFT MDFF. Absolute intensity is uncalibrated, native energy offsets and experimental handedness require independent treatment, and real reversal can suffer drift, dose and background changes. These BW research figures do not implement a GUI mode or establish new Multislice validation.
 
 ## Part VIII: Interpret and export results
 

@@ -14,6 +14,7 @@
 |[Physical units](PHYSICAL_UNITS.md)|g=1/d versus Q=2πg; unchanged saved numbers|
 |[GUI technical navigation](EMCD_GUI.md)|Source responsibilities and diagnostic boundaries|
 |[Verified figure provenance](images/v070b1/README.md)|Actual EXE captures, case-study figures and source/data hashes|
+|[Recalculated Ni example provenance](images/ni017_flipm_recomputed/README.md)|Fresh 9/30 nm spectra, twelve portraits, conventional versus fixed-detector Flip-M|
 |[Changelog](CHANGELOG.md)|Version/milestone and documentation history|
 
 These guides describe public v0.7.0-beta.1 (binary source `97b2220e`), with current main documentation. A source feature is not assumed present in that EXE unless it is verified at the binary's source. At the review baseline `08d04fc3`, changes after the binary source were documentation-only.
