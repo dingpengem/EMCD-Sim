@@ -44,6 +44,11 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.section('A. Crystal Structure');self.button('FCC Ni default',self.default_structure);self.button('Load CIF…',self.load_cif)
         self.structure_label=QtWidgets.QLabel();self.structure_label.setWordWrap(True);self.form.addRow(self.structure_label)
         self.button('Inspect structure…',self.inspect_structure)
+        from ..elastic_providers import CHOICES
+        self.elastic_provider_box=QtWidgets.QComboBox()
+        for label,key in CHOICES:self.elastic_provider_box.addItem(label,key)
+        self.form.addRow('Elastic scattering provider',self.elastic_provider_box)
+        self.elastic_provider_box.currentIndexChanged.connect(self.refresh)
         self.section('B. Zone Axis & Diffraction')
         geometry_form=self.form;self.geometry_options=CollapsibleSection('Orientation / ZA options',expanded=False);self.geometry_options.setObjectName('geometry_options');self.geometry_options.header.setToolTip('Crystal orientation, target hkl, projected ZA coordinates and Bragg alignment lock');geometry_form.addRow(self.geometry_options);self.form=QtWidgets.QFormLayout(self.geometry_options.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         self.zone=QtWidgets.QLineEdit('0 1 7');self.zone.setToolTip('Direct-lattice [u v w]; changes the actual oriented cell.');self.form.addRow('Nominal zone [uvw]',self.zone)
@@ -121,7 +126,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
     def settings(self):
         return Settings(zone=indices(self.zone.text(),True),target=indices(self.target.text()),tilt=(self.spin['tx'].value(),self.spin['ty'].value()),voltage=self.spin['kv'].value(),
-            thickness=self.spin['thickness'].value(),beam_cutoff=self.spin['beam'].value(),potential_cutoff=self.spin['potential'].value(),b_factor=self.spin['b'].value(),basis_mode=self.basis_mode.currentData())
+            thickness=self.spin['thickness'].value(),beam_cutoff=self.spin['beam'].value(),potential_cutoff=self.spin['potential'].value(),b_factor=self.spin['b'].value(),basis_mode=self.basis_mode.currentData(),elastic_provider=self.elastic_provider_box.currentData())
 
     def set_values(self,values):
         for key,value in values.items():
@@ -183,9 +188,10 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             angle=1000*electron_wavelength_angstrom(s.voltage)*s.beam_cutoff
             self.spin['beam'].setToolTip(f'BW: limits diffraction beams retained in the Bloch-wave eigenproblem and MDFF response. MS: limits retained diffraction beams used for MDFF contraction. Additional FFT harmonics may participate in MS propagation. g=1/d, Å⁻¹; no 2π conversion. Approximate angular equivalent λ|g|max = {angle:.4f} mrad at {s.voltage:g} kV. Not the EELS detector collection limit.')
             target_valid=s.target in hkl and s.target!=(0,0,0)
-            supported=not self.structure.elastic_reason and target_valid
+            elastic_reason=self.structure.elastic_reason_for(s.elastic_provider)
+            supported=not elastic_reason and target_valid
             self.run_button.setEnabled(supported and not self.busy);self.align_button.setEnabled(target_valid and not self.busy)
-            self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'IAM BW elastic preview supported; EMCD material eligibility is separate.'))
+            self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(elastic_reason or 'IAM BW elastic preview supported; EMCD material eligibility is separate.'))
             old_limits=(self.ax.get_xlim(),self.ax.get_ylim()) if self.ax.has_data() else ((-1.3,1.3),(-1.3,1.3))
             self.ax.clear();fresh=self.preview_is_current(s)
             self._diffraction_spots=self.ax.scatter(g[:,0],g[:,1],s=28,facecolors='none',edgecolors='.5',zorder=3)
@@ -351,7 +357,9 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
     def load_cif(self):
         path,_=QtWidgets.QFileDialog.getOpenFileName(self,'Load crystal structure','','CIF files (*.cif)')
         if path:
-            try:self.structure=Structure.from_cif(path);self.last_result=None;self.table.setRowCount(0);self.refresh();self.inspect_structure()
+            try:
+                self.structure=Structure.from_cif(path)
+                self.last_result=None;self.table.setRowCount(0);self.refresh();self.inspect_structure()
             except Exception as exc:self.error(str(exc))
     def inspect_structure(self):
         dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Crystal structure — ASE import');dialog.resize(650,500);layout=QtWidgets.QVBoxLayout(dialog)
@@ -363,7 +371,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             if self._numerical_error:raise ValueError(self._numerical_error)
             s=self.settings();actual=geometry(self.structure,s,systematic_row=self.row_projection.isChecked())
         except Exception as exc:self.error(str(exc));return
-        if self.structure.elastic_reason:self.error(self.structure.elastic_reason);return
+        reason=self.structure.elastic_reason_for(self.settings().elastic_provider)
+        if reason:self.error(reason);return
         if s.target not in actual[2] or s.target==(0,0,0):self.error('Select a valid nonzero target');return
         self.refresh()
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0);self.emcd_button.setEnabled(False)
@@ -401,10 +410,25 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         if not path:return
         try:
             import datetime
-            root=Path(path)/('elastic_'+datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f'));root.mkdir()
-            r=self.last_result;np.savez_compressed(root/'diffraction_pattern.npz',**{k:r[k] for k in ('beam_hkl','g','s','depth_nm','amplitudes','intensity','frame')})
-            metadata={k:r[k] for k in ('settings','source','source_sha256','structure_description','model')};(root/'metadata.json').write_text(json.dumps(metadata,indent=2)+'\n')
+            root=Path(path)/('elastic_'+datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f'))
+            from .project_io import save_elastic_project
+            save_elastic_project(self.last_result,root)
             self.statusBar().showMessage('Saved last completed elastic preview: '+str(root))
+        except Exception as exc:self.error(str(exc))
+    def open_elastic_project_dialog(self):
+        path=QtWidgets.QFileDialog.getExistingDirectory(self,'Open saved elastic-only project')
+        if not path:return
+        try:
+            from .project_io import load_elastic_project
+            result=load_elastic_project(path)
+            dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Saved elastic diffraction (read-only)');dialog.resize(750,650)
+            layout=QtWidgets.QVBoxLayout(dialog)
+            layout.addWidget(QtWidgets.QLabel('Elastic only; current inputs unchanged. Provider: '+result['elastic_provider']['provider']))
+            figure=Figure();canvas=FigureCanvasQTAgg(figure);layout.addWidget(canvas)
+            ax=figure.add_subplot();g=result['g'];ax.scatter(g[:,0],g[:,1],c=result['intensity'],s=45)
+            for h,(x,y) in zip(result['beam_hkl'],g):ax.annotate(str(tuple(int(v) for v in h)),(x,y),fontsize=7)
+            ax.set(xlabel='qx (inverse angstrom)',ylabel='qy (inverse angstrom)',aspect='equal');canvas.draw()
+            dialog.saved_elastic_result=result;dialog.show();self.dialogs.append(dialog)
         except Exception as exc:self.error(str(exc))
     def error(self,message):
         import logging

@@ -251,7 +251,8 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
     if audit and cfg.source_sha256 and audit['sha256']!=cfg.source_sha256:
         raise ValueError('XMCD source changed during calculation; result discarded')
     build=build_info();commit=build['commit'];dirty=build.get('dirty')
-    meta=dict(settings=asdict(settings),mdff=asdict(cfg),structure=structure.description(),frame=R.tolist(),beam_hkl=[list(h) for h in hkl],g=g.tolist(),
+    from ..elastic_providers import provider_provenance
+    meta=dict(settings=asdict(settings),elastic_provider=provider_provenance(model.elastic.crystal.species,settings.elastic_provider),mdff=asdict(cfg),structure=structure.description(),frame=R.tolist(),beam_hkl=[list(h) for h in hkl],g=g.tolist(),
         source_audit=audit,energy_ev=energy.tolist(),magnetization_crystal=(np.asarray(cfg.magnetization)/np.linalg.norm(cfg.magnetization)).tolist(),
         magnetization_local=(R@np.asarray(cfg.magnetization)/np.linalg.norm(cfg.magnetization)).tolist(),
         reversal='XMCD: eta reversed in crystal frame; atomic: swap spin holes and reverse exchange at transition level, fixed core-SOC amplitudes; then R T R^T',

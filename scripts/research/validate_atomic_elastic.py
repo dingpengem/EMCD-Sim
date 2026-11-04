@@ -79,7 +79,7 @@ def main():
                                  old_scattering.nickel_lobato_factor(np.linspace(0,12,1001)))
     baselines=[]
     for zone,target,cutoff in [((0,0,1),(2,0,0),1.4),((0,1,7),(2,0,0),2.2),((1,1,7),(2,-2,0),3.8)]:
-        settings=Settings(zone=zone,target=target,beam_cutoff=cutoff,potential_cutoff=2.2,tilt=(0.,0.))
+        settings=Settings(zone=zone,target=target,beam_cutoff=cutoff,potential_cutoff=2.2,tilt=(0.,0.),elastic_provider='nickel-lobato-2014')
         reference=old.elastic_model(old.Structure.nickel(),settings)
         current=elastic_model(Structure.nickel(),settings)
         assert current.beams.hkl==reference.beams.hkl

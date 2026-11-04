@@ -5,8 +5,8 @@ The tabulated Lobato--Van Dyck electron form factors are *non-relativistic*
 Born scattering amplitudes in Å. The microscope gamma factor is applied when
 building the relativistic elastic propagation matrix, not inside f(g).
 
-Only Ni is bundled; other elements can be provided through the extensible
-``atomic_factors`` mapping without changing the Bloch-wave solver.
+The unversioned constructor retains Ni compatibility. ``from_provider`` uses
+the separately bundled neutral Z=1..118 Dirac-Pade data by default.
 """
 from dataclasses import dataclass, field
 from typing import Callable, Mapping
@@ -73,6 +73,12 @@ class IndependentAtomPotential:
         missing = set(self.crystal.species) - set(self.atomic_factors)
         if missing:
             raise ValueError(f"Missing electron scattering factors for {sorted(missing)}")
+
+    @classmethod
+    def from_provider(cls,crystal,provider='adaptive-dirac-pade-2026',**kwargs):
+        """Explicit modern provider factory; the unversioned constructor stays legacy-compatible."""
+        from .elastic_providers import factors_for_provider
+        return cls(crystal,atomic_factors=factors_for_provider(crystal.species,provider),**kwargs)
 
     @property
     def cell_volume_angstrom3(self) -> float:

@@ -1,0 +1,20 @@
+{
+  "base": "d1c93ba8781a34b5d8be9858369a2a57f5d1a74b",
+  "canonical_sha256": {
+    "src/emcd_sim/mdff_tensor.py": "9ad35bebf244ca81d816b1885488f6cf32e93263c1c62270c9fd512491cbdd07",
+    "src/emcd_sim/ni_local_mdff.py": "49a41563fe8c0d1b6c196b6bc7a843d805c6236a40635d9ad94ff323355ab63f",
+    "src/emcd_sim/xmcd_effective_mdff.py": "3a9448efd764c13cf6315e38437ec6482483fe68e55da21eecc112b00293cb13",
+    "src/emcd_sim/single_channeling_tensor.py": "ac8a150fd370615b74886aeb81564a2fdd6b15e3d5da94e58ea1982afba8610d",
+    "src/emcd_sim/double_channeling.py": "5b641bc918250b6402f4bcf6c31c1f3fec1425714098a1c99ed04e321b7ef06b",
+    "src/emcd_sim/multislice_double_channeling.py": "f7cc80b8de0898123813d6f1a284519df3790516ffa5660634bfccc838c437c5",
+    "src/emcd_sim/multislice_reference.py": "2bc6acf3b29f69f1eb9439603a16d82d86f85740ea618836ac196c42f81042f4",
+    "src/emcd_sim/gui/channeling.py": "7c718f964301c51311b6b62838de498b6a3c3eaa12368d8b10aba30d54709b1e",
+    "src/emcd_sim/legacy_atomic_factors.py": "ac5f00100e69e13520e8f47d67e5ae7dcf2e76fe1c7a7dd9ee2e7830ead4caf7",
+    "scripts/research/audit_legacy_mott.py": "e19a64ce0db849b217360fa052dcb8362a820c93da4173d9f710a86d5d6577e0",
+    "data/wien2k_ni/Ni_fm.xmcd": "4fd517af3e54db94588a76b7a6ed9c2f9a1b745cd8fe52b9fca0f87fc4938db3",
+    "tests/fixtures/physics_source_manifest_v1.json": "f0588a3cff0ba923a9bae14babc8cb89af43a033c23be13693e197829a94e6d2",
+    "tests/test_physical_elastic.py": "f5e83913e1a978ca18f513ed0c3fadedf683686faef7bacfd6db48391a6361c7",
+    "tests/test_elastic_reference.py": "dfe1579a827f4d694697073f90c2bfc6eebbffc440ab61ecc6a71ca8e972dae9"
+  },
+  "lobato_ast_and_coefficients_identical_to_859870c2": true
+}

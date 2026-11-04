@@ -22,7 +22,7 @@ def resolve_parameters(structure, settings, cfg):
                   grid=97,subpixels=64,halfwidth=1.,energy=241,memory_budget_mib=2048)
     centers=((1/3.524,1/3.524),(1/3.524,-1/3.524))
     # Native-source identity is explicit; a filename/material resemblance is insufficient.
-    reference = (not material_reason(structure) and settings.zone==(0,1,7)
+    reference = (not material_reason(structure) and settings.elastic_provider=='nickel-lobato-2014' and settings.zone==(0,1,7)
         and settings.target==(2,0,0) and not cfg.systematic_row
         and abs(settings.voltage-200)<1e-9 and settings.thickness in (8.,12.,30.,100.)
         and abs(settings.b_factor)<1e-12 and abs(settings.tilt[1])<1e-9

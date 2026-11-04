@@ -14,7 +14,7 @@ from emcd_sim.geometry import Microscope,electron_wavelength_angstrom
 from emcd_sim.physical_elastic import PhysicalElasticModel
 from emcd_sim.scattering import IndependentAtomPotential
 from emcd_sim.scattering import FourierCutoffPotential, elastic_reflection_allowed
-from emcd_sim.legacy_atomic_factors import factors_for_elastic_species, configured_legacy_factors
+from emcd_sim.elastic_providers import factors_for_provider, provider_provenance
 from emcd_sim.physical_elastic import excitation_errors_angstrom_inv
 
 
@@ -57,10 +57,13 @@ class Structure:
 
     @property
     def elastic_reason(self):
+        return self.elastic_reason_for('auto')
+
+    def elastic_reason_for(self,provider):
         for occ in self.atoms.info.get('occupancy',{}).values():
             values=np.asarray(list(occ.values()),float)
             if (len(occ)!=1 or not np.isfinite(values).all() or abs(sum(values)-1)>1e-8):return 'Reciprocal geometry only: partial/disordered CIF occupancies are not supported.'
-        try:factors_for_elastic_species(self.atoms.get_chemical_symbols())
+        try:factors_for_provider(self.atoms.get_chemical_symbols(),provider)
         except (ValueError,TypeError,OSError,ImportError) as exc:return f'Reciprocal geometry only: {exc}'
         return ''
 
@@ -68,7 +71,7 @@ class Structure:
         a=self.atoms;sg=a.info.get('spacegroup','Not determined (no symmetry inference)')
         return (f'Source: {self.source}\nSHA256: {self.sha256 or "internally generated"}\nFormula: {a.get_chemical_formula()}\n'
                 f'Cell a,b,c (Å), alpha,beta,gamma (deg): {a.cell.cellpar().tolist()}\nSpecies: {sorted(set(a.get_chemical_symbols()))}\n'
-                f'Atoms: {len(a)}\nSpace group supplied by CIF: {sg}\nFractional positions:\n'
+                f'Atoms: {len(a)}\nSpace group supplied by CIF: {sg}\nIndexing: hkl labels refer to the ASE-imported cell shown above; no automatic primitive reduction.\nFractional positions:\n'
                 +'\n'.join(f'{s}: {p[0]:.8f} {p[1]:.8f} {p[2]:.8f}' for s,p in zip(a.get_chemical_symbols(),a.get_scaled_positions()))
                 + ('\nImport warnings:\n'+self.import_warnings if self.import_warnings else ''))
 
@@ -84,6 +87,7 @@ class Settings:
     potential_cutoff: float=2.5
     b_factor: float=0.
     basis_mode: str='full'
+    elastic_provider: str='adaptive-dirac-pade-2026'
 
 
 def geometry(structure,settings,*,systematic_row=False):
@@ -101,9 +105,9 @@ def geometry(structure,settings,*,systematic_row=False):
     if not np.isfinite(limits).all() or np.prod(2*limits+1)>500000:
         raise ValueError('Cell/cutoff search too large for interactive preview; lower the beam cutoff.')
     bounds=limits.astype(int)
-    items=[];has_factors=not structure.elastic_reason
+    items=[];has_factors=not structure.elastic_reason_for(settings.elastic_provider)
     selection_potential=(IndependentAtomPotential(crystal,debye_waller_b_angstrom2=settings.b_factor,
-        atomic_factors=factors_for_elastic_species(crystal.species)) if has_factors else None)
+        atomic_factors=factors_for_provider(crystal.species,settings.elastic_provider)) if has_factors else None)
     for h in product(*(range(-v,v+1) for v in bounds)):
         if settings.basis_mode=='two-beam' and h not in ((0,0,0),settings.target):continue
         if systematic_row and np.any(np.cross(h,settings.target)):continue
@@ -120,10 +124,11 @@ def geometry(structure,settings,*,systematic_row=False):
 
 
 def elastic_model(structure,settings,*,systematic_row=False):
-    if structure.elastic_reason:raise ValueError(structure.elastic_reason)
+    reason=structure.elastic_reason_for(settings.elastic_provider)
+    if reason:raise ValueError(reason)
     crystal,R,hkl,g,microscope=geometry(structure,settings,systematic_row=systematic_row)
     potential=FourierCutoffPotential(IndependentAtomPotential(crystal,debye_waller_b_angstrom2=settings.b_factor,
-        atomic_factors=factors_for_elastic_species(crystal.species)),settings.potential_cutoff)
+        atomic_factors=factors_for_provider(crystal.species,settings.elastic_provider)),settings.potential_cutoff)
     return PhysicalElasticModel(crystal,microscope,BeamSet(hkl),potential)
 
 
@@ -149,11 +154,11 @@ def align_bragg(g,tilt,voltage,lock='None'):
 
 
 def preview(structure,settings,*,systematic_row=False):
+    from .project_io import structure_snapshot
     model=elastic_model(structure,settings,systematic_row=systematic_row);z=np.array([0.,settings.thickness]);psi=model.amplitudes(z)
-    provider=(dict(provider='nickel-lobato-2014',units='angstrom') if set(model.crystal.species)=={'Ni'}
-        else configured_legacy_factors().provenance())
+    provider=provider_provenance(model.crystal.species,settings.elastic_provider)
     return dict(settings=asdict(settings),beam_hkl=np.array(model.beams.hkl),g=model.reciprocal_vectors_xy,
         s=excitation_errors_angstrom_inv(model),depth_nm=z,amplitudes=psi,intensity=abs(psi[-1])**2,
         frame=orientation(structure.atoms.cell.array,settings.zone,settings.target),source=structure.source,systematic_row=systematic_row,
-        source_sha256=structure.sha256,structure_description=structure.description(),elastic_provider=provider,
+        source_sha256=structure.sha256,structure_description=structure.description(),structure_snapshot=structure_snapshot(structure),elastic_provider=provider,
         model='Neutral-atom IAM, finite oriented ZOLZ BW; elastic only, no absorption/TDS or physical CBED disks')

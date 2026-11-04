@@ -32,11 +32,17 @@ def baseline_window(path):
     # Execute the exact released GUI controls, with only their module names
     # isolated, to compare complete configs rather than selected values.
     modules=[]
-    for name,filename in (('_baseline_stage_b','stage_b.py'),('_baseline_app','app.py')):
+    for name,filename in (('_baseline_results_browser','results_browser.py'),('_baseline_stage_b','stage_b.py'),('_baseline_app','app.py')):
         source=subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/'+filename]).decode('utf-8-sig')
-        if filename=='app.py':source=source.replace('from .stage_b import StageB','from ._baseline_stage_b import StageB')
+        if filename=='app.py':
+            source=source.replace('from .stage_b import StageB','from ._baseline_stage_b import StageB')
+            source=source.replace('from .results_browser import ProjectWorkspace','from ._baseline_results_browser import ProjectWorkspace')
         module=types.ModuleType('emcd_sim.gui.'+name);module.__package__='emcd_sim.gui';module.__file__=str(Path('src/emcd_sim/gui')/filename)
         sys.modules[module.__name__]=module;exec(compile(source,module.__file__,'exec'),module.__dict__);modules.append(module)
+    # The archived controls predate the provider field; represent their original
+    # Ni identity explicitly in the current Settings schema.
+    from functools import partial
+    modules[-1].Settings=partial(Settings,elastic_provider='nickel-lobato-2014')
     return modules[-1].MainWindow(workspace=path)
 
 @pytest.mark.parametrize('channeling',[0,1])
@@ -45,6 +51,7 @@ def test_released_configuration_exactly_preserved(window,tmp_path,app,channeling
     try:
         # Defaults intentionally changed; compare the same explicit legacy inputs.
         legacy=old.settings()
+        window.elastic_provider_box.setCurrentIndex(window.elastic_provider_box.findData('nickel-lobato-2014'))
         window.set_values(dict(kv=legacy.voltage,tx=legacy.tilt[0],ty=legacy.tilt[1],beam=legacy.beam_cutoff,potential=legacy.potential_cutoff));window.refresh()
         # Compare matched explicit inputs; the approved new-project default is 2 nm.
         window.set_values(dict(slice_step=old.forward_settings().slice_step))
@@ -140,7 +147,11 @@ def test_solver_configuration_and_physics_unchanged():
     current_forward=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
     old_forward=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for name in ('energy_grid','tensors','axis_rotation','material_reason'):
-        assert ast.dump(find(current_forward,name))==ast.dump(find(old_forward,name))
+        if name=='material_reason':
+            # The species gate was approved at d1c93ba, before this continuation.
+            previous=ast.parse(subprocess.check_output(['git','show','d1c93ba:'+path]).decode('utf-8-sig'))
+            assert ast.dump(find(current_forward,name))==ast.dump(find(previous,name))
+        else:assert ast.dump(find(current_forward,name))==ast.dump(find(old_forward,name))
     # MS advance/response buffer reuse is covered by strict baseline comparisons
     # in test_ms_double_buffers; retain AST guards on its unchanged formulation.
     path='src/emcd_sim/multislice_double_channeling.py'

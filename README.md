@@ -77,7 +77,7 @@ See the [raw a.u. comparison](docs/images/ni017_flipm_recomputed/summary_raw.png
 
 ## Scientific limitations
 
-Source-checkout development on `feat/neutral-atomic-elastic-local` includes an opt-in [neutral-atom elastic provider for Z=1–98](docs/ELASTIC_ATOMIC_FACTORS.md) using a separately supplied local table. Only Ni factors are bundled; all-Ni studies retain the original Lobato default. Ni-specific MDFF/EMCD eligibility is unchanged. The table's redistribution terms remain unverified, and this feature is absent from the published Windows binary.
+Source-checkout development on `feat/neutral-atomic-elastic-local` bundles an Apache-2.0 [neutral-atom elastic provider for Z=1–118](docs/ELASTIC_ATOMIC_FACTORS.md), Adaptive Dirac–Padé 2026. It is the new GUI/provider-factory default; Ni Lobato remains selectable, and historical saved projects without a provider retain Lobato. The raw unversioned Python potential constructor also retains Lobato compatibility. The separate Z=1–98 legacy adapter still requires an external table with unverified redistribution rights. Ni-specific MDFF/EMCD eligibility is unchanged. See the [local acceptance and limitations](docs/acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md). This source feature is absent from the published Windows binary; historical Ni examples retain their original Lobato values.
 
 - Effective XMCD and atomic-transition MDFF approximations; no complete complex DFT Ni MDFF or DFT calculation is supplied.
 - Projected independent-atom potential and finite ZOLZ support; no genuine atomic-3D multislice, complete HOLZ, comprehensive TDS/absorptive or convergent-probe/CBED model.

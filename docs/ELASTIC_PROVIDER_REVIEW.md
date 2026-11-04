@@ -1,5 +1,7 @@
 # Multi-element elastic provider: integration review
 
+Historical record for commit d1c93ba: statements below describe the original external-provider review. The subsequent unified-provider continuation, new default decision and packaging/provenance checks are recorded in the [2026-11-03 acceptance](acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md) and current [provider guide](ELASTIC_ATOMIC_FACTORS.md). The original external table and its low-g restrictions remain unchanged.
+
 Reviewed on 2026-11-03, feature branch `feat/neutral-atomic-elastic-local`, base `859870c2cb6ee9034249aecc890703c571b4cbd4`. This records a local feature review and commit, without main integration, push, release or binary rebuild.
 
 ## Review inputs and scope

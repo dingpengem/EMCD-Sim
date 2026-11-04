@@ -1,0 +1,11 @@
+# GUI and project compatibility
+
+PASS for automated source-checkout/offscreen Qt acceptance. New GUI calculations and IndependentAtomPotential.from_provider() default to adaptive-dirac-pade-2026. The raw unversioned IndependentAtomPotential(crystal) constructor retains original Ni Lobato compatibility for research scripts. Explicit provider IDs, coefficient digest and upstream pin are saved in new result metadata. Provider changes invalidate previews.
+
+Old saved settings with no provider field resolve explicitly to nickel-lobato-2014; loaded plots use saved arrays without a solver or new factor evaluation. New and constructed old-format EMCD projects round-trip complex amplitudes/coherences and array fingerprints. Missing/mismatched providers block applying/rerunning saved settings while saved results remain viewable. An external table is required only when the user explicitly selects that provider; its absence does not affect Lobato or the bundled Adaptive provider.
+
+File > Save Elastic Project writes a new checksummed elastic-only directory with arrays, settings, provider provenance and crystal snapshot. File > Open Elastic Project opens saved diffraction in a read-only window and leaves current input controls untouched. It does not imply an EMCD model. Existing full EMCD projects retain their separate save/open workflow. Ordered fully occupied multi-element CIFs are eligible for elastic preview; disordered/partial occupancies remain rejected. Ni-specific conventional-FCC MDFF eligibility is unchanged.
+
+Package-data configuration, zip-import resource loading and PyInstaller data recipe include coefficients, provenance, LICENSE and NOTICE. Runtime does not import the upstream package or HDF5. A source wheel packaging check is recorded in final validation. No Windows executable was rebuilt or tested as a new binary: availability in a future packaged application follows the resource recipe, and native packaged acceptance remains a release-stage check.
+
+The historical verified automatic Ni numerical profile applies only to Lobato. Adaptive calculations use explicitly uncertified general defaults until users check their own basis/FFT/depth convergence; old convergence certification is not transferred.

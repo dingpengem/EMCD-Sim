@@ -25,6 +25,9 @@ from emcd_sim import __version__
 info['application_version']=__version__
 info['runtime_source_sha256']={str(p.relative_to(root/'src')).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in (root/'src/emcd_sim').rglob('*.py')}
 info['gui_source_sha256']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (root/'src/emcd_sim/gui').glob('*.py')}
+from emcd_sim.adaptive_scattering import provenance as elastic_provenance
+info['bundled_elastic_provider']=elastic_provenance()
+info['new_gui_elastic_default']='adaptive-dirac-pade-2026'
 (stage / 'build_info.json').write_text(json.dumps(info, indent=2), encoding='utf-8')
 # A venv over Conda needs the base runtime DLL search path explicitly.
 base_dlls = Path(sys.base_prefix) / 'Library/bin'
@@ -42,7 +45,8 @@ for package in LICENSE_DISTRIBUTIONS:
 a = Analysis([str(root/'packaging/launcher.py')], pathex=[str(root/'src')],
     binaries=runtime_binaries,
     datas=[(str(reference),'data/wien2k_ni'), (str(stage/'build_info.json'),'.'), (str(root/'LICENSE'),'.'),
-           (str(checked_distributions['ase'].locate_file('ase/spacegroup/spacegroup.dat')),'ase/spacegroup')]+licenses,
+           (str(checked_distributions['ase'].locate_file('ase/spacegroup/spacegroup.dat')),'ase/spacegroup'),
+           (str(root/'src/emcd_sim/data/adaptive_dirac_pade_2026'),'emcd_sim/data/adaptive_dirac_pade_2026')]+licenses,
     hiddenimports=['matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg','ase.io.cif','ase.io.jsonio','ase.io.extxyz'],
     hooksconfig={'matplotlib': {'backends': ['Agg', 'QtAgg', 'svg']}},
     excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow'], noarchive=False)

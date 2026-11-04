@@ -67,13 +67,13 @@ def test_gui_missing_provider_keeps_geometry_and_ni_available(tmp_path,monkeypat
     path=tmp_path/'absent.py'
     monkeypatch.setenv(TABLE_ENVIRONMENT,str(path))
     cu=Structure.nickel();cu.atoms.set_chemical_symbols(['Cu']*4)
-    assert TABLE_ENVIRONMENT in cu.elastic_reason and 'not bundled' in cu.elastic_reason
-    settings=Settings(beam_cutoff=2.2)
+    assert TABLE_ENVIRONMENT in cu.elastic_reason_for('legacy-atomicscatfact-neutral-v1')
+    settings=Settings(beam_cutoff=2.2,elastic_provider='legacy-atomicscatfact-neutral-v1')
     geometry(cu,settings)  # Geometry-only CIF inspection must remain possible.
     with pytest.raises(ValueError,match=TABLE_ENVIRONMENT):elastic_model(cu,settings)
     ni=Structure.nickel()
     assert not ni.elastic_reason
-    assert np.isfinite(elastic_model(ni,settings).hamiltonian_nm_inv()).all()
+    assert np.isfinite(elastic_model(ni,replace(settings,elastic_provider='nickel-lobato-2014')).hamiltonian_nm_inv()).all()
 
 
 def test_reviewed_file_hash_required(table,tmp_path):
@@ -244,7 +244,7 @@ def test_gui_elastic_cif_and_inelastic_restrictions_remain_separate(table,tmp_pa
     path=tmp_path/'cscl.cif';write(path,atoms)
     s=Structure.from_cif(path)
     assert not s.elastic_reason
-    settings=Settings(zone=(0,0,1),target=(1,0,0),tilt=(0.,0.),beam_cutoff=.55,potential_cutoff=.55,thickness=1.)
+    settings=Settings(zone=(0,0,1),target=(1,0,0),tilt=(0.,0.),beam_cutoff=.55,potential_cutoff=.55,thickness=1.,elastic_provider='legacy-atomicscatfact-neutral-v1')
     model=elastic_model(s,settings)
     assert (1,0,0) in model.beams.hkl
     result=preview(s,settings)
@@ -270,6 +270,7 @@ def test_configured_desktop_elastic_button_and_missing_file_gate(table,tmp_path,
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window=MainWindow(workspace=tmp_path/'desktop')
     try:
+        window.elastic_provider_box.setCurrentIndex(window.elastic_provider_box.findData('legacy-atomicscatfact-neutral-v1'))
         window.set_values(dict(beam=2.2,potential=2.2))
         window.structure=Structure.nickel()
         window.structure.atoms.set_chemical_symbols(['Cu']*4)
@@ -281,6 +282,7 @@ def test_configured_desktop_elastic_button_and_missing_file_gate(table,tmp_path,
         assert not window.run_button.isEnabled()
         assert TABLE_ENVIRONMENT in window.structure_label.text()
         window.structure=Structure.nickel();window.refresh()
+        window.elastic_provider_box.setCurrentIndex(window.elastic_provider_box.findData('nickel-lobato-2014'))
         assert window.run_button.isEnabled() and not material_reason(window.structure)
     finally:
         window.close();app.processEvents()

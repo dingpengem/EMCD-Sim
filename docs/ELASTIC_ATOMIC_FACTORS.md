@@ -1,8 +1,29 @@
 # Neutral-atom elastic scattering providers
 
-This source-only development feature supports neutral atomic elastic factors for Z=1–98 through an **opt-in external table adapter**. Only the historical Ni factor is bundled. The feature is on `feat/neutral-atomic-elastic-local`, pending main integration; the published v0.7.0-beta.1 Windows binary does not include it. Ni-specific inelastic MDFF, transition data and EMCD material eligibility retain their existing scope. No binary was rebuilt.
+This source-only feature bundles **Adaptive Dirac–Padé 2026 neutral Z=1–118** coefficient data under Apache-2.0, alongside the historical Ni Lobato factor and an opt-in external Z=1–98 adapter. The feature is on `feat/neutral-atomic-elastic-local`, pending main integration; the published v0.7.0-beta.1 Windows binary does not include it. Ni-specific inelastic MDFF, transition data and EMCD material eligibility retain their existing scope. No binary was rebuilt.
 
-The default `IndependentAtomPotential` continues to use the original Ni Lobato–Van Dyck (2014) function and coefficients. All-Ni GUI structures also retain this provider even when the external table is configured. To compare Ni providers, construct a second potential explicitly; numerical agreement between parameterizations is not assumed.
+New GUI `Settings()` and `IndependentAtomPotential.from_provider(crystal)` default to `adaptive-dirac-pade-2026`, including Ni. The raw unversioned `IndependentAtomPotential(crystal)` constructor retains the original Ni Lobato–Van Dyck (2014) function and coefficients for script compatibility. Select `nickel-lobato-2014` explicitly to reproduce historical Ni studies. Saved settings without a provider field resolve to Lobato; opening old plots never recalculates them. New results record provider identity, coefficient checksum and upstream pin. Parameterizations differ; agreement is not assumed.
+
+## Bundled unified provider
+
+The coefficient source is [Ivan Lobato / NeuralSoftX's deposit](https://github.com/NeuralSoftX/adaptive_dirac_pade_scattering_factor_2026/tree/1667babb2c5bdb44a0535438b846eb1bbfbc03ac), pinned at `1667babb2c5bdb44a0535438b846eb1bbfbc03ac`. The accompanying 2026 manuscript is a submitted preprint, not an established journal acceptance. Full Apache-2.0 LICENSE, NOTICE and machine-readable provenance are shipped in `emcd_sim/data/adaptive_dirac_pade_2026/`; EMCD-Sim's MIT license does not supersede those terms. Only adaptive-model data are extracted, retaining exact float32 coefficient values in JSON; no fit is changed. Production evaluates them in binary64 using existing NumPy, without installing the upstream package, HDF5, SciPy or SymPy.
+
+```python
+from emcd_sim.adaptive_scattering import adaptive_factor
+from emcd_sim.scattering import IndependentAtomPotential
+
+f = adaptive_factor('Mo', [0., 1e-200, .001, 1., 36.])  # angstrom
+potential = IndependentAtomPotential.from_provider(crystal)
+historical_ni = IndependentAtomPotential.from_provider(crystal, 'nickel-lobato-2014')
+```
+
+The [source Fourier equations](https://arxiv.org/html/2608.14934v1) use `exp(-2*pi*i*g.r)`, density transform `sinc(2*pi*g*r)` and `fe=(Z-fx)/(2*pi²*a0*g²)`. This establishes crystallographic `g=1/d`, beyond matching unit labels. The returned amplitude is already in angstrom: **do not divide by 47.878009, halve g, multiply by 2π, or apply microscope gamma**. IAM performs the existing potential conversion separately.
+
+With `t=1/(1+b*g²)`, the evaluator sums `a*(t+t²)` for NR terms and `a*(t+t²+t³)` for the final DP term. This is the original rational expression rearranged algebraically; it avoids Mott cancellation and division by g² at the origin. Signed coefficients are preserved with no clipping, absolute-value repair or interpolation. The explicit operating range is **0<=g<=36 inverse angstrom**, including g=0 and arbitrarily small positive finite values; invalid/out-of-range arguments fail. Large-supercell small vectors are evaluated directly by this provider and do not relax the external XF/Mott guard.
+
+All118 elements pass sampled finite/positive and 65-digit arithmetic checks; the maximum discrepancy against the pinned deposited atomic reference grid is about 0.0113%. This checks the parameterization fit, not independent experimental accuracy or a universal diffraction error bound. Independent radial-density Fourier quadrature checks the reciprocal convention. Neutral-atom IAM omits ions, bonding charge transfer, absorption and TDS. Configuration-specific beam, potential, FFT and depth convergence remain necessary. New-provider automatic numerical settings are uncertified; Lobato-specific validated profiles are not silently transferred. Full [acceptance reports, configurations, plots and metrics](acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md) document these limits.
+
+The GUI selector exposes all three providers. Only the external legacy choice uses the file below. Missing external data produce a diagnostic while the two bundled choices work normally. Ordered full-occupancy CIFs support elastic diffraction; partial/disordered CIF occupancies are rejected. Signed three-index hkl refer to the ASE-imported cell without automatic primitive reduction; four-index Miller–Bravais input is unsupported. Independent and actual offscreen Qt checks cover BCC Fe, CsCl, hexagonal ZnO and a monoclinic cell. File > Save/Open Elastic Project saves checksummed arrays and opens them read-only without changing inputs or running a solver.
 
 ## Load the supplied table locally
 
@@ -28,7 +49,7 @@ $env:EMCD_SIM_LEGACY_ATOMIC_TABLE = 'C:\path\to\supplied\scattering.py'
 emcd-gui
 ```
 
-Non-Ni supported structures then use the external provider for **every species**, including any Ni in a mixed-element structure. All-Ni structures keep Lobato. Without configuration, non-Ni CIFs remain geometry-only. ASE's existing `atomic_numbers` mapping resolves canonical neutral chemical symbols; integer Z is also accepted. Ions, isotope aliases, booleans, fractional atomic numbers and Z outside 1–98 are rejected.
+Select **External legacy atomic table (Z=1–98)** in the GUI to use it for **every species**, including Ni in a mixed-element structure. Without configuration this selection is geometry-only with a clear diagnostic. It does not replace the bundled Adaptive default. ASE's existing `atomic_numbers` mapping resolves canonical neutral chemical symbols; integer Z is also accepted. Ions, isotope aliases, booleans, fractional atomic numbers and Z outside 1–98 are rejected by this external provider.
 
 The CIF gate continues to reject mixed/disordered and partial occupancies, including nonfinite occupancy metadata. Ordered, fully occupied sites of different species are supported. The lower-level IAM API already accepts explicit per-site occupancies and B values; that does not establish a disorder, thermal diffuse scattering or alloy model. Unsupported reciprocal ranges produce errors, not extrapolation or silent cutoff changes.
 
@@ -82,6 +103,6 @@ The supplied file describes a Python translation of `atomicscatfact.f:ATOMICSCAT
 
 Redistribution status is therefore **unverified**. Local functionality uses the user's external file; no original data are included in the feature commit or attributed to EMCD-Sim's MIT license. Suitable original provenance and permission remain necessary before bundling the table publicly. The [developer review](ELASTIC_PROVIDER_REVIEW.md) records the evidence and remaining integration limits.
 
-An openly licensed alternative candidate is the author's [adaptive Dirac–Padé project](https://github.com/NeuralSoftX/adaptive_dirac_pade_scattering_factor_2026), which provides Z=1–118 factors under [Apache-2.0](https://github.com/NeuralSoftX/adaptive_dirac_pade_scattering_factor_2026/blob/1667babb2c5bdb44a0535438b846eb1bbfbc03ac/LICENSE). It is investigated, not integrated or bundled. Its distinct coefficients need an explicit adapter and independent validation; adopting it would preserve the original Ni default. Third-party license and attribution notices would remain separate from EMCD-Sim's MIT license.
+The original review at d1c93ba left the author's Adaptive Dirac–Padé deposit as a candidate. The subsequent integration above independently checks its units, Fourier convention, coefficients, licensing and bounded numerical acceptance. Its new GUI/factory default does not alter original Lobato values or historical project selection. Third-party license and attribution notices remain separate from EMCD-Sim's MIT license.
 
 The preliminary report and patch remain under `outputs/elastic-extension-review/`; the completed low-g review is under `outputs/elastic-mott-final-review/`. Reproduce bounded checks with `python scripts/research/validate_atomic_elastic.py --output outputs/my-new-elastic-review`, or run only the low-STL audit with `python scripts/research/audit_legacy_mott.py --output outputs/my-new-mott-review`, after setting the external-table variable. Use a new directory to preserve previous reports. New tests use the real table only when `EMCD_SIM_LEGACY_ATOMIC_TABLE` is set; otherwise external-data cases skip explicitly. Missing/unreadable configured files name the provider, path and variable in the diagnostic. Core Ni, missing-provider and synthetic species-weighting controls do not need the table.

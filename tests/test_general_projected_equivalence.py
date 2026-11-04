@@ -31,6 +31,8 @@ def test_reviewed_geometry_potential_waves_and_double_response(zone,target,cutof
     else:cell=general.generators
     matched=ProjectedGeometry.from_crystal(fcc_nickel(),zone,target,generators=cell)
     settings=Settings(zone=zone,target=target,voltage=200,thickness=2,tilt=(general.bragg_tilt(),0),beam_cutoff=3.2 if zone!=(0,0,1) else 1.4,potential_cutoff=cutoff)
+    from dataclasses import replace
+    settings=replace(settings,elastic_provider='nickel-lobato-2014')
     elastic=elastic_model(Structure.nickel(),settings)
     a=reference.ProjectedNiFFT.build(elastic,grid_points=32,potential_cutoff=cutoff,projected_geometry=descriptor)
     b=ProjectedFFT.build(elastic,grid_points=32,potential_cutoff=cutoff,projected_geometry=matched)
