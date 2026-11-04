@@ -185,7 +185,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             target_valid=s.target in hkl and s.target!=(0,0,0)
             supported=not self.structure.elastic_reason and target_valid
             self.run_button.setEnabled(supported and not self.busy);self.align_button.setEnabled(target_valid and not self.busy)
-            self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'Ni IAM BW elastic preview supported.'))
+            self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'IAM BW elastic preview supported; EMCD material eligibility is separate.'))
             old_limits=(self.ax.get_xlim(),self.ax.get_ylim()) if self.ax.has_data() else ((-1.3,1.3),(-1.3,1.3))
             self.ax.clear();fresh=self.preview_is_current(s)
             self._diffraction_spots=self.ax.scatter(g[:,0],g[:,1],s=28,facecolors='none',edgecolors='.5',zorder=3)
@@ -220,7 +220,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.statusBar().showMessage(f'{len(hkl)} included reciprocal points. '+('Current preview.' if fresh else 'Geometry only; press Preview diffraction explicitly.'))
         except Exception as exc:
             self.invalidate_basis_view();self._basis_view_geometry=None;self.basis_view_button.setEnabled(False);self.toolbar.update()
-            self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'Ni IAM species supported; geometry needs correction.'))
+            self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'IAM elastic species supported; geometry needs correction.'))
             self.info.setPlainText(self.structure.description()+'\n\nNo valid current geometry: '+str(exc))
             self.run_button.setEnabled(False);self.align_button.setEnabled(False);self.tabs.setTabText(0,'Diffraction (last preview)');self.ax.clear();self.ax.set_title('Invalid configuration — no current plot');self.canvas.draw_idle();self.selection.setText(str(exc));self.statusBar().showMessage(str(exc))
 

@@ -18,7 +18,7 @@ import numpy as np
 from .crystal import Crystal
 from .elastic import BeamSet
 from .geometry import Microscope, electron_wavelength_angstrom
-from .scattering import IndependentAtomPotential
+from .scattering import IndependentAtomPotential, elastic_reflection_allowed
 
 
 @dataclass(frozen=True)
@@ -39,8 +39,8 @@ class PhysicalElasticModel:
                     and self.potential.crystal.species == self.crystal.species):
                 raise ValueError("potential.crystal and model crystal differ")
         for hkl in self.beams.hkl:
-            if not self.crystal.is_allowed(hkl):
-                raise ValueError(f"forbidden FCC reflection in beam set: {hkl}")
+            if not elastic_reflection_allowed(self.crystal, hkl, self.potential):
+                raise ValueError(f"Extinct elastic reflection in beam set: {hkl}")
             if abs(self.crystal.g_vector(hkl)[2]) > 1e-9:
                 raise ValueError("PhysicalElasticModel currently requires oriented ZOLZ (g_z=0)")
 

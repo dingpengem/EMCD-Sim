@@ -45,7 +45,11 @@ class GeometryTests(unittest.TestCase):
         for voltage in (80,200,300):
             np.testing.assert_allclose(tilt_from_za(za_from_tilt([5,-25],voltage),voltage),[5,-25])
 
+    @patch.dict(os.environ, {'EMCD_SIM_LEGACY_ATOMIC_TABLE': ''})
     def test_ase_cif_import_and_material_gate(self):
+        # Preserve the unconfigured-provider control even when other tests
+        # opt into the external table. Configured multi-element cases have
+        # separate integration tests in test_legacy_atomic_factors.py.
         folder=Path('outputs')/('gui_cif_test_'+uuid.uuid4().hex);folder.mkdir()
         for element in ('Ni','Cu'):
             file=folder/(element+'.cif');write(file,bulk(element,'fcc',a=3.524,cubic=True))
@@ -88,8 +92,9 @@ class InteractionTests(unittest.TestCase):
         w.zone.setText('7 1 0');w.target.setText('0 0 2');w.align()
         np.testing.assert_allclose(w.current[1],orientation(w.structure.atoms.cell.array,(7,1,0),(0,0,2)))
         self.assertIn((0,0,2),w.current[2])
-        w.structure=Structure(bulk('Cu','fcc',a=3.6,cubic=True));w.refresh();self.assertFalse(w.run_button.isEnabled())
-        self.assertTrue(all(not w.tabs.isTabEnabled(i) for i in (1,2,3)))
+        with patch.dict(os.environ, {'EMCD_SIM_LEGACY_ATOMIC_TABLE': ''}):
+            w.structure=Structure(bulk('Cu','fcc',a=3.6,cubic=True));w.refresh();self.assertFalse(w.run_button.isEnabled())
+            self.assertTrue(all(not w.tabs.isTabEnabled(i) for i in (1,2,3)))
 
     def test_cancel_does_not_register_completed_physics(self):
         entered=threading.Event();release=threading.Event();w=self.window

@@ -21,6 +21,8 @@ These guides describe public v0.7.0-beta.1 (binary source `97b2220e`), with curr
 
 ## Scientific validation and acceptance
 
+- [Neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md): external Z=1–98 table, scaling, interpolation, CIF restrictions and historical Ni compatibility.
+
 - [Public release entry](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1): authoritative publication state, assets, hashes and limitations.
 - [Original candidate/native acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md): recorded build `41516996056`, exact binary provenance and bounded native outcomes. Its prepublication status is historical.
 - [Physics correction acceptance](PHYSICS_CORRECTION_ACCEPTANCE.md) and [final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md): corrected forward-Born conventions and independent controls.

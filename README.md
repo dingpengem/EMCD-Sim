@@ -77,6 +77,8 @@ See the [raw a.u. comparison](docs/images/ni017_flipm_recomputed/summary_raw.png
 
 ## Scientific limitations
 
+Source-checkout development on `feat/neutral-atomic-elastic-local` includes an opt-in [neutral-atom elastic provider for Z=1–98](docs/ELASTIC_ATOMIC_FACTORS.md) using a separately supplied local table. Only Ni factors are bundled; all-Ni studies retain the original Lobato default. Ni-specific MDFF/EMCD eligibility is unchanged. The table's redistribution terms remain unverified, and this feature is absent from the published Windows binary.
+
 - Effective XMCD and atomic-transition MDFF approximations; no complete complex DFT Ni MDFF or DFT calculation is supplied.
 - Projected independent-atom potential and finite ZOLZ support; no genuine atomic-3D multislice, complete HOLZ, comprehensive TDS/absorptive or convergent-probe/CBED model.
 - Numerical convergence depends on basis, potential, FFT mesh, depth, slice step and detector sampling. [111] lower-support convergence remains uncertified; accurate elastic intensities alone do not certify EMCD.

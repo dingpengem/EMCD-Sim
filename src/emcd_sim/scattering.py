@@ -84,6 +84,8 @@ class IndependentAtomPotential:
         g = float(np.linalg.norm(self.crystal.g_vector(hkl)))
         phase = np.exp(-2j * np.pi * (self.crystal.fractional_positions @ np.asarray(hkl)))
         f = np.array([self.atomic_factors[s](g) for s in self.crystal.species], dtype=float)
+        if f.shape != (len(self.crystal.species),) or not np.all(np.isfinite(f)):
+            raise ValueError("Atomic factors must return finite scalar scattering amplitudes in angstrom")
         dw = np.exp(-np.array(self.debye_waller_b_angstrom2) * (g ** 2) / 4)
         return complex(np.dot(phase, f * dw * np.array(self.occupancies)))
 
@@ -116,3 +118,30 @@ class FourierCutoffPotential:
         return (self.original.structure_factor(hkl) if
                 np.linalg.norm(self.crystal.g_vector(hkl)) <= self.cutoff_inv_angstrom + 1e-10
                 else 0j)
+
+
+def elastic_reflection_allowed(crystal: Crystal, hkl: tuple[int, int, int],
+                               potential=None, tol: float = 1e-9) -> bool:
+    """Test actual IAM extinction when an explicit elastic potential is supplied.
+
+    The historical equal-atom test remains the default for legacy Ni callers.
+    Multi-species/site-dependent callers must supply their potential. A finite
+    potential cutoff is a numerical approximation, not a structural extinction;
+    unwrap it before choosing beams, including beams reached indirectly.
+    """
+    if not np.isfinite(tol) or tol < 0:
+        raise ValueError("Reflection tolerance must be finite and nonnegative")
+    if potential is None:
+        return crystal.is_allowed(hkl, tol=tol)
+    while isinstance(potential, FourierCutoffPotential):
+        potential = potential.original
+    source = potential.crystal
+    if (source.species != crystal.species
+            or source.fractional_positions.shape != crystal.fractional_positions.shape
+            or not np.allclose(source.lattice_angstrom, crystal.lattice_angstrom, rtol=0, atol=1e-12)
+            or not np.allclose(source.fractional_positions, crystal.fractional_positions, rtol=0, atol=1e-12)):
+        raise ValueError("Beam selection potential must describe the same crystal and site ordering")
+    coefficient = potential.structure_factor(hkl)
+    if not np.isfinite(coefficient):
+        raise ValueError("Elastic structure factor must be finite")
+    return abs(coefficient) > tol

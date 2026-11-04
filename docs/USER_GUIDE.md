@@ -38,6 +38,8 @@ Reciprocal geometry can be inspected more broadly than inelastic scattering. The
 
 ## 3. Diffraction settings
 
+Source-only development on `feat/neutral-atomic-elastic-local` supports local ordered multi-element **elastic** diffraction: see [neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md). Configure the external table before launching from that checkout; only Ni factors are bundled and all-Ni structures keep Lobato. The published binary does not include this feature. The inelastic/EMCD gate still requires verified conventional FCC Ni.
+
 **Tilt X/Y (mrad)** are absolute local transverse incidence parameters relative to the nominal zone. Actual voltage and tilt determine excitation errors. They are not a calibrated mechanical holder-angle transformation. **Tilt step (mrad)** selects spin-box increments (0.01, 0.1 or 1 mrad); changing the step alone neither changes tilt nor starts a scan/solver. Record the actual X/Y values for reproducibility.
 
 - **Reset to zone axis** sets zero X/Y tilt.

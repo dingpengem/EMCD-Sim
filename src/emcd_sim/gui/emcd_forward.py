@@ -83,6 +83,10 @@ class ForwardSettings:
 def material_reason(structure):
     # Conservative Stage B gate: arbitrary CIF inspection is not MDFF validation.
     ref=Structure.nickel().atoms;a=structure.atoms
+    # Keep the original Ni-only material restriction independent of the wider
+    # elastic capability. Matching coordinates/cell alone do not identify Ni.
+    if set(a.get_chemical_symbols())!={'Ni'}:
+        return 'Stage B MDFF requires Ni; general-material elastic factors do not provide general-material EMCD.'
     if structure.elastic_reason:return structure.elastic_reason
     if (len(a)!=len(ref) or not np.allclose(a.cell.array,ref.cell.array,atol=1e-7)
         or not np.allclose(a.get_scaled_positions()%1,ref.get_scaled_positions()%1,atol=1e-7)):

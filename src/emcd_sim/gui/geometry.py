@@ -13,7 +13,8 @@ from emcd_sim.elastic import BeamSet
 from emcd_sim.geometry import Microscope,electron_wavelength_angstrom
 from emcd_sim.physical_elastic import PhysicalElasticModel
 from emcd_sim.scattering import IndependentAtomPotential
-from emcd_sim.scattering import FourierCutoffPotential
+from emcd_sim.scattering import FourierCutoffPotential, elastic_reflection_allowed
+from emcd_sim.legacy_atomic_factors import factors_for_elastic_species, configured_legacy_factors
 from emcd_sim.physical_elastic import excitation_errors_angstrom_inv
 
 
@@ -56,9 +57,11 @@ class Structure:
 
     @property
     def elastic_reason(self):
-        if set(self.atoms.get_chemical_symbols())!={'Ni'}:return 'Reciprocal geometry only: bundled IAM elastic factors support Ni, not these species.'
         for occ in self.atoms.info.get('occupancy',{}).values():
-            if len(occ)!=1 or abs(sum(occ.values())-1)>1e-8:return 'Reciprocal geometry only: partial/disordered CIF occupancies are not supported.'
+            values=np.asarray(list(occ.values()),float)
+            if (len(occ)!=1 or not np.isfinite(values).all() or abs(sum(values)-1)>1e-8):return 'Reciprocal geometry only: partial/disordered CIF occupancies are not supported.'
+        try:factors_for_elastic_species(self.atoms.get_chemical_symbols())
+        except (ValueError,TypeError,OSError,ImportError) as exc:return f'Reciprocal geometry only: {exc}'
         return ''
 
     def description(self):
@@ -99,13 +102,15 @@ def geometry(structure,settings,*,systematic_row=False):
         raise ValueError('Cell/cutoff search too large for interactive preview; lower the beam cutoff.')
     bounds=limits.astype(int)
     items=[];has_factors=not structure.elastic_reason
+    selection_potential=(IndependentAtomPotential(crystal,debye_waller_b_angstrom2=settings.b_factor,
+        atomic_factors=factors_for_elastic_species(crystal.species)) if has_factors else None)
     for h in product(*(range(-v,v+1) for v in bounds)):
         if settings.basis_mode=='two-beam' and h not in ((0,0,0),settings.target):continue
         if systematic_row and np.any(np.cross(h,settings.target)):continue
         if np.dot(h,settings.zone)!=0:continue
         g=crystal.g_vector(h);length=np.linalg.norm(g)
         if length>settings.beam_cutoff+1e-10:continue
-        if has_factors and not crystal.is_allowed(h):continue
+        if has_factors and not elastic_reflection_allowed(crystal,h,selection_potential):continue
         items.append((length,h))
     items.sort(key=lambda p:(round(p[0],12),p[1]));hkl=tuple(p[1] for p in items)
     if len(hkl)>121:raise ValueError(f'{len(hkl)} beams exceed the interactive limit 121. Lower the radial cutoff; no beams were silently dropped.')
@@ -117,7 +122,8 @@ def geometry(structure,settings,*,systematic_row=False):
 def elastic_model(structure,settings,*,systematic_row=False):
     if structure.elastic_reason:raise ValueError(structure.elastic_reason)
     crystal,R,hkl,g,microscope=geometry(structure,settings,systematic_row=systematic_row)
-    potential=FourierCutoffPotential(IndependentAtomPotential(crystal,debye_waller_b_angstrom2=settings.b_factor),settings.potential_cutoff)
+    potential=FourierCutoffPotential(IndependentAtomPotential(crystal,debye_waller_b_angstrom2=settings.b_factor,
+        atomic_factors=factors_for_elastic_species(crystal.species)),settings.potential_cutoff)
     return PhysicalElasticModel(crystal,microscope,BeamSet(hkl),potential)
 
 
@@ -144,7 +150,10 @@ def align_bragg(g,tilt,voltage,lock='None'):
 
 def preview(structure,settings,*,systematic_row=False):
     model=elastic_model(structure,settings,systematic_row=systematic_row);z=np.array([0.,settings.thickness]);psi=model.amplitudes(z)
+    provider=(dict(provider='nickel-lobato-2014',units='angstrom') if set(model.crystal.species)=={'Ni'}
+        else configured_legacy_factors().provenance())
     return dict(settings=asdict(settings),beam_hkl=np.array(model.beams.hkl),g=model.reciprocal_vectors_xy,
         s=excitation_errors_angstrom_inv(model),depth_nm=z,amplitudes=psi,intensity=abs(psi[-1])**2,
         frame=orientation(structure.atoms.cell.array,settings.zone,settings.target),source=structure.source,systematic_row=systematic_row,
-        source_sha256=structure.sha256,structure_description=structure.description(),model='Ni IAM, finite oriented ZOLZ BW; elastic only, no absorption/TDS or physical CBED disks')
+        source_sha256=structure.sha256,structure_description=structure.description(),elastic_provider=provider,
+        model='Neutral-atom IAM, finite oriented ZOLZ BW; elastic only, no absorption/TDS or physical CBED disks')
