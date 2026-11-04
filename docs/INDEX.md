@@ -1,6 +1,6 @@
 # Documentation index
 
-[Home](../README.md) · [Public Windows prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1)
+[Home](../README.md) · [Public Windows prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1)
 
 ## Current user documentation
 
@@ -17,13 +17,13 @@
 |[Recalculated Ni example provenance](images/ni017_flipm_recomputed/README.md)|Fresh 9/30 nm spectra, twelve portraits, conventional versus fixed-detector Flip-M|
 |[Changelog](CHANGELOG.md)|Version/milestone and documentation history|
 
-These guides describe public v0.7.0-beta.1 (binary source `97b2220e`), with current main documentation. A source feature is not assumed present in that EXE unless it is verified at the binary's source. At the review baseline `08d04fc3`, changes after the binary source were documentation-only.
+These guides describe v0.8.0-beta.1 Windows-only Research Beta. The previous v0.7.0 binary (source `97b2220e`) and its acceptance remain historical. The v0.8.0 tag identifies its exact accepted Windows build source; later acceptance documentation does not change the embedded source identity.
 
 ## Scientific validation and acceptance
 
 - [Neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md): bundled Apache-2.0 Z=1–118 Adaptive default, named Ni Lobato compatibility, external Z=1–98 table and strict Mott limits, CIF indexing and [local acceptance](acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md).
 
-- [Public release entry](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1): authoritative publication state, assets, hashes and limitations.
+- [Public release entry](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1): authoritative publication state, assets, hashes and limitations.
 - [Original candidate/native acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md): recorded build `41516996056`, exact binary provenance and bounded native outcomes. Its prepublication status is historical.
 - [Physics correction acceptance](PHYSICS_CORRECTION_ACCEPTANCE.md) and [final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md): corrected forward-Born conventions and independent controls.
 - [Generalized Multislice merge review](GENERALIZED_MULTISLICE_MERGE_READINESS.md): bounded five-orientation support and unresolved [111] convergence, not unrestricted certification.
@@ -31,7 +31,7 @@ These guides describe public v0.7.0-beta.1 (binary source `97b2220e`), with curr
 - [Uniform beam-basis study](DOUBLE_CHANNELING_UNIFORM_BASIS.md): tested configurations, independent sensitivity and comparison scope.
 - [Current 9/30 nm case-study tutorial](TUTORIAL.md#part-vii-practical-ni-017-case-study): verified existing BW Double spectra, explicit measurement denominators, no rerun required.
 
-Windows native automated acceptance passed. Independent clean-machine acceptance is **not tested**. Linux CI issues and uncertified macOS status remain distinct limitations. Functional support, BW/MS agreement, numerical convergence and physical validation are separate claims.
+Windows native acceptance is recorded per release; independent clean-machine acceptance is **not tested**. Linux has an unresolved Python shutdown `bool_dealloc` abort; macOS tests stall in a Qt modal preflight dialog. Those failures are not suppressed and are not Windows-only release gates. Functional support, BW/MS agreement, numerical convergence and physical validation are separate claims.
 
 ## Historical records
 

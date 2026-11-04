@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [Index](INDEX.md)
 
-This is the control/reference manual for the public **v0.7.0-beta.1 Windows Research Beta**. Binary source: `97b2220e5329dad6f98eedec61f58a6cf07d9da8`; release-tag commit: `481fed14b78f5439bb417bdc53d38d845a6b2592`. Later documentation does not change the binary. Native Windows acceptance passed; separate clean-machine installation remains untested. These pages do not certify arbitrary scientific configurations.
+This is the control/reference manual for **v0.8.0-beta.1, a Windows-only Research Beta**. The tag targets the exact accepted build source, recorded in About/build information and the release manifest. Separate clean-machine installation remains untested. Linux/macOS are not certified packaged platforms. These pages do not certify arbitrary scientific configurations.
 
 > **Legacy magnetic results:** earlier released v0.6.1 packages used a superseded Born/MDFF convention. Preserve their raw arrays, source and convention; revalidate signed magnetic results before comparison. Loading a project does not update its physics. Missing convention metadata is unknown/legacy-unverified.
 
@@ -26,7 +26,7 @@ The main window has three adjustable regions: **Settings**, the central **Diffra
 
 Results include **Diffraction**, **EMCD Angular Maps**, **Virtual Detector EELS**, **Magnetic / Nonmagnetic**, **Calculation Information**, and additional saved diffraction/comparison views when available. Disabled views generally lack calculated data; enabling a display cannot manufacture missing maps or spectra.
 
-![Released Windows application with collapsible settings, diffraction viewer and results](images/v070b1/gui_overview.png)
+![Historical v0.7.0 Windows application with collapsible settings, diffraction viewer and results](images/v070b1/gui_overview.png)
 
 *Actual native packaged EXE, using a deliberately small 1 nm, selected-energy acceptance profile. The plot shows two energy samples, not a full spectrum.*
 
@@ -34,13 +34,13 @@ Results include **Diffraction**, **EMCD Angular Maps**, **Virtual Detector EELS*
 
 **FCC Ni default** creates the conventional cubic Ni reference, a = 3.524 Å. **Load CIF…** reads a CIF through ASE; **Inspect structure…** reports source hash, cell, sites and warnings. The GUI file-import route is CIF, not a general browser for every ASE-supported format.
 
-Reciprocal geometry can be inspected more broadly than inelastic scattering. The bundled elastic factors support Ni; non-Ni structures can produce explicit geometry-only messages. Disordered/partial occupancies and unsupported cells are not silently replaced. Current EELS/EMCD additionally requires the verified conventional FCC Ni structure. Importing an arbitrary CIF does not construct a material-specific MDFF or validate its magnetic response.
+Reciprocal geometry can be inspected more broadly than inelastic scattering. The bundled Adaptive provider supports neutral Z=1–118; unsupported provider/species combinations produce explicit geometry-only messages. Disordered/partial occupancies and unsupported cells are not silently replaced. Current EELS/EMCD additionally requires the verified conventional FCC Ni structure. Importing an arbitrary CIF does not construct a material-specific MDFF or validate its magnetic response.
 
 ## 3. Diffraction settings
 
-Source-only development on `feat/neutral-atomic-elastic-local` bundles Adaptive Dirac–Padé 2026 neutral Z=1–118 factors for ordered multi-element **elastic** diffraction: see [neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md). The provider selector defaults to Adaptive for new calculations, including Ni; select **Ni Lobato 2014 (legacy compatibility)** to reproduce historical Ni studies. Old projects without a provider field restore Lobato explicitly. Only the external legacy option requires `EMCD_SIM_LEGACY_ATOMIC_TABLE`; its absence does not break bundled-provider calculations. The published binary does not include this feature. The inelastic/EMCD gate still requires verified conventional FCC Ni.
+This Windows release bundles Adaptive Dirac–Padé 2026 neutral Z=1–118 factors for ordered multi-element **elastic** diffraction: see [neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md). The provider selector defaults to Adaptive for new calculations, including Ni; select **Ni Lobato 2014 (legacy compatibility)** to reproduce historical Ni studies. Old projects without a provider field restore Lobato explicitly. Only the external legacy option requires `EMCD_SIM_LEGACY_ATOMIC_TABLE`; its absence does not break bundled-provider calculations. The previous v0.7.0-beta.1 binary is preserved and does not contain this feature. The inelastic/EMCD gate still requires verified conventional FCC Ni.
 
-In this source feature, signed three-index hkl labels refer to the ASE-imported CIF cell shown in the structure summary. No automatic primitive reduction is performed. A transformed cell needs an explicit index-basis transformation; four-index Miller–Bravais input is unsupported. [001] hexagonal patterns use the actual nonorthogonal reciprocal metric. BCC Fe (110) belongs to [001] by the zone law; CsCl (100) survives because its species factors differ. Partial/disordered occupancies remain unsupported. Oversized reciprocal searches fail with a diagnostic rather than silently truncating support.
+In this release, signed three-index hkl labels refer to the ASE-imported CIF cell shown in the structure summary. No automatic primitive reduction is performed. A transformed cell needs an explicit index-basis transformation; four-index Miller–Bravais input is unsupported. [001] hexagonal patterns use the actual nonorthogonal reciprocal metric. BCC Fe (110) belongs to [001] by the zone law; CsCl (100) survives because its species factors differ. Partial/disordered occupancies remain unsupported. Oversized reciprocal searches fail with a diagnostic rather than silently truncating support.
 
 **File > Save Elastic Project** saves the current elastic preview to a new checksummed directory with its provider, numeric structure and diffraction arrays. **File > Open Elastic Project** opens those saved arrays in a read-only diffraction window without changing current input controls or running a solver. Full EMCD projects retain their existing separate workflow. Applying saved EMCD settings restores the recorded provider; missing or mismatched provider provenance blocks rerunning but leaves saved results viewable. Changing providers invalidates a preview. Existing verified automatic Ni convergence profiles apply only to Lobato; the new provider requires configuration-specific convergence checks.
 
@@ -82,7 +82,7 @@ The origin cross is **transmitted (000)**. The yellow star is the **projected cr
 
 The Laue circle is above Thales but below diffraction spots/markers/apertures. Use **Show ZOLZ Laue circle** to toggle it. At exact target Bragg both circles pass through 000 and G, but they need not coincide when there is off-row tilt. Zero incident tilt gives a zero-radius Laue locus. Neither overlay is an intensity contour or a guarantee of magnetic symmetry.
 
-![Native current elastic diffraction preview with indexed reflections and overlays](images/v070b1/diffraction_preview.svg)
+![Historical v0.7.0 elastic diffraction preview with indexed reflections and overlays](images/v070b1/diffraction_preview.svg)
 
 *SVG exported by the accepted EXE before dragging, with trailing whitespace cleaned in the documentation copy only. Geometry/styles are unchanged. This is an actual elastic preview, not an experimental diffraction pattern.*
 
@@ -320,14 +320,14 @@ Current convention is **forward_born_dagger_g_minus_h_v1**, with `Re Tr(RT)`, co
 
 |Identity|Current public Windows package|
 |---|---|
-|Display / Python / Windows numeric version|v0.7.0-beta.1 / 0.7.0b1 / 0.7.0.1|
-|Release tag target|481fed14b78f5439bb417bdc53d38d845a6b2592|
-|Binary source|97b2220e5329dad6f98eedec61f58a6cf07d9da8|
-|Validated Actions run|41516996056|
-|Portable ZIP SHA256|8d157d8b62fb6570d201360cdae85f44aa4cea2c1478f1949eb4336a135e17bc|
-|Physics/numerical source versus later main docs|No production-source difference at the documentation-review baseline 08d04fc3|
+|Display / Python / Windows numeric version|v0.8.0-beta.1 / 0.8.0b1 / 0.8.0.1|
+|Release tag target|Exact accepted Windows build-source commit; see release notes/About|
+|Binary source|Same commit as v0.8.0-beta.1 tag target|
+|Windows acceptance|See version-specific release acceptance and source manifest|
+|Portable ZIP SHA256|See v0.8.0-beta.1 SHA256SUMS.txt and release acceptance|
+|Physics compatibility|Ni event kernels unchanged; new calculations use Adaptive elastic factors|
 
-Five native orientations, eight exact scientific comparisons, eighteen worker/cancellation scenarios and native overlay/export tests passed within their recorded profiles. These are bounded, partly overlapping inventories, not universal certification. See [public release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1) and [original acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md). Historical acceptance/release notes retain their milestone-specific “not published” statements; the public release entry is authoritative for current publication state.
+Five native orientations, eight exact scientific comparisons, eighteen worker/cancellation scenarios and native overlay/export tests passed within their recorded profiles. These are bounded, partly overlapping inventories, not universal certification. Those earlier inventories refer to v0.7.0. See the [v0.8.0 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1), [release notes](RELEASE_NOTES_0_8_0_BETA_1.md) and [Windows acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_0_BETA_1_ACCEPTANCE.md); the [v0.7.0 acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md) is preserved. Historical acceptance/release notes retain their milestone-specific “not published” statements; the public release entry is authoritative for current publication state.
 
 <a id="validated-ni-017-8-nm-double-example"></a>
 <a id="complete-200-kv-thickness-workflow"></a>

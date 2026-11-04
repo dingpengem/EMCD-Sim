@@ -11,10 +11,10 @@ def test_version_matches_source_metadata():
     import tomllib
     from emcd_sim.gui.runtime import build_info, LABEL
     project = Path(__file__).resolve().parents[1]/'pyproject.toml'
-    assert __version__ == '0.7.0b1' == tomllib.loads(project.read_text(encoding='utf-8'))['project']['version']
+    assert __version__ == '0.8.0b1' == tomllib.loads(project.read_text(encoding='utf-8'))['project']['version']
     assert build_info()['application_version'] == __version__
     from emcd_sim import __display_version__
-    assert __display_version__ == 'v0.7.0-beta.1'
+    assert __display_version__ == 'v0.8.0-beta.1'
     assert __display_version__ in LABEL and build_info()['display_version'] == __display_version__
 
 

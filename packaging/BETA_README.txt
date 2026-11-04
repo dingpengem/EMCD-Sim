@@ -1,8 +1,21 @@
-EMCD-Sim v0.7.0-beta.1 - Physics-Corrected Double-Channeling EMCD Simulation
-Windows x64 local research candidate; unsigned. Python package 0.7.0b1.
-Windows numeric file/product version 0.7.0.1.
+EMCD-Sim v0.8.0-beta.1 - Windows-only Research Beta
+Windows x64 portable research prerelease; unsigned. Python package 0.8.0b1.
+Windows numeric file/product version 0.8.0.1.
 Physics convention: forward_born_dagger_g_minus_h_v1.
-No GitHub release, tag or Actions artifact is created by this local build.
+The release tag targets the exact accepted build source in About/build_info.json.
+New GUI calculations default to bundled Adaptive Dirac-Pade neutral Z=1-118
+elastic factors. Ni Lobato remains the historical compatibility provider; old
+projects without provider settings restore Lobato. Provider identity and
+coefficient digests are saved with new projects. Ordered multi-element CIFs
+support elastic diffraction, including non-FCC indexing. Inelastic MDFF/EMCD
+remains restricted to the verified conventional FCC Ni model.
+The Apache-2.0 coefficient subset has separate LICENSE/NOTICE/provenance.
+No upstream HDF5 archive or h5py is needed by the bundled JSON evaluator.
+The unlicensed legacy Z=1-98 table is NOT bundled; its optional adapter
+requires external data and enforces the documented low-g reliability guard.
+Linux/macOS are not certified or packaged in this Windows-only release.
+Linux retains a bool_dealloc shutdown abort; macOS retains a Qt modal-test
+stall. These known CI issues have not been suppressed.
 
 CRITICAL SCIENTIFIC COMPATIBILITY NOTICE
 Legacy Windows packages before v0.7.0-beta.1 used a superseded Born/MDFF
@@ -19,7 +32,7 @@ Extract the complete folder. Run EMCD-Sim.exe; keep _internal beside it.
 Python, Conda and WIEN2k are not required to run this application.
 Use your own writable folder for saved projects and exports.
 SHA256SUMS.txt lists the application files. The archive checksum is supplied
-separately. This candidate is tested on the development Windows host;
+separately. This package is tested on the development Windows host;
 independent clean-machine acceptance has not been performed.
 
 The bundled five-column Ni spectrum is the repository-tracked example only.

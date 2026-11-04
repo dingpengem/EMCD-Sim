@@ -1,12 +1,19 @@
 # Changelog
 
-## Unreleased source feature: unified neutral-atom elastic factors
+## v0.8.0-beta.1 — Windows-only Research Beta (2026-11-03)
+
+- Fresh Windows portable build with consistent Python 0.8.0b1 / Windows 0.8.0.1 metadata; exact source is the release tag target.
+- Windows source and extracted-EXE acceptance are recorded in the [release acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_0_BETA_1_ACCEPTANCE.md). Independent clean-machine installation and experimental quantitative accuracy remain unverified.
+- Linux/macOS are not certified or packaged: unresolved Linux bool_dealloc shutdown abort and macOS Qt modal preflight stall remain visible.
+- Preserve historical v0.7.0 assets and the recalculated 9/30 nm Ni Lobato case study, with raw a.u. primary and normalized percentages supplementary.
+
+### Unified neutral-atom elastic factors
 
 - Bundle pinned Apache-2.0 Adaptive Dirac–Padé 2026 Z=1–118 coefficient data with separate license, attribution and provenance. Use an independent NumPy evaluator over crystallographic g=0..36 inverse angstrom; no new runtime dependency or double potential scaling.
 - Default new GUI/provider-factory calculations to Adaptive; retain named Ni Lobato, unchanged legacy Python constructor and explicit Lobato fallback for old saved settings. Record provider identity/digests in new projects.
 - Preserve the external Z=1–98 adapter and strict all44 XF/Mott low-g guard. Its unlicensed table remains outside Git.
 - Validate BCC Fe, CsCl, hexagonal ZnO and a monoclinic cell using independent reciprocal references, actual Qt indexing/click controls and bounded matched BW/MS checks. Add checksummed elastic-only save/read-only open.
-- Preserve historical scientific outputs and Ni MDFF/EMCD kernels. No release version change, Windows build, merge or push. See the [acceptance reports](acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md) for numerical/physical limits.
+- Preserve historical scientific outputs and Ni MDFF/EMCD kernels. This release changes packaging/version and provider availability, without rerunning historical studies. See the [acceptance reports](acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md) for numerical/physical limits.
 
 ## 2026-11-03: recalculated Ni documentation example
 

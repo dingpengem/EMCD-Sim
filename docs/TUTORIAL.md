@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Install](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [User Manual](USER_GUIDE.md) · [Physics](PHYSICS.md)
 
-This tutorial describes the public **v0.7.0-beta.1 Windows Research Beta**, whose binary source is `97b2220e`. It explains the small [Quick Start](QUICK_START.md), then interprets a completed research case. You do **not** need to rerun the expensive case study to learn the workflow.
+This tutorial describes **v0.8.0-beta.1, a Windows-only Research Beta**, with bundled Adaptive Dirac–Padé neutral Z=1–118 factors as the new GUI default. Historical saved Ni settings retain Lobato; select it explicitly to reproduce the preserved case study. Linux/macOS are not certified packaged platforms. It explains the small [Quick Start](QUICK_START.md), then interprets a completed research case. You do **not** need to rerun the expensive case study to learn the workflow.
 
 Native Windows acceptance is not universal numerical or experimental validation. Older v0.6.1 signed magnetic results use a superseded convention and need revalidation; opening them does not update their physics.
 
@@ -65,7 +65,7 @@ The star coincides with (000) only at zero tilt. With the existing relativistic 
 
 At exact target Bragg, the Laue circle passes through (000) and G. It coincides with Thales only when its center is G/2; a nonzero perpendicular mistilt generally prevents coincidence. Neither circle is an intensity contour, a convergence guarantee, or a statement that EMCD is uniform along a circle.
 
-![Actual exported diffraction geometry after native ZA dragging, with distinct Laue and Thales circles and fixed A/B apertures](images/v070b1/laue_drag.png)
+![Historical v0.7.0 exported diffraction geometry after native ZA dragging, with distinct Laue and Thales circles and fixed A/B apertures](images/v070b1/laue_drag.png)
 
 *Actual EXE export after dragging. Gray unfilled diffraction positions and “no current intensities” indicate an invalidated preview; the two circles are intentionally different.*
 

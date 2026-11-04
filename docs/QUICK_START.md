@@ -2,11 +2,13 @@
 
 [Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Tutorial](TUTORIAL.md) · [User Manual](USER_GUIDE.md)
 
-This 5–10 minute walkthrough targets the **released v0.7.0-beta.1 Windows Research Beta**. Setup and runtime depend on the machine. It is a deliberately small functional demonstration—not a quantitatively converged Ni result or the advanced 9/30 nm spectral study.
+This 5–10 minute walkthrough targets the **released v0.8.0-beta.1 Windows Research Beta**. Setup and runtime depend on the machine. It is a deliberately small functional demonstration—not a quantitatively converged Ni result or the advanced 9/30 nm spectral study.
+
+New calculations use the bundled Adaptive Dirac–Padé neutral Z=1–118 provider. Select Ni Lobato explicitly for the historical 9/30 nm examples; old saved projects without provider metadata restore Lobato. This is a Windows-only Research Beta; Linux/macOS are not certified.
 
 ## 1. Extract and open
 
-Install the verified [public Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1) using the [Installation Guide](INSTALL_WINDOWS.md). Launch the extracted `EMCD-Sim.exe` with `_internal` beside it. Confirm version/convention in **Help → About**. No Python installation is needed.
+Install the verified [public Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1) using the [Installation Guide](INSTALL_WINDOWS.md). Launch the extracted `EMCD-Sim.exe` with `_internal` beside it. Confirm version/convention in **Help → About**. No Python installation is needed.
 
 If necessary, select **View → Restore Default Layout**. Settings scroll vertically; use the blue section headers/chevrons to expand controls. These instructions name the controls in the released EXE.
 
