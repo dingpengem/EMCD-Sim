@@ -5,7 +5,7 @@ import numpy as np
 from legacy_geometry import Ni117Geometry
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
 from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
-from emcd_sim.single_channeling_tensor import _tensor_angular_maps,fcc_site_phase_matrix
+from emcd_sim.single_channeling_tensor import _tensor_angular_maps,historical_ni_site_phase_matrix
 from emcd_sim.multislice_reference import coherence_from_amplitudes
 from emcd_sim.simulation import EMCDSimulation
 from emcd_sim.geometry import VirtualDetector
@@ -53,7 +53,7 @@ def test_cartesian_single_response_matches_original_kernel():
         cfg=ForwardSettings(axis_declared=True,magnetization=tuple(axis['crystal']))
         for tensor in tensors(cfg,np.array(study.ENERGIES),Ni117Geometry().frame):
             T=tensor.tensor_angstrom2_per_ev[0]
-            n,m=_tensor_angular_maps(model,T,831.271,C,fcc_site_phase_matrix(model),q[:,0],q[:,1])
+            n,m=_tensor_angular_maps(model,T,831.271,C,historical_ni_site_phase_matrix(model),q[:,0],q[:,1])
             np.testing.assert_allclose(study.intensities_from_response(response,T),2*(n+m),rtol=2e-14,atol=1e-16)
 
 

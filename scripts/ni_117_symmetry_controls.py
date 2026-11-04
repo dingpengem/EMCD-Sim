@@ -37,7 +37,7 @@ def run(p,t,offset,method):
     z=np.linspace(0,t,p.depth);grid=incoming=prepared=None
     if method=='bloch':waves=elastic.amplitudes(z);prepared=base.prepare_incoming_bloch(elastic,t,p.depth)
     else:
-        grid=base.ProjectedNiFFT.build(elastic,grid_points=p.fft,potential_cutoff=p.potential,projected_geometry=base.Ni117Geometry())
+        grid=base.ProjectedFFT.build(elastic,grid_points=p.fft,potential_cutoff=p.potential,projected_geometry=base.Ni117Geometry())
         incoming=base.incident_fields(grid,t,depth_steps=p.depth,slice_step_nm=p.step);waves=incoming[0][:,grid.indices(elastic.beams.hkl)]
     responses=[];reused=0;calculated=0
     for ie,energy in enumerate(base.ENERGIES):

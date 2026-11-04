@@ -12,7 +12,7 @@ from emcd_sim.double_channeling import BlochStates, depth_response, equivalent_s
 from emcd_sim.multislice_double_channeling import (
     transition_modes, FFTSplitStep, forward_event_amplitudes,
 )
-from emcd_sim.single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix
+from emcd_sim.single_channeling_tensor import _tensor_angular_maps, historical_ni_site_phase_matrix
 from emcd_sim.geometry import characteristic_qz_angstrom_inv
 
 
@@ -58,7 +58,7 @@ def measurements():
             for dn,wn in zip(d,w):
                 amplitude = sum(a[g]*phase[g]*np.dot(k[g,0],dn.conj()) for g in range(2))
                 direct += wz*wn*abs(amplitude)**2/len(sites)
-    phase_single = fcc_site_phase_matrix(model)
+    phase_single = historical_ni_site_phase_matrix(model)
     # Actual corrected Single kernel, using the original tensor unchanged.
     ev,od = _tensor_angular_maps(model,t,e,coherence,phase_single,
                                 np.array([q[0]]),np.array([q[1]]))

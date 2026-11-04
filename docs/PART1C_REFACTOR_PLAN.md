@@ -38,9 +38,8 @@ exactly as the historical tiny-radial implementation did. No interpolation repla
 historical evaluation. Broadening, phases and event order are unchanged.
 
 Compatibility retained: ni_2p_to_3d_dipole alias; fcc_site_phase_matrix eligibility wrapper;
-ProjectedNiFFT class alias; old forward function imports; _calculate admission hook;
-historical L2/L3 sampling/validation; Ni project/config interpretation. Deprecated names
-remain only where public compatibility or independent references require them.
+old forward function imports; _calculate admission hook;
+historical L2/L3 sampling/validation; Ni project/config interpretation. Obsolete numerical aliases are removed; historical names remain only for real Ni inputs/data or independent reference implementations.
 
 ## Review limits
 

@@ -18,7 +18,7 @@ from emcd_sim.double_channeling import double_channeling_response, intensities_f
 from emcd_sim.multislice_double_channeling import (
     ProjectedFFT, incident_fields, multislice_double_channeling_response,
 )
-from emcd_sim.single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix
+from emcd_sim.single_channeling_tensor import _tensor_angular_maps, historical_ni_site_phase_matrix
 from emcd_sim.multislice_reference import coherence_from_amplitudes
 
 
@@ -86,10 +86,10 @@ def test_actual_corrected_bw_ms_and_single_against_born(free_exit):
         model=replace(nickel_physical_benchmark(),elastic=elastic)
         selected=fields[:,grid.indices(beams.hkl)]
         coherence=coherence_from_amplitudes(z,selected)
-        even,odd=_tensor_angular_maps(model,tensor,energy,coherence,fcc_site_phase_matrix(model),q[:,0],q[:,1])
+        even,odd=_tensor_angular_maps(model,tensor,energy,coherence,historical_ni_site_phase_matrix(model),q[:,0],q[:,1])
         assert_allclose(thickness*(even+odd),intensities_from_response(ms,tensor),rtol=2e-12,atol=2e-14)
         # Independent high-order incoming coherence for the Single BW control.
         coherence=sum(weight*np.outer(exp2(hi,zi)[:,0],exp2(hi,zi)[:,0].conj())
             for zi,weight in zip((x+1)*thickness/2,wz/2))
-        even,odd=_tensor_angular_maps(model,tensor,energy,coherence,fcc_site_phase_matrix(model),q[:,0],q[:,1])
+        even,odd=_tensor_angular_maps(model,tensor,energy,coherence,historical_ni_site_phase_matrix(model),q[:,0],q[:,1])
         assert_allclose(thickness*(even+odd),reference[0],rtol=2e-13,atol=2e-14)

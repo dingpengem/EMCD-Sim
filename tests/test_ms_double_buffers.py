@@ -15,7 +15,9 @@ BASE='39aafb6701f7cf84643c10366afac59401e8d91e'
 def old():
     name='emcd_sim._buffer_reference_test';module=types.ModuleType(name);module.__package__='emcd_sim';sys.modules[name]=module
     source=subprocess.check_output(['git','show',BASE+':src/emcd_sim/multislice_double_channeling.py']).decode('utf-8-sig')
-    exec(compile(source,'baseline_multislice.py','exec'),module.__dict__);return module
+    exec(compile(source,'baseline_multislice.py','exec'),module.__dict__)
+    module.ProjectedFFT=module.ProjectedNiFFT  # Archived API binding only.
+    return module
 
 
 @pytest.mark.parametrize('shape',[(16,),(12,12)])
@@ -44,7 +46,7 @@ def test_matched_reference_response_and_all_diagnostics_exact(old,thickness):
     results=[];incoming=[]
     for impl in (old,ms):
         extra={} if impl is old else dict(fft_generators=((1,0,0),(0,7,-1)))
-        grid=impl.ProjectedNiFFT.build(elastic,grid_points=32,potential_cutoff=2.2,projected_geometry=Ni017Geometry(),**extra)
+        grid=impl.ProjectedFFT.build(elastic,grid_points=32,potential_cutoff=2.2,projected_geometry=Ni017Geometry(),**extra)
         fields=impl.incident_fields(grid,thickness,depth_steps=64,slice_step_nm=.5);incoming.append(fields)
         results.append(impl.multislice_double_channeling_response(elastic,831.271,q,thickness,
             fft_grid=32,potential_cutoff=2.2,projected_geometry=Ni017Geometry(),depth_steps=64,slice_step_nm=.5,prepared_grid=grid,prepared_incoming=fields))
@@ -72,7 +74,7 @@ def test_001_default_fft_path_matches_frozen_reference_to_roundoff(old):
     q=np.array([[.28,.28],[.28,-.28]])
     results=[];fields=[]
     for impl in (old,ms):
-        grid=impl.ProjectedNiFFT.build(elastic,grid_points=24,potential_cutoff=1.8,systematic_row=True,row_reduction=True)
+        grid=impl.ProjectedFFT.build(elastic,grid_points=24,potential_cutoff=1.8,systematic_row=True,row_reduction=True)
         incoming=impl.incident_fields(grid,2,depth_steps=17,slice_step_nm=.04);fields.append(incoming[0])
         results.append(impl.multislice_double_channeling_response(elastic,831.271,q,2,fft_grid=24,potential_cutoff=1.8,
             systematic_row=True,row_reduction=True,depth_steps=17,slice_step_nm=.04,prepared_grid=grid,prepared_incoming=incoming)[0])

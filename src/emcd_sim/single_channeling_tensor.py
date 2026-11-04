@@ -17,7 +17,7 @@ from .mdff_tensor import DipoleTensor, cycles_to_angular_q
 from .simulation import EMCDSimulation, SimulationResult
 
 
-def fcc_site_phase_matrix(model: EMCDSimulation) -> np.ndarray:
+def historical_ni_site_phase_matrix(model: EMCDSimulation) -> np.ndarray:
     """Average exp(i(g_i-g_j).R) across equivalent localized Ni core sites.
 
     An average fixes a relative per-atom scale, not a calibrated physical
@@ -123,7 +123,7 @@ def run_tensor_with_coherence(
         raise ValueError("Coherence must be finite Hermitian and match the ordered beam basis")
     if np.linalg.eigvalsh(coherence).min() < -1e-10*max(1., np.linalg.norm(coherence)):
         raise ValueError("Coherence must be positive semidefinite")
-    site_phase = fcc_site_phase_matrix(model)
+    site_phase = historical_ni_site_phase_matrix(model)
     masks = {name: det.mask(qx, qy) for name, det in model.detectors.items()}
     weights = {name: det.integration_weights(qx,qy,mode=integration_mode,subpixels=aperture_subpixels)
                for name,det in model.detectors.items()}

@@ -7,7 +7,7 @@ EXTENSION_SHA256='0599a74e3b48d4182b34bd7f91c9ac7b62bf7e3cb4fb2817e348f288f343fc
 
 
 ATOMIC_EXTENSION_SHA256='5bd0ecb4f65c7ca713179b8b9f652d8cc47e8ceae6f0e4ceaab5d492980ec302'
-REFACTOR_SHA256='ed5acc0cb5583b7b3988436c59aa59a297e307003395289e2772174a1399ff16'
+REFACTOR_SHA256='191974f2788dcfba74ce75cce3d9b4a3088615857b9c3338e27dbda57ea6fd51'
 CONSOLIDATION_SHA256='e49f4392817744babe6dcca42ecf983f82f4d885f1356740e9e346775e7720d3'
 
 
@@ -52,6 +52,7 @@ def legacy_kernel_source(path,content):
     """
     text=canonical(content).decode('utf-8')
     if path.endswith('/single_channeling_tensor.py'):
+        text=text.replace('historical_ni_site_phase_matrix','fcc_site_phase_matrix')
         text=text.replace('from .ionization_sites import single_site_phase_matrix\n','')
         text=text.replace('    return single_site_phase_matrix(hkl, positions)',
             '    phase = np.exp(2j * np.pi * (hkl[:, None, :] - hkl[None, :, :]) @ positions.T)\n    return phase.mean(axis=-1)')
@@ -60,6 +61,9 @@ def legacy_kernel_source(path,content):
         text=text.replace("if ionization_sites is None and not all(s == 'Ni'", "if not all(s == 'Ni'")
         text=text.replace('elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)','elastic.crystal.fractional_positions')
     if path.endswith('/multislice_double_channeling.py'):
+        text=text.replace('else ProjectedFFT.build(', 'else ProjectedNiFFT.build(')
+        text=text.replace('def incident_fields(',
+            '# Historical public name; this is one generic implementation, not a Ni adapter.\nProjectedNiFFT=ProjectedFFT\n\n\ndef incident_fields(')
         text=text.replace('cancelled=None,ionization_sites=None):','cancelled=None):')
         text=text.replace('elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)','elastic.crystal.fractional_positions')
     return text.encode('utf-8')

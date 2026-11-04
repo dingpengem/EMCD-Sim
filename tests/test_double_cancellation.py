@@ -57,7 +57,7 @@ def test_ms_unchanged_and_outgoing_cancel(elastic):
 
 
 def test_incoming_slice_cancel(elastic):
-    grid=ms.ProjectedNiFFT.build(elastic,grid_points=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry())
+    grid=ms.ProjectedFFT.build(elastic,grid_points=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry())
     calls=0
     def cancelled():
         nonlocal calls

@@ -7,10 +7,9 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from emcd_sim.historical_ni import (
-    BOHR_ANGSTROM, NiLocalConfig, cubic_orbital_coefficients,
-    hydrogenic_radial_dipole_angstrom, ni_local_transitions,
-)
+from emcd_sim.historical_ni import NiLocalConfig, ni_local_transitions
+from emcd_sim.atomic_dipole import (BOHR_ANGSTROM, cubic_orbital_coefficients,
+    hydrogenic_radial_dipole_angstrom)
 from emcd_sim.mdff_tensor import dipole_tensor_from_transitions, TransitionDataset
 
 
@@ -86,7 +85,7 @@ def test_npz_roundtrip_and_cli_windows_safe(tmp_path):
 
 
 def test_tabulated_atomic_hf_radial_provider():
-    from emcd_sim.historical_ni import radial_dipole_from_table
+    from emcd_sim.atomic_dipole import radial_dipole_from_table
     zp,zd=25.,9.
     r=np.linspace(0,8,160001)
     ap,ad=zp/BOHR_ANGSTROM,2*zd/(3*BOHR_ANGSTROM)

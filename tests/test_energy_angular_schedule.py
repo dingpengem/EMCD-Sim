@@ -16,6 +16,8 @@ def reference():
         # Only relocate dependencies in the archived adapter; its numerical
         # statements remain the exact pre-optimization reference.
         source=source.replace('..ni_local_mdff import','..historical_ni import')
+        source=source.replace('fcc_site_phase_matrix','historical_ni_site_phase_matrix as fcc_site_phase_matrix',1)
+        source=source.replace('import ProjectedNiFFT','import ProjectedFFT as ProjectedNiFFT',1)
         source=source.replace('from ..ni_017_geometry import','from legacy_geometry import')
         source=source.replace('..multislice_emcd_reference import','..multislice_reference import')
         source=source.replace('..postedge_emcd_maps import paired_geometry, paired_maps','..emcd_angular_plots import paired_geometry, paired_maps')

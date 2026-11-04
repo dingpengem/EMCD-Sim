@@ -9,7 +9,7 @@ from emcd_sim.gui.geometry import Structure,Settings,elastic_model
 from emcd_sim.ionization_sites import IonizationSites
 from emcd_sim.imported_mdff import ImportedMDFF
 from emcd_sim.gui.generalized_forward import settings_for_source,energy_grid,material_reason
-from emcd_sim.single_channeling_tensor import _tensor_angular_maps,fcc_site_phase_matrix
+from emcd_sim.single_channeling_tensor import _tensor_angular_maps,historical_ni_site_phase_matrix
 from emcd_sim.geometry import characteristic_qz_angstrom_inv,VirtualDetector
 from emcd_sim.simulation import EMCDSimulation
 from emcd_sim.double_channeling import equivalent_site_phases
@@ -53,7 +53,7 @@ def test_sites_single_reference_and_ni_compatibility():
     np.testing.assert_allclose(even+odd,expected,rtol=3e-14,atol=1e-14)
     ni=Structure.nickel();en=elastic_model(ni,settings)
     model=replace(model,elastic=en)
-    np.testing.assert_array_equal(IonizationSites.from_structure(ni,'Ni').single_phase(en.crystal,en.beams.hkl),fcc_site_phase_matrix(model))
+    np.testing.assert_array_equal(IonizationSites.from_structure(ni,'Ni').single_phase(en.crystal,en.beams.hkl),historical_ni_site_phase_matrix(model))
 
 
 def test_site_order_translation_and_independent_double_phases():

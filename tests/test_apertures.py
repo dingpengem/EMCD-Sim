@@ -6,7 +6,7 @@ from emcd_sim.benchmark import nickel_physical_benchmark
 from emcd_sim.crystal import fcc_nickel
 from runtime_fixtures import diffraction_preset as select_diffraction_setup
 from emcd_sim.elastic import depth_coherence
-from emcd_sim.single_channeling_tensor import run_tensor_single_channeling, _tensor_angular_maps, fcc_site_phase_matrix
+from emcd_sim.single_channeling_tensor import run_tensor_single_channeling, _tensor_angular_maps, historical_ni_site_phase_matrix
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
 
 
@@ -61,13 +61,13 @@ def test_reciprocal_coordinate_is_transmitted_beam_centered():
     qx=np.array([[0.25,-0.25]])
     qy=np.array([[0.25,-0.25]])
     t=effective_tensor_from_xmcd("data/wien2k_ni/Ni_fm.xmcd",np.array([852.7,870.])).tensor_angstrom2_per_ev[0]
-    n1,m1=_tensor_angular_maps(sim,t,852.7,coh,fcc_site_phase_matrix(sim),qx,qy)
+    n1,m1=_tensor_angular_maps(sim,t,852.7,coh,historical_ni_site_phase_matrix(sim),qx,qy)
     from emcd_sim.geometry import Microscope
     from emcd_sim.physical_elastic import PhysicalElasticModel
     # Construct a different incident tilt but hold the *same* coherence matrix.
     # An angle-dependent shift in q at this stage would be a coordinate error.
     tilted = PhysicalElasticModel(sim.elastic.crystal,Microscope(200,(11,37)),sim.elastic.beams)
     from dataclasses import replace
-    n2,m2=_tensor_angular_maps(replace(sim,elastic=tilted),t,852.7,coh,fcc_site_phase_matrix(sim),qx,qy)
+    n2,m2=_tensor_angular_maps(replace(sim,elastic=tilted),t,852.7,coh,historical_ni_site_phase_matrix(sim),qx,qy)
     np.testing.assert_allclose(n1,n2,atol=1e-12)
     np.testing.assert_allclose(m1,m2,atol=1e-12)

@@ -28,8 +28,8 @@ module discovery includes the new modules; PyInstaller follows the static import
 GUI/provider dispatch. Extracted-EXE acceptance must verify actual inclusion.
 
 Removal does not mean hiding an implementation behind a module-name alias in sys.modules.
-No duplicate numerical loop remains for historical naming. The public ProjectedNiFFT
-alias remains an alias of ProjectedFFT for concrete standalone script/test callers.
+No duplicate numerical loop remains for historical naming. The obsolete ProjectedNiFFT alias was removed; maintained callers use ProjectedFFT.
+Archived reference modules keep their original API names, with test-only bindings.
 
 ## Validation strategy
 
@@ -56,3 +56,30 @@ so project compatibility does not require retaining the obsolete module.
 Earlier acceptance/design documents and archived research verification scripts describe
 their pinned historical revisions. Their old source inventories are historical evidence,
 not current API promises; original snapshots and scientific reference inputs remain intact.
+
+
+## Complete Ni/nickel/FCC symbol audit under src
+
+| Symbol | Final disposition and evidence |
+| --- | --- |
+| ProjectedNiFFT | Removed alias; ProjectedFFT is the sole production class/API. Maintained scripts/tests migrated; archived modules retain their own original names. |
+| fcc_site_phase_matrix | Removed misleading name. Shared arithmetic is single_site_phase_matrix; the standalone Ni eligibility wrapper is historical_ni_site_phase_matrix. This preserves its Ni-only guard, not a new material restriction on shared contraction. |
+| ni_2p_to_3d_dipole | Removed alias; shared API is atomic_dipole.dipole_2p_to_3d. No second angular implementation. |
+| historical_ni module, NiLocalConfig, ni_local_transitions, _ni_transition_source | Retained: original Ni input defaults, compatibility mapping, event/source labels and provenance. Enumeration delegates to the generalized generator. |
+| HistoricalNiProvider, HistoricalNiSites, historical_ni_site_phase_matrix | Retained: explicit historical eligibility, raw site coordinates, direct energy evaluation and sampling. None duplicates the shared contraction/phase arithmetic. |
+| benchmark.nickel_apertures, nickel_physical_benchmark | Retained: actual Ni benchmark geometry/data, not generic propagation APIs. |
+| crystal.fcc_nickel, Structure.nickel | Retained: factories construct an actual conventional FCC Ni crystal. |
+| scattering.nickel_lobato_factor, _NI_A, _NI_B | Retained unchanged: actual Ni Lobato coefficients and compatibility provider. |
+| multislice_reference._projected_ni_potential, fft_multislice_ni | Retained unchanged: independent Ni IAM/reference implementation, used to validate production; not an obsolete generalized production solver. |
+
+The audit includes module names, function/class definitions, imports with aliases and
+module-level assignments; generic propagation uses ProjectedFFT and explicit site
+interfaces. Local variables such as ni/no in Double Channeling count incoming/outgoing
+beams; they are not nickel API names. Genuine Ni source strings, datasets, figure labels,
+benchmark outputs and saved project fields were not renamed.
+
+The old ProjectedNiFFT, fcc_site_phase_matrix and ni_2p_to_3d_dipole import aliases are
+intentionally discontinued. Archived reference source/fixtures remain byte-for-byte intact;
+only import bindings in maintained reference loaders are adapted, preserving original
+numerical statements and exact-array assertions. Original physics-source hash guards
+reconstruct only the explicitly reviewed identifier/alias moves and phase-helper extraction.

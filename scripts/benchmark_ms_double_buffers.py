@@ -21,7 +21,9 @@ def baseline():
     if path.exists():assert path.read_bytes()==source
     else:path.write_bytes(source)
     name='emcd_sim._baseline_buffer_ms';spec=importlib.util.spec_from_file_location(name,path)
-    module=importlib.util.module_from_spec(spec);sys.modules[name]=module;spec.loader.exec_module(module);return module
+    module=importlib.util.module_from_spec(spec);sys.modules[name]=module;spec.loader.exec_module(module)
+    module.ProjectedFFT=module.ProjectedNiFFT  # Archived API binding only.
+    return module
 
 
 def arrays(case,response):
@@ -49,7 +51,7 @@ def run(policy,thickness):
     timings=profile.Timings()
     with profile.SampleRAM() as ram,profile.fft_hooks(timings,implementation):
         with timings.region('fft_geometry_potential'):
-            grid=implementation.ProjectedNiFFT.build(case['elastic'],grid_points=c.fft_grid,potential_cutoff=s.potential_cutoff,
+            grid=implementation.ProjectedFFT.build(case['elastic'],grid_points=c.fft_grid,potential_cutoff=s.potential_cutoff,
                 systematic_row=c.systematic_row,row_reduction=c.systematic_row,projected_geometry=Ni017Geometry())
         with timings.region('incoming_fields'):
             incoming=implementation.incident_fields(grid,s.thickness,depth_steps=c.depth,slice_step_nm=c.slice_step)
@@ -118,7 +120,7 @@ def microbench():
         s=case['settings'];c=case['cfg'];prepared={};expected=None
         query=case['query'][np.linspace(0,len(case['query'])-1,256,dtype=int)]
         for policy,impl in (('baseline',old),('optimized',current)):
-            grid=impl.ProjectedNiFFT.build(case['elastic'],grid_points=c.fft_grid,potential_cutoff=s.potential_cutoff,projected_geometry=Ni017Geometry())
+            grid=impl.ProjectedFFT.build(case['elastic'],grid_points=c.fft_grid,potential_cutoff=s.potential_cutoff,projected_geometry=Ni017Geometry())
             incoming=impl.incident_fields(grid,thickness,depth_steps=c.depth,slice_step_nm=c.slice_step)
             prepared[policy]=(impl,grid,incoming)
         for repeat in range(3):

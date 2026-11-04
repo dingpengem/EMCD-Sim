@@ -53,3 +53,12 @@ def test_retired_modules_absent_and_no_production_imports():
     for path in root.rglob('*.py'):
         for node in ast.walk(ast.parse(path.read_text(encoding='utf-8-sig'))):
             if isinstance(node,ast.ImportFrom):assert node.module is None or not node.module.endswith('ni_local_mdff')
+
+
+def test_obsolete_material_specific_numerical_aliases_are_absent():
+    from emcd_sim import multislice_double_channeling as ms
+    from emcd_sim import single_channeling_tensor as single
+    from emcd_sim import historical_ni
+    assert not hasattr(ms,'ProjectedNiFFT')
+    assert not hasattr(single,'fcc_site_phase_matrix')
+    assert not hasattr(historical_ni,'ni_2p_to_3d_dipole')

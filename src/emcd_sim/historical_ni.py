@@ -22,10 +22,7 @@ from .wien2k_xmcd import load_wien2k_xmcd
 from .xmcd_effective_mdff import effective_tensor_from_xmcd
 from .ionization_sites import single_site_phase_matrix
 from .mdff_orientation import axis_rotation
-# Public historical aliases; the algebra itself is element-independent.
-from .atomic_dipole import (core_spinor_amplitude,
-    dipole_2p_to_3d as ni_2p_to_3d_dipole, cubic_orbital_coefficients,
-    hydrogenic_radial_dipole_angstrom, radial_dipole_from_table, BOHR_ANGSTROM)
+from .atomic_dipole import hydrogenic_radial_dipole_angstrom, radial_dipole_from_table
 
 
 @dataclass(frozen=True)

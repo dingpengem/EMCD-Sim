@@ -14,9 +14,9 @@ from emcd_sim.gui.geometry import Structure,Settings,elastic_model,excitation
 from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
 from emcd_sim.geometry import characteristic_qz_angstrom_inv,VirtualDetector
 from emcd_sim.double_channeling import dipole_kernel,prepare_incoming_bloch,double_channeling_response,intensities_from_response
-from emcd_sim.multislice_double_channeling import ProjectedNiFFT,incident_fields,multislice_double_channeling_response
+from emcd_sim.multislice_double_channeling import ProjectedFFT,incident_fields,multislice_double_channeling_response
 from emcd_sim.multislice_reference import coherence_from_amplitudes
-from emcd_sim.single_channeling_tensor import fcc_site_phase_matrix
+from emcd_sim.single_channeling_tensor import historical_ni_site_phase_matrix
 from emcd_sim.simulation import EMCDSimulation
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -89,7 +89,7 @@ def single_response(elastic,C,energy,q,thickness):
     transfer[...,2]=-characteristic_qz_angstrom_inv(energy,elastic.microscope.acceleration_kv)
     k=dipole_kernel(transfer)
     dummy=EMCDSimulation(elastic,{'A':VirtualDetector((0,0),.1),'B':VirtualDetector((0,1),.1)})
-    return thickness*np.einsum('ij,pia,pjb->pab',C*fcc_site_phase_matrix(dummy),k,k,optimize=True)
+    return thickness*np.einsum('ij,pia,pjb->pab',C*historical_ni_site_phase_matrix(dummy),k,k,optimize=True)
 
 
 def identities(profile,s,method,channel):
@@ -121,7 +121,7 @@ def run(profile,mode,channel,thickness,method):
         waves=elastic.amplitudes(z)
         if channel=='double':prepared=prepare_incoming_bloch(elastic,thickness,profile.depth)
     else:
-        grid=ProjectedNiFFT.build(elastic,grid_points=profile.fft,potential_cutoff=profile.potential,projected_geometry=Ni117Geometry(),
+        grid=ProjectedFFT.build(elastic,grid_points=profile.fft,potential_cutoff=profile.potential,projected_geometry=Ni117Geometry(),
             retained_hkl=elastic.beams.hkl if mode=='two-beam' else None)
         incoming=incident_fields(grid,thickness,depth_steps=profile.depth,slice_step_nm=profile.step)
         waves=incoming[0][:,grid.indices(elastic.beams.hkl)]
