@@ -1,0 +1,18 @@
+{
+  "provider": "adaptive-dirac-pade-2026",
+  "upstream_repository": "https://github.com/NeuralSoftX/adaptive_dirac_pade_scattering_factor_2026",
+  "upstream_commit": "1667babb2c5bdb44a0535438b846eb1bbfbc03ac",
+  "upstream_hdf5_sha256": "4d623613d3fe475211d1b78b7965d9604bb8748f9fcfe74700d0ffe3b345cc78",
+  "upstream_hdf5_git_blob": "1fd1b55266dd674530a1b6177a939e45dac5290d",
+  "upstream_license": "Apache-2.0",
+  "coefficient_data_sha256": "a67788f59b426c07cf27913e023ed08e3a748fdb6b634d0bb5eed6b4ecf77b5c",
+  "transformation": "Extract adaptive_dirac_pade model only; preserve every float32 coefficient as an exact Python binary64 JSON value; no refit or interpolation",
+  "input": "g in crystallographic inverse angstrom, Fourier phase exp(-2*pi*i*g.r)",
+  "output": "electron amplitude in angstrom; no potential conversion or beam gamma",
+  "range_g_inverse_angstrom": [
+    0,
+    36
+  ],
+  "coverage": "neutral Z=1..118",
+  "reference_data_sha256": "2703206ccb8c3c26fe3a330856c4846fa365e6e7e130c076ccce20847daf8366"
+}

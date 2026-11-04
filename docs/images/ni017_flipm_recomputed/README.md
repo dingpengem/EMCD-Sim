@@ -17,6 +17,8 @@ Twelve new primary documentation figures are rendered independently from the sav
 
 **Primary GitHub example:** [Raw EMCD differences (a.u.)](summary_raw.png). **Supplementary:** [Normalized asymmetry (%)](summary_percent.png).
 
+The recalculated 9 nm and 30 nm results use the original **Ni Lobato elastic provider**. Their existing arrays, figures and provenance are unchanged. New unified-provider GUI calculations default to Adaptive Dirac–Padé; select Ni Lobato to reproduce the historical elastic inputs. No result here has been relabeled as a new-provider calculation.
+
 The primary raw a.u. curves are `D_conv = (M_A-M_B)+(N_A-N_B)` and `D_flip,A = 2*M_A`, with no percentage normalization. Conventional A/B has an energy-dependent nonmagnetic difference; ideal fixed-A Flip-M has a zero nonmagnetic **residual** even though `N_A(E)` remains nonzero. The supplementary percentage figures instead use `I_A(+M)+I_B(+M)` (A/B) or `I_A(+M)+I_A(-M)` (Flip-M); Advanced GUI diagnostics use `N_A+N_B`. These figures are post-processing, not a released GUI mode.
 
 Native L3/L2 markers are 831.271/848.698 eV; the complete grid has 243 evaluated energies over 823.625?882.521 eV. There is no added energy shift, arbitrary smoothing or individual curve rescaling. The near-flat conventional nonmagnetic percentage is calculated, not imposed; its raw spectrum remains energy dependent.

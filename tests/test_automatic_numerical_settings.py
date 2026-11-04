@@ -67,7 +67,7 @@ def test_pure_resolution_never_calls_scientific_solvers():
 @pytest.mark.parametrize('channel',['single','double'])
 def test_reference_selection_and_fft_support(method,channel):
     cfg=reference_config(propagation=method,channeling_model=channel)
-    reference=replace(Settings(),voltage=200,tilt=(-7.116725439974256,0))
+    reference=replace(Settings(elastic_provider='nickel-lobato-2014'),voltage=200,tilt=(-7.116725439974256,0))
     values,meta=resolve_parameters(Structure.nickel(),reference,cfg)
     assert (values['beam'],values['potential'],values['fft_grid'],values['depth'],values['slice_step'])==(4.6,6.2,48,257,.04)
     assert meta['source']=='Matching reference configuration'

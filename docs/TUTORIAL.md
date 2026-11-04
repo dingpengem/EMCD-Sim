@@ -257,6 +257,8 @@ The [new provenance](images/ni017_flipm_recomputed/provenance.json) records comp
 
 ### Primary example: raw EMCD differences (a.u.)
 
+Provider compatibility: this freshly recalculated 9 nm/30 nm study used the original **Ni Lobato** elastic factors. Its arrays, figures and provenance are preserved. New unified-provider GUI calculations default to **Adaptive Dirac–Padé**; select Ni Lobato when reproducing this historical study. These results are not new-provider recalculations.
+
 ![Raw conventional A/B and fixed-detector Flip-M EMCD differences at 9 and 30 nm](images/ni017_flipm_recomputed/summary_raw.png)
 
 These are signed **raw differences (a.u.)**, not percentage asymmetries. Conventional A/B is `D_conv = (M_A-M_B)+(N_A-N_B)`; its nonmagnetic A/B component retains the actual energy-dependent spectral shape. Fixed-A Flip-M is `D_flip,A = 2M_A`: its total and magnetic curves overlap, and its ideal nonmagnetic **residual is zero** (which does not mean `N_A(E)=0`). The raw panels share a common a.u. scale across thicknesses, without individual peak rescaling.

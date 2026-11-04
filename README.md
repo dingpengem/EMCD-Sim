@@ -67,6 +67,8 @@ The default Ni spectral model constructs an **effective MDFF constrained by XMCD
 
 ## Example results
 
+These recalculated 9 nm and 30 nm examples use the **original Ni Lobato elastic provider**. They remain unchanged historical reference results. New GUI calculations in the unified-provider source use Adaptive Dirac–Padé by default; select Ni Lobato to reproduce these elastic inputs. The examples have not been relabeled or recalculated with the new provider.
+
 ![Recalculated raw EMCD differences (a.u.) for conventional A/B and fixed-detector Flip-M at 9 and 30 nm](docs/images/ni017_flipm_recomputed/summary_raw.png)
 
 *Raw EMCD differences (a.u.) for Ni [017], 300 kV, exact (200) Bragg, Y = +15 mrad, Bloch-wave Double Channeling; independently recalculated at 9 and 30 nm. All curves retain their signed, shared model intensity scale without individual peak normalization. Dotted lines mark native L3/L2 energies.*
@@ -76,6 +78,8 @@ In raw a.u., conventional A/B is `D_conv = I_A(+M)-I_B(+M) = (M_A-M_B)+(N_A-N_B)
 See the [supplementary normalized asymmetry (%) comparison](docs/images/ni017_flipm_recomputed/summary_percent.png), [full tutorial and native-energy raw values](docs/TUTORIAL.md#part-vii-practical-ni-017-case-study), and [figure provenance](docs/images/ni017_flipm_recomputed/README.md). Percentage asymmetries use different A/B and Flip-M denominators and should not be confused with the raw a.u. curves above. These research plots are post-processed from saved spectra, not a new GUI plotting mode.
 
 ## Scientific limitations
+
+Source-checkout development on `feat/neutral-atomic-elastic-local` bundles an Apache-2.0 [neutral-atom elastic provider for Z=1–118](docs/ELASTIC_ATOMIC_FACTORS.md), Adaptive Dirac–Padé 2026. It is the new GUI/provider-factory default; Ni Lobato remains selectable, and historical saved projects without a provider retain Lobato. The raw unversioned Python potential constructor also retains Lobato compatibility. The separate Z=1–98 legacy adapter still requires an external table with unverified redistribution rights. Ni-specific MDFF/EMCD eligibility is unchanged. See the [local acceptance and limitations](docs/acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md). This source feature is absent from the published Windows binary; historical Ni examples retain their original Lobato values.
 
 - Effective XMCD and atomic-transition MDFF approximations; no complete complex DFT Ni MDFF or DFT calculation is supplied.
 - Projected independent-atom potential and finite ZOLZ support; no genuine atomic-3D multislice, complete HOLZ, comprehensive TDS/absorptive or convergent-probe/CBED model.

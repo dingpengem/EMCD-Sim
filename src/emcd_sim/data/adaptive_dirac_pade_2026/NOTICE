@@ -1,0 +1,21 @@
+Adaptive Dirac-Pade scattering coefficients, 2026
+Copyright 2026 Ivan Lobato / NeuralSoftX
+Upstream: https://github.com/NeuralSoftX/adaptive_dirac_pade_scattering_factor_2026
+Pinned commit: 1667babb2c5bdb44a0535438b846eb1bbfbc03ac
+These coefficient data are distributed under Apache License 2.0; see LICENSE.
+
+EMCD-Sim modification: extracted only the adaptive_dirac_pade coefficient
+group from the pinned HDF5 archive into coefficients.json. Every original
+float32 coefficient is retained exactly as a binary64 JSON value. No refitting,
+smoothing, origin repair, or interpolation was performed. The HDF5 archive,
+upstream Python evaluator and reference densities are not bundled.
+
+Scientific attribution: I. Lobato, Z. Zhang, S. Van Aert and A. I. Kirkland,
+Updated all-electron Dirac-Fock densities and an element-adaptive
+parameterisation of scattering factors and potentials for neutral atoms,
+arXiv:2608.14934v1 (2026), https://arxiv.org/abs/2608.14934v1.
+The authors identify their unpublished atomx Dirac-Fock implementation as the
+reference-density source. That implementation and its orbitals are not bundled.
+
+The containing EMCD-Sim project's MIT license does not replace the Apache-2.0
+license and attribution requirements for these third-party coefficient data.

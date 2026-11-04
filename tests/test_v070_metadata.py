@@ -11,10 +11,27 @@ from emcd_sim.gui.runtime import PHYSICS_CONVENTION, build_info, result_conventi
 ROOT=Path(__file__).resolve().parents[1]
 
 
-def test_forward_computation_ast_is_unchanged_except_three_metadata_keys():
+def test_forward_computation_ast_is_unchanged_except_approved_metadata_and_prior_material_gate():
     path='src/emcd_sim/gui/emcd_forward.py'
     old=ast.parse(subprocess.check_output(['git','show','4f57815646d023957a81ad15fdaa684c02a54442:'+path],cwd=ROOT).decode('utf-8-sig'))
     current=ast.parse((ROOT/path).read_text(encoding='utf-8-sig'))
+    # Retain the complete computation guard: allow only the exact new metadata
+    # import/expression, plus the already approved d1c93ba Ni species gate.
+    previous=ast.parse(subprocess.check_output(['git','show','d1c93ba:'+path],cwd=ROOT).decode('utf-8-sig'))
+    find=lambda tree,name:next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
+    assert ast.dump(find(current,'material_reason'))==ast.dump(find(previous,'material_reason'))
+    current.body[current.body.index(find(current,'material_reason'))]=copy.deepcopy(find(old,'material_reason'))
+    contract=find(current,'_contract')
+    imports=[n for n in contract.body if isinstance(n,ast.ImportFrom) and n.module=='elastic_providers']
+    expected_import=ast.parse('from ..elastic_providers import provider_provenance').body[0]
+    assert len(imports)==1 and ast.dump(imports[0])==ast.dump(expected_import)
+    contract.body.remove(imports[0])
+    provider_keys=[(n,k) for n in ast.walk(contract) if isinstance(n,ast.Call) for k in n.keywords if k.arg=='elastic_provider']
+    assert len(provider_keys)==1
+    call,key=provider_keys[0]
+    expected=ast.parse('provider_provenance(model.elastic.crystal.species,settings.elastic_provider)',mode='eval').body
+    assert isinstance(call.func,ast.Name) and call.func.id=='dict' and ast.dump(key.value)==ast.dump(expected)
+    call.keywords.remove(key)
     removed=[]
     for node in ast.walk(current):
         if isinstance(node,ast.Call):

@@ -48,7 +48,47 @@ def structures_match(snapshot,structure):
 
 
 def settings_from_dict(value):
-    return Settings(**{k:tuple(v) if k in ('zone','target','tilt') else v for k,v in value.items()})
+    d={k:tuple(v) if k in ('zone','target','tilt') else v for k,v in value.items()}
+    # Historical projects predate provider selection and used Ni Lobato.
+    # Preserve that identity explicitly even if a future default changes.
+    d.setdefault('elastic_provider','nickel-lobato-2014')
+    return Settings(**d)
+
+
+def save_elastic_project(result,path):
+    """Write a new, checksummed elastic-only folder; never overwrite a project."""
+    root=Path(path).resolve();root.mkdir(parents=True,exist_ok=False)
+    fields=('beam_hkl','g','s','depth_nm','amplitudes','intensity','frame')
+    np.savez_compressed(root/'diffraction_pattern.npz',**{k:result[k] for k in fields})
+    metadata={k:result[k] for k in ('settings','source','source_sha256','structure_description',
+        'structure_snapshot','model','elastic_provider','systematic_row')}
+    _json(root/'metadata.json',metadata)
+    _json(root/'elastic_project.json',dict(schema_version=1,kind='elastic-only',complete=True,
+        files={name:sha256(root/name) for name in ('metadata.json','diffraction_pattern.npz')}))
+
+
+def load_elastic_project(path):
+    """Load saved elastic arrays read-only; no factor, geometry or solver call."""
+    root=Path(path).resolve()
+    manifest=json.loads((root/'elastic_project.json').read_text(encoding='utf-8'))
+    if manifest.get('schema_version')!=1 or manifest.get('kind')!='elastic-only' or manifest.get('complete') is not True:
+        raise ValueError('Invalid elastic project manifest')
+    if set(manifest.get('files',{}))!={'metadata.json','diffraction_pattern.npz'}:
+        raise ValueError('Incomplete elastic project manifest')
+    for name,digest in manifest['files'].items():
+        if sha256(root/name)!=digest:raise ValueError('Elastic project checksum mismatch: '+name)
+    result=json.loads((root/'metadata.json').read_text(encoding='utf-8'))
+    arrays=_read_npz(root/'diffraction_pattern.npz')
+    if set(arrays)!={'beam_hkl','g','s','depth_nm','amplitudes','intensity','frame'}:
+        raise ValueError('Incomplete elastic arrays')
+    n=len(arrays['beam_hkl']);depth=len(arrays['depth_nm'])
+    if (arrays['beam_hkl'].shape!=(n,3) or arrays['g'].shape!=(n,2)
+            or arrays['amplitudes'].shape!=(depth,n) or arrays['intensity'].shape!=(n,)
+            or arrays['s'].shape!=(n,) or arrays['frame'].shape!=(3,3)
+            or any(not np.isfinite(a).all() for a in arrays.values())):
+        raise ValueError('Invalid saved elastic array shapes or values')
+    result.update(arrays);result['read_only_saved']=True
+    return result
 
 
 def config_from_dict(value):
@@ -234,7 +274,24 @@ def frame_rerun_reason(result):
     return ''
 
 
+def elastic_provider_reason(result):
+    recorded=result.get('metadata',{}).get('elastic_provider')
+    if recorded:
+        try:
+            from ..elastic_providers import provider_provenance
+            species=result['structure_snapshot']['species']
+            actual=provider_provenance(species,result['settings'].elastic_provider)
+            for key in ('provider','coefficient_data_sha256','source_sha256','upstream_commit'):
+                if key in recorded and actual.get(key)!=recorded[key]:
+                    return 'Elastic provider provenance mismatch; saved results remain viewable, but rerun is blocked.'
+        except (ValueError,OSError,KeyError,ImportError) as exc:
+            return 'Saved elastic provider unavailable: '+str(exc)
+    return ''
+
+
 def rerun_reason(result):
+    provider_reason=elastic_provider_reason(result)
+    if provider_reason:return provider_reason
     if result.get('fft_recipe_error'):return result['fft_recipe_error']
     if not result.get('structure_snapshot'):return 'Original numeric crystal snapshot is missing; legacy results are read-only.'
     reason=frame_rerun_reason(result)

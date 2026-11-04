@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import numpy as np
 from .crystal import Crystal
+from .scattering import elastic_reflection_allowed
 
 
 @dataclass(frozen=True)
@@ -24,8 +25,12 @@ class BeamSet:
 
     @classmethod
     def zolz(cls, crystal: Crystal, max_g_angstrom_inv: float,
-             max_beams: int = 25) -> "BeamSet":
-        """Select centered ZOLZ beams sorted by |g|, then hkl, in lab frame."""
+             max_beams: int = 25, *, potential=None) -> "BeamSet":
+        """Select centered ZOLZ beams sorted by |g|, then hkl, in lab frame.
+
+        Supply the species/site-weighted potential for general materials.
+        Omitting it retains the historical equal-atom Ni selection rule.
+        """
         if not np.isfinite(max_g_angstrom_inv) or max_g_angstrom_inv <= 0 or max_beams < 2:
             raise ValueError("g cutoff must be positive and max_beams >= 2")
         # Bound integer indices conservatively using the smallest singular value.
@@ -37,7 +42,8 @@ class BeamSet:
                 hk0=(h,k,0)
                 g=crystal.g_vector(hk0)
                 length=float(np.linalg.norm(g))
-                if 1e-10 < length <= max_g_angstrom_inv+1e-10 and crystal.is_allowed(hk0):
+                if (1e-10 < length <= max_g_angstrom_inv+1e-10
+                        and elastic_reflection_allowed(crystal, hk0, potential)):
                     candidates.append((length,hk0))
         candidates.sort(key=lambda item:(round(item[0],12),item[1]))
         available={hkl for _,hkl in candidates}

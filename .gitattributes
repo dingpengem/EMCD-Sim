@@ -1,3 +1,9 @@
 # Scientific input identities are byte-exact, including their recorded EOLs.
 data/wien2k_ni/Ni_fm.xmcd -text
 tests/fixtures/Ni_fm_historical_full_benchmark.xmcd -text
+# Pinned third-party coefficient bytes and notices must survive Windows checkout.
+src/emcd_sim/data/adaptive_dirac_pade_2026/* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Preserve the upstream license's final blank line as supplied.
+src/emcd_sim/data/adaptive_dirac_pade_2026/LICENSE whitespace=blank-at-eol,-blank-at-eof,space-before-tab,cr-at-eol
+# Acceptance arrays/tables and their artifact digests are byte-exact too.
+docs/acceptance/unified-elastic-2026-11-03/* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

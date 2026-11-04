@@ -16,7 +16,7 @@ FIELDS={'Magnetic odd':'I_mag','Magnetic paired EMCD':'D_mag','Nonmagnetic paire
 
 
 def identity(label,r,method):
-    s=r['settings'];return f'{label} | {s.thickness:g} nm | tilt ({s.tilt[0]:+.4f},{s.tilt[1]:+.4f}) mrad | {r["config"].model} | {r["config"].channeling_model.title()} Channeling | {method}'
+    s=r['settings'];return f'{label} | {s.thickness:g} nm | tilt ({s.tilt[0]:+.4f},{s.tilt[1]:+.4f}) mrad | {s.elastic_provider} | {r["config"].model} | {r["config"].channeling_model.title()} Channeling | {method}'
 
 
 def map_compatibility(a,b,edge,field):

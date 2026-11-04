@@ -1,0 +1,1516 @@
+{
+  "counts": {
+    "passed": 208,
+    "skipped": 7,
+    "failure": 0,
+    "error": 0
+  },
+  "method": "Latest result per test identity; superseded metadata guard name replaced by stricter approved-metadata guard",
+  "tests": [
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_all_118_origin_low_high_and_decimal_precision",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.259
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_cif_independent_reciprocal_zone_frame_labels_and_absences[bcc_fe]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.224
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_cif_independent_reciprocal_zone_frame_labels_and_absences[bcc_fe_110_zone]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.135
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_cif_independent_reciprocal_zone_frame_labels_and_absences[cscl]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.148
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_cif_independent_reciprocal_zone_frame_labels_and_absences[hex_zno]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.158
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_cif_independent_reciprocal_zone_frame_labels_and_absences[monoclinic]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.182
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_non_fcc_matched_bw_ms_refinement[bcc_fe]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.907
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_non_fcc_matched_bw_ms_refinement[cscl]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 2.817
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_non_fcc_matched_bw_ms_refinement[hex_zno]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 2.918
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_non_fcc_matched_bw_ms_refinement[monoclinic]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 5.05
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_qt_actual_signed_spot_click_bragg_and_stale[bcc_fe]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 7.338
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_qt_actual_signed_spot_click_bragg_and_stale[bcc_fe_110_zone]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 3.286
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_qt_actual_signed_spot_click_bragg_and_stale[cscl]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 3.867
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_qt_actual_signed_spot_click_bragg_and_stale[hex_zno]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 3.28
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_qt_actual_signed_spot_click_bragg_and_stale[monoclinic]",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 3.821
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_partial_unsupported_large_cell_and_legacy_low_g",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.186
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_elastic_project_read_only_roundtrip_provider_and_historical_default",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.322
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_upstream_data_extraction_and_optional_reference_accuracy",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 0.696
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_packaged_resources_and_no_upstream_runtime_dependencies",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 1.03
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_emcd_project_explicit_new_and_unversioned_lobato_compatibility",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 2.271
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_qt_open_elastic_project_keeps_current_inputs_and_saved_arrays",
+      "status": "passed",
+      "log": "last-provider-tests.xml",
+      "seconds": 2.16
+    },
+    {
+      "classname": "tests.test_physical_elastic",
+      "name": "test_ni_lobato_2014_reference_values",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.187
+    },
+    {
+      "classname": "tests.test_physical_elastic",
+      "name": "test_fcc_structure_factor_and_debye_waller",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.134
+    },
+    {
+      "classname": "tests.test_physical_elastic",
+      "name": "test_real_hermitian_propagation_and_extinction_distance",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.144
+    },
+    {
+      "classname": "tests.test_physical_elastic",
+      "name": "test_two_beam_exact_bragg_pendellosung",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.147
+    },
+    {
+      "classname": "tests.test_physical_elastic",
+      "name": "test_zolz_complete_pairs_and_backend_usage",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.345
+    },
+    {
+      "classname": "tests.test_physical_elastic",
+      "name": "test_relativistic_voltage_and_extinction_units_without_study_driver",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.138
+    },
+    {
+      "classname": "tests.test_elastic_reference",
+      "name": "test_fft_potential_matches_physical_structure_factor_and_reality",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.222
+    },
+    {
+      "classname": "tests.test_elastic_reference",
+      "name": "test_fft_propagation_preserves_flux_and_responds_to_tilt",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.28
+    },
+    {
+      "classname": "tests.test_elastic_reference",
+      "name": "test_independent_fft_matches_bloch_same_truncated_potential",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.014
+    },
+    {
+      "classname": "tests.test_species_weighted_elastic",
+      "name": "test_cscl_100_weighted_selection_and_bloch_acceptance",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.216
+    },
+    {
+      "classname": "tests.test_species_weighted_elastic",
+      "name": "test_true_extinction_and_cutoff_are_distinct",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.24
+    },
+    {
+      "classname": "tests.test_species_weighted_elastic",
+      "name": "test_species_occupancy_b_phase_and_potential_units",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.161
+    },
+    {
+      "classname": "tests.test_species_weighted_elastic",
+      "name": "test_historical_ni_factors_beams_and_propagation_unchanged",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.313
+    },
+    {
+      "classname": "tests.test_species_weighted_elastic",
+      "name": "test_invalid_factor_and_wrong_crystal_rejected",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.178
+    },
+    {
+      "classname": "tests.test_species_weighted_elastic",
+      "name": "test_noncentrosymmetric_species_weighted_phases_are_hermitian",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.201
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_ase_periodic_table_lookup",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.145
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_unconfigured_non_ni_does_not_change_default_or_enable_materials",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.144
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_missing_configured_file_is_diagnostic_and_ni_still_runs",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.236
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_hash_failure_precedes_execution_without_requiring_table",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.29
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_gui_missing_provider_keeps_geometry_and_ni_available",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.284
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_reviewed_file_hash_required",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.295
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_all_elements_nodes_limits_and_both_scaling_branches",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.24
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_no_reinterpolation_or_marker_replacement",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.193
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_ni_provider_comparison_is_not_an_equivalence_claim",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.271
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_all_44_mott_rows_reject_unreliable_positive_values_and_preserve_origin",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.373
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_large_mott_supercell_nonzero_vectors_are_not_replaced_by_origin",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.329
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_independent_all_mott_interval_audit",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 4.646
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_real_cscl_diffraction_and_fcc_extinctions",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.443
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_real_table_bloch_multislice_matched_potential[symbols0-positions0-4.1-target0-0.55]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.388
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_real_table_bloch_multislice_matched_potential[symbols1-positions1-3.615-target1-0.85]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.517
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_real_table_bloch_multislice_matched_potential[symbols2-positions2-3.147-target2-0.85]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.506
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_gui_elastic_cif_and_inelastic_restrictions_remain_separate",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.391
+    },
+    {
+      "classname": "tests.test_legacy_atomic_factors",
+      "name": "test_configured_desktop_elastic_button_and_missing_file_gate",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.931
+    },
+    {
+      "classname": "tests.test_general_projected_equivalence",
+      "name": "test_reviewed_geometry_potential_waves_and_double_response[zone0-target0-1.8]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.628
+    },
+    {
+      "classname": "tests.test_general_projected_equivalence",
+      "name": "test_reviewed_geometry_potential_waves_and_double_response[zone1-target1-2.2]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.791
+    },
+    {
+      "classname": "tests.test_general_projected_equivalence",
+      "name": "test_reviewed_geometry_potential_waves_and_double_response[zone2-target2-3.8]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.091
+    },
+    {
+      "classname": "tests.test_general_projected_equivalence",
+      "name": "test_old_fft_cell_recovered_from_data_and_corruption_rejected",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.324
+    },
+    {
+      "classname": "tests.test_general_projected_equivalence",
+      "name": "test_saved_row_sampling_uses_verified_row_and_general_complement",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.229
+    },
+    {
+      "classname": "tests.test_general_projected_equivalence",
+      "name": "test_invalid_legacy_target_blocks_reuse_without_raising",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.234
+    },
+    {
+      "classname": "tests.test_gui_stage_a.GeometryTests",
+      "name": "test_actual_arbitrary_orientation_bragg_locks_and_coordinates",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.168
+    },
+    {
+      "classname": "tests.test_gui_stage_a.GeometryTests",
+      "name": "test_ase_cif_import_and_material_gate",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.705
+    },
+    {
+      "classname": "tests.test_gui_stage_a.GeometryTests",
+      "name": "test_benchmark_orientation_hamiltonian_and_preview",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.821
+    },
+    {
+      "classname": "tests.test_gui_stage_a.InteractionTests",
+      "name": "test_cancel_does_not_register_completed_physics",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 4.314
+    },
+    {
+      "classname": "tests.test_gui_stage_a.InteractionTests",
+      "name": "test_worker_failure_is_not_success",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 3.848
+    },
+    {
+      "classname": "tests.test_gui_stage_a.InteractionTests",
+      "name": "test_zoomed_mouse_coordinates_reflection_and_stale_state",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 6.529
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_fft_selection_never_truncates_or_exceeds_supported_mesh[38]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.465
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_fft_selection_never_truncates_or_exceeds_supported_mesh[130]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.305
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_pure_resolution_never_calls_scientific_solvers",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.593
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_reference_selection_and_fft_support[single-bloch]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.861
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_reference_selection_and_fft_support[single-fft-multislice]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.285
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_reference_selection_and_fft_support[single-both]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.3
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_reference_selection_and_fft_support[double-bloch]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.671
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_reference_selection_and_fft_support[double-fft-multislice]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.307
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_reference_selection_and_fft_support[double-both]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.28
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unmatched_never_claims_convergence[settings0-cfg0]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.431
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unmatched_never_claims_convergence[settings1-cfg1]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.481
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unmatched_never_claims_convergence[settings2-cfg2]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.312
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unmatched_never_claims_convergence[settings3-cfg3]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.314
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unmatched_never_claims_convergence[settings4-cfg4]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.445
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unmatched_never_claims_convergence[settings5-cfg5]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.346
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unmatched_never_claims_convergence[settings6-cfg6]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.301
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unmatched_never_claims_convergence[settings7-cfg7]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.281
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unmatched_never_claims_convergence[settings8-cfg8]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.295
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_unsupported_geometry_no_fallback",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.401
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_auto_defaults_display_and_no_solvers",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 4.477
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_manual_roundtrip_preserves_physics_and_overrides",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 4.596
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_refresh_cache_and_invalid_text",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.968
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_project_roundtrip_metadata_and_arrays[automatic]",
+      "status": "skipped",
+      "log": "final-tests.xml",
+      "seconds": 1.7
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_project_roundtrip_metadata_and_arrays[manual]",
+      "status": "skipped",
+      "log": "final-tests.xml",
+      "seconds": 1.62
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_legacy_keeps_explicit_manual",
+      "status": "skipped",
+      "log": "final-tests.xml",
+      "seconds": 1.506
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_memory_rejection_does_not_lower_settings",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.614
+    },
+    {
+      "classname": "tests.test_automatic_numerical_settings",
+      "name": "test_run_starts_one_worker_only",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.864
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ProjectTests",
+      "name": "test_all_four_modes_roundtrip_complex_and_structure",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 7.863
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ProjectTests",
+      "name": "test_atomic_save_failure_and_cancellation_preserve_existing",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.231
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ProjectTests",
+      "name": "test_comparison_compatibility_and_unshifted_eels",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.763
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ProjectTests",
+      "name": "test_external_sources_missing_no_recomputation",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.234
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ProjectTests",
+      "name": "test_legacy_readonly_without_fabricated_snapshot",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.265
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ProjectTests",
+      "name": "test_missing_cif_and_hash_verified_reconnection",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.16
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ProjectTests",
+      "name": "test_missing_corrupt_manifest_and_shapes",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.294
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ProjectTests",
+      "name": "test_registry_rename_remove_missing_path",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.298
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ProjectTests",
+      "name": "test_replacement_failure_rolls_back",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.166
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ZWorkspaceTests",
+      "name": "test_atomic_settings_do_not_require_unused_xmcd",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 5.879
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ZWorkspaceTests",
+      "name": "test_background_save_register_compare_no_physics",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 5.727
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ZWorkspaceTests",
+      "name": "test_cancel_load_keeps_completed_result",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.32
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ZWorkspaceTests",
+      "name": "test_project_selection_inputs_and_use_settings_without_solver",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 10.131
+    },
+    {
+      "classname": "tests.test_gui_stage_d.ZWorkspaceTests",
+      "name": "test_threaded_open_failed_load_preserves_previous",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 7.189
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[single-001]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 21.231
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[single-017]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 15.434
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[single-117]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 20.745
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[single-111]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 19.126
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[single-710]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 15.918
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[double-001]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 30.441
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[double-017]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 15.594
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[double-117]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 16.989
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[double-111]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 17.758
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_normal_gui_end_to_end[double-710]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 16.158
+    },
+    {
+      "classname": "tests.test_generalized_emcd_gui",
+      "name": "test_ideal_basis_description_is_not_full_multibeam",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.429
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_row_uses_actual_target_or_actual_local_x_support[zone0-target0]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.295
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_row_uses_actual_target_or_actual_local_x_support[zone1-target1]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.347
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_row_uses_actual_target_or_actual_local_x_support[zone2-target2]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.304
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_row_uses_actual_target_or_actual_local_x_support[zone3-target3]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.487
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_row_uses_actual_target_or_actual_local_x_support[zone4-target4]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.072
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_outgoing_energy_carrier_and_adjoint_without_elastic_eigenmodes",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.485
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_generalized_117_saved_gui_export_retains_raw_relative_data",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 13.009
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_general_ms_only_never_uses_bw_wavefields[single-zone0-target0-3.2]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.179
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_general_ms_only_never_uses_bw_wavefields[single-zone1-target1-1.8]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.017
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_general_ms_only_never_uses_bw_wavefields[single-zone2-target2-2.2]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.998
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_general_ms_only_never_uses_bw_wavefields[double-zone0-target0-3.2]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.357
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_general_ms_only_never_uses_bw_wavefields[double-zone1-target1-1.8]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.123
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_general_ms_only_never_uses_bw_wavefields[double-zone2-target2-2.2]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.115
+    },
+    {
+      "classname": "tests.test_generalized_emcd_integration",
+      "name": "test_validation_driver_resumes_json_checkpoint_without_solver",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.694
+    },
+    {
+      "classname": "tests.test_gui_stage_b.ForwardTests",
+      "name": "test_atomic_transition_level_exchange_and_holes",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.733
+    },
+    {
+      "classname": "tests.test_gui_stage_b.ForwardTests",
+      "name": "test_coherence_core_contraction_map_integrals_and_parity",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.521
+    },
+    {
+      "classname": "tests.test_gui_stage_b.ForwardTests",
+      "name": "test_export_no_pickle_and_no_plot_mutation",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 5.073
+    },
+    {
+      "classname": "tests.test_gui_stage_b.ForwardTests",
+      "name": "test_gates_and_memory",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.796
+    },
+    {
+      "classname": "tests.test_gui_stage_b.ForwardTests",
+      "name": "test_manual_apertures_and_invalid_correction",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.937
+    },
+    {
+      "classname": "tests.test_gui_stage_b.ForwardTests",
+      "name": "test_rotation_reversal_and_psd",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.417
+    },
+    {
+      "classname": "tests.test_gui_stage_b.ForwardTests",
+      "name": "test_source_native_and_independent_import_validation",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.669
+    },
+    {
+      "classname": "tests.test_gui_stage_b.WorkerTests",
+      "name": "test_cancel_and_failed_not_completed",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 3.847
+    },
+    {
+      "classname": "tests.test_gui_stage_b.WorkerTests",
+      "name": "test_real_worker_display_and_detector_recalculation",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 10.503
+    },
+    {
+      "classname": "tests.test_gui_stage_b.WorkerTests",
+      "name": "test_snapshot_stale_and_model_switch_geometry",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.885
+    },
+    {
+      "classname": "tests.test_gui_stage_c.PropagationTests",
+      "name": "test_actual_oriented_potential_and_common_projection",
+      "status": "passed",
+      "log": "stage-c-lobato-tests.xml",
+      "seconds": 3.836
+    },
+    {
+      "classname": "tests.test_gui_stage_c.PropagationTests",
+      "name": "test_coherences_spectra_parity_and_map_integrals",
+      "status": "passed",
+      "log": "stage-c-lobato-tests.xml",
+      "seconds": 0.304
+    },
+    {
+      "classname": "tests.test_gui_stage_c.PropagationTests",
+      "name": "test_ms_only_atomic_reversal_and_manual_detectors",
+      "status": "passed",
+      "log": "stage-c-lobato-tests.xml",
+      "seconds": 4.213
+    },
+    {
+      "classname": "tests.test_gui_stage_c.PropagationTests",
+      "name": "test_reject_orientation_fft_coverage_and_memory",
+      "status": "passed",
+      "log": "stage-c-lobato-tests.xml",
+      "seconds": 1.144
+    },
+    {
+      "classname": "tests.test_gui_stage_c.PropagationTests",
+      "name": "test_shared_scales_difference_maps_and_export",
+      "status": "passed",
+      "log": "stage-c-lobato-tests.xml",
+      "seconds": 23.097
+    },
+    {
+      "classname": "tests.test_gui_stage_c.PropagationTests",
+      "name": "test_tensor_reuse_once_and_bw_legacy",
+      "status": "passed",
+      "log": "stage-c-lobato-tests.xml",
+      "seconds": 2.287
+    },
+    {
+      "classname": "tests.test_gui_stage_c.ZGUIStageCTests",
+      "name": "test_cancel_partial_comparison_preserves_prior_result_and_failure",
+      "status": "passed",
+      "log": "stage-c-lobato-tests.xml",
+      "seconds": 4.423
+    },
+    {
+      "classname": "tests.test_gui_stage_c.ZGUIStageCTests",
+      "name": "test_method_controls_and_completed_view_switching",
+      "status": "passed",
+      "log": "stage-c-lobato-tests.xml",
+      "seconds": 10.038
+    },
+    {
+      "classname": "tests.test_gui_stage_c.ZGUIStageCTests",
+      "name": "test_real_cancellation_between_bw_and_ms_contracts",
+      "status": "passed",
+      "log": "stage-c-lobato-tests.xml",
+      "seconds": 2.314
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_six_routes_use_actual_kernels[single-bloch]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.894
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_six_routes_use_actual_kernels[single-fft-multislice]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.843
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_six_routes_use_actual_kernels[single-both]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.083
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_six_routes_use_actual_kernels[double-bloch]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.915
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_six_routes_use_actual_kernels[double-fft-multislice]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.948
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_six_routes_use_actual_kernels[double-both]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.284
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_legacy_default_and_double_roundtrip",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.336
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_detector_only_matches_legacy_full_maps",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.398
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_enlarged_basis_support_and_concurrent_memory",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 4.906
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_nonmagnetic_and_reversal_parity",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.438
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_double_maps_are_actual_integrands",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.643
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_original_project_is_read_only_and_defaults_single",
+      "status": "skipped",
+      "log": "final-tests.xml",
+      "seconds": 0.414
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_double_full_energy_coverage_is_actually_evaluated",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 1.368
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_cancelled_double_job_releases_reservation",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.494
+    },
+    {
+      "classname": "tests.test_gui_double_channeling",
+      "name": "test_saved_model_label_and_restored_controls",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.631
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical0-1]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.119
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical1-1.25]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 3.064
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical2-1.5]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.558
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical3-1]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.156
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical4-1.25]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.015
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical5-1.5]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.973
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical6-1]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.595
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical7-1.25]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.556
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical8-1]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 3.132
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical9-1.25]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 3.414
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_logical_screen_sizes[physical10-1]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.686
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_collapsing_preserves_state_without_replot",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 4.522
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_screen_fit_and_flow",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.545
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_compact_maximize_restores_controls",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.752
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_narrow_fallback_keeps_settings_and_diffraction",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 3.789
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_sections_release_space_without_rebuilding",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 4.728
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_splitter_and_section_preferences_persist",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 6.167
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_invalid_preferences_fall_back",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 3.909
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_resize_renders_are_coalesced",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.919
+    },
+    {
+      "classname": "tests.test_gui_responsive",
+      "name": "test_saved_results_resize_and_project_roundtrip",
+      "status": "skipped",
+      "log": "final-tests.xml",
+      "seconds": 2.014
+    },
+    {
+      "classname": "tests.test_solver_settings_ui",
+      "name": "test_released_configuration_exactly_preserved[0]",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 4.547
+    },
+    {
+      "classname": "tests.test_solver_settings_ui",
+      "name": "test_released_configuration_exactly_preserved[1]",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 3.875
+    },
+    {
+      "classname": "tests.test_solver_settings_ui",
+      "name": "test_solver_visibility_and_classification[0]",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 1.424
+    },
+    {
+      "classname": "tests.test_solver_settings_ui",
+      "name": "test_solver_visibility_and_classification[1]",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 1.907
+    },
+    {
+      "classname": "tests.test_solver_settings_ui",
+      "name": "test_solver_visibility_and_classification[2]",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 1.716
+    },
+    {
+      "classname": "tests.test_solver_settings_ui",
+      "name": "test_switching_updates_real_memory_estimates_without_mutating_settings",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 2.909
+    },
+    {
+      "classname": "tests.test_solver_settings_ui",
+      "name": "test_general_ms_orientation_supported_but_non_zolz_target_rejected",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 1.476
+    },
+    {
+      "classname": "tests.test_solver_settings_ui",
+      "name": "test_saved_settings_and_arrays_preserved_without_solver",
+      "status": "skipped",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 1.27
+    },
+    {
+      "classname": "tests.test_solver_settings_ui",
+      "name": "test_solver_configuration_and_physics_unchanged",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 1.256
+    },
+    {
+      "classname": "tests.test_two_beam_geometry_comparison",
+      "name": "test_full_zolz_enumeration_and_frame[zone0]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 3.448
+    },
+    {
+      "classname": "tests.test_two_beam_geometry_comparison",
+      "name": "test_full_zolz_enumeration_and_frame[zone1]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.592
+    },
+    {
+      "classname": "tests.test_two_beam_geometry_comparison",
+      "name": "test_exact_bragg_and_tilt_coordinate_convention",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.47
+    },
+    {
+      "classname": "tests.test_two_beam_geometry_comparison",
+      "name": "test_saved_display_explicitly_distinguishes_row_from_full",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.456
+    },
+    {
+      "classname": "tests.test_zolz_laue_overlay",
+      "name": "test_bragg_circle_and_sampled_excitation[200]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.477
+    },
+    {
+      "classname": "tests.test_zolz_laue_overlay",
+      "name": "test_bragg_circle_and_sampled_excitation[300]",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 0.577
+    },
+    {
+      "classname": "tests.test_zolz_laue_overlay",
+      "name": "test_zero_tilt_and_checkbox",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 3.164
+    },
+    {
+      "classname": "tests.test_zolz_laue_overlay",
+      "name": "test_live_controls_voltage_alignment_and_orientation",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 5.371
+    },
+    {
+      "classname": "tests.test_zolz_laue_overlay",
+      "name": "test_styles_layering_and_viewport",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.132
+    },
+    {
+      "classname": "tests.test_zolz_laue_overlay",
+      "name": "test_click_drag_release_without_rebuild_or_detector_move",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.244
+    },
+    {
+      "classname": "tests.test_zolz_laue_overlay",
+      "name": "test_navigation_and_detector_clicks",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 2.899
+    },
+    {
+      "classname": "tests.test_zolz_laue_overlay",
+      "name": "test_export_visible_styles_and_hidden_overlay",
+      "status": "passed",
+      "log": "final-tests.xml",
+      "seconds": 6.111
+    },
+    {
+      "classname": "tests.test_v070_metadata",
+      "name": "test_v070_windows_and_workflow_metadata_match_source",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 0.406
+    },
+    {
+      "classname": "tests.test_v070_metadata",
+      "name": "test_missing_convention_is_unknown_and_metadata_is_not_rewritten",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 0.183
+    },
+    {
+      "classname": "tests.test_v070_metadata",
+      "name": "test_explicit_old_convention_is_preserved_and_warned",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 0.144
+    },
+    {
+      "classname": "tests.test_v070_metadata",
+      "name": "test_explicit_corrected_convention_is_recorded_not_inferred_from_version",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 0.173
+    },
+    {
+      "classname": "tests.test_v070_metadata",
+      "name": "test_old_project_roundtrip_preserves_arrays_and_provenance",
+      "status": "skipped",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 0.198
+    },
+    {
+      "classname": "tests.test_v070_metadata",
+      "name": "test_new_calculation_records_convention_and_roundtrips_without_relabeling",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 1.047
+    },
+    {
+      "classname": "tests.test_v070_metadata",
+      "name": "test_forward_computation_ast_is_unchanged_except_approved_metadata_and_prior_material_gate",
+      "status": "passed",
+      "log": "metadata-compat-tests.xml",
+      "seconds": 0.562
+    },
+    {
+      "classname": "tests.test_unified_elastic_acceptance",
+      "name": "test_new_ni_provider_matched_bw_ms",
+      "status": "passed",
+      "log": "default-final-tests.xml",
+      "seconds": 0.787
+    }
+  ]
+}

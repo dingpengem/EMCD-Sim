@@ -21,7 +21,7 @@ from legacy_geometry import Ni017Geometry
 
 class GeometryTests(unittest.TestCase):
     def test_benchmark_orientation_hamiltonian_and_preview(self):
-        structure=Structure.nickel();cfg=Settings(voltage=200,tilt=(-7.116725439974256,0),beam_cutoff=3.2,potential_cutoff=2.2);m=elastic_model(structure,cfg);reference=Ni017Geometry().model().elastic
+        structure=Structure.nickel();cfg=Settings(voltage=200,tilt=(-7.116725439974256,0),beam_cutoff=3.2,potential_cutoff=2.2,elastic_provider='nickel-lobato-2014');m=elastic_model(structure,cfg);reference=Ni017Geometry().model().elastic
         np.testing.assert_allclose(orientation(structure.atoms.cell.array,cfg.zone),Ni017Geometry().frame,atol=1e-14)
         self.assertEqual(m.beams.hkl,reference.beams.hkl)
         np.testing.assert_allclose(m.hamiltonian_nm_inv(),reference.hamiltonian_nm_inv(),atol=1e-13)
@@ -45,15 +45,20 @@ class GeometryTests(unittest.TestCase):
         for voltage in (80,200,300):
             np.testing.assert_allclose(tilt_from_za(za_from_tilt([5,-25],voltage),voltage),[5,-25])
 
+    @patch.dict(os.environ, {'EMCD_SIM_LEGACY_ATOMIC_TABLE': ''})
     def test_ase_cif_import_and_material_gate(self):
+        # Preserve the unconfigured-provider control even when other tests
+        # opt into the external table. Configured multi-element cases have
+        # separate integration tests in test_legacy_atomic_factors.py.
         folder=Path('outputs')/('gui_cif_test_'+uuid.uuid4().hex);folder.mkdir()
         for element in ('Ni','Cu'):
             file=folder/(element+'.cif');write(file,bulk(element,'fcc',a=3.524,cubic=True))
             s=Structure.from_cif(file);self.assertEqual(s.atoms.get_chemical_formula(),element+'4');self.assertEqual(len(s.sha256),64)
             self.assertIn('Fractional positions',s.description());geometry(s,Settings())
             if element=='Cu':
-                self.assertTrue(s.elastic_reason)
-                with self.assertRaises(ValueError):elastic_model(s,Settings())
+                self.assertFalse(s.elastic_reason)  # Bundled unified factors are available.
+                self.assertTrue(s.elastic_reason_for('nickel-lobato-2014'))
+                with self.assertRaises(ValueError):elastic_model(s,Settings(elastic_provider='nickel-lobato-2014'))
             else:self.assertFalse(s.elastic_reason)
         s=Structure.nickel();s.atoms.info['occupancy']={'0':{'Ni':.5}}
         self.assertTrue(s.elastic_reason)
@@ -88,8 +93,10 @@ class InteractionTests(unittest.TestCase):
         w.zone.setText('7 1 0');w.target.setText('0 0 2');w.align()
         np.testing.assert_allclose(w.current[1],orientation(w.structure.atoms.cell.array,(7,1,0),(0,0,2)))
         self.assertIn((0,0,2),w.current[2])
-        w.structure=Structure(bulk('Cu','fcc',a=3.6,cubic=True));w.refresh();self.assertFalse(w.run_button.isEnabled())
-        self.assertTrue(all(not w.tabs.isTabEnabled(i) for i in (1,2,3)))
+        with patch.dict(os.environ, {'EMCD_SIM_LEGACY_ATOMIC_TABLE': ''}):
+            w.elastic_provider_box.setCurrentIndex(w.elastic_provider_box.findData('nickel-lobato-2014'))
+            w.structure=Structure(bulk('Cu','fcc',a=3.6,cubic=True));w.refresh();self.assertFalse(w.run_button.isEnabled())
+            self.assertTrue(all(not w.tabs.isTabEnabled(i) for i in (1,2,3)))
 
     def test_cancel_does_not_register_completed_physics(self):
         entered=threading.Event();release=threading.Event();w=self.window

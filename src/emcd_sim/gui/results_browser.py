@@ -147,6 +147,8 @@ class ProjectWorkspace:
         file=self.menuBar().addMenu('File');results=self.menuBar().addMenu('Results');view=self.menuBar().addMenu('View')
         for title,callback,shortcut in [('New',self.new_project,'Ctrl+N'),('Open Project...',self.open_project_dialog,'Ctrl+O'),('Save Project',self.save_project_action,'Ctrl+S'),('Save Project As...',lambda:self.save_project_action(save_as=True),'Ctrl+Shift+S')]:
             action=file.addAction(title);action.triggered.connect(lambda checked=False,f=callback:f());action.setShortcut(shortcut)
+        file.addAction('Open Elastic Project...',self.open_elastic_project_dialog)
+        file.addAction('Save Elastic Project...',self.save_preview)
         for title,callback in [('Import Existing Result',self.import_result_dialog),('Compare Selected Results',self.compare_selected),('Use These Settings',self.use_result_settings),('Locate Original Source...',self.locate_source),('Export Current Figure',self.export_current_figure),('Export Selected NPZ/CSV',self.export_selected_data),('Clear Current Selection',self.clear_selected)]:
             action=results.addAction(title);action.triggered.connect(lambda checked=False,f=callback:f())
         view.addAction(self.browser_dock.toggleViewAction());view.addAction('Restore Default Layout',self.restore_layout)
@@ -252,6 +254,7 @@ class ProjectWorkspace:
         self.save_to_path(target,approved)
     def new_project(self):
         if self.busy:return
+        with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
         self.set_values(dict(kv=300,beam=3.2,potential=2.5))
         self.worker_mode.setCurrentIndex(0);self.worker_count.setValue(1)
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
@@ -282,7 +285,9 @@ class ProjectWorkspace:
     def use_result_settings(self):
         if self.busy or self.emcd_result is None:return
         r=self.emcd_result;s=r['settings'];c=r['config']
-        from .project_io import frame_rerun_reason
+        from .project_io import frame_rerun_reason,elastic_provider_reason
+        provider_reason=elastic_provider_reason(r)
+        if provider_reason:self.error(provider_reason);return
         frame_reason=frame_rerun_reason(r)
         if frame_reason:self.error(frame_reason);return
         if r.get('fft_recipe_error'):self.error(r['fft_recipe_error']);return
@@ -302,6 +307,9 @@ class ProjectWorkspace:
             for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),(self.energy_scope,('full','edges').index(c.energy_scope))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
             with QtCore.QSignalBlocker(self.basis_mode):self.basis_mode.setCurrentIndex(self.basis_mode.findData(s.basis_mode))
+            provider_index=self.elastic_provider_box.findData(s.elastic_provider)
+            if provider_index<0:raise ValueError('Saved elastic provider is unavailable; inputs cannot be restored')
+            with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(provider_index)
             for widget,checked in ((self.row_projection,c.systematic_row),(self.angular_maps,c.angular_maps)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.mdff_stack.setCurrentIndex(self.model_box.currentIndex())

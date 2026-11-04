@@ -5,8 +5,8 @@ The tabulated Lobato--Van Dyck electron form factors are *non-relativistic*
 Born scattering amplitudes in Å. The microscope gamma factor is applied when
 building the relativistic elastic propagation matrix, not inside f(g).
 
-Only Ni is bundled; other elements can be provided through the extensible
-``atomic_factors`` mapping without changing the Bloch-wave solver.
+The unversioned constructor retains Ni compatibility. ``from_provider`` uses
+the separately bundled neutral Z=1..118 Dirac-Pade data by default.
 """
 from dataclasses import dataclass, field
 from typing import Callable, Mapping
@@ -74,6 +74,12 @@ class IndependentAtomPotential:
         if missing:
             raise ValueError(f"Missing electron scattering factors for {sorted(missing)}")
 
+    @classmethod
+    def from_provider(cls,crystal,provider='adaptive-dirac-pade-2026',**kwargs):
+        """Explicit modern provider factory; the unversioned constructor stays legacy-compatible."""
+        from .elastic_providers import factors_for_provider
+        return cls(crystal,atomic_factors=factors_for_provider(crystal.species,provider),**kwargs)
+
     @property
     def cell_volume_angstrom3(self) -> float:
         return float(abs(np.linalg.det(self.crystal.lattice_angstrom)))
@@ -84,6 +90,8 @@ class IndependentAtomPotential:
         g = float(np.linalg.norm(self.crystal.g_vector(hkl)))
         phase = np.exp(-2j * np.pi * (self.crystal.fractional_positions @ np.asarray(hkl)))
         f = np.array([self.atomic_factors[s](g) for s in self.crystal.species], dtype=float)
+        if f.shape != (len(self.crystal.species),) or not np.all(np.isfinite(f)):
+            raise ValueError("Atomic factors must return finite scalar scattering amplitudes in angstrom")
         dw = np.exp(-np.array(self.debye_waller_b_angstrom2) * (g ** 2) / 4)
         return complex(np.dot(phase, f * dw * np.array(self.occupancies)))
 
@@ -116,3 +124,30 @@ class FourierCutoffPotential:
         return (self.original.structure_factor(hkl) if
                 np.linalg.norm(self.crystal.g_vector(hkl)) <= self.cutoff_inv_angstrom + 1e-10
                 else 0j)
+
+
+def elastic_reflection_allowed(crystal: Crystal, hkl: tuple[int, int, int],
+                               potential=None, tol: float = 1e-9) -> bool:
+    """Test actual IAM extinction when an explicit elastic potential is supplied.
+
+    The historical equal-atom test remains the default for legacy Ni callers.
+    Multi-species/site-dependent callers must supply their potential. A finite
+    potential cutoff is a numerical approximation, not a structural extinction;
+    unwrap it before choosing beams, including beams reached indirectly.
+    """
+    if not np.isfinite(tol) or tol < 0:
+        raise ValueError("Reflection tolerance must be finite and nonnegative")
+    if potential is None:
+        return crystal.is_allowed(hkl, tol=tol)
+    while isinstance(potential, FourierCutoffPotential):
+        potential = potential.original
+    source = potential.crystal
+    if (source.species != crystal.species
+            or source.fractional_positions.shape != crystal.fractional_positions.shape
+            or not np.allclose(source.lattice_angstrom, crystal.lattice_angstrom, rtol=0, atol=1e-12)
+            or not np.allclose(source.fractional_positions, crystal.fractional_positions, rtol=0, atol=1e-12)):
+        raise ValueError("Beam selection potential must describe the same crystal and site ordering")
+    coefficient = potential.structure_factor(hkl)
+    if not np.isfinite(coefficient):
+        raise ValueError("Elastic structure factor must be finite")
+    return abs(coefficient) > tol
