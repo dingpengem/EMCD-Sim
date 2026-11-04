@@ -15,6 +15,20 @@ def test_forward_computation_ast_is_unchanged_except_approved_metadata_and_prior
     path='src/emcd_sim/gui/emcd_forward.py'
     old=ast.parse(subprocess.check_output(['git','show','4f57815646d023957a81ad15fdaa684c02a54442:'+path],cwd=ROOT).decode('utf-8-sig'))
     current=ast.parse((ROOT/path).read_text(encoding='utf-8-sig'))
+    # Part 1C relocates compatibility functions, retaining each body exactly.
+    # The new wrappers and complete current scope are checked independently.
+    accepted=ast.parse(subprocess.check_output(['git','show','98570c62:'+path],cwd=ROOT).decode('utf-8-sig'))
+    relocated=ast.parse((ROOT/'src/emcd_sim/gui/legacy_ni_provider.py').read_text(encoding='utf-8-sig'))
+    for name in ('material_reason','axis_rotation','tensors','energy_grid'):
+        find_function=lambda tree:next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
+        assert ast.dump(find_function(relocated))==ast.dump(find_function(accepted))
+        current.body[current.body.index(find_function(current))]=copy.deepcopy(find_function(accepted))
+    # Restore the accepted import inventory after the explicitly tested move.
+    remaining=[n for n in current.body if not isinstance(n,(ast.Import,ast.ImportFrom))]
+    current.body=[];it=iter(remaining)
+    for n in accepted.body:
+        current.body.append(copy.deepcopy(n) if isinstance(n,(ast.Import,ast.ImportFrom)) else next(it))
+
     # Retain the complete computation guard: allow only the exact new metadata
     # import/expression, plus the already approved d1c93ba Ni species gate.
     previous=ast.parse(subprocess.check_output(['git','show','d1c93ba:'+path],cwd=ROOT).decode('utf-8-sig'))

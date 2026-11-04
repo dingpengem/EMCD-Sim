@@ -15,7 +15,8 @@ from .responsive import CollapsibleSection
 from .results import ResultsView,comparison_text
 from .numerical_settings import NumericalSettingsUI
 from .imported_tensor_ui import ImportedTensorUI
-from .generalized_forward import material_reason,energy_grid,tensors,calculate
+from .generalized_forward import material_reason,energy_grid,tensors
+from .forward_pipeline import calculate
 from .provider_ui import ProviderUI
 
 

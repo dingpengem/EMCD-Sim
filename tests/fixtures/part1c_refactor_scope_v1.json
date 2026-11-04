@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "base": "133c3da6e69d633b0e1ea61a4de8005820885bbb",
+  "physics_convention": "forward_born_dagger_g_minus_h_v1",
+  "review": "Part 1C shared algebra/phase and provider adapters; no physical response kernel changes",
+  "canonical_sha256": {
+    "src/emcd_sim/atomic_dipole.py": "826a323e5cb51b12454171598f5bea4dfa8cf4d53d0f31ee057079146e9a5cfb",
+    "src/emcd_sim/atomic_ionization.py": "fa083d58e6758b421286d219b9528de001d67ece950ca59d4829555d70c7f1d0",
+    "src/emcd_sim/gui/emcd_forward.py": "fd4290eae308cb2ff6cdeac40676f7d115fde2df61eba37c0c0edc2b885bb1e3",
+    "src/emcd_sim/gui/forward_pipeline.py": "26b0541e32e5e3fc6f42310c9d757fcdb8f87d02ba02a79e7df6255cec4a5dd1",
+    "src/emcd_sim/gui/generalized_forward.py": "fe1eb94ec276b8cd4e7e6dc04ed5c9887a2b52de482b4feeebef87e257404cd5",
+    "src/emcd_sim/gui/legacy_ni_provider.py": "9b47f0e81342bc80baa797fa8a7a3f6cfa6f61cebb10e355c838984fcbad81c7",
+    "src/emcd_sim/gui/provider_preparation.py": "5e10d71ccbb886a8631fa90f39610b127c21d127df7e5e38abdb92c66eb1cde8",
+    "src/emcd_sim/gui/stage_b.py": "cb9dc06f2edd593bffed222efb34372dce8084e0da12d84e95f72d682c655c47",
+    "src/emcd_sim/ionization_sites.py": "eebbabf7e95a83f6fe4e4e2e2dc3dd03da111ebfda88f94b19d4c90fa66ed302",
+    "src/emcd_sim/mdff_providers.py": "ef55fef8abacccacfe43d9158b7cd9aa0f85c95a20e92cc4ac9232228afe0fc0",
+    "src/emcd_sim/ni_local_mdff.py": "cf397ff281d1449519fe08ecedccd35c36807fbf1a130238873035aee4ee5e62",
+    "src/emcd_sim/single_channeling_tensor.py": "783c0a855e4a23346c1cfd62d1d959b2db9f56fa5ac08f927d50d74e691ad2d5"
+  }
+}

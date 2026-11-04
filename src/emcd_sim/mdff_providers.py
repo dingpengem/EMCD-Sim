@@ -52,3 +52,17 @@ def _converted(model, original_path, raw, declaration_json):
         metadata['xmcd_source_path'] = original_path
     metadata['provider_identity'] = model
     return replace(converted, metadata=metadata, path=original_path, sha256=digest)
+
+
+def prepare_provider(cfg):
+    """One preparation interface for XMCD, atomic and imported MDFF models.
+
+    Historical Ni deliberately uses direct evaluation, not converted-grid
+    interpolation. Selection here changes no downstream propagation kernel.
+    """
+    from .gui.generalized_forward import is_declared
+    if is_declared(cfg):
+        from .gui.provider_preparation import DeclaredMDFFProvider
+        return DeclaredMDFFProvider(cfg)
+    from .gui.legacy_ni_provider import HistoricalNiProvider
+    return HistoricalNiProvider(cfg)

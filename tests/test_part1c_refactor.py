@@ -10,8 +10,9 @@ from emcd_sim.ionization_sites import single_site_phase_matrix
 
 
 def accepted_module(path, name):
-    module=types.ModuleType('emcd_sim.'+name)
-    module.__package__='emcd_sim';sys.modules[module.__name__]=module
+    package='emcd_sim.gui' if path.startswith('gui/') else 'emcd_sim'
+    module=types.ModuleType(package+'.'+name)
+    module.__package__=package;sys.modules[module.__name__]=module
     raw=subprocess.check_output(['git','show','98570c62cc205fa82f855a4033a4d683faf80837:src/emcd_sim/'+path])
     exec(compile(raw.decode('utf-8-sig'),path,'exec'),module.__dict__)
     return module
