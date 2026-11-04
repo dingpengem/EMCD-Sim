@@ -1,4 +1,4 @@
-"""MDFF, propagation controls and worker lifecycle; calculations live in emcd_forward."""
+"""MDFF, propagation controls and worker lifecycle; calculations enter forward_pipeline."""
 from dataclasses import asdict
 from pathlib import Path
 import datetime,json,logging
@@ -8,14 +8,15 @@ from PySide6 import QtCore,QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg,NavigationToolbar2QT
 from .geometry import Structure
-from .emcd_forward import (ForwardSettings,DEFAULT_SOURCE,inspect_source,material_reason,energy_grid,tensors,calculate,Cancelled,export_result)
-from ..ni_local_mdff import NiLocalConfig
+from .emcd_forward import (ForwardSettings,DEFAULT_SOURCE,inspect_source,Cancelled,export_result)
+from ..historical_ni import NiLocalConfig
 from ..wien2k_xmcd import load_wien2k_xmcd
 from .responsive import CollapsibleSection
 from .results import ResultsView,comparison_text
 from .numerical_settings import NumericalSettingsUI
 from .imported_tensor_ui import ImportedTensorUI
-from .generalized_forward import material_reason,energy_grid,tensors,calculate
+from .generalized_forward import material_reason,energy_grid,tensors
+from .forward_pipeline import calculate
 from .provider_ui import ProviderUI
 
 

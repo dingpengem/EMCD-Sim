@@ -4,7 +4,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 import pytest
 from emcd_sim.multislice_double_channeling import (transition_modes,FFTSplitStep,
-    propagate_slices,forward_event_amplitudes,depth_quadrature,ProjectedNiFFT,
+    propagate_slices,forward_event_amplitudes,depth_quadrature,ProjectedFFT,
     incident_fields,multislice_double_channeling_response)
 from emcd_sim.double_channeling import dipole_kernel,intensities_from_response
 from emcd_sim.benchmark import nickel_physical_benchmark
@@ -85,7 +85,7 @@ def row():
 
 def test_projected_potential_and_legacy_entrance_fields(row):
     from emcd_sim.multislice_reference import _projected_ni_potential,fft_multislice_ni
-    g=ProjectedNiFFT.build(row.elastic,grid_points=16,potential_cutoff=.75,systematic_row=True,row_reduction=True)
+    g=ProjectedFFT.build(row.elastic,grid_points=16,potential_cutoff=.75,systematic_row=True,row_reduction=True)
     b=row.elastic.potential.debye_waller_b_angstrom2[0]
     u,h,gv=_projected_ni_potential(16,row.elastic.microscope.acceleration_kv,b,.75,systematic_row_hkl=(2,0,0))
     assert_allclose(g.potential,u[:,0],atol=1e-14)
@@ -100,15 +100,15 @@ def test_projected_potential_and_legacy_entrance_fields(row):
 
 def test_disabled_outgoing_recovers_entrance_and_reversal(row):
     from emcd_sim.multislice_reference import coherence_from_amplitudes
-    from emcd_sim.single_channeling_tensor import _tensor_angular_maps,fcc_site_phase_matrix
-    g=ProjectedNiFFT.build(row.elastic,grid_points=16,potential_cutoff=.75,systematic_row=True,row_reduction=True)
+    from emcd_sim.single_channeling_tensor import _tensor_angular_maps,historical_ni_site_phase_matrix
+    g=ProjectedFFT.build(row.elastic,grid_points=16,potential_cutoff=.75,systematic_row=True,row_reduction=True)
     fields,z,w,n,dz=incident_fields(g,3.,depth_steps=33)
     coh=coherence_from_amplitudes(z,fields[:,g.indices(row.elastic.beams.hkl)])
     q=np.array([[.28,.28],[.28,-.28]])
     t=np.array([[1,-.3j,0],[.3j,1,0],[0,0,1]])
     response,diag=multislice_double_channeling_response(row.elastic,831.4778,q,3.,fft_grid=16,
         potential_cutoff=.75,systematic_row=True,row_reduction=True,depth_steps=33,outgoing_potential=False)
-    even,odd=_tensor_angular_maps(row,t,831.4778,coh,fcc_site_phase_matrix(row),q[:,0],q[:,1])
+    even,odd=_tensor_angular_maps(row,t,831.4778,coh,historical_ni_site_phase_matrix(row),q[:,0],q[:,1])
     assert_allclose(intensities_from_response(response,t),3*(even+odd),rtol=1e-12,atol=1e-14)
     assert_allclose(intensities_from_response(response,t.conj()),3*(even-odd),rtol=1e-12,atol=1e-14)
     assert diag['outgoing_norm_error']<1e-13
@@ -174,7 +174,7 @@ def test_basis_fft_grid_and_potential_cutoff_sensitivity(row):
 def test_outgoing_energy_kinematics_and_full_2d_fft():
     from emcd_sim.geometry import electron_wavelength_angstrom
     model=nickel_physical_benchmark()
-    grid=ProjectedNiFFT.build(model.elastic,grid_points=16,potential_cutoff=.75)
+    grid=ProjectedFFT.build(model.elastic,grid_points=16,potential_cutoff=.75)
     out=grid.plan(831.4778,[.2,-.3])
     lam=electron_wavelength_angstrom(model.elastic.microscope.acceleration_kv-.8314778)
     expected=-10*np.pi*lam*(np.sum(grid.g**2,axis=1)+2*grid.g@(grid.carrier+[.2,-.3]))
@@ -206,7 +206,7 @@ def test_map_interface_fractional_weights_and_nonmagnetic_reversal(row):
 
 def test_complete_direct_forward_depth_sum_matches_adjoint(row):
     from emcd_sim.geometry import characteristic_qz_angstrom_inv
-    grid=ProjectedNiFFT.build(row.elastic,grid_points=16,potential_cutoff=.75,systematic_row=True,row_reduction=True)
+    grid=ProjectedFFT.build(row.elastic,grid_points=16,potential_cutoff=.75,systematic_row=True,row_reduction=True)
     fields,z,w,n,dz=incident_fields(grid,2.,depth_steps=9,slice_step_nm=.04)
     ii=grid.indices(row.elastic.beams.hkl)
     q=np.array([.28,.28]);energy=831.4778

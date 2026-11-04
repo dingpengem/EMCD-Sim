@@ -75,7 +75,7 @@ def worker(destination):
     from emcd_sim.elastic import BeamSet
     from emcd_sim.simulation import EMCDSimulation
     from emcd_sim.multislice_reference import coherence_from_amplitudes
-    from emcd_sim.single_channeling_tensor import _tensor_angular_maps,fcc_site_phase_matrix
+    from emcd_sim.single_channeling_tensor import _tensor_angular_maps,historical_ni_site_phase_matrix
     structure=Structure.nickel();R=orientation(structure.atoms.cell.array,(1,1,7))
     desired=np.array([[1,-1,0],[7,7,-2],[1,1,7]],float);desired/=np.linalg.norm(desired,axis=1)[:,None]
     S=R@desired.T;g=np.sqrt(8)/3.524;tx=-500*electron_wavelength_angstrom(200)*g
@@ -94,7 +94,7 @@ def worker(destination):
             for axis in ((0,0,1),(1,1,7),tuple(beam_axis)):
                 cfg=ForwardSettings(axis_declared=True,magnetization=axis,source=str(ROOT/'data/wien2k_ni/Ni_fm.xmcd'))
                 T=tensors(cfg,np.array([831.271,848.698]),R)[0].tensor_angstrom2_per_ev[0]
-                N,M=_tensor_angular_maps(sim,T,831.271,C,fcc_site_phase_matrix(sim),qold[:,0],qold[:,1])
+                N,M=_tensor_angular_maps(sim,T,831.271,C,historical_ni_site_phase_matrix(sim),qold[:,0],qold[:,1])
                 axis_name='crystal001' if axis==(0,0,1) else ('zone117' if axis==(1,1,7) else 'incident')
                 prefix=f'{consistent}_{mode}_{axis_name}'
                 out[prefix+'_N']=N*8;out[prefix+'_M']=M*8

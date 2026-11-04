@@ -32,7 +32,7 @@ def export_declared_xmcd(source_path,declaration,output):
     raw_source=Path(source_path).read_bytes()
     if not d['source_sha256'] or hashlib.sha256(raw_source).hexdigest()!=d['source_sha256']:
         raise ValueError('Declared element-specific XMCD source checksum mismatch')
-    from .gui.emcd_forward import axis_rotation
+    from .mdff_orientation import axis_rotation
     axis=np.asarray(d['magnetization_crystal'],float)
     if axis.shape!=(3,) or not np.isfinite(axis).all() or not np.isfinite(np.linalg.norm(axis)) or np.linalg.norm(axis)<1e-12:
         raise ValueError('Declare a finite nonzero crystal Cartesian magnetic axis with finite norm')

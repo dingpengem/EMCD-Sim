@@ -3,20 +3,20 @@ from dataclasses import replace
 from time import perf_counter
 import numpy as np
 from .emcd_forward import _contract, Cancelled
-from .generalized_forward import material_reason,energy_grid,tensors,source_for,is_declared
+from ..mdff_providers import prepare_provider
 from .geometry import elastic_model,geometry
 from ..geometry import VirtualDetector
 from ..simulation import EMCDSimulation
-from ..ionization_sites import IonizationSites
 from ..multislice_reference import coherence_from_amplitudes
 
 
 def validate_before_resources(structure,settings,cfg,requested=None):
     """Validate declared source/material before geometry or resource estimates."""
-    if not is_declared(cfg):return
-    reason=material_reason(structure,cfg)
+    provider=prepare_provider(cfg)
+    if not provider.declared:return
+    reason=provider.material_reason(structure)
     if reason:raise ValueError(reason)
-    if energy_grid(cfg,requested)[-1]>=1000*settings.voltage:
+    if provider.energy_grid(requested)[-1]>=1000*settings.voltage:
         raise ValueError('Energy loss must be below incident electron energy')
 
 
@@ -25,23 +25,24 @@ def calculate_prepared(structure,settings,cfg,progress,cancelled,*,energy_ev=Non
         if cancelled():raise Cancelled()
         progress(s)
     stage('Validating structure and MDFF')
-    reason=material_reason(structure,cfg)
+    provider=prepare_provider(cfg)
+    reason=provider.material_reason(structure)
     if reason:raise ValueError(reason)
-    energy=energy_grid(cfg,energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
+    energy=provider.energy_grid(energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
     if settings.target not in hkl or settings.target==(0,0,0):raise ValueError('Select a nonzero target in the finite diffraction basis')
     memory=64*cfg.grid**2*len(hkl)**2/2**20
-    declared=is_declared(cfg)
-    source=source_for(cfg) if declared else None
-    sites=IonizationSites.from_structure(structure,cfg.ionizing_element,cfg.site_indices) if declared else None
+    declared=provider.declared
+    source=provider.source
+    sites=provider.sites(structure)
     if energy[-1]>=1000*settings.voltage:raise ValueError('Energy loss must be below incident electron energy')
     model=EMCDSimulation(elastic,{k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),cfg.centers)},
-        cfg.magnetization if declared else (0.,0.,1.))
+        provider.simulation_magnetization)
     # Direct integration requires full physical aperture coverage as well.
     if any(max(abs(np.asarray(p)))+cfg.radius>cfg.halfwidth for p in cfg.centers):raise ValueError('Map halfwidth must fully cover both physical detector apertures')
     from .propagation import propagate, compare_methods, numerical_info
     info=numerical_info(structure,settings,cfg,hkl=hkl,check_memory=False)
     memory=info['dense_working_estimate_mib']
-    stage('Generating common +M and -M tensors');ts=tensors(cfg,energy,R)
+    stage('Generating common +M and -M tensors');ts=provider.tensors(energy,R)
     z=np.linspace(0,settings.thickness,cfg.depth)
     methods={};fft_info={}
     # Finish one solver before preparing the next: cancellation in BW must
@@ -61,14 +62,14 @@ def calculate_prepared(structure,settings,cfg,progress,cancelled,*,energy_ev=Non
         checkpoint=(lambda e,data:energy_checkpoint(method,e,data)) if energy_checkpoint is not None else None
         prepared=contract(model,settings,cfg,method,C,energy,ts,stage,cancelled,prepared_incoming,energy_checkpoint=checkpoint,
             execution_workers=execution_policy['effective_workers'][method] if execution_policy else None,
-            **(dict(ionization_sites=sites) if declared else {}))
+            ionization_sites=sites)
         methods[method]=_contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,prepared=prepared)
         methods[method]['method']=method
         methods[method]['metadata'].update(solver=method+' '+cfg.channeling_model+' channeling localized single ionization',numerics=info,
             incoming_propagation_seconds=incoming_seconds,additional_incoming_preparation_seconds=prepared['incoming_preparation_seconds'])
         if declared:methods[method]['metadata'].update(provider_metadata(source,sites,structure,cfg))
         if method=='fft-multislice':methods[method]['metadata']['fft']=fft_info['summary']
-    if declared:source_for(cfg)  # Recheck exact original input bytes before publishing results.
+    provider.revalidate_source()  # Discard changed declared inputs before publishing results.
     stage('Comparing independent BW/MS propagations')
     comparison=compare_methods(methods,fft_info)
     primary=methods.get('bloch',next(iter(methods.values())))
@@ -104,3 +105,8 @@ def provider_metadata(source,sites,structure,cfg):
             selected=source.metadata['selected_ev'],provenance=source.metadata['source'],
             selection_origin='Acknowledged provider declaration; no automatic edge-energy shift',audit=None)
     return result
+
+
+# Documented common entry point. Legacy imports refer to this same callable;
+# _calculate remains an admission-test/public-API compatibility hook.
+from .emcd_forward import calculate

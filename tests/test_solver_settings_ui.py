@@ -34,6 +34,7 @@ def baseline_window(path):
     modules=[]
     for name,filename in (('_baseline_results_browser','results_browser.py'),('_baseline_stage_b','stage_b.py'),('_baseline_app','app.py')):
         source=subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/'+filename]).decode('utf-8-sig')
+        source=source.replace('..ni_local_mdff import','..historical_ni import')
         if filename=='app.py':
             source=source.replace('from .stage_b import StageB','from ._baseline_stage_b import StageB')
             source=source.replace('from .results_browser import ProjectWorkspace','from ._baseline_results_browser import ProjectWorkspace')
@@ -144,14 +145,21 @@ def test_solver_configuration_and_physics_unchanged():
     # Protect configuration, tensor construction and energy selection independently
     # of that scheduling change, plus byte-identical propagation/physics modules.
     path='src/emcd_sim/gui/emcd_forward.py'
-    current_forward=ast.parse(Path(path).read_text(encoding='utf-8-sig'))
+    current_forward=ast.parse(Path('src/emcd_sim/historical_ni.py').read_text(encoding='utf-8-sig'))
+    orientation=ast.parse(Path('src/emcd_sim/mdff_orientation.py').read_text(encoding='utf-8-sig'))
     old_forward=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for name in ('energy_grid','tensors','axis_rotation','material_reason'):
         if name=='material_reason':
             # The species gate was approved at d1c93ba, before this continuation.
             previous=ast.parse(subprocess.check_output(['git','show','d1c93ba:'+path]).decode('utf-8-sig'))
-            assert ast.dump(find(current_forward,name))==ast.dump(find(previous,name))
-        else:assert ast.dump(find(current_forward,name))==ast.dump(find(old_forward,name))
+            moved=copy.deepcopy(find(current_forward,name))
+            local_import=ast.parse('from .gui.geometry import Structure').body[0]
+            assert ast.dump(moved.body[0])==ast.dump(local_import)
+            moved.body.pop(0)
+            assert ast.dump(moved)==ast.dump(find(previous,name))
+        else:
+            actual=find(orientation if name=='axis_rotation' else current_forward,name)
+            assert ast.dump(actual)==ast.dump(find(old_forward,name))
     # MS advance/response buffer reuse is covered by strict baseline comparisons
     # in test_ms_double_buffers; retain AST guards on its unchanged formulation.
     path='src/emcd_sim/multislice_double_channeling.py'
@@ -162,7 +170,7 @@ def test_solver_configuration_and_physics_unchanged():
     # The versioned manifest guards the complete corrected forward-event code.
     from physics_source_guard import assert_registered_sources
     assert_registered_sources()
-    # ProjectedNiFFT deliberately gained an opt-in two-beam subspace. Keep the
+    # ProjectedFFT deliberately gained an opt-in two-beam subspace. Keep the
     # unchanged index mapping guard; default-plan arrays/diagnostics are compared
     # bit-for-bit with archived code in test_ms_double_buffers for [001]/[017].
     assert ast.dump(find(ms_current,'indices'))==ast.dump(find(ms_old,'indices'))

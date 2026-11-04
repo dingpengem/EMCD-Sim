@@ -6,7 +6,7 @@ from time import perf_counter
 import numpy as np
 from ..double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch
 from ..multislice_double_channeling import ProjectedFFT, incident_fields, multislice_double_channeling_response
-from ..single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix
+from ..single_channeling_tensor import _tensor_angular_maps, historical_ni_site_phase_matrix
 from ..mdff_edges import selected_samples
 
 
@@ -74,7 +74,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
     full_weights=np.stack([weights[k].ravel() for k in ('A','B')])
     spectra={f'I_{d}_{s}':np.empty(len(energy)) for s in ('plus','minus') for d in ('A','B')}
     maps={};elastic=model.elastic
-    phase=fcc_site_phase_matrix(model) if ionization_sites is None else ionization_sites.single_phase(elastic.crystal,elastic.beams.hkl)
+    phase=historical_ni_site_phase_matrix(model) if ionization_sites is None else ionization_sites.single_phase(elastic.crystal,elastic.beams.hkl)
     site_arguments={} if ionization_sites is None else dict(ionization_sites=ionization_sites)
     # Directly evaluate both mirror directions for any orientation. A reference
     # symmetry is a diagnostic, not an input used to manufacture a response.

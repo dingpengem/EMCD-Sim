@@ -21,7 +21,7 @@ def test_import_has_no_production_hooks():
 
 def test_profile_copy_and_fft_hooks_are_bitwise_identical():
     p=tool();elastic=elastic_model(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
-    grid=ms.ProjectedNiFFT.build(elastic,grid_points=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry())
+    grid=ms.ProjectedFFT.build(elastic,grid_points=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry())
     incoming=ms.incident_fields(grid,2,depth_steps=5,slice_step_nm=.04)
     kwargs=dict(fft_grid=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry(),depth_steps=5,slice_step_nm=.04,prepared_grid=grid,prepared_incoming=incoming)
     q=np.array([[.2,.3],[.2,-.3],[0.,0.]])

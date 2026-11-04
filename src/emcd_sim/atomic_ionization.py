@@ -1,6 +1,6 @@
 ﻿"""Explicit independent-electron 2p -> cubic 3d model; no material defaults.
 
-Angular algebra is shared with the unchanged historical Ni implementation.
+Angular algebra and transition enumeration are shared with the historical Ni adapter.
 """
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -8,12 +8,11 @@ import hashlib
 import json
 import numpy as np
 from ase.data import atomic_numbers
-from .ni_local_mdff import (core_spinor_amplitude, ni_2p_to_3d_dipole,
+from .atomic_dipole import (core_spinor_amplitude, dipole_2p_to_3d,
     cubic_orbital_coefficients, hydrogenic_radial_dipole_angstrom, radial_dipole_from_table)
 from .mdff_tensor import TransitionDataset, dipole_tensor_from_transitions, gaussian_broadening_ev
 from .imported_mdff import ImportedMDFF, CONVENTION
 
-dipole_2p_to_3d = ni_2p_to_3d_dipole
 ORBITALS = tuple(cubic_orbital_coefficients())
 
 
@@ -72,12 +71,17 @@ class AtomicMaterialParameters:
             raise ValueError('Atomic status must be synthetic or physical_source_unvalidated; never quantitative validated')
 
 
-def transitions_for_material(parameters, *, magnetization_sign=1):
+def transitions_for_material(parameters, *, magnetization_sign=1, amplitude_policy='strict'):
     """Coherent orbital components; incoherent core/final events.
 
     Reversal swaps spin holes AND exchange shifts in the fixed core-SOC basis.
     Operation order follows historical Ni without importing Ni parameters.
+    ``strict`` rejects nonzero amplitudes below the supported threshold;
+    ``historical_drop`` preserves the historical Ni omission of those events.
+    Both policies use this single event loop.
     """
+    if amplitude_policy not in ('strict', 'historical_drop'):
+        raise ValueError('Unknown transition-amplitude policy')
     p = parameters
     p.validate()
     if magnetization_sign not in (-1,1):
@@ -101,7 +105,7 @@ def transitions_for_material(parameters, *, magnetization_sign=1):
                             amplitude += components[m+2]*dipole_2p_to_3d(two_j,two_mj,m,spin,p.radial_integral_angstrom)
                     if np.max(np.abs(amplitude))>1e-14:
                         energies.append(energy);dipoles.append(amplitude);weights.append(holes);edges.append(edge)
-                    elif np.any(amplitude!=0):
+                    elif amplitude_policy == 'strict' and np.any(amplitude!=0):
                         raise ValueError('Radial scale below supported transition-amplitude threshold')
     if not energies:
         raise ValueError('No supported nonzero transitions')

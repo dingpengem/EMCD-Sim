@@ -113,7 +113,7 @@ Paths refer to the unchanged released implementation; function names are prefera
 |Single shared tensor contraction|`single_channeling_tensor.py`: `_tensor_angular_maps`|
 |BW Double response, phase and trace|`double_channeling.py`: `double_channeling_response`, `depth_response`, `equivalent_site_phases`, `intensities_from_response`|
 |Projected FFT and Double modes|`multislice_double_channeling.py`; `projected_geometry.py`, `projected_potential.py`|
-|MDFF construction / rotation|`mdff_tensor.py`, `xmcd_effective_mdff.py`, `ni_local_mdff.py`; `gui/emcd_forward.py`: `tensors`|
+|MDFF construction / rotation|`mdff_tensor.py`, `xmcd_effective_mdff.py`, `atomic_dipole.py`, `atomic_ionization.py`; `mdff_providers.py` and `historical_ni.py`|
 |Loss scheduling, fixed weights, spectra|`gui/channeling.py`: `angular_schedule`, `contract`|
 |Display definitions / masks|`gui/component_display.py`, `gui/prb_benchmark.py`, `gui/signal_normalization.py`|
 |Project/export provenance|`gui/project_io.py`; `gui/emcd_forward.py`: `export_result`; `gui/normalization_export.py`|

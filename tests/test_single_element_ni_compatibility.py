@@ -14,6 +14,9 @@ BASE='2f9c130099dce5df4e4609b521c42f53c5385518'
 def archived(path,name,package):
     module=types.ModuleType(name);module.__package__=package;sys.modules[name]=module
     source=subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig')
+    source=source.replace('..ni_local_mdff import','..historical_ni import')
+    source=source.replace('fcc_site_phase_matrix','historical_ni_site_phase_matrix as fcc_site_phase_matrix',1)
+    source=source.replace('import ProjectedNiFFT','import ProjectedFFT as ProjectedNiFFT',1)
     exec(compile(source,'immutable_pre_feature_'+path,'exec'),module.__dict__)
     return module
 
@@ -25,7 +28,13 @@ def old_contract():
     ch=archived('src/emcd_sim/gui/channeling.py','emcd_sim.gui._single_element_channel_reference','emcd_sim.gui')
     ch.double_channeling_response=bw.double_channeling_response;ch.prepare_incoming_bloch=bw.prepare_incoming_bloch
     ch.multislice_double_channeling_response=ms.multislice_double_channeling_response
-    return ch.contract
+    def contract(model,*args,**kwargs):
+        from emcd_sim.historical_ni import HistoricalNiSites
+        sites=kwargs.pop('ionization_sites')
+        assert isinstance(sites,HistoricalNiSites)
+        np.testing.assert_array_equal(sites.positions_for(model.elastic.crystal),model.elastic.crystal.fractional_positions)
+        return ch.contract(model,*args,**kwargs)
+    return contract
 
 
 @pytest.mark.parametrize('model',['xmcd','atomic'])

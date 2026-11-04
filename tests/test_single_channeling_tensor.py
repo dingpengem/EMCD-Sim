@@ -7,13 +7,13 @@ import pytest
 from emcd_sim.benchmark import nickel_physical_benchmark
 from emcd_sim.geometry import characteristic_qz_angstrom_inv
 from emcd_sim.mdff_tensor import TransitionDataset, dipole_tensor_from_transitions, cycles_to_angular_q
-from emcd_sim.ni_local_mdff import NiLocalConfig, ni_local_transitions
-from emcd_sim.single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix, run_tensor_single_channeling
+from emcd_sim.historical_ni import NiLocalConfig, ni_local_transitions
+from emcd_sim.single_channeling_tensor import _tensor_angular_maps, historical_ni_site_phase_matrix, run_tensor_single_channeling
 
 
 def test_site_phase_hermitian_psd():
     sim = nickel_physical_benchmark(diffraction_condition="near-2bc")
-    phase = fcc_site_phase_matrix(sim)
+    phase = historical_ni_site_phase_matrix(sim)
     assert np.allclose(phase, phase.conj().T)
     assert np.linalg.eigvalsh(phase).min() >= -1e-12
     assert np.allclose(phase, 1.0)
@@ -26,7 +26,7 @@ def test_complex_contraction_equals_direct_transition_amplitude_sum():
     psi = sim.elastic.amplitudes(np.array([9.]))[0]
     coherence = psi[:,None]*psi[None,:].conj()
     n,m = _tensor_angular_maps(sim,np.outer(d,d.conj()),852.7,coherence,
-                               fcc_site_phase_matrix(sim),qx,qy)
+                               historical_ni_site_phase_matrix(sim),qx,qy)
     g = sim.elastic.reciprocal_vectors_xy
     qz = -characteristic_qz_angstrom_inv(852.7,sim.elastic.microscope.acceleration_kv)
     Q=cycles_to_angular_q(np.column_stack((qx.item()-g[:,0],qy.item()-g[:,1],

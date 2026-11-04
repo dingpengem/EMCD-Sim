@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "base": "133c3da6e69d633b0e1ea61a4de8005820885bbb",
+  "physics_convention": "forward_born_dagger_g_minus_h_v1",
+  "review": "Part 1C shared algebra/phase and provider adapters; no physical response kernel changes",
+  "canonical_sha256": {
+    "src/emcd_sim/atomic_dipole.py": "826a323e5cb51b12454171598f5bea4dfa8cf4d53d0f31ee057079146e9a5cfb",
+    "src/emcd_sim/atomic_ionization.py": "fa083d58e6758b421286d219b9528de001d67ece950ca59d4829555d70c7f1d0",
+    "src/emcd_sim/generalized_xmcd.py": "1079eac695f2b1862bafb9f96bd79c7e83e05279ea8e8e3586da6017cabe9ef8",
+    "src/emcd_sim/gui/channeling.py": "f13ede982948b787f602a62111b9a08c96d2bce34c6d1c98d5233bc936185fba",
+    "src/emcd_sim/gui/emcd_forward.py": "266cd88c9b6038b02e4cd2a559037a5c0f1162162df61b69c0f5804c58871a97",
+    "src/emcd_sim/gui/forward_pipeline.py": "26b0541e32e5e3fc6f42310c9d757fcdb8f87d02ba02a79e7df6255cec4a5dd1",
+    "src/emcd_sim/gui/generalized_forward.py": "7c9525d7feb125c56227a81c74b240622cc624ed233ae4506234dc63ad0c397f",
+    "src/emcd_sim/gui/project_io.py": "69c4da0df37ebdb2d34d91b0c293435dcfb4f2aeb7c959f458cf34e40b8d70d9",
+    "src/emcd_sim/gui/provider_preparation.py": "5e10d71ccbb886a8631fa90f39610b127c21d127df7e5e38abdb92c66eb1cde8",
+    "src/emcd_sim/gui/stage_b.py": "7436e28c282a60b78ff4f7ba3a156b540c0ee9dc54bf224aa68d9c2cd0f97258",
+    "src/emcd_sim/historical_ni.py": "81da9c6e3b7885adc2b616a25e8334afd83b9e1793421e9e4d44b18f136eabf6",
+    "src/emcd_sim/ionization_sites.py": "eebbabf7e95a83f6fe4e4e2e2dc3dd03da111ebfda88f94b19d4c90fa66ed302",
+    "src/emcd_sim/mdff_orientation.py": "eb25b96e734f68cdafb3581f19a1798b52f8441ea68a886ed3ede9cd89a5dbe5",
+    "src/emcd_sim/mdff_providers.py": "b814bd55d8d8fe91f510a1d963d251f3ba17d72b201decd576986e8804078da8",
+    "src/emcd_sim/multislice_double_channeling.py": "790ba23f44e17fe751948db2f852641c80b6a52658b3e1a9a62ccb7171c8892f",
+    "src/emcd_sim/single_channeling_tensor.py": "3a4767dd7b390be137670dc054c84570f34733b3c0338d47474670b6204b206e"
+  },
+  "removed_modules": [
+    "src/emcd_sim/ni_local_mdff.py",
+    "src/emcd_sim/gui/legacy_ni_provider.py"
+  ]
+}

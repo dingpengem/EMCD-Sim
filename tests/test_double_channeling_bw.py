@@ -54,7 +54,7 @@ def row():
 
 
 def test_free_outgoing_reduces_to_existing_entrance_kernel(row):
-    from emcd_sim.single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix
+    from emcd_sim.single_channeling_tensor import _tensor_angular_maps, historical_ni_site_phase_matrix
     e,t=831.4778,12.
     elastic=row.elastic
     ev,vec=np.linalg.eigh(elastic.hamiltonian_nm_inv())
@@ -63,7 +63,7 @@ def test_free_outgoing_reduces_to_existing_entrance_kernel(row):
     coh=vec@(c[:,None]*c[None,:].conj()*np.exp(.5j*p)*np.sinc(p/(2*np.pi)))@vec.conj().T
     q=np.array([[.2,.25],[.2,-.25]])
     tensor=np.array([[1,-.3j,0],[.3j,1,0],[0,0,1]])
-    even,odd=_tensor_angular_maps(row,tensor,e,coh,fcc_site_phase_matrix(row),q[:,0],q[:,1])
+    even,odd=_tensor_angular_maps(row,tensor,e,coh,historical_ni_site_phase_matrix(row),q[:,0],q[:,1])
     response=double_channeling_response(elastic,e,q,t,outgoing_potential=False)
     assert_allclose(intensities_from_response(response,tensor),t*(even+odd),rtol=1e-12,atol=1e-14)
     assert_allclose(intensities_from_response(response,tensor.conj()),t*(even-odd),rtol=1e-12,atol=1e-14)

@@ -2,7 +2,7 @@
 
 ## What is actually calculated
 
-`ni_local_mdff.py` is a **local, independent-electron, cubic crystal-field atomic reference**, not an all-electron DFT, Hartree-Fock self-consistent calculation, full multiplet solver, or quantitatively calibrated nickel spectrum. It preserves the phase-coherent *complex* 2p→3d electric-dipole amplitudes required to construct a positive-semidefinite 3×3 energy-resolved MDFF tensor.
+`historical_ni.py` is a **local, independent-electron, cubic crystal-field atomic reference**, not an all-electron DFT, Hartree-Fock self-consistent calculation, full multiplet solver, or quantitatively calibrated nickel spectrum. It preserves the phase-coherent *complex* 2p→3d electric-dipole amplitudes required to construct a positive-semidefinite 3×3 energy-resolved MDFF tensor.
 
 Core initial 2p states are 2p₃/₂ and 2p₁/₂ spin-orbit angular spinors (`j,mj`), coupled by explicitly calculated Condon–Shortley coefficients. Final states are orthonormal *real cubic* 3d orbitals `(z², x²-y², xy, xz, yz)` with separately specified spin-dependent hole occupations. The final 3d energy model uses **adjustable illustrative** 10Dq and exchange splittings. L₂/L₃ reference threshold energies are **inputs**.
 
@@ -24,9 +24,9 @@ An external radial CSV must have fields `radius_angstrom,R_2p,R_3d`, where the t
 ## Run (Windows / macOS / Linux; Python 3.11)
 
 ```bash
-python -m emcd_sim.ni_local_mdff --output outputs/ni_local_non_dft
-python -m emcd_sim.ni_local_mdff --ten-dq-ev 1.0 --exchange-ev 0.3 --output outputs/ni_local_sensitivity
-python -m emcd_sim.ni_local_mdff --radial-table path/to/atomic_hf_radial.csv --output outputs/ni_local_hf_radial
+python -m emcd_sim.historical_ni --output outputs/ni_local_non_dft
+python -m emcd_sim.historical_ni --ten-dq-ev 1.0 --exchange-ev 0.3 --output outputs/ni_local_sensitivity
+python -m emcd_sim.historical_ni --radial-table path/to/atomic_hf_radial.csv --output outputs/ni_local_hf_radial
 ```
 
 Outputs: `transitions.npz`, `mdff_tensor.npz`, `mdff_tensor.png`, `metadata.json`. Results must be labeled `is_dft=false`, `is_atomic_multiplet=false`, `quantitative_Ni=false` and *never* used as measured or first-principles Ni EMCD.
@@ -55,3 +55,8 @@ The isolated localized reference provides angular rules but cannot predict metal
 2. Verify Ni L₂/L₃ magnetic and nonmagnetic line shapes, spectral integrals and sum-rule limits against independently measured data, with uncertainty in local model parameters.
 3. Couple `DipoleTensor` consistently to Bloch-wave **single channeling**, with coherent atom/site phases and separate Coulomb factors; compare this atomic-input model to a separately sourced SOC-DFT Ni tensor.
 4. Defer outgoing/double channeling as agreed.
+
+Part 1C retired the old `emcd_sim.ni_local_mdff` Python import/module-run path.
+Use `emcd_sim.historical_ni` for historical Ni inputs, `atomic_dipole` for shared
+angular/radial helpers and `atomic_ionization` for declared material parameters.
+The documented `emcd-ni-local-mdff` console command remains supported.

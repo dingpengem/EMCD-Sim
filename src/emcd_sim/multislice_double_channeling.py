@@ -229,10 +229,6 @@ class ProjectedFFT:
         return FFTSplitStep(self.potential*ratio if elastic_potential else np.zeros_like(self.potential),d,**kwargs)
 
 
-# Historical public name; this is one generic implementation, not a Ni adapter.
-ProjectedNiFFT=ProjectedFFT
-
-
 def incident_fields(grid,thickness_nm,*,depth_steps=257,slice_step_nm=.04,cancelled=None,memory_budget_mib=2048):
     if not np.isfinite(thickness_nm) or thickness_nm<0 or not isinstance(depth_steps,int) or depth_steps<2:
         raise ValueError('Finite nonnegative thickness and integer depth_steps >=2 required')
@@ -294,7 +290,7 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
     dense=96*b*ni*no/2**20
     working=(dense+(64*depth_steps*samples+192*b*samples+32*len(q)*9+64*sites*ni*no)/2**20+8)
     with reserve_memory(working,memory_budget_mib,dense_mib=dense) as admission:
-        grid=prepared_grid if prepared_grid is not None else ProjectedNiFFT.build(elastic,grid_points=fft_grid,
+        grid=prepared_grid if prepared_grid is not None else ProjectedFFT.build(elastic,grid_points=fft_grid,
             potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction,projected_geometry=projected_geometry,
             memory_budget_mib=memory_budget_mib,cancelled=cancelled)
         _validate_grid_context(grid,elastic,ob)

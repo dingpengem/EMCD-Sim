@@ -18,7 +18,7 @@ from emcd_sim.mdff_tensor import (
     TransitionDataset, dipole_tensor_from_transitions, DipoleTensor,
 )
 from emcd_sim.multislice_double_channeling import FFTSplitStep
-from emcd_sim.single_channeling_tensor import fcc_site_phase_matrix
+from emcd_sim.single_channeling_tensor import historical_ni_site_phase_matrix
 
 
 def exp2(h, z):
@@ -118,7 +118,7 @@ def synthetic_site():
 def test_nontrivial_site_phase_single_double_reduction():
     """Physics/conventions: synthetic kernel-level control, no material claim."""
     model, hkl, positions = synthetic_site()
-    sc = fcc_site_phase_matrix(model)
+    sc = historical_ni_site_phase_matrix(model)
     phases, weights = equivalent_site_phases(hkl, ((0, 0, 0),), positions)
     dc = sum(w * np.outer(p[:, 0], p[:, 0].conj()) for p, w in zip(phases, weights))
     assert_allclose(sc, dc, rtol=0, atol=1e-14)
@@ -127,7 +127,7 @@ def test_nontrivial_site_phase_single_double_reduction():
 def test_site_phase_discrepancy_is_not_a_global_phase():
     """Corrected site phases give the same free-outgoing intensity."""
     model, hkl, positions = synthetic_site()
-    sc = fcc_site_phase_matrix(model)
+    sc = historical_ni_site_phase_matrix(model)
     phases, _ = equivalent_site_phases(hkl, ((0, 0, 0),), positions)
     dc = np.outer(phases[0, :, 0], phases[0, :, 0].conj())
     assert_allclose(sc, dc, atol=1e-14)

@@ -10,13 +10,14 @@ from __future__ import annotations
 
 import numpy as np
 
+from .ionization_sites import single_site_phase_matrix
 from .elastic import depth_coherence
 from .geometry import characteristic_qz_angstrom_inv
 from .mdff_tensor import DipoleTensor, cycles_to_angular_q
 from .simulation import EMCDSimulation, SimulationResult
 
 
-def fcc_site_phase_matrix(model: EMCDSimulation) -> np.ndarray:
+def historical_ni_site_phase_matrix(model: EMCDSimulation) -> np.ndarray:
     """Average exp(i(g_i-g_j).R) across equivalent localized Ni core sites.
 
     An average fixes a relative per-atom scale, not a calibrated physical
@@ -27,8 +28,7 @@ def fcc_site_phase_matrix(model: EMCDSimulation) -> np.ndarray:
     positions = np.asarray(crystal.fractional_positions, dtype=float)
     if not len(positions) or not all(s == "Ni" for s in crystal.species):
         raise ValueError("Equivalent-site tensor backend currently requires only Ni atoms")
-    phase = np.exp(2j * np.pi * (hkl[:, None, :] - hkl[None, :, :]) @ positions.T)
-    return phase.mean(axis=-1)
+    return single_site_phase_matrix(hkl, positions)
 
 
 def _tensor_angular_maps(model: EMCDSimulation, tensor_matrix: np.ndarray,
@@ -123,7 +123,7 @@ def run_tensor_with_coherence(
         raise ValueError("Coherence must be finite Hermitian and match the ordered beam basis")
     if np.linalg.eigvalsh(coherence).min() < -1e-10*max(1., np.linalg.norm(coherence)):
         raise ValueError("Coherence must be positive semidefinite")
-    site_phase = fcc_site_phase_matrix(model)
+    site_phase = historical_ni_site_phase_matrix(model)
     masks = {name: det.mask(qx, qy) for name, det in model.detectors.items()}
     weights = {name: det.integration_weights(qx,qy,mode=integration_mode,subpixels=aperture_subpixels)
                for name,det in model.detectors.items()}

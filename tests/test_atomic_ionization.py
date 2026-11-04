@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 from emcd_sim.atomic_ionization import (AtomicMaterialParameters, ORBITALS,
     transitions_for_material, export_atomic_parameters, dipole_2p_to_3d)
-from emcd_sim.ni_local_mdff import (NiLocalConfig, ni_local_transitions,
-    hydrogenic_radial_dipole_angstrom, core_spinor_amplitude)
+from emcd_sim.historical_ni import NiLocalConfig, ni_local_transitions
+from emcd_sim.atomic_dipole import hydrogenic_radial_dipole_angstrom, core_spinor_amplitude
 from emcd_sim.mdff_tensor import dipole_tensor_from_transitions
 
 

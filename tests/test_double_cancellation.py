@@ -57,7 +57,7 @@ def test_ms_unchanged_and_outgoing_cancel(elastic):
 
 
 def test_incoming_slice_cancel(elastic):
-    grid=ms.ProjectedNiFFT.build(elastic,grid_points=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry())
+    grid=ms.ProjectedFFT.build(elastic,grid_points=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry())
     calls=0
     def cancelled():
         nonlocal calls
@@ -87,8 +87,17 @@ def test_full_spectrum_unchanged(solver):
     cfg=ForwardSettings(axis_declared=True,channeling_model='double',propagation=solver,
         energy_points=9,angular_maps=True,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
     structure=Structure.nickel();settings=Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
-    def original_bw(*a,**kw):kw.pop('cancelled',None);return oldbw.double_channeling_response(*a,**kw)
-    def original_ms(*a,**kw):kw.pop('cancelled',None);return oldms.multislice_double_channeling_response(*a,**kw)
+    def historical_arguments(elastic,kw):
+        from emcd_sim.historical_ni import HistoricalNiSites
+        kw.pop('cancelled',None)
+        sites=kw.pop('ionization_sites')
+        assert isinstance(sites,HistoricalNiSites)
+        # The archived API predates explicit sites. Certify the adapter supplies
+        # exactly its original positions before removing only this new argument.
+        np.testing.assert_array_equal(sites.positions_for(elastic.crystal),elastic.crystal.fractional_positions)
+        return kw
+    def original_bw(*a,**kw):return oldbw.double_channeling_response(*a,**historical_arguments(a[0],kw))
+    def original_ms(*a,**kw):return oldms.multislice_double_channeling_response(*a,**historical_arguments(a[0],kw))
     with patch.object(channeling,'double_channeling_response',original_bw),patch.object(channeling,'multislice_double_channeling_response',original_ms):
         before=calculate(structure,settings,cfg)
     after=calculate(structure,settings,cfg)

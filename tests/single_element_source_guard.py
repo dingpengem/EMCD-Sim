@@ -7,6 +7,7 @@ EXTENSION_SHA256='0599a74e3b48d4182b34bd7f91c9ac7b62bf7e3cb4fb2817e348f288f343fc
 
 
 ATOMIC_EXTENSION_SHA256='5bd0ecb4f65c7ca713179b8b9f652d8cc47e8ceae6f0e4ceaab5d492980ec302'
+REFACTOR_SHA256='191974f2788dcfba74ce75cce3d9b4a3088615857b9c3338e27dbda57ea6fd51'
 CONSOLIDATION_SHA256='e49f4392817744babe6dcca42ecf983f82f4d885f1356740e9e346775e7720d3'
 
 
@@ -29,7 +30,18 @@ def extension():
     consolidation=json.loads(raw)
     assert consolidation['schema']==1 and consolidation['base']=='52b36ee41e20aed5a86fb37db56ca372fac936f8'
     assert consolidation['physics_convention']==d['physics_convention']
-    return dict(d['canonical_sha256'],**dict(atomic['canonical_sha256'],**consolidation['canonical_sha256']))
+    # Additive Part 1C scope: historical manifests remain immutable.
+    raw=(ROOT/'tests/fixtures/part1c_refactor_scope_v1.json').read_bytes()
+    assert hashlib.sha256(canonical(raw)).hexdigest()==REFACTOR_SHA256,'Unreviewed Part 1C source scope'
+    refactor=json.loads(raw)
+    assert refactor['base']=='133c3da6e69d633b0e1ea61a4de8005820885bbb'
+    reviewed=dict(d['canonical_sha256'],**dict(atomic['canonical_sha256'],
+        **dict(consolidation['canonical_sha256'],**refactor['canonical_sha256'])))
+    for path in refactor['removed_modules']:
+        assert not (ROOT/path).exists(),'Retired production module reintroduced: '+path
+        reviewed.pop(path,None)
+    return reviewed
+
 
 
 def legacy_kernel_source(path,content):
@@ -39,11 +51,19 @@ def legacy_kernel_source(path,content):
     conjugation, quadrature or accumulation expression is normalized here.
     """
     text=canonical(content).decode('utf-8')
+    if path.endswith('/single_channeling_tensor.py'):
+        text=text.replace('historical_ni_site_phase_matrix','fcc_site_phase_matrix')
+        text=text.replace('from .ionization_sites import single_site_phase_matrix\n','')
+        text=text.replace('    return single_site_phase_matrix(hkl, positions)',
+            '    phase = np.exp(2j * np.pi * (hkl[:, None, :] - hkl[None, :, :]) @ positions.T)\n    return phase.mean(axis=-1)')
     if path.endswith('/double_channeling.py'):
         text=text.replace('cancelled=None,ionization_sites=None):','cancelled=None):')
         text=text.replace("if ionization_sites is None and not all(s == 'Ni'", "if not all(s == 'Ni'")
         text=text.replace('elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)','elastic.crystal.fractional_positions')
     if path.endswith('/multislice_double_channeling.py'):
+        text=text.replace('else ProjectedFFT.build(', 'else ProjectedNiFFT.build(')
+        text=text.replace('def incident_fields(',
+            '# Historical public name; this is one generic implementation, not a Ni adapter.\nProjectedNiFFT=ProjectedFFT\n\n\ndef incident_fields(')
         text=text.replace('cancelled=None,ionization_sites=None):','cancelled=None):')
         text=text.replace('elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)','elastic.crystal.fractional_positions')
     return text.encode('utf-8')

@@ -46,7 +46,7 @@ class PropagationTests(unittest.TestCase):
     def test_tensor_reuse_once_and_bw_legacy(self):
         self.assertEqual(ForwardSettings('atomic').model,'atomic')
         cfg=replace(self.cfg,energy_points=9,grid=9,depth=8)
-        with patch('emcd_sim.gui.emcd_forward.tensors',wraps=tensors) as build:
+        with patch('emcd_sim.historical_ni.tensors',wraps=tensors) as build:
             both=calculate(self.structure,self.settings,cfg)
             self.assertEqual(build.call_count,1)
         bw=calculate(self.structure,self.settings,replace(cfg,propagation='bloch'))

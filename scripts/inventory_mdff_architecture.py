@@ -27,9 +27,8 @@ def classification(record):
     module=record['module'];name=record['function']
     if module.endswith('/gui/imported_tensor_ui.py') and name=='generate_atomic_tensor':
         return 'D','Historical generation/export callback retained; new GUI uses direct atomic parameters'
-    if module.endswith('/ni_local_mdff.py'):
-        if name=='ni_local_transitions':return 'C,D','Shared transition adapter; tiny-radial reference retained'
-        if name=='_historical_ni_local_transitions':return 'D,E','Retained exact historical event-dropping policy'
+    if module.endswith('/historical_ni.py'):
+        if name=='ni_local_transitions':return 'C,D','Historical inputs into shared generator with explicit amplitude policy'
         if name=='validate':return 'A,D','Retained Ni physical-input compatibility'
         return 'B,D','Retained shared angular/radial algebra or historical CLI/API'
     if not record['ni_mentions']:return 'general','Retained; no Ni-specific implementation identified'

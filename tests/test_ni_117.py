@@ -7,7 +7,7 @@ from legacy_geometry import Ni017Geometry
 from emcd_sim.gui.geometry import Structure, Settings, geometry, orientation, indices, excitation, align_bragg, elastic_model
 from emcd_sim.gui.emcd_forward import ForwardSettings, calculate, tensors
 from emcd_sim.gui.project_io import save_project, load_project, fingerprints, settings_from_dict
-from emcd_sim.multislice_double_channeling import ProjectedNiFFT, incident_fields
+from emcd_sim.multislice_double_channeling import ProjectedFFT, incident_fields
 from emcd_sim.mirror_parity import row_mirror_diagnostics
 
 
@@ -111,7 +111,7 @@ def test_crystal_magnetization_rotation_psd_and_reversal():
 
 def test_explicit_two_beam_fft_is_closed_unitary_and_independent():
     s=settings('two-beam');elastic=elastic_model(Structure.nickel(),s)
-    grid=ProjectedNiFFT.build(elastic,grid_points=24,potential_cutoff=s.potential_cutoff,
+    grid=ProjectedFFT.build(elastic,grid_points=24,potential_cutoff=s.potential_cutoff,
         projected_geometry=Ni117Geometry(),retained_hkl=elastic.beams.hkl)
     fields,z,*_=incident_fields(grid,2,depth_steps=17,slice_step_nm=.02)
     keep=np.zeros(grid.g.shape[0],bool);keep[grid.indices(elastic.beams.hkl)]=True
@@ -169,7 +169,7 @@ def test_outgoing_energy_carrier_and_projected_split_order():
     outgoing=outgoing_elastic(elastic,q,loss)
     assert outgoing.microscope.acceleration_kv==pytest.approx(200-loss/1000)
     np.testing.assert_allclose(outgoing.microscope.incident_k_xy,elastic.microscope.incident_k_xy+q)
-    grid=ProjectedNiFFT.build(elastic,grid_points=24,potential_cutoff=s.potential_cutoff,
+    grid=ProjectedFFT.build(elastic,grid_points=24,potential_cutoff=s.potential_cutoff,
         projected_geometry=Ni117Geometry(),retained_hkl=elastic.beams.hkl)
     initial=np.zeros(grid.g.shape[0],complex);initial[0]=1
     exact=expm(2j*outgoing.hamiltonian_nm_inv())@np.array([1,0])

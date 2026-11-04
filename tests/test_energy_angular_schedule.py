@@ -15,6 +15,9 @@ def reference():
         source=subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/'+filename]).decode('utf-8-sig')
         # Only relocate dependencies in the archived adapter; its numerical
         # statements remain the exact pre-optimization reference.
+        source=source.replace('..ni_local_mdff import','..historical_ni import')
+        source=source.replace('fcc_site_phase_matrix','historical_ni_site_phase_matrix as fcc_site_phase_matrix',1)
+        source=source.replace('import ProjectedNiFFT','import ProjectedFFT as ProjectedNiFFT',1)
         source=source.replace('from ..ni_017_geometry import','from legacy_geometry import')
         source=source.replace('..multislice_emcd_reference import','..multislice_reference import')
         source=source.replace('..postedge_emcd_maps import paired_geometry, paired_maps','..emcd_angular_plots import paired_geometry, paired_maps')
@@ -178,7 +181,8 @@ def test_zero_signal_preserves_nan_denominator_masks(small):
     def zero(cfg,energy,R):
         tensor=DipoleTensor(energy,np.zeros((len(energy),3,3),complex),'synthetic zero-signal test')
         return [tensor,tensor]
-    with patch.object(old,'tensors',zero),patch.object(f,'tensors',zero):
+    from emcd_sim.historical_ni import HistoricalNiProvider
+    with patch.object(old,'tensors',zero),patch.object(HistoricalNiProvider,'tensors',lambda self,energy,R:zero(self.cfg,energy,R)):
         before=old.calculate(a,s,c,energy_ev=e);after=f.calculate(a,s,c,energy_ev=e)
     equivalent(before,after)
     assert np.isnan(after['spectra']['prb_relative_dichroism_percent']).all()

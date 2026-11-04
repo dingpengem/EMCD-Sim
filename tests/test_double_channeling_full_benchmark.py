@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 from numpy.testing import assert_allclose
 from emcd_sim.double_channeling import equivalent_site_phases,double_channeling_response
-from emcd_sim.multislice_double_channeling import ProjectedNiFFT,incident_fields,multislice_double_channeling_response
+from emcd_sim.multislice_double_channeling import ProjectedFFT,incident_fields,multislice_double_channeling_response
 from legacy_geometry import Ni017Geometry
 from emcd_sim.multislice_reference import fft_multislice_ni
 
@@ -27,7 +27,7 @@ def test_equivalent_sites_preserve_general_complex_average():
 
 def test_017_fft_actual_oriented_potential_and_fields():
     geo=Ni017Geometry();model=geo.model()
-    grid=ProjectedNiFFT.build(model.elastic,grid_points=32,potential_cutoff=2.2,projected_geometry=geo)
+    grid=ProjectedFFT.build(model.elastic,grid_points=32,potential_cutoff=2.2,projected_geometry=geo)
     fields,z,_,_,_=incident_fields(grid,2.,depth_steps=17)
     old=fft_multislice_ni(z,acceleration_kv=200,tilt_mrad_xy=model.elastic.microscope.tilt_mrad_xy,
         grid_points=32,slice_step_nm=.04,potential_cutoff_inv_angstrom=2.2,

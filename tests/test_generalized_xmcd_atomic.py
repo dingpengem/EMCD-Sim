@@ -4,7 +4,8 @@ import pytest
 from emcd_sim.generalized_xmcd import export_declared_xmcd
 from emcd_sim.imported_mdff import CONVENTION
 from emcd_sim.atomic_ionization import dipole_2p_to_3d,AtomicMaterialParameters,transitions_for_material
-from emcd_sim.ni_local_mdff import ni_2p_to_3d_dipole,NiLocalConfig
+from emcd_sim.historical_ni import NiLocalConfig
+from emcd_sim.atomic_dipole import dipole_2p_to_3d as shared_dipole
 
 
 def test_declared_element_xmcd_source_without_ni_calibration(tmp_path):
@@ -37,7 +38,7 @@ def test_declared_element_xmcd_source_without_ni_calibration(tmp_path):
 
 
 def test_atomic_math_shared_ni_defaults_unchanged():
-    assert dipole_2p_to_3d is ni_2p_to_3d_dipole
+    assert dipole_2p_to_3d is shared_dipole
     assert (NiLocalConfig().l3_ev,NiLocalConfig().zeff_2p)==(852.7,25.)
     with pytest.raises(TypeError):AtomicMaterialParameters(element='Fe')
 

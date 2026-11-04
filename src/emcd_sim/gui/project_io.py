@@ -12,7 +12,7 @@ import numpy as np
 from ase import Atoms
 from .geometry import Structure,Settings,excitation
 from .emcd_forward import ForwardSettings,Cancelled
-from ..ni_local_mdff import NiLocalConfig
+from ..historical_ni import NiLocalConfig
 from ..geometry import VirtualDetector
 
 SCHEMA=1

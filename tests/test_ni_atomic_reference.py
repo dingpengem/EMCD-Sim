@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from emcd_sim.mdff_tensor import dipole_tensor_from_transitions, TransitionDataset
-from emcd_sim.ni_local_mdff import core_spinor_amplitude, ni_2p_to_3d_dipole
+from emcd_sim.atomic_dipole import core_spinor_amplitude, dipole_2p_to_3d
 from emcd_sim.transition_csv import import_transition_csv
 
 
@@ -21,10 +21,10 @@ def test_core_soc_spinors_are_normalized():
 
 def test_electric_dipole_selection_rule():
     # j=3/2, mj=3/2 is the pure ml=+1,spin=up core state.
-    assert np.allclose(ni_2p_to_3d_dipole(3,3,-2,1),0)
-    assert np.linalg.norm(ni_2p_to_3d_dipole(3,3,2,1)) > 0
+    assert np.allclose(dipole_2p_to_3d(3,3,-2,1),0)
+    assert np.linalg.norm(dipole_2p_to_3d(3,3,2,1)) > 0
     # spin-down is absent in the stretched core state.
-    assert np.allclose(ni_2p_to_3d_dipole(3,3,2,-1),0)
+    assert np.allclose(dipole_2p_to_3d(3,3,2,-1),0)
 
 
 def test_portable_csv_import_and_conjugation(tmp_path):
