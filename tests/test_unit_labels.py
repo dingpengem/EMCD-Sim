@@ -13,7 +13,9 @@ from unit_source_snapshots import load_snapshots,assert_reviewed_current_sources
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src'))
 FILES=['gui/app.py','gui/geometry.py','gui/propagation.py','gui/emcd_forward.py','gui/project_io.py','gui/stage_b.py','gui/results.py','gui/prb_benchmark.py','scattering.py']
-KERNELS={'single_channeling_tensor.py':'3c47bd37c8da7ec881441cb9cdee66c537b36b86dd2e5b0838251c04ce9e3d61','double_channeling.py':'713945ace6630f95f8b4f461e6c137a8806b60212f744a81aec51cc46fb8f3de','multislice_double_channeling.py':'9ec1ba6c071ff751540f9ef4ac4c864d139cb8a458eb85cddc9ad04ba0a880df'}
+# Existing approved canonical hashes from physics_source_manifest_v1.json.
+# Raw Windows CRLF hashes are not portable to Linux/macOS checkouts.
+KERNELS={'single_channeling_tensor.py':'ac8a150fd370615b74886aeb81564a2fdd6b15e3d5da94e58ea1982afba8610d','double_channeling.py':'5b641bc918250b6402f4bcf6c31c1f3fec1425714098a1c99ed04e321b7ef06b','multislice_double_channeling.py':'f7cc80b8de0898123813d6f1a284519df3790516ffa5660634bfccc838c437c5'}
 
 class Labels(ast.NodeTransformer):
     def visit_Constant(self,node):
@@ -74,8 +76,13 @@ def test_historical_and_current_guards_work_without_git():
         test_historical_windows_identity_and_original_units_preserved()
         assert_reviewed_current_sources()
 
-def test_approved_physics_kernel_bytes_unchanged():
-    for name,sha in KERNELS.items():assert hashlib.sha256((ROOT/'src/emcd_sim'/name).read_bytes()).hexdigest()==sha
+def test_approved_physics_kernel_content_unchanged_across_line_endings():
+    from physics_source_guard import canonical_sha256
+    for name,sha in KERNELS.items():
+        raw=(ROOT/'src/emcd_sim'/name).read_bytes()
+        lf=raw.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')
+        for checkout in (raw,lf,lf.replace(b'\n',b'\r\n')):
+            assert canonical_sha256(checkout)==sha,name
 
 def test_unit_changes_give_identical_bw_ms_single_double_numerical_arrays():
     d=Path(os.environ.get('EMCD_UNIT_IDENTITY_DIRECTORY',str(ROOT/'outputs/unit_labels')))
