@@ -13,6 +13,7 @@
 |[Physics and numerical methods](PHYSICS.md)|Current corrected convention, support, approximations and source map|
 |[Physical units](PHYSICAL_UNITS.md)|g=1/d versus Q=2πg; unchanged saved numbers|
 |[GUI technical navigation](EMCD_GUI.md)|Source responsibilities and diagnostic boundaries|
+|[Local Part 1B provider consolidation](GENERALIZED_CODE_CONSOLIDATION_0_8_1.md)|Unified MDFF architecture, compatibility inventory, exact source/native acceptance and limits; separate from publication|
 |[Verified figure provenance](images/v070b1/README.md)|Actual EXE captures, case-study figures and source/data hashes|
 |[Recalculated Ni example provenance](images/ni017_flipm_recomputed/README.md)|Fresh 9/30 nm spectra, twelve portraits, conventional versus fixed-detector Flip-M|
 |[Changelog](CHANGELOG.md)|Version/milestone and documentation history|

@@ -1,6 +1,6 @@
 # Unified MDFF consolidation, v0.8.1 Part 1B
 
-Status: implementation and acceptance pending. No new candidate is accepted.
+Status: source acceptance passed; merged-source Windows candidate acceptance pending.
 
 The immutable Part 1 scientific source is
 `654ed042b1b9638a43112e215a129c1a8d1bf186`; its acceptance documentation is
@@ -53,11 +53,12 @@ No function was classified F merely because a static scan found no callers.
 
 ## Acceptance gates
 
-Pending: independent atomic transition/tensor equality; 1,080 protected arrays;
-provider integrity and project round trips; generic edge/site checks; full
-Windows suite; reviewed commit and local merge; fresh packaged EXE workflows;
-complete manifest and SHA256 verification. Final source and ZIP hashes will be
-recorded only after these gates pass. No publication is authorized.
+Passed: independent atomic transition/tensor equality; 1,080 protected arrays;
+provider integrity and project round trips; synthetic edge/site checks; complete
+Windows source suite on the exact clean commit below. Pending: local merge,
+post-merge checks, fresh packaged EXE workflows, manifest and SHA256 verification.
+Final source and ZIP hashes will be recorded only after those gates pass.
+No publication is authorized.
 
 ## Implemented provider boundary
 
@@ -160,3 +161,25 @@ source/test/packaging fingerprints matched its unchanged snapshot. It is retaine
 as interrupted evidence, not counted as a passing or failing complete invocation.
 Further recovered review checks passed 48 tests with two optional skips. The final
 committed-source regression and native acceptance are recorded below when complete.
+
+## Final committed-source regression
+
+Exact clean tested feature source: `1c77fb1227cae87bf417fffaeb321bfba59d116e`.
+**818 collected: 779 passed, 39 skipped, 0 failed, 0 errors; process exit 0.**
+Pytest wall time: 1181.69 s. All 171 canonical source/test/packaging Python/spec
+fingerprints verified unchanged from start through completion. The earlier failed
+and interrupted attempts remain preserved separately; they are not reported as
+passing invocations. Logs, JUnit XML, exit status and exact skip messages are in
+local `outputs/part1b/committed-full.*` and `source-acceptance.json`.
+
+The 39 skips concern optional saved studies/projects, incomplete original benchmark
+outputs, undistributed WIEN2k companions and unavailable pinned offline HDF5 inputs.
+No fallback scientific calculation was launched to fill those references. The
+genuine historical Ni project supplied through the explicit environment path was
+checked independently, including its original Lobato elastic control.
+
+Source GUI acceptance completed 12 workflows plus two supplemental full-spectrum
+K workflows with clean shutdown. Comparing the original Part 1 EXE's eight projects
+against current source GUI controls gave **1,080/1,080 strictly bitwise-equal arrays**
+(dtype, shape and bytes, including NaNs/signed zeros), maximum absolute difference 0.
+These controls are retained for the fresh extracted-EXE comparison.
