@@ -11,6 +11,8 @@ class ImportedTensorUI:
         self.imported_info=None;self.imported_path=QtWidgets.QLineEdit();form.addRow('Imported MDFF JSON',self.imported_path)
         browse=QtWidgets.QPushButton('Browse tensor…');browse.clicked.connect(self.browse_imported_mdff);form.addRow(browse)
         validate=QtWidgets.QPushButton('Validate tensor / provenance');validate.clicked.connect(self.validate_imported_mdff);form.addRow(validate)
+        atomic=QtWidgets.QPushButton('Generate approximate atomic tensor from declared parameters…')
+        atomic.clicked.connect(self.generate_atomic_tensor);form.addRow(atomic)
         self.ionizing_element=QtWidgets.QLineEdit();form.addRow('Ionizing element',self.ionizing_element)
         self.imported_edge=QtWidgets.QLineEdit('L2,3');form.addRow('Core-loss edge',self.imported_edge)
         self.imported_state=QtWidgets.QComboBox();self.imported_state.addItems(['uniform_fm','nonmagnetic']);form.addRow('Magnetic state',self.imported_state)
@@ -28,6 +30,19 @@ class ImportedTensorUI:
     def browse_imported_mdff(self):
         path,_=QtWidgets.QFileDialog.getOpenFileName(self,'Import declared dipole MDFF','','Tensor JSON (*.json)')
         if path:self.imported_path.setText(path);self.validate_imported_mdff()
+
+    def generate_atomic_tensor(self):
+        """Opt-in declared configuration, not migration of the legacy Ni panel."""
+        from ..atomic_ionization import export_atomic_parameters
+        parameters,_=QtWidgets.QFileDialog.getOpenFileName(self,'Fully declared atomic research parameters','','Atomic parameter JSON (*.json)')
+        if not parameters:return
+        output,_=QtWidgets.QFileDialog.getSaveFileName(self,'New approximate atomic tensor (existing files preserved)','','Tensor JSON (*.json)')
+        if not output:return
+        try:
+            source=export_atomic_parameters(parameters,output)
+            self.imported_path.setText(source.path);self.validate_imported_mdff(expected_sha256=source.sha256)
+        except Exception as exc:
+            self.imported_status.setText('Atomic model rejected: '+str(exc))
 
     def validate_imported_mdff(self,*_,expected_sha256=None):
         try:

@@ -6,6 +6,9 @@ ROOT=Path(__file__).resolve().parents[1]
 EXTENSION_SHA256='0599a74e3b48d4182b34bd7f91c9ac7b62bf7e3cb4fb2817e348f288f343fc76'
 
 
+ATOMIC_EXTENSION_SHA256='4972fa93e4b99ad8daab8b944ade3cd49f34a9e082dbc0c9a9a6906afd94356a'
+
+
 def canonical(content):return content.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')
 
 
@@ -15,7 +18,12 @@ def extension():
     d=json.loads(raw)
     assert d['base']=='2f9c130099dce5df4e4609b521c42f53c5385518'
     assert d['physics_convention']=='forward_born_dagger_g_minus_h_v1'
-    return d['canonical_sha256']
+    raw=(ROOT/'tests/fixtures/atomic_ionization_scope_v1.json').read_bytes()
+    assert hashlib.sha256(canonical(raw)).hexdigest()==ATOMIC_EXTENSION_SHA256,'Unreviewed atomic-ionization source scope'
+    atomic=json.loads(raw)
+    assert atomic['schema']==1 and atomic['base']=='237944148151d784b6b2e3597e853dbc32779bd0'
+    assert atomic['physics_convention']==d['physics_convention']
+    return dict(d['canonical_sha256'],**atomic['canonical_sha256'])
 
 
 def legacy_kernel_source(path,content):

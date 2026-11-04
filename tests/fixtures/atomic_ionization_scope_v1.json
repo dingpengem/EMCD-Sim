@@ -1,0 +1,14 @@
+{
+  "base": "237944148151d784b6b2e3597e853dbc32779bd0",
+  "canonical_sha256": {
+    "src/emcd_sim/atomic_ionization.py": "cd01ffb437ec77f42cea07a82ea4720a4e14cc605ebea80716fd97106c37028a",
+    "src/emcd_sim/gui/emcd_forward.py": "8865cbb9c365ff4d720fdff91c7205c0c74fd3268df3631eaf86ec50f7cfcb55",
+    "src/emcd_sim/gui/imported_tensor_ui.py": "4b8cfb22e275fe2fb866718129865e6ea3dd230955bf06ce9236942d2ef5914a",
+    "src/emcd_sim/gui/results.py": "69823a1234c9a8e99941ccaa0ced6efb24a478365fcddc5937f421810c0e4c55",
+    "src/emcd_sim/imported_mdff.py": "826d7332944009c1aaaaf1caaebad86ea1ebc240a93575acf9481191882bc956",
+    "src/emcd_sim/ni_local_mdff.py": "49a41563fe8c0d1b6c196b6bc7a843d805c6236a40635d9ad94ff323355ab63f"
+  },
+  "description": "Iteration C explicit atomic parameters and generated imported tensors; historical Ni and propagation formulas unchanged",
+  "physics_convention": "forward_born_dagger_g_minus_h_v1",
+  "schema": 1
+}
