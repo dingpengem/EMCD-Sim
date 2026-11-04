@@ -1,5 +1,6 @@
 """Logical-screen layout checks with saved data; no forward calculations."""
 import os
+import time
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from contextlib import ExitStack
 from dataclasses import asdict
@@ -43,6 +44,17 @@ def resize(w, width, height):
     QtTest.QTest.qWait(160)
     w.resize(width, height)
     QtTest.QTest.qWait(160)
+    # Resize handling is debounced, and native paint work can outlast the
+    # fixed delay under a full-suite load. Wait for the real timer/state;
+    # never force the layout or replace the production callback.
+    deadline=time.monotonic()+3
+    while time.monotonic()<deadline:
+        QtTest.QTest.qWait(20)
+        controller=w.responsive
+        settled=(not controller.timer.isActive() and
+            (controller._results_user_choice or w.results_section.isChecked()==(w.width()>=1050)))
+        if settled:break
+    assert settled,'Responsive layout did not settle after resize'
 
 
 @pytest.mark.parametrize('physical,scale', [

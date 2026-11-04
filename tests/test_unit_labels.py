@@ -34,6 +34,13 @@ def test_current_sources_match_separately_reviewed_scope():
     assert_reviewed_current_sources()
 
 
+def test_current_scope_manifest_cannot_update_itself():
+    from unit_source_snapshots import FIXTURES
+    raw=(FIXTURES/'unified_elastic_current_scope_v1.json').read_bytes()
+    with pytest.raises(AssertionError,match='Unreviewed current scope manifest'):
+        assert_reviewed_current_sources(scope_bytes=raw+b'changed')
+
+
 @pytest.mark.parametrize('component',['manifest','archive'])
 def test_snapshot_guard_rejects_unreviewed_fixture_changes(component):
     from unit_source_snapshots import FIXTURES
@@ -52,8 +59,8 @@ def test_snapshot_guard_rejects_unreviewed_fixture_changes(component):
     ('gui/app.py','self.show_laue.setChecked(True)','self.show_laue.setChecked(False)'),
 ])
 def test_current_source_guard_rejects_unapproved_changes(name,before,after):
-    _,sources=load_snapshots();path='src/emcd_sim/'+name
-    text=sources[('zolz' if name=='gui/app.py' else 'unit')+'/'+path].decode('utf-8')
+    path='src/emcd_sim/'+name
+    text=(ROOT/path).read_text(encoding='utf-8-sig')
     assert before in text
     with pytest.raises(AssertionError,match='Unreviewed current source'):
         assert_reviewed_current_sources({path:text.replace(before,after).encode('utf-8')})

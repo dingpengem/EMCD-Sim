@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "candidate_source": "29697538f57c5cc9bf84b7012b51a57a40c9a52b",
+  "feature": "592dd85893875dfa3d7fbdbb9a85be025d96505d",
+  "review": "User-authorized unified elastic integration; reviewed provider selection/provenance/save-open/native acceptance additions. Immutable unit-only snapshot archive and physics-kernel hashes remain unchanged.",
+  "canonical_sha256": {
+    "src/emcd_sim/gui/app.py": "b5783a8014864a44705f1d8c0173ec34ce18171e78406617112d6bbada41d68f",
+    "src/emcd_sim/gui/geometry.py": "9c3d7fb83d795d0cbfa2bc66c235cc782eb85e8ed10d1efd240d1cc7cb75c5fe",
+    "src/emcd_sim/gui/propagation.py": "b0d8cd9cd5bd0d6b6172f69944e20ef47ee5400b935098a730a92249824a0076",
+    "src/emcd_sim/gui/emcd_forward.py": "8865cbb9c365ff4d720fdff91c7205c0c74fd3268df3631eaf86ec50f7cfcb55",
+    "src/emcd_sim/gui/project_io.py": "e5a88a12470d75479d858936c2213a67da2e9b9c0e0e1bd1d74f0f83609f81ca",
+    "src/emcd_sim/gui/stage_b.py": "3359771f8458db3b55fffa41f56f51d0fb4b339512cd486d1933d0eb1b272257",
+    "src/emcd_sim/gui/results.py": "145b336349ebe88bebc10286854a6da5dc2385eb412987d9504d8a701c76e4a0",
+    "src/emcd_sim/gui/prb_benchmark.py": "c3c5af4b9c243a89f2ced3552217a849c5310718afc92a9cfaf95fc88f013da5",
+    "src/emcd_sim/scattering.py": "6b50b0056495a2c2e4c14fb6f1b3986059c564e1488f6ba862b74b3b0415c2eb"
+  }
+}

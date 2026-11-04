@@ -1,0 +1,311 @@
+{
+  "feature": "592dd85893875dfa3d7fbdbb9a85be025d96505d",
+  "remote_main_at_fetch": "2810e86cba609dc3dc8cd42208b1c0b8ac747a2d",
+  "merge": "b48b57032e425292775aeaa3ecb5e8d8630a67c5",
+  "candidate_source": "29697538f57c5cc9bf84b7012b51a57a40c9a52b",
+  "tests": {
+    "passed": 664,
+    "skipped": 40,
+    "failed": 0,
+    "collected": 704
+  },
+  "initial_full_run": {
+    "collected": 703,
+    "passed": 660,
+    "skipped": 40,
+    "failures": [
+      {
+        "classname": "tests.test_gui_responsive",
+        "name": "test_logical_screen_sizes[physical8-1]",
+        "time": "1.696",
+        "message": "assert False\n +  where False = isChecked()\n +    where isChecked = <emcd_sim.gui.responsive.CollapsibleSection(0x1cc493e4e00, name=\"panel_results\") at 0x000001CC486E2580>.isChecked\n +      where <emcd_sim.gui.responsive.CollapsibleSection(0x1cc493e4e00, name=\"panel_results\") at 0x000001CC486E2580> = <emcd_sim.gui.app.MainWindow(0x1cc473b16e0) at 0x000001CC4868CE80>.results_section"
+      },
+      {
+        "classname": "tests.test_unit_labels",
+        "name": "test_current_sources_match_separately_reviewed_scope",
+        "time": "0.584",
+        "message": "AssertionError: Unreviewed current source: src/emcd_sim/gui/app.py"
+      },
+      {
+        "classname": "tests.test_unit_labels",
+        "name": "test_historical_and_current_guards_work_without_git",
+        "time": "1.104",
+        "message": "AssertionError: Unreviewed current source: src/emcd_sim/gui/app.py"
+      }
+    ]
+  },
+  "reviewed_reruns": {
+    "passed": 40,
+    "skipped": 2
+  },
+  "build_wrapper_exit_code": 1,
+  "build_artifacts_independently_verified": true,
+  "skip_reasons": {
+    "Optional stored GUI reference": 1,
+    "Saved project fixture unavailable": 3,
+    "Full benchmark outputs are not complete": 3,
+    "Optional saved angular references unavailable": 6,
+    "Full checkpointed thickness calculation still incomplete": 3,
+    "Local legacy reference project unavailable": 1,
+    "Saved BW/MS fixture not available; never run a fallback simulation": 1,
+    "Optional GUI and existing real Stage D results required": 8,
+    "Optional saved benchmark unavailable": 1,
+    "Requires original local WIEN2k audit companions; not distributed": 1,
+    "Optional local WIEN2k companion audit; original files are not distributed with the package": 1,
+    "Local four-point benchmark not generated": 2,
+    "Local MS validation outputs not generated": 3,
+    "Optional saved result fixture unavailable": 1,
+    "Optional real saved Ni project unavailable": 1,
+    "Optional saved GUI reference unavailable": 1,
+    "could not import 'h5py': No module named 'h5py'": 1,
+    "Optional external 160-array evidence unavailable; set EMCD_UNIT_IDENTITY_DIRECTORY": 1,
+    "Optional historical saved project is unavailable": 1
+  },
+  "native_build": {
+    "label": "EMCD-Sim v0.7.0-beta.1 unified elastic LOCAL CANDIDATE (unreleased)",
+    "application_version": "0.7.0b1",
+    "display_version": "v0.7.0-beta.1",
+    "commit": "29697538f57c5cc9bf84b7012b51a57a40c9a52b",
+    "dirty": false,
+    "build_utc": "2026-11-04T03:50:01.657964+00:00",
+    "physics_convention": "forward_born_dagger_g_minus_h_v1",
+    "implementation_sha256": {
+      "emcd_forward.py": "48029cda44457f6b511ed32fda14c3ccb1882a4b555b7631154cf3fa6072c373",
+      "geometry.py": "61e3950fc600ba7a215909711f4e2572b5866691bbe6e9e7fa48d6e85c84717c",
+      "propagation.py": "405136a5879f3e7f08d14c44b6e4aa61e1a4371079290b6d1c6e9d05b0f92af6"
+    },
+    "reference_sha256": "bb9bdd478d54cc8de60403409f4d90e63deb11a64891bbac6754f867be14deda",
+    "reference_provenance": "Repository tracked five-column Ni example; MIT repository license; no WIEN2k code or companion audit included.",
+    "versions": {
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "matplotlib": "3.11.2",
+      "ase": "3.29.0",
+      "PySide6": "6.12.0",
+      "pyinstaller": "6.22.3"
+    },
+    "build_environment": {
+      "python_version": "3.11.17",
+      "python_executable": "C:\\Users\\peng863\\EMCD-Sim\\build\\windows-rc\\venv\\Scripts\\python.exe",
+      "python_prefix": "C:\\Users\\peng863\\EMCD-Sim\\build\\windows-rc\\venv",
+      "platform": "Windows-10-10.0.26200-SP0"
+    },
+    "runtime_source_sha256": {
+      "emcd_sim/adaptive_scattering.py": "eb55e1b11fde388d0395565b4f42671ba4576e8853f4fb465e9e12d685958e23",
+      "emcd_sim/benchmark.py": "4d636908bfdca99f39c48f3b83b40bd35c6b08173072bef03ebb03546d2009a9",
+      "emcd_sim/cancellation.py": "50acd015d5ff7f4b1f7a5501574468ce2ac8fa9e87c3145d292728c063f7f0d2",
+      "emcd_sim/crystal.py": "e72b25e111ba5c298762c1d155be93bf0f9b544df54508f910004b6981b9178f",
+      "emcd_sim/crystallography.py": "9b5d40a1787ac258ecffd89df367eacc00244376c743e2e290ea18bc840c8af9",
+      "emcd_sim/double_channeling.py": "713945ace6630f95f8b4f461e6c137a8806b60212f744a81aec51cc46fb8f3de",
+      "emcd_sim/elastic.py": "b7f8657a8d9394685bfe03d152e5d25c3cd9d1b9a2695ac4c2f304f589e7e234",
+      "emcd_sim/elastic_providers.py": "05165dceeeb0b549663c4b36a6644071d09d771729a7d715ae2ca0f18daa1e01",
+      "emcd_sim/emcd_angular_plots.py": "0d87929ec69cbe783bc3d029b008216f52e4b9b99a6918ebef9a608cccc5524b",
+      "emcd_sim/geometry.py": "d5783f943a4b973bc8ffec208e769400db6c4c259f65fa70920141126258943d",
+      "emcd_sim/legacy_atomic_factors.py": "f022e794037e5e6c00a8563f09e0eeb3e71cf1afeefb087a77963ec04bff3526",
+      "emcd_sim/mdff_tensor.py": "c5b92007bd362f7d6c284be53b30dec6b0c1204cabce620a77c9f8f937d8e913",
+      "emcd_sim/mirror_parity.py": "78665b0295528d8721af8c9022bdf02a90b4efff4dbe137cc53a479f9cddaf89",
+      "emcd_sim/multislice_double_channeling.py": "9ec1ba6c071ff751540f9ef4ac4c864d139cb8a458eb85cddc9ad04ba0a880df",
+      "emcd_sim/multislice_reference.py": "c9782196301deb70e69704ede7069fb66e4c6d2e807fca04590fd3e103e82361",
+      "emcd_sim/ni_local_mdff.py": "f7c09cc45e04989c16ed346c50bc3da249332add361d15dfb77a7630a425ab79",
+      "emcd_sim/physical_elastic.py": "3ab9d14af9918833d109c9f07ddd67af9774e971bcc13d1ed7275f59bc3d54f6",
+      "emcd_sim/projected_geometry.py": "1769809d23affe78661cc03ae2fabe557f52b22135b62d6eaf33f26e3c8c857a",
+      "emcd_sim/projected_potential.py": "d69fae102808379b88bd1b33d714c11ae7348cef0b2b0ed824b7bebffde9ee01",
+      "emcd_sim/scattering.py": "f279353b3ed11764b41cc950f7a2031b9839e95b1ac6ca85ed5bbfcfb5f8f49a",
+      "emcd_sim/simulation.py": "bde6cb3aaedfb6b922f6ab65d204883710565de0cf931a2a58f6aac1e4f0c09a",
+      "emcd_sim/single_channeling_tensor.py": "3c47bd37c8da7ec881441cb9cdee66c537b36b86dd2e5b0838251c04ce9e3d61",
+      "emcd_sim/study_geometry.py": "9494427840cd2a3be50b2ce817d2151ab1a29877b4a410b26cb2b5d4787e417b",
+      "emcd_sim/transition_csv.py": "11fa09e39d013141504ce9f4402c6746cf7de401bfba499c0e6e61aaf09a6286",
+      "emcd_sim/wien2k_source_audit.py": "582f5129b01c684d446bc6aac0f88a62e1327ef57d71d3ded58f4a1ed59c59d9",
+      "emcd_sim/wien2k_xmcd.py": "c7fc56c84ed7dfa299a9feafbc388aeb8a4642ea0e6a03fb89d07b136a4dc638",
+      "emcd_sim/xmcd_effective_mdff.py": "f928f0db78198bb12ba81a06452ec3347a67d2a3fb268c8faa98248e19629b88",
+      "emcd_sim/xmcd_postedge_normalization.py": "936e03e23261f9b8912412ff6c547339f3a8b9877dc41ed4a589106eccf3bfff",
+      "emcd_sim/__init__.py": "cc7e52d88c041fc1da79c60fe6f6b169e51eec9703c833af885219aef10f7645",
+      "emcd_sim/__main__.py": "8da0262ee113908fbb6047fc222a90f08a8f2bd62aae9e2e4c63999d454278ee",
+      "emcd_sim/gui/app.py": "e0fe86007cfd048e430cc57e9fe0c179dab0c91d7c48b80c1411be3bae11e269",
+      "emcd_sim/gui/cancellation_acceptance.py": "66b55be5a6467979068817bdba825789112c5123341ef325983060119df77590",
+      "emcd_sim/gui/channeling.py": "2a13c5b9013fb4a724c22e300f5ef1e3cb6ee838665b0be70242d1623fc3e9df",
+      "emcd_sim/gui/compare_results.py": "1c709985a25050cb008feced08c4428d70cfb906a8e9a64351ff8c344ffcbbbc",
+      "emcd_sim/gui/component_display.py": "9ccd5929a663eba84583794ecb633b9d167dd7df7454938a132673ec4bed22c4",
+      "emcd_sim/gui/desktop_acceptance.py": "743e71aa17f379fd69541ff030eff68d2189fc2cea04542c94b37e5c8c95b076",
+      "emcd_sim/gui/emcd_forward.py": "48029cda44457f6b511ed32fda14c3ccb1882a4b555b7631154cf3fa6072c373",
+      "emcd_sim/gui/geometry.py": "61e3950fc600ba7a215909711f4e2572b5866691bbe6e9e7fa48d6e85c84717c",
+      "emcd_sim/gui/memory_budget.py": "3cc8f8f009dcc1b4eea7ba373e63322e9c00aeb2bd812604fa3e8a063742b1ef",
+      "emcd_sim/gui/normalization_controls.py": "066708173e1dfdfc172c530719e3ff2f51517dc8b92687ffef1b4ddd057f4ac3",
+      "emcd_sim/gui/normalization_export.py": "c04ad2f411813e9fa4b401581641d5dc57373c3016d966cc8d7a6800f4d77250",
+      "emcd_sim/gui/numerical_settings.py": "e20e1e20b57476d498481a3efe02917c005f528d544ff1fc1103634002c45b08",
+      "emcd_sim/gui/parallel_acceptance.py": "1ea967836a82f4bb51748069c8ecf8213a3f15634563769867a0915dab834a1e",
+      "emcd_sim/gui/parallel_resources.py": "b781530a577f3c6e93608ef0a41a16e82caaf182cddb810e48a44f56809ec9aa",
+      "emcd_sim/gui/prb_benchmark.py": "b4e721ba58e95b1cb2fdf07d525c1e979fdbf201405c2f784f52c186ce9d73b5",
+      "emcd_sim/gui/prb_controls.py": "60442d11780c123080bd3fe9fa12b58de64f743f63c88c11570cf47747e1c396",
+      "emcd_sim/gui/project_io.py": "d6e9d6da4fde80bee642380f4f0d6a6e857e4b46d964d83fecd2f96ba8dcda18",
+      "emcd_sim/gui/propagation.py": "405136a5879f3e7f08d14c44b6e4aa61e1a4371079290b6d1c6e9d05b0f92af6",
+      "emcd_sim/gui/responsive.py": "09c2ff2a197c572a9c1490da0c0b3046cef717445ce8d7b3d2244c56b64b27fc",
+      "emcd_sim/gui/results.py": "8555e06320385ac8637bdda8d407afd0412a0abe8e250573bd61fa3e3c77302b",
+      "emcd_sim/gui/results_browser.py": "744a68079bb311e34f2706e3e22dc0acac3e1faa731e5e1fb419df6ce1f1f187",
+      "emcd_sim/gui/runtime.py": "1578c65a99c3d0fd206a639051f7e7170f1539132f1a88cf6a8b2da352685d3e",
+      "emcd_sim/gui/scientific_acceptance.py": "ecd844a2f479d7dad0a4c5aa0191c0c795f497a906bbe8865b31be6b45dde6eb",
+      "emcd_sim/gui/signal_normalization.py": "2626fc6865cae7fe43f1b7a3e2597b7a13efe891effb0a5f734a15dad15767a8",
+      "emcd_sim/gui/stage_b.py": "660374644d3104238dfbd53c5c34732379fd6b74ccc537b148dcf3ac9a41ccf8",
+      "emcd_sim/gui/unified_elastic_acceptance.py": "df914a220390ae207ca5d0274688f0a0d521fe385185314e2d24d0bef1cfdb69",
+      "emcd_sim/gui/__init__.py": "ebab4f51f2460cf2909caabdcbc61c2b86d5b6f73732ad4e4a5ea4499d9ee7ec",
+      "emcd_sim/gui/__main__.py": "a8882e80740b1b2ab7c6efe4bf6edb770d64566595796c44c8a429c400afa286"
+    },
+    "gui_source_sha256": {
+      "app.py": "e0fe86007cfd048e430cc57e9fe0c179dab0c91d7c48b80c1411be3bae11e269",
+      "cancellation_acceptance.py": "66b55be5a6467979068817bdba825789112c5123341ef325983060119df77590",
+      "channeling.py": "2a13c5b9013fb4a724c22e300f5ef1e3cb6ee838665b0be70242d1623fc3e9df",
+      "compare_results.py": "1c709985a25050cb008feced08c4428d70cfb906a8e9a64351ff8c344ffcbbbc",
+      "component_display.py": "9ccd5929a663eba84583794ecb633b9d167dd7df7454938a132673ec4bed22c4",
+      "desktop_acceptance.py": "743e71aa17f379fd69541ff030eff68d2189fc2cea04542c94b37e5c8c95b076",
+      "emcd_forward.py": "48029cda44457f6b511ed32fda14c3ccb1882a4b555b7631154cf3fa6072c373",
+      "geometry.py": "61e3950fc600ba7a215909711f4e2572b5866691bbe6e9e7fa48d6e85c84717c",
+      "memory_budget.py": "3cc8f8f009dcc1b4eea7ba373e63322e9c00aeb2bd812604fa3e8a063742b1ef",
+      "normalization_controls.py": "066708173e1dfdfc172c530719e3ff2f51517dc8b92687ffef1b4ddd057f4ac3",
+      "normalization_export.py": "c04ad2f411813e9fa4b401581641d5dc57373c3016d966cc8d7a6800f4d77250",
+      "numerical_settings.py": "e20e1e20b57476d498481a3efe02917c005f528d544ff1fc1103634002c45b08",
+      "parallel_acceptance.py": "1ea967836a82f4bb51748069c8ecf8213a3f15634563769867a0915dab834a1e",
+      "parallel_resources.py": "b781530a577f3c6e93608ef0a41a16e82caaf182cddb810e48a44f56809ec9aa",
+      "prb_benchmark.py": "b4e721ba58e95b1cb2fdf07d525c1e979fdbf201405c2f784f52c186ce9d73b5",
+      "prb_controls.py": "60442d11780c123080bd3fe9fa12b58de64f743f63c88c11570cf47747e1c396",
+      "project_io.py": "d6e9d6da4fde80bee642380f4f0d6a6e857e4b46d964d83fecd2f96ba8dcda18",
+      "propagation.py": "405136a5879f3e7f08d14c44b6e4aa61e1a4371079290b6d1c6e9d05b0f92af6",
+      "responsive.py": "09c2ff2a197c572a9c1490da0c0b3046cef717445ce8d7b3d2244c56b64b27fc",
+      "results.py": "8555e06320385ac8637bdda8d407afd0412a0abe8e250573bd61fa3e3c77302b",
+      "results_browser.py": "744a68079bb311e34f2706e3e22dc0acac3e1faa731e5e1fb419df6ce1f1f187",
+      "runtime.py": "1578c65a99c3d0fd206a639051f7e7170f1539132f1a88cf6a8b2da352685d3e",
+      "scientific_acceptance.py": "ecd844a2f479d7dad0a4c5aa0191c0c795f497a906bbe8865b31be6b45dde6eb",
+      "signal_normalization.py": "2626fc6865cae7fe43f1b7a3e2597b7a13efe891effb0a5f734a15dad15767a8",
+      "stage_b.py": "660374644d3104238dfbd53c5c34732379fd6b74ccc537b148dcf3ac9a41ccf8",
+      "unified_elastic_acceptance.py": "df914a220390ae207ca5d0274688f0a0d521fe385185314e2d24d0bef1cfdb69",
+      "__init__.py": "ebab4f51f2460cf2909caabdcbc61c2b86d5b6f73732ad4e4a5ea4499d9ee7ec",
+      "__main__.py": "a8882e80740b1b2ab7c6efe4bf6edb770d64566595796c44c8a429c400afa286"
+    },
+    "bundled_elastic_provider": {
+      "provider": "adaptive-dirac-pade-2026",
+      "upstream_repository": "https://github.com/NeuralSoftX/adaptive_dirac_pade_scattering_factor_2026",
+      "upstream_commit": "1667babb2c5bdb44a0535438b846eb1bbfbc03ac",
+      "upstream_hdf5_sha256": "4d623613d3fe475211d1b78b7965d9604bb8748f9fcfe74700d0ffe3b345cc78",
+      "upstream_hdf5_git_blob": "1fd1b55266dd674530a1b6177a939e45dac5290d",
+      "upstream_license": "Apache-2.0",
+      "coefficient_data_sha256": "a67788f59b426c07cf27913e023ed08e3a748fdb6b634d0bb5eed6b4ecf77b5c",
+      "transformation": "Extract adaptive_dirac_pade model only; preserve every float32 coefficient as an exact Python binary64 JSON value; no refit or interpolation",
+      "input": "g in crystallographic inverse angstrom, Fourier phase exp(-2*pi*i*g.r)",
+      "output": "electron amplitude in angstrom; no potential conversion or beam gamma",
+      "range_g_inverse_angstrom": [
+        0,
+        36
+      ],
+      "coverage": "neutral Z=1..118",
+      "reference_data_sha256": "2703206ccb8c3c26fe3a330856c4846fa365e6e7e130c076ccce20847daf8366"
+    },
+    "new_gui_elastic_default": "adaptive-dirac-pade-2026"
+  },
+  "native_checks": [
+    {
+      "name": "bundled_all118_and_notices",
+      "passed": true,
+      "provider": "adaptive-dirac-pade-2026",
+      "coefficient_sha256": "a67788f59b426c07cf27913e023ed08e3a748fdb6b634d0bb5eed6b4ecf77b5c",
+      "h5py_imported": false
+    },
+    {
+      "name": "default_ni_worker_preview",
+      "passed": true,
+      "beams": 27
+    },
+    {
+      "name": "native_save_reopen_elastic",
+      "passed": true,
+      "current_inputs_unchanged": true
+    },
+    {
+      "name": "genuine_historical_project",
+      "passed": true,
+      "path": "C:\\Users\\peng863\\EMCD-Sim\\outputs\\v060_release\\source_native\\single_both_project",
+      "provider": "nickel-lobato-2014",
+      "project_manifest_sha256": "57c81a23675aa14268a44441fda0ff3909602432cab7345c554f2423ccd5e80d",
+      "amplitude_max_error": 0.0,
+      "saved_arrays_unchanged": true,
+      "physics_interpretation": {
+        "identifier": null,
+        "status": "unknown-or-legacy-unverified",
+        "warning": "Saved physics convention is unknown or legacy-unverified. Raw arrays and original source/version identifiers are preserved; do not interpret signed magnetic EMCD as corrected without revalidation."
+      }
+    },
+    {
+      "name": "bcc_fe",
+      "passed": true,
+      "beams": 13,
+      "clicked_hkl": [
+        -1,
+        -1,
+        0
+      ],
+      "bragg_residual": 5.916100942471303e-13,
+      "ni_mdff_disabled": true,
+      "rendered_coordinate_max_error": 1.1102230246251565e-16
+    },
+    {
+      "name": "cscl",
+      "passed": true,
+      "beams": 25,
+      "clicked_hkl": [
+        -1,
+        0,
+        0
+      ],
+      "bragg_residual": 1.8041124150158794e-16,
+      "ni_mdff_disabled": true,
+      "rendered_coordinate_max_error": 0.0
+    },
+    {
+      "name": "hex_zno",
+      "passed": true,
+      "beams": 19,
+      "clicked_hkl": [
+        -1,
+        0,
+        0
+      ],
+      "bragg_residual": 8.143485885625523e-14,
+      "ni_mdff_disabled": true,
+      "rendered_coordinate_max_error": 1.1102230246251565e-16
+    },
+    {
+      "name": "missing_external_provider_diagnostic",
+      "passed": true,
+      "bundled_provider_unaffected": true
+    },
+    {
+      "name": "ni_native_mdff_and_full_project_roundtrip",
+      "passed": true,
+      "energy_samples": 2,
+      "provider": "adaptive-dirac-pade-2026"
+    }
+  ],
+  "native_exit": {
+    "exit_code": 0,
+    "process_id": 30040,
+    "executable": "C:\\Users\\peng863\\EMCD-Sim\\build\\unified-elastic-main-integration\\build\\windows-unified-elastic-candidate-20261103\\final-extracted\\EMCD-Sim\\EMCD-Sim.exe",
+    "path": "C:\\WINDOWS\\System32;C:\\WINDOWS",
+    "qt_platform": "windows",
+    "pythonpath": null,
+    "pythonhome": null,
+    "conda_prefix": null,
+    "file_version": "0.7.0.1",
+    "product_version": "v0.7.0-beta.1"
+  },
+  "executable_sha256": "60961a50509b4b79c36e39d97a2860b365761a94a34bc7b3a7b1e7084d909ca5",
+  "archive_sha256": "4dbe3709080b3a24ff488052d8a64cee3cb37edbd0c15e1daea774e3f1e60393",
+  "packaged_files_verified": 613,
+  "package_manifest_sha256": "2b5014cc2e12d68acaa6f595e9623385bd63399b310680f8af9a70f0b4f1f771",
+  "preserved_inputs": {
+    "build/v070b1-unit-clean-main/build/windows-zolz-97b2220-actions41516996056/extracted/EMCD-Sim/EMCD-Sim.exe": "c73510032ad2dfc1320e550d79dc9da69613cc14b1b91c42816cc09e3b266110",
+    "build/v070b1-unit-clean-main/build/windows-zolz-97b2220-actions41516996056/artifact/EMCD-Sim-v0.7.0-beta.1-Windows.zip": "8d157d8b62fb6570d201360cdae85f44aa4cea2c1478f1949eb4336a135e17bc",
+    "build/v070b1-unit-clean-main/docs/UNIT_STANDARDIZATION_LOCAL_MAIN_ACCEPTANCE.md": "8db43857ce7cb473ba585674255fef58b52368e20093d0c391af6134bf87e5be",
+    "build/v070b1-unit-clean-main/docs/ZOLZ_LAUE_LOCAL_MAIN_ACCEPTANCE.md": "927378186478c1ba759beb6fcacaa6e3ace2d85cdf50d5d9ac4f6bc033dc6367",
+    "data/wien2k_ni/Ni_fm.xmcd": "a0e28ea6423b6c7832bb3cce6d69d71aa59336a221baeee3d2556b49ba501283"
+  },
+  "coefficient_sha256": "a67788f59b426c07cf27913e023ed08e3a748fdb6b634d0bb5eed6b4ecf77b5c",
+  "clean_machine_tested": false
+}
