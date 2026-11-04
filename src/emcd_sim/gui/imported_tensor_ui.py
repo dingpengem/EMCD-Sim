@@ -42,7 +42,9 @@ class ImportedTensorUI:
             source=export_atomic_parameters(parameters,output)
             self.imported_path.setText(source.path);self.validate_imported_mdff(expected_sha256=source.sha256)
         except Exception as exc:
+            self.imported_info=None;self.imported_declaration.setChecked(False)
             self.imported_status.setText('Atomic model rejected: '+str(exc))
+            self.emcd_stale()
 
     def validate_imported_mdff(self,*_,expected_sha256=None):
         try:

@@ -1,4 +1,4 @@
-﻿"""Declared synthetic research inputs, not measured/fitted Fe constants."""
+"""Declared synthetic research inputs, not measured/fitted Fe constants."""
 from dataclasses import asdict, replace
 import hashlib,json
 from pathlib import Path
@@ -77,7 +77,6 @@ def test_psd_reversal_strength_and_radial_scaling():
     assert np.sum(full.weights*np.sum(abs(full.dipoles_angstrom)**2,axis=1))==pytest.approx(4*p.radial_integral_angstrom**2)
     doubled=transitions_for_material(replace(p,radial_integral_angstrom=2*p.radial_integral_angstrom))
     np.testing.assert_array_equal(doubled.dipoles_angstrom,2*t.dipoles_angstrom)
-    reversed_p=replace(p,exchange_ev=p.exchange_ev,spin_resolved_holes=tuple(pair[::-1] for pair in p.spin_resolved_holes))
     # Spin-symmetric holes AND zero exchange remove the magnetic signal.
     nm=replace(p,exchange_ev=0,spin_resolved_holes=((.5,.5),)*5)
     ta,tb=[dipole_tensor_from_transitions(transitions_for_material(nm,magnetization_sign=s),e,nm.broadening_ev).tensor_angstrom2_per_ev for s in (1,-1)]
@@ -85,6 +84,8 @@ def test_psd_reversal_strength_and_radial_scaling():
 
 
 @pytest.mark.parametrize('changes',[
+    dict(atomic_number=26.0),dict(edge_energies_ev=('710','723')),
+    dict(spin_resolved_holes=((float('nan'),.5),)*5),dict(radial_integral_angstrom=1j),
     dict(element='Co',atomic_number=26),dict(element='O',atomic_number=8),dict(edge_energies_ev=(723,710)),
     dict(radial_integral_angstrom=0),dict(radial_integral_angstrom=float('inf')),dict(broadening_ev=0),
     dict(exchange_ev=-1),dict(crystal_field_basis='invented'),dict(spin_resolved_holes=((.5,.5),)),
@@ -229,3 +230,26 @@ def test_atomic_scope_guard_rejects_mutations():
     for path in ('src/emcd_sim/atomic_ionization.py','src/emcd_sim/imported_mdff.py','src/emcd_sim/gui/imported_tensor_ui.py'):
         with pytest.raises(AssertionError,match='Unregistered physics change'):
             assert_current_extension({path:(ROOT/path).read_bytes()+b'\n# mutation\n'})
+
+
+def test_failed_atomic_generation_invalidates_previous_source(tmp_path,monkeypatch):
+    from PySide6 import QtWidgets
+    from emcd_sim.gui.app import MainWindow
+    monkeypatch.setenv('EMCD_GUI_WORKSPACE',str(tmp_path/'workspace'))
+    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    source=export_atomic_parameters(parameter_file(tmp_path/'valid.json'),tmp_path/'previous.json')
+    bad=tmp_path/'invalid.json';bad.write_text('{}')
+    monkeypatch.setattr(QtWidgets.QFileDialog,'getOpenFileName',lambda *a,**k:(str(bad),''))
+    monkeypatch.setattr(QtWidgets.QFileDialog,'getSaveFileName',lambda *a,**k:(str(tmp_path/'new.json'),''))
+    w=MainWindow()
+    try:
+        w.model_box.setCurrentIndex(2);w.imported_path.setText(source.path);w.validate_imported_mdff()
+        w.imported_declaration.setChecked(True)
+        assert w.imported_info is not None
+        w.generate_atomic_tensor()
+        assert w.imported_info is None and not w.imported_declaration.isChecked()
+        assert 'Atomic model rejected' in w.imported_status.text()
+        assert not w.emcd_button.isEnabled()
+        assert Path(source.path).exists() and not (tmp_path/'new.json').exists()
+    finally:
+        w.close();app.processEvents()
