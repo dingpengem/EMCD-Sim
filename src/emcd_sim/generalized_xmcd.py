@@ -32,6 +32,9 @@ def export_declared_xmcd(source_path,declaration,output):
     if not d['source_sha256'] or hashlib.sha256(raw_source).hexdigest()!=d['source_sha256']:
         raise ValueError('Declared element-specific XMCD source checksum mismatch')
     from .gui.emcd_forward import axis_rotation
+    axis=np.asarray(d['magnetization_crystal'],float)
+    if axis.shape!=(3,) or not np.isfinite(axis).all() or not np.isfinite(np.linalg.norm(axis)) or np.linalg.norm(axis)<1e-12:
+        raise ValueError('Declare a finite nonzero crystal Cartesian magnetic axis with finite norm')
     frame=axis_rotation(d['magnetization_crystal'])
     scale=d['reference_tensor_scale_angstrom2_per_ev']
     if not np.isfinite(scale) or scale<=0:raise ValueError('Declare a positive relative reference tensor amplitude in angstrom^2/eV; no automatic atomic calibration')

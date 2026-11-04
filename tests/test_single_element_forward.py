@@ -60,3 +60,12 @@ def test_changed_external_source_during_calculation_discards_result(tmp_path):
         if stage=='Validating imported tensor and equivalent localized events':p.write_bytes(original+b' ')
     with pytest.raises(ValueError,match='checksum changed'):calculate(s,settings,cfg,progress=replace_source)
     assert p.read_bytes()!=original
+
+
+@pytest.mark.parametrize('channel',['single','double'])
+@pytest.mark.parametrize('voltage',[.5,.723])
+def test_imported_loss_must_be_below_incident_energy(tmp_path,channel,voltage):
+    s=Structure(bulk('Fe','bcc',a=2.866,cubic=True))
+    settings=Settings(zone=(0,0,1),target=(1,1,0),tilt=(0,0),voltage=voltage,thickness=.1,beam_cutoff=.6,potential_cutoff=1.2)
+    cfg=settings_for_source(write_source(tmp_path/'loss.json'),channeling_model=channel,energy_scope='edges',grid=9,depth=9,subpixels=8)
+    with pytest.raises(ValueError,match='below incident'):calculate(s,settings,cfg)

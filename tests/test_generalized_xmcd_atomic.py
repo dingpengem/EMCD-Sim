@@ -32,6 +32,8 @@ def test_declared_element_xmcd_source_without_ni_calibration(tmp_path):
     for key in ('source','validity'):
         bad=dict(declaration);bad[key]=''
         with pytest.raises(ValueError,match='nonempty'):export_declared_xmcd(path,bad,tmp_path/'bad.json')
+    bad=dict(declaration,magnetization_crystal=[1e308,0,0])
+    with pytest.raises(ValueError,match='axis'):export_declared_xmcd(path,bad,tmp_path/'bad.json')
 
 
 def test_atomic_math_shared_ni_defaults_unchanged_and_non_ni_disabled():

@@ -94,6 +94,8 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
     reason=material_reason(structure,cfg)
     if reason:raise ValueError(reason)
     source=source_for(cfg);energy=energy_grid(cfg,energy_ev)
+    if energy[-1]>=1000*settings.voltage:
+        raise ValueError('Imported energy loss must be below incident electron energy for Single and Double Channeling')
     sites=IonizationSites.from_structure(structure,cfg.ionizing_element,cfg.site_indices)
     from .propagation import resolve_fft_configuration,numerical_info,propagate,compare_methods
     from .memory_budget import reserve_memory

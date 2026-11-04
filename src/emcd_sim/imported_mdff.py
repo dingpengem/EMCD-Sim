@@ -65,7 +65,7 @@ class ImportedMDFF:
         l3,l2=[d['selected_ev'][k] for k in ('L3','L2')]
         if not np.isfinite([l3,l2]).all() or not e[0]<=l3<l2<=e[-1]:raise ValueError('Selected L3/L2 energies must lie inside native coverage')
         m=np.asarray(d['magnetization_crystal'],float)
-        if m.shape!=(3,) or not np.isfinite(m).all() or np.linalg.norm(m)<1e-12:raise ValueError('Declare finite nonzero crystal Cartesian magnetic/reference axis')
+        if m.shape!=(3,) or not np.isfinite(m).all() or not np.isfinite(np.linalg.norm(m)) or np.linalg.norm(m)<1e-12:raise ValueError('Declare a finite nonzero crystal Cartesian magnetic/reference axis with finite norm')
         def tensor(name):
             try:
                 v=d[name];real=np.asarray(v['real'],float);imag=np.asarray(v['imag'],float)
@@ -93,7 +93,7 @@ class ImportedMDFF:
         if e.ndim!=1 or not len(e) or not np.isfinite(e).all() or np.any(np.diff(e)<=0) or e[0]<self.energy_ev[0] or e[-1]>self.energy_ev[-1]:
             raise ValueError('No imported MDFF energy extrapolation; require finite ascending samples')
         m=np.asarray(magnetization,float);native=np.asarray(self.metadata['magnetization_crystal'],float)
-        if m.shape!=(3,) or not np.isfinite(m).all() or np.linalg.norm(m)<1e-12 or not np.allclose(m/np.linalg.norm(m),native/np.linalg.norm(native),rtol=0,atol=1e-10):
+        if m.shape!=(3,) or not np.isfinite(m).all() or not np.isfinite(np.linalg.norm(m)) or np.linalg.norm(m)<1e-12 or not np.allclose(m/np.linalg.norm(m),native/np.linalg.norm(native),rtol=0,atol=1e-10):
             raise ValueError('Imported tensor magnetic axis differs from declared crystal axis; supply a validated rotated source')
         a=proper_frame(crystal_to_microscope)@proper_frame(self.metadata['frame_to_crystal'])
         result=[]

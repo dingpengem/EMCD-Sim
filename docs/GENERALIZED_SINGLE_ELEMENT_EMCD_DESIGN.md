@@ -38,6 +38,8 @@ Historical source manifests and snapshots remain immutable. Any source guards af
 
 Real and imaginary components must each have the complete `(n_energy,3,3)` shape; scalar or missing-energy-axis broadcasting is rejected. Element-specific XMCD conversion reads its declared input bytes once, hashes that snapshot, and evaluates both states from a private copy. Replacing the original path during conversion cannot change either tensor or mislabel its source digest. Original source/validity declarations must be nonempty before generated explanatory text is appended.
 
+Magnetic/reference axes require finite nonzero norms as well as finite components; overflowing norms are rejected instead of producing zero normalized directions. Every requested imported loss must be below the incident electron energy, for both Single and Double Channeling. These are input-domain guards, not changes to the propagation or tensor contraction.
+
 |Field|Required value/meaning|
 |---|---|
 |`schema`, `element`, `edge`|`1`, an ASE periodic-table symbol with filled 2p core (Z>=10), `L2,3`|

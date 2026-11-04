@@ -155,3 +155,11 @@ def test_component_shapes_cannot_be_silently_broadcast(tmp_path,component,shape)
         d[name][component]=(np.ones(shape) if component=='real' else np.zeros(shape)).tolist()
     p=tmp_path/'broadcast.json';p.write_text(json.dumps(d))
     with pytest.raises(ValueError,match='shape'):ImportedMDFF.load(p)
+
+
+def test_axis_with_overflowed_norm_cannot_bypass_orientation_check(tmp_path):
+    d=document();d['magnetization_crystal']=[1e308,0,0]
+    p=tmp_path/'overflow_axis.json';p.write_text(json.dumps(d))
+    with pytest.raises(ValueError,match='axis'):
+        source=ImportedMDFF.load(p)
+        source.tensors([710,723],np.eye(3),[0,1e308,0])
