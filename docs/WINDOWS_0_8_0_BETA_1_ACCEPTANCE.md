@@ -114,6 +114,24 @@ Evidence remains in the isolated release worktree under ignored `outputs/v080b1-
 |`exe-native/acceptance.json`|`55e1512df731b1c940a399516e44ec863bf2e23882ceff51b537ca9a2a112dca`|
 |`native-launch.json`|`8a227fca7b41b3a598b06ed1215cfb0cc3cd332ba56401ec8269b848531ad7f3`|
 |`package-verification.json`|`62197ba874b1e0c34779aaac1edb82ad1df827105535fc3f1f3b6c733078c6fb`|
-|`push-verification/markdown_link_audit.json`|`d0009b5dafe78fab1a433bad0611726414c34e267a2918fe909fa1cfd2537fd7`|
+|`push-verification/markdown_link_audit.json`|`57110ab7fd817835669f8c245d4addd6b1ab303a838fac9b0aa52f6964cc7646`|
 
 The previous v0.7.0-beta.1 release is preserved. Publication is authorized only as a GitHub **prerelease** after all Windows gates above; normal pushes and a new exact-source tag are used. No old asset is replaced and no stable/latest release is requested.
+
+## Publication and independent public-download verification
+
+Published [v0.8.0-beta.1](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1) as a public GitHub **prerelease**, release ID `433562665`. The lightweight tag resolves to exact accepted EXE source `bc22a4b04c828efad027140e94039464fed06641`. Main was normally pushed and verified synchronized at `ee16c2ea107ddea4d50afad77359962ed59297b2` before publication; this later reporting update does not change the tagged build.
+
+|Public asset|Bytes|GitHub and independently downloaded SHA256|
+|---|---:|---|
+|[Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.8.0-beta.1/EMCD-Sim-v0.8.0-beta.1-Windows.zip)|108652577|`eec12e9ed4d102cb4ae3ff46871f53e199bd9a63d7a9f4dd233eccb4eafc023f`|
+|[SHA256SUMS.txt](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.8.0-beta.1/SHA256SUMS.txt)|102|`4038bf087e3e08feae881d16863dc53d99598695d70acf81eebe225eca1099b2`|
+|[build_manifest.json](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.8.0-beta.1/build_manifest.json)|182676|`ae8f4f6049214edda8c82c7b29e6102c597dcb3918663d35dba61549e4bb02ba`|
+
+All three public assets were downloaded afresh and their byte counts/digests matched both the local accepted artifacts and GitHub's server-side digests. The downloaded checksum file identifies this ZIP exactly. GitHub's release API confirms `draft=false`, `prerelease=true` and the expected source. No release asset was overwritten.
+
+The previous release remains ID `432071673`, with ZIP asset `703513772` and checksum asset `703513771`: both original names, sizes, SHA256 digests and update timestamps remain unchanged. The original ZIP is still 113643171 bytes with SHA256 `8d157d8b62fb6570d201360cdae85f44aa4cea2c1478f1949eb4336a135e17bc`.
+
+Public README source matched the pushed commit exactly, and GitHub rendering displayed v0.8.0-beta.1, Adaptive Z=1–118, raw-before-percent figures and historical Lobato provenance. The postpublication link audit found all release/download/acceptance links reachable. Five historical local-reference issues and one publisher HTTP 403 remain as described above; no new release-documentation link failure was introduced. Local public-download evidence is `outputs/v080b1-release/public-download-verification.json`.
+
+New Actions runs are [Windows Beta candidate](https://github.com/dingpengem/EMCD-Sim/actions/runs/41782257949) and [cross-platform source tests](https://github.com/dingpengem/EMCD-Sim/actions/runs/41782257941). At publication these were **in progress**, not reported as passed. Local Windows gates were complete before publication; known Linux/macOS failures remain separate and are not release gates.
