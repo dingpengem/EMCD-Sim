@@ -45,6 +45,7 @@ for package in LICENSE_DISTRIBUTIONS:
 a = Analysis([str(root/'packaging/launcher.py')], pathex=[str(root/'src')],
     binaries=runtime_binaries,
     datas=[(str(reference),'data/wien2k_ni'), (str(stage/'build_info.json'),'.'), (str(root/'LICENSE'),'.'),
+           (str(root/'docs/examples/synthetic_fe_atomic_parameters.json'),'examples'),
            (str(checked_distributions['ase'].locate_file('ase/spacegroup/spacegroup.dat')),'ase/spacegroup'),
            (str(root/'src/emcd_sim/data/adaptive_dirac_pade_2026'),'emcd_sim/data/adaptive_dirac_pade_2026')]+licenses,
     hiddenimports=['matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg','ase.io.cif','ase.io.jsonio','ase.io.extxyz'],

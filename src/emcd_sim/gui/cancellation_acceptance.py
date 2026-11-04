@@ -5,9 +5,8 @@ reproducible. Separate uninstrumented cancellation also exercises real work.
 """
 from pathlib import Path
 from unittest.mock import patch
-import hashlib,json,os,sys,threading,time,traceback
+import hashlib,json,sys,threading,time,traceback
 from contextlib import ExitStack
-import numpy as np
 from PySide6 import QtCore,QtWidgets
 from .. import double_channeling as bw,multislice_double_channeling as ms
 from . import channeling,stage_b,memory_budget

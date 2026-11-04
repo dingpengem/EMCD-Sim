@@ -1,6 +1,5 @@
 """Small source/frozen resource, provenance and writable-data boundary."""
 from pathlib import Path
-from datetime import datetime, timezone
 import hashlib
 import json
 import logging
