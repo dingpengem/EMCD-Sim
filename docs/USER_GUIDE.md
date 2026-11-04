@@ -339,6 +339,37 @@ Historical development, validation reports and older galleries remain linked in 
 
 ## Generalized sources in v0.8.1-beta.1
 
+The following describes the Part 1B source/candidate workflow. Its acceptance
+status and exact candidate identity are recorded in
+[the consolidation report](GENERALIZED_CODE_CONSOLIDATION_0_8_1.md); it does not
+alter the historical published binary or scientific examples.
+
+The three MDFF choices remain visible for every crystal. **XMCD-constrained MDFF**
+reads the original five-column XAS/XMCD file directly. Outside historical Ni,
+declare the file's element/edge, native selected energies, axis, RP-minus-LP
+handedness, relative reference scale, provenance and assumptions. Two reliable
+L3/L2 features may populate native energies; ambiguous assignments remain user
+declarations. No WIEN2k installation or separate tensor JSON is required. The
+bundled Ni source cannot substitute for another element.
+
+**Atomic Ionization MDFF** accepts explicit atomic parameter JSON directly;
+validate its checksum, then acknowledge the approximate cubic 2p-to-3d model.
+The bundled synthetic Fe example is software test data, never physical Fe constants.
+With no parameter file, historical Ni controls retain their original interpretation.
+
+**Imported Complex MDFF Tensor** reads declared complex 3x3 tensors with explicit
+nonmagnetic or magnetic-state inputs. XMCD/import adapters support L2,3 and the
+end-to-end-tested K-edge declaration; other edge families remain rejected. K-edge
+maps, selected samples and exports keep their K label. L3/L2-specific peak
+normalization and L3 white-line diagnostics are unavailable for other edges.
+All declared providers use Manual numerics and supported equivalent sites in a
+fully occupied single-element crystal. Approximately 1.6% detector-refinement
+sensitivity remains a limitation; no broad convergence or experimental accuracy
+is established. Missing/altered inputs block rerun and invalidate acknowledgement
+while saved arrays remain viewable.
+
+### Historical Part 1 workflow
+
 Select the imported-MDFF provider for an explicitly declared Hermitian PSD complex
 3x3 dipole tensor source. Review element/L2,3 selection, frame, magnetic axis, units,
 explicit opposite states and SHA256; acknowledge the declarations and use Manual

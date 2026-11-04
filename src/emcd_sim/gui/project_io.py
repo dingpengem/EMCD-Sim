@@ -95,9 +95,13 @@ def config_from_dict(value):
     d=dict(value);d['atomic']=NiLocalConfig(**d.get('atomic',{}))
     for k in ('magnetization','centers','window','fft_generators'):
         if k in d and d[k] is not None:d[k]=tuple(tuple(v) if isinstance(v,list) else v for v in d[k])
-    if d.get('model')=='imported':
-        from .generalized_forward import ImportedSettings
+    if d.get('model')=='imported' or 'provider_schema' in d:
+        from .generalized_forward import ImportedSettings,ProviderSettings
         if d.get('site_indices') is not None:d['site_indices']=tuple(d['site_indices'])
+        if d.get('selected_edges') is not None:d['selected_edges']=tuple(tuple(v) for v in d.get('selected_edges',()))
+        if 'provider_schema' in d:
+            if d['provider_schema']!=1:raise ValueError('Unsupported MDFF provider configuration schema')
+            return ProviderSettings(**d)
         return ImportedSettings(**d)
     return ForwardSettings(**d)
 
@@ -252,7 +256,7 @@ def source_status(result):
         expected=cfg.source_sha256 or (result['metadata'].get('source_audit') or {}).get('sha256','')
         p=Path(result.get('source_overrides',{}).get('xmcd',cfg.source))
         status['xmcd']=entry(p,expected,cfg.source)
-    if cfg.model=='imported':
+    if cfg.model=='imported' or (cfg.model=='atomic' and getattr(cfg,'provider_schema',None)==1):
         p=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
         status['mdff']=entry(p,cfg.source_sha256,cfg.source)
     s=result.get('structure_snapshot')
@@ -382,9 +386,11 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
             or not np.isfinite(g).all() or not np.isfinite(za).all() or not np.allclose(frame@frame.T,np.eye(3),atol=1e-12)):
             raise ValueError('Saved diffraction/frame/target plotting context is inconsistent')
         if not {'alpha','pair_reason','correction_reason','limitations'}<=set(mmeta):raise ValueError('Saved method metadata lacks required interpretation/normalization fields')
-        fields={edge:{k.split('__')[2]:v for k,v in angular.items() if k.startswith(name+'__'+edge+'__')} for edge in ('L3','L2')}
-        if not fields['L3']:
-            fields={edge:{k[len(edge)+1:]:v for k,v in angular.items() if k.startswith(edge+'_')} for edge in ('L3','L2')}
+        from ..mdff_edges import selected_samples
+        edge_labels=[edge for edge,_ in selected_samples(cfg)]
+        fields={edge:{k.split('__')[2]:v for k,v in angular.items() if k.startswith(name+'__'+edge+'__')} for edge in edge_labels}
+        if not any(fields.values()):
+            fields={edge:{k[len(edge)+1:]:v for k,v in angular.items() if k.startswith(edge+'_')} for edge in edge_labels}
         sp={k.split('__',1)[1]:v for k,v in spectra.items() if k.startswith(name+'__')}
         if not sp:sp={k:v for k,v in spectra.items() if k!='method_labels' and '__' not in k}
         C=angular.get(name+'__coherence',angular.get('coherence'))
@@ -402,7 +408,7 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
         e=sp['energy_ev']
         for value in (q,qy,C,amps,z,e):
             if not np.issubdtype(value.dtype,np.number) or not np.isfinite(value).all():raise ValueError('Saved coordinates/coherence/amplitudes/energy must be finite numeric arrays')
-        if e.ndim!=1 or len(e)<2 or np.any(np.diff(e)<=0) or np.any(e<=0):raise ValueError('Saved energy axis must be positive and strictly increasing')
+        if e.ndim!=1 or not len(e) or np.any(np.diff(e)<=0) or np.any(e<=0):raise ValueError('Saved energy axis must be positive and strictly increasing')
         for key in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus','D_raw','D_mag','D_nonmag','Sigma_ref'):
             if sp[key].shape!=e.shape or not np.isfinite(sp[key]).all():raise ValueError('Saved detector spectrum dimensions/values are inconsistent')
         if not np.allclose(C,C.conj().T,rtol=1e-10,atol=1e-12):raise ValueError('Saved coherence is not Hermitian')

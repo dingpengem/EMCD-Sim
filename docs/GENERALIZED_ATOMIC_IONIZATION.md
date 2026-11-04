@@ -8,10 +8,12 @@ parameters are physically unvalidated. No physical Fe EMCD prediction is supplie
 
 `emcd_sim.atomic_ionization` separates explicitly supplied material parameters from
 shared 2p spin-orbit/Clebsch–Gordan/complex dipole mathematics. The shared functions
-alias the historical implementation in `ni_local_mdff.py`; that file, its Ni defaults,
-`gui/emcd_forward.py`, elastic providers/defaults and propagation kernels are unchanged.
-No Ni electronic parameters are inferred for another element. The old Ni GUI provider
-and saved projects continue through their original code path.
+alias the historical angular helpers in `ni_local_mdff.py`. Part 1B routes the Ni
+compatibility API through the shared generator where exact equality is established;
+its tiny-radial event-dropping reference path is retained separately. Ni defaults,
+elastic providers/defaults and propagation kernels remain unchanged. No Ni electronic
+parameters are inferred for another element. Historical project interpretation is
+preserved while production orchestration is shared across providers.
 
 For each core `(j,mj)`, final cubic orbital and spin, the complex amplitude is the
 coherent sum over its spherical `l=2,m` components. Distinct initial/final events add
@@ -75,13 +77,13 @@ $env:PYTHONPATH='src'
 python -m emcd_sim.atomic_ionization docs/examples/synthetic_fe_atomic_parameters.json outputs/synthetic_fe_atomic_tensor.json
 ```
 
-Create `outputs` first. Existing outputs are never overwritten. In the GUI select the
-**imported tensor** provider, then **Generate approximate atomic tensor from declared
-parameters…**. Select the complete parameter JSON and a new output filename. This
-validates and exports an explicit pair, populating the existing imported-source panel.
-Review its SYNTHETIC or RESEARCH/APPROXIMATE status, source, units, frame and checksum;
-acknowledge the declarations and use Manual numerical settings. The Ni panel is not
-migrated and no Fe/Co/Cr quantitative presets are added. Imported CIF/site eligibility
+Create `outputs` first for the CLI export. Existing outputs are never overwritten.
+In the Part 1B GUI select **Atomic Ionization MDFF**, browse the complete atomic
+parameter JSON, validate it, review the source/frame/checksum and acknowledge its
+approximate status. Use Manual numerics. No intermediate tensor file is required.
+The original Ni controls remain a historical compatibility option when no explicit
+parameter file is selected; they cannot supply another element. No Fe/Co/Cr
+quantitative presets are added. Imported CIF/site eligibility
 remains a single element with full occupancy and certified translation-equivalent
 ionization sites; a supplied atomic model does not bypass these checks.
 
@@ -90,8 +92,9 @@ model identifier and both tensor states. Loading verifies the embedded checksum 
 regenerates the tensors to check the model/parameters/frame/edge declarations. Projects
 retain the generated-source checksum and complete atomic provenance. Altering that
 source blocks rerun; missing sources leave saved results viewable. The original
-parameter file is no longer needed to rerun an unchanged generated source, since its
-exact content is embedded. Updating parameters requires a new source and explicit
+parameter file is no longer needed for the CLI-exported imported tensor, since its
+exact content is embedded. The direct atomic-provider GUI workflow instead binds
+the original parameter JSON checksum and requires it for rerunning. Updating parameters requires a new source and explicit
 revalidation. External imported tensor conventions remain strict and unchanged.
 The `atomic_` metadata namespace is reserved: a partial declaration (including a
 removed model tag) or unknown atomic field is rejected. A source with no atomic

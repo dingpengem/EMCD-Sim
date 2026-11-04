@@ -1,0 +1,30 @@
+{
+  "base": "52b36ee41e20aed5a86fb37db56ca372fac936f8",
+  "canonical_sha256": {
+    "src/emcd_sim/generalized_xmcd.py": "3b4a4de508e5f060861945f8e6e75a26303ccff646a14617cd682df0c840c3fd",
+    "src/emcd_sim/gui/channeling.py": "f1d585f9a135f4c5ea59cb43b65555260c774e498abaf5f407e757d9dd272066",
+    "src/emcd_sim/gui/component_display.py": "3742d1345db6730fb0e999824e2be405adec25bab0910339bc8d569d0a7fa84a",
+    "src/emcd_sim/gui/emcd_forward.py": "b645edbacc017e5a78871c62dd67dc92224ad0fa032a49102bd4bcedf339ce2f",
+    "src/emcd_sim/gui/forward_pipeline.py": "2914f82b06eb0791b021715be8a302df82f30c24921dcaec3565a02cab5a826b",
+    "src/emcd_sim/gui/generalized_forward.py": "707dd80236c1fd9232aa4ca94f3c7e0448ca0f45534dfe1f5fc02122c9c151dd",
+    "src/emcd_sim/gui/imported_tensor_ui.py": "023f846d38a0525b5f25f4338dc8c28bcc2442f7d04b37aa5d2a963df6e46e7d",
+    "src/emcd_sim/gui/normalization_controls.py": "7083eeef7bd987ae4b080df9416122feb6cffb2fe2c340bd16ffb0a2a44684e9",
+    "src/emcd_sim/gui/numerical_settings.py": "b7ef667ce99d593dabc67dd679b5dd574c77b2b511c5054a42cb593d8260553f",
+    "src/emcd_sim/gui/prb_benchmark.py": "876b34e8d92e5b39babe8226d2d6c6fc57ca0d88ad934e97c83dba835c93114c",
+    "src/emcd_sim/gui/prb_controls.py": "71d35121131daacb46ff32db9fc72bff83d6016fcd765932420a4ddc603119f4",
+    "src/emcd_sim/gui/project_io.py": "3e4217553ada46b6e50bb569b6d545cb6ed0cf99d993b5fdf17e8bd719fa9b7d",
+    "src/emcd_sim/gui/propagation.py": "b608c6fdf535c92ec2bb3162a9751f7b975fcfd122f93886acc9002b4554de63",
+    "src/emcd_sim/gui/provider_ui.py": "779f4bda4560452f883924b6b8bc11cdbe9716dc983aa438296a3a7bcde43938",
+    "src/emcd_sim/gui/results.py": "66755dc3629265bf23264f436af09b9d02381c164b7b306b07e690fc5ad0f810",
+    "src/emcd_sim/gui/results_browser.py": "a02e5939e22360761441038a6dbcb5d913269526702e0beb3da8293f28f3081f",
+    "src/emcd_sim/gui/signal_normalization.py": "c857a00347192506fa98252a82e118e9dae8571c0064168225a72058cbd32a53",
+    "src/emcd_sim/gui/stage_b.py": "59371775ef108d31b7c973cb3b1f8bc551e77ccf0f496147380fb251fd898379",
+    "src/emcd_sim/imported_mdff.py": "dd05a61281ad5e832473652c1aed6d45f2a06c2c893f731ded0011720ef98802",
+    "src/emcd_sim/mdff_edges.py": "ff82025d914b333dc1f1575339ee5dc09cf77e5e1cb75ec1a6d7936f143fad1f",
+    "src/emcd_sim/mdff_providers.py": "ff5dbfde4fe5b0801359bf7abff16f08f2a35c728806b6d14e4c10e11ae020dd",
+    "src/emcd_sim/ni_local_mdff.py": "20b65a0aa2d5b6510fc7d8ed625ffb1af0f04d5171238517c10baeae8c5639fb"
+  },
+  "physics_convention": "forward_born_dagger_g_minus_h_v1",
+  "review": "Part 1B provider/orchestration/interface changes only; all three accepted physical kernel files and old reference manifests retained unchanged",
+  "schema": 1
+}

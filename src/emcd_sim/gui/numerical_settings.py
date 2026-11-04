@@ -114,6 +114,9 @@ class NumericalSettingsUI:
             if self.numerical_mode.currentIndex()==0:
                 if self.model_box.currentIndex()==2:
                     raise ValueError('Imported MDFF requires explicit Manual numerical settings; Ni presets are not transferred')
+                if (set(self.structure.atoms.get_chemical_symbols())!={'Ni'} or
+                    self.explicit_xmcd.isChecked() or self.atomic_parameter_path.text().strip()):
+                    raise ValueError('Declared MDFF providers require explicit Manual numerical settings; Ni presets are not transferred')
                 # Source validation is separate from configuration selection.
                 cfg=ForwardSettings(propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],
                     fft_generators=self.saved_fft_generators(),

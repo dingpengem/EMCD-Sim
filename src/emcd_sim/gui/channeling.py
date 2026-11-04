@@ -5,13 +5,14 @@ import sys,threading
 from time import perf_counter
 import numpy as np
 from ..double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch
-from ..multislice_double_channeling import ProjectedNiFFT, incident_fields, multislice_double_channeling_response
+from ..multislice_double_channeling import ProjectedFFT, incident_fields, multislice_double_channeling_response
 from ..single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix
+from ..mdff_edges import selected_samples
 
 
 def fft_geometry(elastic,settings,cfg,*,cancelled=None):
     from .propagation import projected_geometry_for
-    return ProjectedNiFFT.build(elastic,grid_points=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
+    return ProjectedFFT.build(elastic,grid_points=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
         systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
         projected_geometry=projected_geometry_for(settings,elastic.crystal,cfg.fft_generators),
         systematic_row_hkl=settings.target if cfg.systematic_row else None,
@@ -55,7 +56,7 @@ def angular_schedule(model,cfg,energy):
     weights={k:d.integration_weights(qx,qy,mode='fractional',subpixels=cfg.subpixels) for k,d in model.detectors.items()}
     detector_support=np.logical_or.reduce([weights[k].ravel()>0 for k in ('A','B')])
     if not detector_support.any():raise ValueError('No detector support on the requested reciprocal grid')
-    selected={int(np.argmin(abs(energy-v))):edge for edge,v in (('L3',cfg.l3),('L2',cfg.l2))}
+    selected={int(np.argmin(abs(energy-v))):edge for edge,v in selected_samples(cfg)}
     return qx,qy,weights,detector_support,selected
 
 

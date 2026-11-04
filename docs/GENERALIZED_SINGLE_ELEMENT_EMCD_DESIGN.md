@@ -42,9 +42,9 @@ Magnetic/reference axes require finite nonzero norms as well as finite component
 
 |Field|Required value/meaning|
 |---|---|
-|`schema`, `element`, `edge`|`1`, an ASE periodic-table symbol with filled 2p core (Z>=10), `L2,3`|
+|`schema`, `element`, `edge`|`1`, an ASE element symbol; validated `L2,3` (Z>=10) or `K` declarations. Other edge families remain unsupported pending end-to-end tests.|
 |`energy_ev`|Finite positive strictly increasing eV samples; no automatic energy shift|
-|`selected_ev`|Explicit `L3` and `L2` selections inside coverage, in that order|
+|`selected_ev`|Explicit `L3` then `L2`, or a single `K` selection inside native coverage|
 |`units`, `normalization`|`angstrom^2/eV`, `per_atom_relative`; not a calibrated cross section|
 |`basis`|`crystal_cartesian` or `declared_local`|
 |`frame_to_crystal`|Proper orthonormal 3x3 rotation; identity for crystal Cartesian input|
@@ -57,7 +57,8 @@ Magnetic/reference axes require finite nonzero norms as well as finite component
 
 Nonmagnetic data require `T`, real symmetric under the declared time-reversal-invariant electric-dipole assumption. Uniform-FM data require **all three** `T_plus`, `T_minus`, `T_even`; neither magnetic state is manufactured. Hermiticity/PSD checks use explicit numerical tolerances, including a relative spectral-scale Hermiticity check for very small amplitudes. No eigenvalue clipping or tensor repair occurs. `T_even` must equal the average of the supplied states. This permits real as well as imaginary magnetic-odd terms, without imposing Ni conjugation symmetry. A declared proper frame is applied as `A=R_crystal_to_microscope @ frame_to_crystal`, `T_microscope=A T_source A^T`.
 
-The original Ni `gui.emcd_forward.calculate` remains Ni-specific. The opt-in API is:
+The original `gui.emcd_forward.calculate` remains a compatibility entry point to
+the same production orchestration as the generalized API:
 
 ```python
 from emcd_sim.gui.generalized_forward import settings_for_source, calculate
@@ -71,6 +72,14 @@ result = calculate(imported_structure, microscope_settings, cfg)
 Selecting a different magnetic axis for an anisotropic imported tensor is rejected; supply a new source with the appropriate physical tensor/frame declaration. This prevents treating arbitrary anisotropy as an axisymmetric tensor. A physical source's declaration is checked for internal consistency, not independently authenticated as a true Fe calculation. This distinction is retained in result status.
 
 The GUI adds a third MDFF provider panel with source, element, edge, state, site selection and explicit acknowledgement. Use **Manual** numerical settings: historical Ni automatic presets are not transferred to another material. The current side-by-side layout and Results layout are retained. Imported/synthetic plots and browser entries carry the correct element/status. A missing/changed source blocks rerun while leaving checksummed saved arrays viewable. Old projects restore their original Ni provider; no migration is performed.
+
+Part 1B always shows the same three choices for every crystal. Direct XAS/XMCD
+and atomic-parameter files use `settings_for_provider(path, model, declaration)`;
+their source identities refer to the original files, not private temporary tensor
+conversions. Providers return the existing validated `DipoleTensor` representation.
+K-edge declarations have dedicated Single/Double BW/MS, GUI map/export and project
+round-trip checks. L3/L2 peak normalization and white-line diagnostics remain
+restricted to L2,3; unsupported edges are never silently relabeled as L2,3.
 
 `ImportedSettings` inherits the legacy serialization envelope. `atomic`, `sigma`, `radial`, `eta` and `beta` remain serialized for compatibility but are explicitly recorded as **unused** for imported tensors. Their Ni defaults are not applied to Fe. L3/L2 selections, axis, state and normalization come exclusively from the validated source. Post-edge correction defaults off for imports; it is an optional processing diagnostic, not an intrinsic magnetic signal.
 

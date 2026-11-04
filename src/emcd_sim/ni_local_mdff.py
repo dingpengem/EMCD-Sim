@@ -179,6 +179,55 @@ class NiLocalConfig:
 def ni_local_transitions(config: NiLocalConfig = NiLocalConfig(), *,
                          radial_override_angstrom: float | None = None,
                          magnetization_sign: int = 1) -> TransitionDataset:
+    """Historical Ni API over the shared 2p-to-3d transition generator.
+
+    The independent historical implementation remains below for the tiny-radial
+    compatibility domain where its event-dropping policy differs. Broadening
+    is applied by the caller, not by this transition generator.
+    """
+    config.validate()
+    if magnetization_sign not in (-1, 1):
+        raise ValueError('magnetization_sign must be +1 or -1')
+    if radial_override_angstrom is not None and (not np.isfinite(radial_override_angstrom)
+                                                 or abs(radial_override_angstrom) < 1e-14):
+        raise ValueError('radial override must be finite and nonzero')
+    radial = (hydrogenic_radial_dipole_angstrom(config.zeff_2p, config.zeff_3d)
+              if radial_override_angstrom is None else abs(radial_override_angstrom))
+    if radial < 1e-12:
+        return _historical_ni_local_transitions(config,
+            radial_override_angstrom=radial_override_angstrom,
+            magnetization_sign=magnetization_sign)
+    # Lazy import: angular helpers remain public in this compatibility module.
+    from .atomic_ionization import transitions_for_material
+    from types import SimpleNamespace
+    parameters = SimpleNamespace(validate=config.validate, element='Ni',
+        edge_energies_ev=(config.l3_ev, config.l2_ev),
+        radial_integral_angstrom=radial,
+        crystal_field_ev=config.crystal_field_10dq_ev,
+        exchange_ev=config.exchange_split_ev,
+        spin_resolved_holes=tuple(
+            (getattr(config, group+'_up_holes'), getattr(config, group+'_down_holes'))
+            for group in ('eg', 'eg', 't2g', 't2g', 't2g')),
+        source='Historical Ni compatibility inputs', radial_source='explicit Ni radial integral')
+    transitions = transitions_for_material(parameters, magnetization_sign=magnetization_sign)
+    return TransitionDataset(transitions.energy_ev, transitions.dipoles_angstrom,
+        transitions.weights, transitions.edge,
+        np.asarray(['Ni_local_atomic_model'] * len(transitions.energy_ev)),
+        _ni_transition_source(config, radial_override_angstrom, magnetization_sign))
+
+
+def _ni_transition_source(config, radial_override_angstrom, magnetization_sign):
+    return ("NON_DFT_ILLUSTRATIVE_LOCAL_Ni_2p3d: normalized screened hydrogenic radial functions "
+            f"(Zeff_2p={config.zeff_2p:g},Zeff_3d={config.zeff_3d:g}), "
+            f"cubic field 10Dq={config.crystal_field_10dq_ev:g}eV, "
+            f"exchange={config.exchange_split_ev:g}eV; M_sign={magnetization_sign}; "
+            f"radial_source={'hydrogenic' if radial_override_angstrom is None else 'external_tabulated'}; "
+            "NO many-body multiplets or Ni fit")
+
+
+def _historical_ni_local_transitions(config: NiLocalConfig = NiLocalConfig(), *,
+                         radial_override_angstrom: float | None = None,
+                         magnetization_sign: int = 1) -> TransitionDataset:
     """Local one-electron Ni transitions using 2p SOC and cubic d orbitals.
 
     Individual final cubic-orbital components interfere in dipole *amplitude*;

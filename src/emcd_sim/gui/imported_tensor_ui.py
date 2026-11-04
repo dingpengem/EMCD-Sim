@@ -11,8 +11,6 @@ class ImportedTensorUI:
         self.imported_info=None;self.imported_path=QtWidgets.QLineEdit();form.addRow('Imported MDFF JSON',self.imported_path)
         browse=QtWidgets.QPushButton('Browse tensor…');browse.clicked.connect(self.browse_imported_mdff);form.addRow(browse)
         validate=QtWidgets.QPushButton('Validate tensor / provenance');validate.clicked.connect(self.validate_imported_mdff);form.addRow(validate)
-        atomic=QtWidgets.QPushButton('Generate approximate atomic tensor from declared parameters…')
-        atomic.clicked.connect(self.generate_atomic_tensor);form.addRow(atomic)
         self.ionizing_element=QtWidgets.QLineEdit();form.addRow('Ionizing element',self.ionizing_element)
         self.imported_edge=QtWidgets.QLineEdit('L2,3');form.addRow('Core-loss edge',self.imported_edge)
         self.imported_state=QtWidgets.QComboBox();self.imported_state.addItems(['uniform_fm','nonmagnetic']);form.addRow('Magnetic state',self.imported_state)
@@ -47,6 +45,7 @@ class ImportedTensorUI:
             self.emcd_stale()
 
     def validate_imported_mdff(self,*_,expected_sha256=None):
+        self.imported_info=None;self.imported_declaration.setChecked(False)
         try:
             source=ImportedMDFF.load(self.imported_path.text(),expected_sha256 or '')
             self.imported_info=source;d=source.metadata
@@ -55,22 +54,25 @@ class ImportedTensorUI:
             with QtCore.QSignalBlocker(self.imported_state):self.imported_state.setCurrentText(d['magnetic_state'])
             with QtCore.QSignalBlocker(self.axis):self.axis.setText(' '.join(map(str,d['magnetization_crystal'])))
             self.imported_status.setText(('SYNTHETIC TEST ONLY' if d['status']=='synthetic' else 'RESEARCH / APPROXIMATE: imported physical source is not independently validated')+
-                '\n'+d['source']+'\nSHA256: '+source.sha256+'\nL3/L2: '+str(d['selected_ev'])+'; no extrapolation.\n'+d['validity'])
+                '\n'+d['source']+'\nSHA256: '+source.sha256+'\nNative selections: '+str(d['selected_ev'])+'; no extrapolation.\n'+d['validity'])
         except Exception as exc:
-            self.imported_info=None;self.imported_status.setText(str(exc))
+            self.imported_info=None;self.imported_declaration.setChecked(False);self.imported_status.setText(str(exc))
         self.emcd_stale()
 
     def imported_forward_settings(self,base):
         from .generalized_forward import ImportedSettings
+        from ..mdff_edges import validate_selected
         source=self.imported_info
         if source is None or source.path!=str(Path(self.imported_path.text()).resolve()):raise ValueError('Validate the current imported MDFF source first')
         indices=self.ionization_selection.text().strip()
         selected=None if indices=='all' else tuple(int(v) for v in indices.replace(',',' ').split())
         fields=asdict(base);fields['atomic']=base.atomic
+        selections=validate_selected(source.metadata['element'],source.metadata['edge'],source.metadata['selected_ev'],source.energy_ev[[0,-1]])
         fields.update(source=self.imported_path.text(),source_sha256=source.sha256,
             ionizing_element=self.ionizing_element.text().strip(),core_edge=self.imported_edge.text().strip(),
             magnetic_state=self.imported_state.currentText(),site_indices=selected,axis_declared=self.imported_declaration.isChecked(),
-            l3=source.metadata['selected_ev']['L3'],l2=source.metadata['selected_ev']['L2'])
+            selected_edges=() if source.metadata['edge']=='L2,3' else selections,
+            l3=selections[0][1],l2=selections[-1][1])
         return ImportedSettings(**fields)
 
     def restore_imported_settings(self,cfg,path=None):
@@ -81,4 +83,5 @@ class ImportedTensorUI:
                 (self.axis,' '.join(map(str,cfg.magnetization)))):
             with QtCore.QSignalBlocker(widget):widget.setText(text)
         with QtCore.QSignalBlocker(self.imported_state):self.imported_state.setCurrentText(cfg.magnetic_state)
-        with QtCore.QSignalBlocker(self.imported_declaration):self.imported_declaration.setChecked(cfg.axis_declared)
+        verified=self.imported_info is not None and self.imported_info.sha256==cfg.source_sha256
+        with QtCore.QSignalBlocker(self.imported_declaration):self.imported_declaration.setChecked(bool(verified and cfg.axis_declared))

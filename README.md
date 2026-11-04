@@ -16,6 +16,15 @@ This Research Beta adds [declared generalized atomic ionization](docs/GENERALIZE
 
 ## Features
 
+Local Part 1B development consolidates all MDFF providers into one production
+pipeline with three fixed choices: **XMCD-constrained MDFF**, **Atomic Ionization
+MDFF**, and **Imported Complex MDFF Tensor**. It does not replace the published
+binary. [Consolidation scope and acceptance](docs/GENERALIZED_CODE_CONSOLIDATION_0_8_1.md)
+distinguishes source functionality, exact Ni compatibility and physical validation.
+The shared propagation is element-independent. Source adapters currently validate
+L2,3 and tested K-edge dipole declarations; other edge families remain rejected.
+The atomic generator alone remains limited to cubic 2p-to-3d L2,3 transitions.
+
 |Area|Implemented in the released Windows application|
 |---|---|
 |Structure and orientation|CIF import through ASE, structure inspection, signed zone/reflection indexing and target-aligned crystal frames. Arbitrary CIF import does **not** imply an inelastic model for arbitrary materials.|

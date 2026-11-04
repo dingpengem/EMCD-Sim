@@ -146,6 +146,8 @@ from ..cancellation import Cancelled, check_cancelled
 
 def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
     check_cancelled(cancelled)
+    from .forward_pipeline import validate_before_resources
+    validate_before_resources(structure,settings,cfg,energy_ev)
     from .propagation import numerical_info,resolve_fft_configuration
     cfg=resolve_fft_configuration(structure,settings,cfg)
     from .memory_budget import reserve_memory
@@ -167,65 +169,17 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
 
 
 def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
-    def stage(s):
-        if cancelled():raise Cancelled()
-        progress(s)
-    stage('Validating structure and MDFF')
-    reason=material_reason(structure)
-    if reason:raise ValueError(reason)
-    energy=energy_grid(cfg,energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
-    if settings.target not in hkl or settings.target==(0,0,0):raise ValueError('Select a nonzero target in the finite diffraction basis')
-    memory=64*cfg.grid**2*len(hkl)**2/2**20
-    model=replace(nickel_physical_benchmark(),elastic=elastic,detectors={k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),cfg.centers)},chiral_groups=None)
-    # Direct integration requires full physical aperture coverage as well.
-    if any(max(abs(np.asarray(p)))+cfg.radius>cfg.halfwidth for p in cfg.centers):raise ValueError('Map halfwidth must fully cover both physical detector apertures')
-    from .propagation import propagate, compare_methods, numerical_info
-    info=numerical_info(structure,settings,cfg,hkl=hkl,check_memory=False)
-    memory=info['dense_working_estimate_mib']
-    stage('Generating common +M and -M tensors');ts=tensors(cfg,energy,R)
-    z=np.linspace(0,settings.thickness,cfg.depth)
-    methods={};fft_info={}
-    # Finish one solver before preparing the next: cancellation in BW must
-    # prevent even the incoming MS propagation from starting in Both mode.
-    solvers=('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,)
-    for method in solvers:
-        stage('Preparing '+method+' propagation')
-        incoming_start=perf_counter()
-        waves,method_fft=propagate(elastic,settings,replace(cfg,propagation=method),z,stage,cancelled=cancelled)
-        incoming_seconds=perf_counter()-incoming_start
-        prepared_incoming=method_fft.pop('_prepared',None)
-        if method_fft:fft_info=method_fft
-        psi=waves[method]
-        stage('Constructing '+method+' depth coherence');C=coherence_from_amplitudes(z,psi)
-        stage('Calculating '+method+' EELS and EMCD')
-        from .channeling import contract
-        checkpoint=(lambda e,data:energy_checkpoint(method,e,data)) if energy_checkpoint is not None else None
-        prepared=contract(model,settings,cfg,method,C,energy,ts,stage,cancelled,prepared_incoming,energy_checkpoint=checkpoint,
-            execution_workers=execution_policy['effective_workers'][method] if execution_policy else None)
-        methods[method]=_contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,prepared=prepared)
-        methods[method]['method']=method
-        methods[method]['metadata'].update(solver=method+' '+cfg.channeling_model+' channeling localized single ionization',numerics=info,
-            incoming_propagation_seconds=incoming_seconds,additional_incoming_preparation_seconds=prepared['incoming_preparation_seconds'])
-        if method=='fft-multislice':methods[method]['metadata']['fft']=fft_info['summary']
-    stage('Comparing independent BW/MS propagations')
-    comparison=compare_methods(methods,fft_info)
-    primary=methods.get('bloch',next(iter(methods.values())))
-    # Top-level Stage B arrays remain the primary method; method results do not
-    # contain the enclosing collection, avoiding recursive/ambiguous dimensions.
-    result=dict(primary,methods=methods,comparison=comparison,fft=fft_info)
-    result['metadata']=dict(primary['metadata'],method_labels=list(methods),comparison=comparison)
-    from .project_io import structure_snapshot
-    result['structure_snapshot']=structure_snapshot(structure)
-    for r in methods.values():r['structure_snapshot']=result['structure_snapshot']
-    stage('Preparing result visualizations')
-    return result
+    """Historical API delegates to the common production orchestration."""
+    from .forward_pipeline import calculate_prepared
+    return calculate_prepared(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,
+        energy_checkpoint=energy_checkpoint,execution_policy=execution_policy)
 
 
 def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stage,cancelled,*,prepared):
     """Stage B EELS/parity/post-edge implementation, shared by both coherences."""
     stage('Computing energy-resolved EELS and fractional detector integrals')
     spectra,maps,qx,qy,weights=[prepared[k] for k in ('spectra','maps','qx','qy','weights')]
-    stage('Computing L3/L2 map decomposition and post-edge diagnostics')
+    stage('Computing selected-edge map decomposition and post-edge diagnostics')
     ap,bp,am,bm=[spectra[k] for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')]
     na,nb,ma,mb=(ap+am)/2,(bp+bm)/2,(ap-am)/2,(bp-bm)/2
     spectra.update(energy_ev=energy,N_A=na,N_B=nb,M_A=ma,M_B=mb,D_mag=ma-mb,D_nonmag=na-nb,D_raw=ap-bp,Sigma_ref=na+nb)
@@ -281,7 +235,8 @@ def _contract(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,ts,stag
 
 def metrics(result):
     s=result['spectra'];rows={}
-    for edge,e in (('L3',result['config'].l3),('L2',result['config'].l2)):
+    from ..mdff_edges import selected_samples
+    for edge,e in selected_samples(result['config']):
         i=int(np.argmin(abs(s['energy_ev']-e)));sigma=s['Sigma_ref'][i];floor=1e-10*max(float(s['Sigma_ref'].max()),1e-30)
         row={k:float(s[k][i]) if k in s else None for k in ('D_mag','D_nonmag','D_raw','D_corrected','magnetic_bias','D_nonmag_residual_obs','Sigma_ref')}
         row.update(A_mag=float(s['D_mag'][i]/sigma) if sigma>floor else None,A_nonmag=float(s['D_nonmag'][i]/sigma) if sigma>floor else None,alpha=result['metadata']['alpha'],energy_ev=float(s['energy_ev'][i]))

@@ -69,6 +69,10 @@ class PRBBenchmarkControls(QtWidgets.QGroupBox):
 
     def set_context(self, result, method, windows, selected_energy):
         self.result, self.method, self.windows = result, method, windows
+        supported=getattr(result['config'],'core_edge','L2,3')=='L2,3'
+        self.selection.model().item(0).setEnabled(supported)
+        if not supported:
+            with QtCore.QSignalBlocker(self.selection):self.selection.setCurrentIndex(1)
         key = (id(result), selected_energy)
         if key != self.context_key and not self.fixed.isChecked():
             with QtCore.QSignalBlocker(self.energy):

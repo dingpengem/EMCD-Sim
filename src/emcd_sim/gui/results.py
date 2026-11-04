@@ -9,13 +9,15 @@ from ..emcd_angular_plots import decorate_reciprocal_map
 from .emcd_forward import metrics
 from .signal_normalization import DisplaySettings, normalized_spectra, angular_display, percentage_metrics
 from .normalization_controls import NormalizationControls
+from ..mdff_edges import selected_samples
 
 
 def mdff_label(result):
-    if result['config'].model=='imported':
+    if result['config'].model=='imported' or hasattr(result['config'],'provider_schema'):
         if result['metadata'].get('imported_mdff',{}).get('atomic_model'):
             return result['metadata'].get('scientific_status','RESEARCH / APPROXIMATE')+'; approximate atomic '+result['config'].ionizing_element+' 2p-3d model; physically unvalidated parameters'
-        return result['metadata'].get('scientific_status','RESEARCH / APPROXIMATE')+'; imported '+result['config'].ionizing_element+' dipole tensor'
+        kind='XMCD-effective approximation' if result['config'].model=='xmcd' else 'imported dipole tensor'
+        return result['metadata'].get('scientific_status','RESEARCH / APPROXIMATE')+'; '+result['config'].ionizing_element+' '+result['config'].core_edge+' '+kind
     return 'XMCD-effective, native axis' if result['config'].model=='xmcd' else 'Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni'
 
 
@@ -30,7 +32,7 @@ def geometry_description(result):
 
 def spectral_coverage_label(result):
     e=result['spectra']['energy_ev']
-    if len(e)==2:return 'Selected L3/L2 samples'
+    if result['config'].energy_scope=='edges':return 'Selected '+ '/'.join(k for k,_ in selected_samples(result['config']))+' samples'
     audit=result['metadata'].get('source_audit') or {}
     bounds=audit.get('bounds')
     if result['config'].model=='imported':bounds=result['metadata'].get('imported_mdff',{}).get('energy_bounds_ev')
@@ -79,7 +81,7 @@ def draw_maps(fig,result,edge,method=None,field=None,display=None,*,signal_mode=
         target=result['model'].elastic.crystal.g_vector(settings.target)[:2]
         ax.plot(*target,'s',mfc='none',mec='crimson',ms=8,mew=1)
         ax.set_title(title,fontsize=9);bar=fig.colorbar(im,ax=ax,shrink=.7,pad=.02);bar.set_label(meta['units'],fontsize=7);bar.ax.tick_params(labelsize=7)
-    e=cfg.l3 if edge=='L3' else cfg.l2
+    e=dict(selected_samples(cfg))[edge]
     solver_label='BW-MS numerical solver difference' if method=='difference' else method+' '+cfg.channeling_model.title()+' Channeling'
     fig.suptitle(f'{edge}: {e:.3f} eV | {solver_label} | '+('Relative intensity (a.u.)' if display.map_mode=='raw' else ('Local magnetic fraction (%)' if display.map_mode=='local' else 'Paired angular asymmetry (%)'))+f'\n'+mdff_label(result),fontsize=11)
 
@@ -90,7 +92,7 @@ def method_result(result,method):
     methods=result.get('methods',{result.get('method','bloch'):result})
     if method!='difference':return methods[method]
     b,m=[methods[k] for k in ('bloch','fft-multislice')]
-    maps={edge:{k:b['maps'][edge][k]-m['maps'][edge][k] for k in b['maps'][edge] if k in m['maps'][edge]} for edge in ('L3','L2')}
+    maps={edge:{k:b['maps'][edge][k]-m['maps'][edge][k] for k in b['maps'][edge] if k in m['maps'][edge]} for edge in b['maps'] if edge in m['maps']}
     metadata=dict(b['metadata'],pair_reason='BW-MS paired maps require validated physical pairing in both methods.',
         correction_reason='BW-MS corrected maps require valid correction in both methods. '+b['metadata']['correction_reason']+' / '+m['metadata']['correction_reason'])
     return dict(b,maps=maps,method='difference',metadata=metadata)
@@ -139,7 +141,7 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
     methods=result.get('methods',{result.get('method','bloch'):result});method=method or result.get('method','bloch')
     chosen=methods if method=='overlay' else {method:methods[method]}
     for name,r in chosen.items():
-        s=r['spectra'];e=s['energy_ev'];points=len(e)==2
+        s=r['spectra'];e=s['energy_ev'];points=cfg.energy_scope=='edges' or len(e)<=2
         style=dict(ls='None' if points else ('--' if name=='fft-multislice' else '-'),marker='o' if points else None,lw=1.3)
         labels=(name+': ') if len(chosen)>1 else ''
         for key,label,color in (('I_A_plus','Detector A','C0'),('I_B_plus','Detector B','C1')):
@@ -156,15 +158,16 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
         ax.grid(alpha=.15);ax.legend(fontsize=8,loc='upper right')
         for v in (cfg.l3,cfg.l2):ax.axvline(v,color='.6',ls=':',lw=.6)
     limits=(cfg.l3-5,cfg.l3+5) if zoom=='L3 zoom' else (cfg.l2-5,cfg.l2+5) if zoom=='L2 zoom' else (float(e[0]),float(e[-1]))
+    if len(e)==1:limits=result['metadata'].get('imported_mdff',{}).get('energy_bounds_ev',(float(e[0])-1,float(e[0])+1))
     axes[-1].set_xlim(limits)
     from .component_display import MODES
-    element=cfg.ionizing_element if cfg.model=='imported' else 'Ni'
+    element=getattr(cfg,'ionizing_element','Ni')
     title=f'{MODES.get(component_mode, "Magnetic-only / Nonmagnetic Asymmetry diagnostics")} | {cfg.channeling_model.title()} Channeling | {method} | {element} {list(result["settings"].zone)}, {result["settings"].thickness:g} nm'
-    if points:title+='\nSelected native L3/L2 samples only; full EELS spectrum not calculated'
+    if points:title+='\nSelected native '+ '/'.join(k for k,_ in selected_samples(cfg))+' samples only; full EELS spectrum not calculated'
     elif spectral_coverage_label(result)=='Calculated energy subset':title+='\nCalculated energy subset; full native range not covered'
     title+='\n'+geometry_description(result)
     title+='\n'+zoom+'; '+('declared/interpolated tensor energy samples' if cfg.model=='imported' else 'actual native energy samples')
-    if cfg.model=='imported':title+='\n'+mdff_label(result)
+    if cfg.model=='imported' or hasattr(cfg,'provider_schema'):title+='\n'+mdff_label(result)
     fig.suptitle(title,fontsize=11)
     fig._emcd_display_metadata=dict(kind='primary spectra',component_mode=component_mode,records=records,
         eels='Original +M detector A/B intensities, shared arbitrary-unit scale; no background or peak scaling',
@@ -202,7 +205,7 @@ def draw_component_maps(fig,result,edge,method=None,signal_mode='raw'):
         units=(label.replace('paired difference','difference')+' (a.u.)') if signal_mode=='raw' and method!='difference' else meta['units']
         fig.colorbar(im,ax=ax,shrink=.7).set_label(units)
         if not np.isfinite(v).any():ax.text(.1,.5,'All pixels undefined / masked',transform=ax.transAxes)
-    e=r['config'].l3 if edge=='L3' else r['config'].l2
+    e=dict(selected_samples(r['config']))[edge]
     sampling=f'Angular Grid: {qx.shape[1]} x {qx.shape[0]}; q spacing: {dx:.6g}, {dy:.6g} Å⁻¹'
     fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry\n'+sampling,fontsize=10)
     if r['config'].model=='imported':fig.suptitle(fig._suptitle.get_text()+'\n'+mdff_label(r),fontsize=10)
@@ -240,11 +243,12 @@ def draw_comparison(fig,result,display=None):
     b,m=[methods[k] for k in ('bloch','fft-multislice')];cfg=result['config'];h=cfg.halfwidth;extent=(-h,h,-h,h)
     map_mode=display.map_mode
     if map_mode=='paired':raise ValueError('Overview shows intrinsic I_mag. Use Angular Maps for paired detector percentages.')
-    values=[angular_display(r,'L3','I_mag',map_mode)[0] for r in (b,m)]
+    edge=next(iter(b['maps']))
+    values=[angular_display(r,edge,'I_mag',map_mode)[0] for r in (b,m)]
     finite_limit=lambda v:max(float(np.max(abs(v[np.isfinite(v)]))) if np.isfinite(v).any() else 0.,1e-30)
     scale=max(finite_limit(v) for v in values)
     normalized=normalized_spectra([(name,r,name) for name,r in methods.items()],display);lookup={name:item for name,item in zip(methods,normalized)}
-    for ax,v,title in zip(axes[0],values+[values[0]-values[1]],['BW L3 magnetic odd','FFT MS L3 magnetic odd','BW-MS numerical solver difference']):
+    for ax,v,title in zip(axes[0],values+[values[0]-values[1]],['BW '+edge+' magnetic odd','FFT MS '+edge+' magnetic odd','BW-MS numerical solver difference']):
         limit=finite_limit(v) if 'difference' in title else scale
         im=ax.imshow(v,origin='lower',extent=extent,cmap=colormaps['RdBu_r'].with_extremes(bad='#c8c8c8'),vmin=-limit,vmax=limit)
         decorate_reciprocal_map(ax,result['model'],extent,target_hkl=result['settings'].target,zone_axis=result['settings'].zone)
@@ -317,6 +321,13 @@ class ResultsView(QtWidgets.QWidget):
         w.responsive.show_panel(2);self._focused=not getattr(self,'_focused',False);self.set_compact(w.responsive.compact);w.responsive.focus_plot('results')
     def set_result(self,result):
         self.result=result
+        if self.kind=='maps':
+            with QtCore.QSignalBlocker(self.choice):
+                self.choice.clear();self.choice.addItems(list(result['maps']))
+        elif self.kind=='eels':
+            with QtCore.QSignalBlocker(self.choice):
+                self.choice.clear();self.choice.addItem(spectral_coverage_label(result))
+                if getattr(result['config'],'core_edge','L2,3')=='L2,3':self.choice.addItems(['L3 zoom','L2 zoom'])
         self.normalization.set_result(result)
         from .propagation import METHOD_NAMES
         options=list(result.get('methods',{result.get('method','bloch'):result}))

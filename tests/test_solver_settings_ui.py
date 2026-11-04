@@ -1,5 +1,5 @@
 """Configuration-level regression for shared/solver-specific UI; no propagation."""
-import os,sys,types,subprocess,json,ast
+import os,sys,types,subprocess,json,ast,copy
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from contextlib import ExitStack
 from dataclasses import asdict,replace
@@ -169,7 +169,14 @@ def test_solver_configuration_and_physics_unchanged():
     path='src/emcd_sim/gui/propagation.py'
     now=ast.parse(Path(path).read_text(encoding='utf-8-sig'));before=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for node in before.body:
-        if isinstance(node,ast.FunctionDef) and node.name not in ('numerical_info','propagate','projected_geometry_for','export_comparison'):assert ast.dump(find(now,node.name))==ast.dump(node)
+        if isinstance(node,ast.FunctionDef) and node.name not in ('numerical_info','propagate','projected_geometry_for','export_comparison','compare_methods'):assert ast.dump(find(now,node.name))==ast.dump(node)
+    # Comparison now uses the validated selected-edge labels. Its formulas and
+    # L2,3 operation order remain unchanged; assert that exact bounded change.
+    expected=copy.deepcopy(find(before,'compare_methods'))
+    loops=[n for n in ast.walk(expected) if isinstance(n,ast.For) and isinstance(n.target,ast.Name) and n.target.id=='edge']
+    assert len(loops)==1
+    loops[0].iter=ast.Name(id='bm',ctx=ast.Load())
+    assert ast.dump(find(now,'compare_methods'))==ast.dump(expected)
     # Save/load recipe migration has functional tests. Retain the unchanged
     # atomic-save, integrity and structure guards independently of that migration.
     path='src/emcd_sim/gui/project_io.py'
