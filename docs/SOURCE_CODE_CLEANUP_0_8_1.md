@@ -62,11 +62,48 @@ BW/MS with maps/spectra. After cleanup every array is **exactly equal**, includi
 NaN placement. Valid Ni (200) and Fe (110) targets are used; the rejected initial
 Ni (110) diagnostic was preserved, not treated as evidence.
 
-Full Windows regression and extracted-EXE acceptance are **pending** at this initial
-cleanup commit. Their exact source SHA, counts and package/native evidence will be
-recorded before cleanup is accepted/merged or a release is published. Existing
-accepted-source evidence is 754 passed/39 skipped, plus 77 focused checks; those
-results are not relabeled as post-cleanup results.
+Exact tested cleanup source: **`e601e04540a06ed490466680bc4fa151146c1eaa`**.
+The subsequent acceptance-document commit changes no executable source.
+
+|Gate|Result|
+|---|---|
+|Full native Windows source suite|**754 passed, 39 skipped, 0 failures/errors**, 1297.24 s; 1013 warnings retained|
+|Skip comparison with accepted baseline|Same 39 test identities/reasons; no newly failing or skipped tests|
+|Accepted-main API baseline vs cleanup|**1,080 arrays exactly equal** across eight Ni/synthetic Fe provider/channel cases, each BW/MS|
+|Extracted standalone EXE|**8/8 actual GUI worker cases passed**, frozen=true, Qt platform=windows, process exit 0, clean shutdown|
+|Source GUI vs extracted EXE|**1,080/1,080 arrays bitwise equal**, max absolute difference 0|
+|Manifest|**614 files** verified against names/sizes/SHA256; bundled sample input, coefficient notices and Windows platform DLL verified|
+|Historical Ni|Exact source regression and protected 160-array evidence pass; genuine archived Lobato project reproduced natively within its existing 2e-12 elastic criterion|
+|Console/public imports|Complete suite verifies all registered console entry points, public exports and explicit hidden imports|
+
+Cleanup candidate ZIP SHA256:
+`4e321cfce9d7d9d0d30066be23f0b20370cfccd45143d7ffbeb46ac62ed0537a`.
+This is an **unpublished cleanup candidate at the old application version**, not the
+v0.8.1 release asset. Native validation used a freshly extracted ZIP, minimal system
+PATH, no Python/Conda paths and a separate writable profile. It is same-host native
+acceptance, not an independent clean-PC/VM certification.
+
+The EXE generated atomic tensors from complete declared parameters, validated source
+hashes/element/state, exercised both old Ni providers and generalized imported/atomic
+Single/Double BW/MS, saved/reopened projects, rejected partial provenance and failed
+generation with stale state invalidation, and exported scientific PNG/SVG/CSV data.
+Synthetic Fe remains a software fixture; quantitative material accuracy is not claimed.
+
+Local evidence: `outputs/release-review/cleanup-full.{log,xml}`,
+`cleanup-package-verification.json`, `cleanup-source-frozen-comparison.json`,
+`cleanup-frozen/acceptance.json`, and the baseline/after-cleanup NPZ snapshots.
+Source and EXE source-SHA markers agree. The native module/license notices remain
+unchanged apart from the explicitly included original synthetic parameter example.
+
+Additional function-level review found four definitions without direct Python
+references: `takeAt`, `expandingDirections`, `hasHeightForWidth` and `eventFilter`
+in `gui/responsive.py`. These are Qt virtual callbacks invoked from C++, and were
+correctly retained. AST comparison confirms that all non-import module code and all
+function bodies/defaults in the three cleaned modules are unchanged.
+
+**GO for conservative cleanup integration.** No source module qualified for safe
+removal; no compatibility/reference function or test was deleted. The later release
+requires a separate versioned build and complete release acceptance.
 
 Remaining opportunities are explicitly unsupported removals of public aliases or
 historical API interfaces; they need a separately scoped deprecation policy and
