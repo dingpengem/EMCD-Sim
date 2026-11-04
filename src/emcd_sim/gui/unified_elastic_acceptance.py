@@ -1,5 +1,4 @@
 """Opt-in bounded source/frozen GUI acceptance; writes only a new output folder."""
-from dataclasses import asdict
 import hashlib
 import json
 from pathlib import Path
