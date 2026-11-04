@@ -76,6 +76,18 @@ def test_reject_inequivalent_partial_and_invalid_selection():
     with pytest.raises(ValueError,match='unique'):IonizationSites.from_structure(fe(),'Fe',(0,0))
 
 
+def test_reject_site_dependent_moments_charges_and_inconsistent_axis(tmp_path):
+    cfg=settings_for_source(write_source(tmp_path/'fm.json'))
+    s=fe();s.atoms.set_initial_magnetic_moments([2.3,-2.3])
+    assert 'Inequivalent magnetic/charge' in material_reason(s,cfg)
+    s=fe();s.atoms.set_initial_charges([0,.2])
+    assert 'Inequivalent magnetic/charge' in material_reason(s,cfg)
+    s=fe();s.atoms.set_initial_magnetic_moments(None);s.atoms.set_initial_magnetic_moments([[2.3,0,0],[2.3,0,0]])
+    assert 'disagree' in material_reason(s,cfg)
+    s=fe();nm=settings_for_source(write_source(tmp_path/'nm.json',nonmagnetic=True))
+    assert 'Nonmagnetic tensor conflicts' in material_reason(s,nm)
+
+
 @pytest.mark.parametrize('nonmagnetic',[False,True])
 def test_import_and_rotation_interpolation(tmp_path,nonmagnetic):
     source=ImportedMDFF.load(write_source(tmp_path/'tensor.json',nonmagnetic=nonmagnetic))

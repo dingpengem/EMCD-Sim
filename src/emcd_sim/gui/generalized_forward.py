@@ -52,6 +52,16 @@ def material_reason(structure,cfg=None):
     try:
         source_for(cfg)
         IonizationSites.from_structure(structure,cfg.ionizing_element,cfg.site_indices)
+        a=structure.atoms
+        if a.has('initial_magmoms'):
+            moments=np.asarray(a.get_initial_magnetic_moments(),float)
+            if np.max(abs(moments))>1e-10:
+                if cfg.magnetic_state=='nonmagnetic':raise ValueError('Nonmagnetic tensor conflicts with explicit nonzero structure moments; declare a consistent magnetic structure')
+                if moments.ndim==2:
+                    m=np.asarray(cfg.magnetization,float)
+                    if not np.allclose(moments[0]/np.linalg.norm(moments[0]),m/np.linalg.norm(m),rtol=0,atol=1e-10):
+                        raise ValueError('Explicit structure moments disagree with the imported +M crystal axis')
+                elif moments[0]<0:raise ValueError('Negative collinear structure moments disagree with the declared +M state; declare the axis/state consistently')
         if structure.elastic_reason:return structure.elastic_reason
     except (ValueError,OSError,TypeError,KeyError) as exc:return str(exc)
     return ''
@@ -118,6 +128,10 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
             r['method']=method
             r['metadata'].update(imported_mdff=source.provenance(),ionization_sites=sites.provenance(),
                 unused_legacy_config_fields=['atomic','sigma','radial','eta','beta'],
+                magnetic_structure=dict(model=cfg.magnetic_state,magnetization_crystal=list(cfg.magnetization),
+                    ase_initial_magmoms=structure.atoms.get_initial_magnetic_moments().tolist() if structure.atoms.has('initial_magmoms') else None,
+                    ase_initial_charges=structure.atoms.get_initial_charges().tolist() if structure.atoms.has('initial_charges') else None,
+                    assumptions='Uniform selected-state tensor; no AFM/SDW; initial moments are consistency annotations, not transition-strength parameters'),
                 scientific_status='SYNTHETIC TEST ONLY' if source.metadata['status']=='synthetic' else 'RESEARCH / APPROXIMATE',
                 reversal=source.metadata['reversal']+'; independently supplied states, fixed detectors; no conjugation inference',
                 intensity_convention='Declared per-atom relative angstrom^2/eV tensor; mean per selected equivalent site; no absolute cross-section calibration',

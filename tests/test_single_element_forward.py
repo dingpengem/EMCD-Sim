@@ -42,6 +42,7 @@ def test_fe_both_solvers_maps_and_project(tmp_path,channel):
 
 def test_nonmagnetic_and_unsupported_material(tmp_path):
     s=Structure(bulk('Fe','bcc',a=2.866,cubic=True))
+    s.atoms.set_initial_magnetic_moments([0,0])
     settings=Settings(zone=(0,0,1),target=(1,1,0),tilt=(0,0),thickness=.1,beam_cutoff=.6,potential_cutoff=1.2)
     cfg=settings_for_source(write_source(tmp_path/'nonmag.json',nonmagnetic=True),energy_scope='edges',grid=9,depth=9,subpixels=8)
     r=calculate(s,settings,cfg)

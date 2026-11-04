@@ -38,6 +38,11 @@ class IonizationSites:
             raise ValueError('Ionization requires a nonsingular fully periodic 3D cell')
         if set(a.get_chemical_symbols())!={element}:
             raise ValueError('Imported MDFF requires a matching single-element crystal; multi-element site MDFF is unsupported')
+        for name in ('initial_magmoms','initial_charges'):
+            if a.has(name):
+                values=np.asarray(a.arrays[name],float)
+                if not np.isfinite(values).all() or not np.allclose(values,values[0],rtol=0,atol=1e-10):
+                    raise ValueError('Inequivalent magnetic/charge sites require site-resolved MDFF; AFM/SDW is unsupported')
         for occ in a.info.get('occupancy',{}).values():
             if len(occ)!=1 or set(occ)!={element} or not np.isfinite(list(occ.values())).all() or abs(sum(occ.values())-1)>1e-8:
                 raise ValueError('Partial/disordered ionization-site occupancies are unsupported')
