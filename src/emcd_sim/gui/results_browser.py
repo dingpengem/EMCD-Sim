@@ -33,7 +33,7 @@ class Registry:
             existing.update(channeling_model=result['config'].channeling_model,propagation=result['config'].propagation)
             self.persist();return existing
         s=result['settings'];cfg=result['config'];stamp=(result.get('project_manifest') or {}).get('created_utc',datetime.now(timezone.utc).isoformat())
-        element=cfg.ionizing_element if cfg.model=='imported' else 'Ni'
+        element=getattr(cfg,'ionizing_element','Ni')
         record=dict(id=uuid.uuid4().hex,path=resolved,name=name or f'{element} [{" ".join(map(str,s.zone))}] | {s.thickness:g} nm | X={s.tilt[0]:+.3f}, Y={s.tilt[1]:+.3f} | {cfg.model} | {cfg.propagation}',
             created_utc=stamp,material=element,zone=list(s.zone),target=list(s.target),tx=s.tilt[0],ty=s.tilt[1],thickness=s.thickness,model=cfg.model,channeling_model=cfg.channeling_model,propagation=cfg.propagation,legacy=result.get('read_only_legacy',False))
         self.records.append(record);self.persist();return record
@@ -245,7 +245,7 @@ class ProjectWorkspace:
         if path and (Path(path)/'project.json').exists():self.save_to_path(path,True);return
         parent=QtWidgets.QFileDialog.getExistingDirectory(self,'New project parent folder')
         if not parent:return
-        cfg=self.emcd_result['config'];element=cfg.ionizing_element if cfg.model=='imported' else 'Ni'
+        cfg=self.emcd_result['config'];element=getattr(cfg,'ionizing_element','Ni')
         zone=element+'_'+'_'.join(map(str,self.emcd_result['settings'].zone))
         name,ok=QtWidgets.QInputDialog.getText(self,'Save Project As','New project folder name',text=zone+'_'+datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%SZ'))
         if not ok:return
@@ -330,9 +330,19 @@ class ProjectWorkspace:
             if c.model=='xmcd':
                 p=Path(self.source_path.text());expected=c.source_sha256 or (r['metadata'].get('source_audit') or {}).get('sha256')
                 if expected and p.is_file() and sha256(p)==expected:self.source_info=inspect_source(p);self.validated_path=str(p);self.source_status.setText('Restored saved source, verified SHA256; native selected energies preserved.')
-                else:self.source_status.setText('Saved data remains available. Rerun disabled: locate original XMCD and verify SHA256.')
+                else:
+                    with QtCore.QSignalBlocker(self.declaration):self.declaration.setChecked(False)
+                    self.source_status.setText('Saved data remains available. Rerun disabled: locate original XMCD and verify SHA256.')
             self.input_source_requirements=[]
             if c.model=='imported':self.restore_imported_settings(c,r.get('source_overrides',{}).get('mdff'))
+            if hasattr(c,'provider_schema'):self.restore_provider_settings(c,r.get('source_overrides',{}).get('mdff'))
+            else:
+                with QtCore.QSignalBlocker(self.explicit_xmcd):self.explicit_xmcd.setChecked(False)
+                with QtCore.QSignalBlocker(self.atomic_parameter_path):self.atomic_parameter_path.clear()
+                self.atomic_provider_info=None
+                for widget,value in ((self.xmcd_element,'Ni'),(self.xmcd_edge,'L2,3'),(self.xmcd_selected,'')):
+                    with QtCore.QSignalBlocker(widget):widget.setText(value)
+                for widget in self.xmcd_l23_controls:widget.setVisible(True)
             for name,status in source_status(r).items():
                 if name=='cif':self.input_source_requirements.append(status)
         finally:self._restoring=False

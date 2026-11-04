@@ -19,9 +19,37 @@ def test_forward_computation_ast_is_unchanged_except_approved_metadata_and_prior
     # import/expression, plus the already approved d1c93ba Ni species gate.
     previous=ast.parse(subprocess.check_output(['git','show','d1c93ba:'+path],cwd=ROOT).decode('utf-8-sig'))
     find=lambda tree,name:next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
+    # Part 1B moves orchestration, not contraction physics. Check the exact
+    # compatibility wrapper and the complete new source scope independently,
+    # then retain this earlier metadata-only guard on all remaining functions.
+    part1=ast.parse(subprocess.check_output(['git','show','52b36ee41e20aed5a86fb37db56ca372fac936f8:'+path],cwd=ROOT).decode('utf-8-sig'))
+    wrapper=ast.parse('''def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
+    """Historical API delegates to the common production orchestration."""
+    from .forward_pipeline import calculate_prepared
+    return calculate_prepared(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,
+        energy_checkpoint=energy_checkpoint,execution_policy=execution_policy)
+''').body[0]
+    assert ast.dump(find(current,'_calculate'))==ast.dump(wrapper)
+    from single_element_source_guard import assert_current_extension
+    assert_current_extension()
+    # The dynamic selection change is separately tested end to end for K and
+    # L2,3; enforce its exact body rather than dropping the metrics guard.
+    expected_metrics=copy.deepcopy(find(part1,'metrics'))
+    expected_metrics.body.insert(2,ast.parse('from ..mdff_edges import selected_samples').body[0])
+    loop=next(n for n in expected_metrics.body if isinstance(n,ast.For))
+    loop.iter=ast.parse("selected_samples(result['config'])",mode='eval').body
+    assert ast.dump(find(current,'metrics'))==ast.dump(expected_metrics)
+    expected_calculate=copy.deepcopy(find(part1,'calculate'))
+    expected_calculate.body[1:1]=ast.parse('from .forward_pipeline import validate_before_resources\nvalidate_before_resources(structure,settings,cfg,energy_ev)').body
+    assert ast.dump(find(current,'calculate'))==ast.dump(expected_calculate)
+    for name in ('_calculate','metrics','calculate'):
+        current.body[current.body.index(find(current,name))]=copy.deepcopy(find(part1,name))
     assert ast.dump(find(current,'material_reason'))==ast.dump(find(previous,'material_reason'))
     current.body[current.body.index(find(current,'material_reason'))]=copy.deepcopy(find(old,'material_reason'))
     contract=find(current,'_contract')
+    stages=[n for n in ast.walk(contract) if isinstance(n,ast.Constant) and n.value=='Computing selected-edge map decomposition and post-edge diagnostics']
+    assert len(stages)==1
+    stages[0].value='Computing L3/L2 map decomposition and post-edge diagnostics'
     imports=[n for n in contract.body if isinstance(n,ast.ImportFrom) and n.module=='elastic_providers']
     expected_import=ast.parse('from ..elastic_providers import provider_provenance').body[0]
     assert len(imports)==1 and ast.dump(imports[0])==ast.dump(expected_import)
@@ -47,13 +75,13 @@ def test_forward_computation_ast_is_unchanged_except_approved_metadata_and_prior
 
 
 def test_current_windows_and_workflow_metadata_match_source():
-    assert (__version__,__display_version__)==('0.8.0b1','v0.8.0-beta.1')
+    assert (__version__,__display_version__)==('0.8.1b1','v0.8.1-beta.1')
     text=(ROOT/'packaging/windows_version_info.txt').read_text()
-    assert 'filevers=(0, 8, 0, 1), prodvers=(0, 8, 0, 1)' in text
-    assert "'FileVersion', '0.8.0.1'" in text and "'ProductVersion', 'v0.8.0-beta.1'" in text
+    assert 'filevers=(0, 8, 1, 1), prodvers=(0, 8, 1, 1)' in text
+    assert "'FileVersion', '0.8.1.1'" in text and "'ProductVersion', 'v0.8.1-beta.1'" in text
     workflow=(ROOT/'.github/workflows/windows-build.yml').read_text()
-    assert 'EMCD-Sim-v0.8.0-beta.1-Windows' in workflow
-    assert 'build/windows-v0.8.0-beta.1' in workflow
+    assert 'EMCD-Sim-v0.8.1-beta.1-Windows' in workflow
+    assert 'build/windows-v0.8.1-beta.1' in workflow
     assert not re.search(r'beta3|beta\.3|0\.6\.1b3',workflow)
     assert build_info()['physics_convention']==PHYSICS_CONVENTION
 

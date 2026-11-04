@@ -57,7 +57,7 @@ def test_changed_external_source_during_calculation_discards_result(tmp_path):
     p=write_source(tmp_path/'mutable.json');original=p.read_bytes()
     cfg=settings_for_source(p,energy_scope='edges',grid=9,depth=9,subpixels=8,angular_maps=False)
     def replace_source(stage):
-        if stage=='Validating imported tensor and equivalent localized events':p.write_bytes(original+b' ')
+        if stage=='Calculating bloch EELS and EMCD':p.write_bytes(original+b' ')
     with pytest.raises(ValueError,match='checksum changed'):calculate(s,settings,cfg,progress=replace_source)
     assert p.read_bytes()!=original
 

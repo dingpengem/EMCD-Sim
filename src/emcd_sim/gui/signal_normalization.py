@@ -46,6 +46,7 @@ def sigma_even(spectra):
 
 
 def default_windows(result):
+    if getattr(result['config'],'core_edge','L2,3')!='L2,3':raise ValueError('L3/L2 peak-window normalization is unavailable for this core-loss edge; use raw or pointwise asymmetry')
     e=np.asarray(result['spectra']['energy_ev']);c=result['config'];mid=(c.l3+c.l2)/2
     if not e[0]<c.l3<mid<c.l2<e[-1]:raise ValueError('Saved edge energies must lie inside the native saved range.')
     width=min(5.,(c.l2-c.l3)/3)
@@ -54,6 +55,7 @@ def default_windows(result):
 
 
 def peak_reference(result, edge, windows=None):
+    if getattr(result['config'],'core_edge','L2,3')!='L2,3':raise ValueError('L3/L2 peak normalization requires declared L2,3 edges; use raw or pointwise asymmetry')
     s=result['spectra'];e=np.asarray(s['energy_ev'],float);sigma=sigma_even(s)
     windows=windows or default_windows(result)
     if edge not in ('L3','L2') or edge not in windows:raise ValueError('Choose an L3 or L2 peak window.')
@@ -148,7 +150,8 @@ def percentage_metrics(result,windows=None,reference_result=None):
             a['metadata'].get('intensity_convention')!=b['metadata'].get('intensity_convention')):
             raise ValueError('Shared scalar peak unavailable across different models/source normalizations/units.')
     s=result['spectra'];e=s['energy_ev'];sigma=sigma_even(s);rows={}
-    for edge,energy in (('L3',result['config'].l3),('L2',result['config'].l2)):
+    from ..mdff_edges import selected_samples
+    for edge,energy in selected_samples(result['config']):
         i=int(np.argmin(abs(e-energy)));row={};p=peak_reference(reference_result or result,edge,windows)
         for key in ('D_mag','D_nonmag','D_raw','D_corrected','D_mag_processed_obs','D_nonmag_residual_obs','magnetic_bias'):
             if key not in s:continue

@@ -7,6 +7,7 @@ EXTENSION_SHA256='0599a74e3b48d4182b34bd7f91c9ac7b62bf7e3cb4fb2817e348f288f343fc
 
 
 ATOMIC_EXTENSION_SHA256='5bd0ecb4f65c7ca713179b8b9f652d8cc47e8ceae6f0e4ceaab5d492980ec302'
+CONSOLIDATION_SHA256='e49f4392817744babe6dcca42ecf983f82f4d885f1356740e9e346775e7720d3'
 
 
 def canonical(content):return content.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')
@@ -23,7 +24,12 @@ def extension():
     atomic=json.loads(raw)
     assert atomic['schema']==1 and atomic['base']=='237944148151d784b6b2e3597e853dbc32779bd0'
     assert atomic['physics_convention']==d['physics_convention']
-    return dict(d['canonical_sha256'],**atomic['canonical_sha256'])
+    raw=(ROOT/'tests/fixtures/unified_mdff_scope_v1.json').read_bytes()
+    assert hashlib.sha256(canonical(raw)).hexdigest()==CONSOLIDATION_SHA256,'Unreviewed MDFF consolidation source scope'
+    consolidation=json.loads(raw)
+    assert consolidation['schema']==1 and consolidation['base']=='52b36ee41e20aed5a86fb37db56ca372fac936f8'
+    assert consolidation['physics_convention']==d['physics_convention']
+    return dict(d['canonical_sha256'],**dict(atomic['canonical_sha256'],**consolidation['canonical_sha256']))
 
 
 def legacy_kernel_source(path,content):

@@ -35,13 +35,13 @@ jobs:
           tests/test_portability.py::test_version_matches_source_metadata
       - name: Build portable Windows ZIP
         shell: pwsh
-        run: ./packaging/build_windows.ps1 -Python (Get-Command python).Source -BuildRoot build/windows-v0.8.0-beta.1
+        run: ./packaging/build_windows.ps1 -Python (Get-Command python).Source -BuildRoot build/windows-v0.8.1-beta.1
       - name: Test extracted standalone EXE
         shell: pwsh
         run: |
-          Expand-Archive -LiteralPath build/windows-v0.8.0-beta.1/EMCD-Sim-v0.8.0-beta.1-Windows.zip -DestinationPath build/windows-v0.8.0-beta.1/extracted
-          $exe = (Resolve-Path build/windows-v0.8.0-beta.1/extracted/EMCD-Sim/EMCD-Sim.exe).Path
-          $validation = Join-Path (Get-Location) 'build/windows-v0.8.0-beta.1/validation'
+          Expand-Archive -LiteralPath build/windows-v0.8.1-beta.1/EMCD-Sim-v0.8.1-beta.1-Windows.zip -DestinationPath build/windows-v0.8.1-beta.1/extracted
+          $exe = (Resolve-Path build/windows-v0.8.1-beta.1/extracted/EMCD-Sim/EMCD-Sim.exe).Path
+          $validation = Join-Path (Get-Location) 'build/windows-v0.8.1-beta.1/validation'
           $env:PATH = "$env:SystemRoot/System32;$env:SystemRoot"
           Remove-Item Env:PYTHONPATH,Env:PYTHONHOME,Env:CONDA_PREFIX -ErrorAction SilentlyContinue
           foreach ($orientation in @('017','117','001','111','710')) {
@@ -51,23 +51,35 @@ jobs:
             $report = Get-Content -LiteralPath "$destination/acceptance.json" -Raw | ConvertFrom-Json
             if (-not $report.complete -or -not $report.frozen -or -not $report.closed_cleanly) { throw 'Invalid frozen acceptance report' }
             if ($report.build.commit -ne '${{ github.sha }}') { throw 'Source commit mismatch' }
-            if ($report.build.application_version -ne '0.8.0b1') { throw 'Version mismatch' }
+            if ($report.build.application_version -ne '0.8.1b1') { throw 'Version mismatch' }
             if ($report.build.physics_convention -ne 'forward_born_dagger_g_minus_h_v1') { throw 'Physics convention mismatch' }
           }
+      - name: Test generalized imported and atomic workflows in extracted EXE
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path build/windows-v0.8.1-beta.1/extracted/EMCD-Sim/EMCD-Sim.exe).Path
+          $destination = Join-Path (Get-Location) 'build/windows-v0.8.1-beta.1/validation/generalized'
+          $env:PATH = "$env:SystemRoot/System32;$env:SystemRoot"
+          Remove-Item Env:PYTHONPATH,Env:PYTHONHOME,Env:CONDA_PREFIX -ErrorAction SilentlyContinue
+          $process = Start-Process -FilePath $exe -ArgumentList @('--release-acceptance',$destination) -WorkingDirectory (Split-Path $exe) -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Generalized frozen acceptance failed: $($process.ExitCode)" }
+          $report = Get-Content -LiteralPath "$destination/acceptance.json" -Raw | ConvertFrom-Json
+          if (-not $report.complete -or -not $report.frozen -or -not $report.closed_cleanly -or $report.cases.Count -ne 8) { throw 'Invalid generalized frozen report' }
+          if ($report.build.commit -ne '${{ github.sha }}' -or $report.build.application_version -ne '0.8.1b1') { throw 'Generalized source/version mismatch' }
       - uses: actions/upload-artifact@v4
         with:
-          name: EMCD-Sim-v0.8.0-beta.1-Windows
+          name: EMCD-Sim-v0.8.1-beta.1-Windows
           compression-level: 0
           retention-days: 30
           path: |
-            build/windows-v0.8.0-beta.1/EMCD-Sim-v0.8.0-beta.1-Windows.zip
-            build/windows-v0.8.0-beta.1/SHA256SUMS.txt
-            build/windows-v0.8.0-beta.1/build_manifest.json
-            build/windows-v0.8.0-beta.1/validation/
+            build/windows-v0.8.1-beta.1/EMCD-Sim-v0.8.1-beta.1-Windows.zip
+            build/windows-v0.8.1-beta.1/SHA256SUMS.txt
+            build/windows-v0.8.1-beta.1/build_manifest.json
+            build/windows-v0.8.1-beta.1/validation/
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: windows-v080b1-diagnostics
+          name: windows-v081b1-diagnostics
           path: |
-            build/windows-v0.8.0-beta.1/validation/
-            build/windows-v0.8.0-beta.1/build_manifest.json
+            build/windows-v0.8.1-beta.1/validation/
+            build/windows-v0.8.1-beta.1/build_manifest.json

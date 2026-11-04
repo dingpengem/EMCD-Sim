@@ -167,7 +167,7 @@ def compare_methods(methods,fft):
     intensity_floor=1e-10*max(float(r['spectra']['Sigma_ref'].max()) for r in (b,m))
     for key in ('I_A_plus','I_B_plus','D_mag','D_nonmag','D_raw','D_corrected'):
         if key in b['spectra'] and key in m['spectra']:out['spectra'][key]=error_pair(b['spectra'][key],m['spectra'][key],intensity_floor*np.sqrt(len(b['spectra'][key])))
-    for edge in ('L3','L2'):
+    for edge in bm:
         maps={}
         if all(edge in r['maps'] for r in (b,m)):
             scale=max(np.linalg.norm(r['maps'][edge]['I_nonmag']) for r in (b,m))
@@ -214,9 +214,9 @@ def export_comparison(result,root,export_single):
         from .results import draw_comparison,draw_eels,draw_maps
         for name,r in methods.items():
             export_single(r,root/name)
-            for edge in ('L3','L2'):
+            for edge in r['maps']:
                 fig=Figure(figsize=(15,9),layout='constrained');draw_maps(fig,result,edge,method=name);fig.savefig(root/name/(edge+'_angular_maps.png'),dpi=145)
         fig=Figure(figsize=(15,10),layout='constrained');draw_comparison(fig,result);fig.savefig(root/'bw_ms_comparison.png',dpi=145)
         fig=Figure(figsize=(12,9),layout='constrained');draw_eels(fig,result,method='overlay');fig.savefig(root/'virtual_detector_eels.png',dpi=145)
-        for edge in ('L3','L2'):
+        for edge in result['maps']:
             fig=Figure(figsize=(15,9),layout='constrained');draw_maps(fig,result,edge,method='difference');fig.savefig(root/(edge+'_bw_minus_ms.png'),dpi=145)

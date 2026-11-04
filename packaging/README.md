@@ -1,6 +1,6 @@
 # Windows candidate build
 
-The Windows-only v0.8.0-beta.1 Research Beta uses version 0.8.0b1 and uses a separate build root and local-candidate label. The Adaptive Dirac–Padé JSON coefficients, provenance, Apache-2.0 LICENSE and NOTICE are collected from `emcd_sim/data/adaptive_dirac_pade_2026`. Neither h5py nor the upstream HDF5 archives are runtime requirements; the original unlicensed atomic table remains external. CIF support still uses the declared ASE imports and space-group data.
+The Windows-only v0.8.1-beta.1 Research Beta uses version 0.8.1b1 and uses a separate build root and local-candidate label. The Adaptive Dirac–Padé JSON coefficients, provenance, Apache-2.0 LICENSE and NOTICE are collected from `emcd_sim/data/adaptive_dirac_pade_2026`. Neither h5py nor the upstream HDF5 archives are runtime requirements; the original unlicensed atomic table remains external. CIF support still uses the declared ASE imports and space-group data.
 
 After building from a clean committed source, exercise the actual EXE on Windows:
 
@@ -10,7 +10,7 @@ EMCD-Sim.exe --unified-elastic-acceptance C:/new-acceptance-output --unified-his
 
 This opt-in mode requires a fresh output directory and a genuine checksummed historical Ni project. It runs real GUI workers, saves/reopens projects, imports Fe/CsCl/ZnO/monoclinic CIFs, validates rendered indices/clicks, checks the Ni-only MDFF gate and runs only two selected Ni energies for each of Single and Double Channeling, with magnetization reversal and saved-project checks. Automated file-dialog selections choose the supplied local paths. Saved historical arrays are opened read-only; a copy is saved under the new output directory. Run without a headless Qt override for native acceptance and inspect process exit, `acceptance.json`, screenshots and logs. This command only performs acceptance; publishing is a separate authorized step. See [local main acceptance](../docs/acceptance/unified-elastic-2026-11-03/MAIN_INTEGRATION_ACCEPTANCE.md).
 
-Current release: **v0.8.0-beta.1 / 0.8.0b1**, convention
+Current release: **v0.8.1-beta.1 / 0.8.1b1**, convention
 `forward_born_dagger_g_minus_h_v1`. Use a fresh Python 3.11 Windows build venv
 without `--system-site-packages`. Install the same declared inputs as Actions:
 
@@ -26,17 +26,17 @@ The preflight checks those distributions plus PyInstaller, lists every missing
 metadata name with the installation command, and fails before invoking
 PyInstaller. Direct spec builds use the same mandatory check and license list;
 missing metadata is not ignored and license collection is not removed.
-The scientific dependency pins, package version and production code are unchanged.
+Scientific dependency pins, production numerical defaults and physics conventions are unchanged. Version metadata is updated separately from cleanup.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python ./build/windows-build-env/Scripts/python.exe -BuildRoot build/windows-v0.8.0-beta.1-release
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python ./build/windows-build-env/Scripts/python.exe -BuildRoot build/windows-v0.8.1-beta.1-release
 ```
 
-Default archive: `EMCD-Sim-v0.8.0-beta.1-Windows.zip`. Windows numeric version:
-0.8.0.1; ProductVersion: v0.8.0-beta.1. Use a new output root: previous
+Default archive: `EMCD-Sim-v0.8.1-beta.1-Windows.zip`. Windows numeric version:
+0.8.1.1; ProductVersion: v0.8.1-beta.1. Use a new output root: previous
 packages must not be overwritten. The exact local source commit, clean/dirty
 state, convention, build environment and native validation are documented in
-[release acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_0_BETA_1_ACCEPTANCE.md).
+[release acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_1_BETA_1_ACCEPTANCE.md).
 No push, Actions dispatch, release or tag is performed. Native same-host
 standalone checks are not independent clean-machine installation.
 Older commands below are historical.
@@ -136,3 +136,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 
 Package version `0.6.1b1` uses PEP 440 prerelease notation. Verify archived
 content and saved-data native GUI acceptance with
 `python scripts/verify_v061_candidate.py`. This does not calculate spectra.
+
+## v0.8.1 generalized native acceptance
+
+After extracting the complete ZIP, run `EMCD-Sim.exe --release-acceptance C:/new-output
+--historical-project C:/existing-Ni-project` as one command. This opt-in packaging
+route runs eight real GUI/worker Ni and synthetic Fe imported/atomic Single/Double
+BW/MS cases, source validation, atomic generation, projects and exports. It writes
+only a new directory and reads the historical control without migrating it. The
+original synthetic parameter example is collected explicitly; no broad hidden
+imports or external unlicensed table are added. CI runs this mode in addition to
+the five established desktop orientation checks. Same-host native acceptance is
+not clean-PC certification or quantitative Fe EMCD validation.

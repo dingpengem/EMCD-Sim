@@ -76,7 +76,8 @@ def components(spectra,mode='raw'):
 
 
 def readouts(result):
-    rows=[benchmark_readout(result,selection='selected',energy_ev=e) for e in (result['config'].l3,result['config'].l2)]
+    from ..mdff_edges import selected_samples
+    rows=[benchmark_readout(result,selection='selected',energy_ev=e) for _,e in selected_samples(result['config'])]
     fmt=lambda v:'undefined' if v is None else f'{v:+.4f}%'
     text='\n'.join(f"{r['selected_edge']} @ {r['evaluation_energy_ev']:.4f} eV: EMCD Asymmetry {fmt(r['prb_relative_dichroism_percent'])}" for r in rows)
     return rows,text

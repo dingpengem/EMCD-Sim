@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [Index](INDEX.md)
 
-This is the control/reference manual for **v0.8.0-beta.1, a Windows-only Research Beta**. The tag targets the exact accepted build source, recorded in About/build information and the release manifest. Separate clean-machine installation remains untested. Linux/macOS are not certified packaged platforms. These pages do not certify arbitrary scientific configurations.
+This is the control/reference manual for **v0.8.1-beta.1, a Windows-only Research Beta**. The tag targets the exact accepted build source, recorded in About/build information and the release manifest. Separate clean-machine installation remains untested. Linux/macOS are not certified packaged platforms. These pages do not certify arbitrary scientific configurations.
 
 > **Legacy magnetic results:** earlier released v0.6.1 packages used a superseded Born/MDFF convention. Preserve their raw arrays, source and convention; revalidate signed magnetic results before comparison. Loading a project does not update its physics. Missing convention metadata is unknown/legacy-unverified.
 
@@ -34,11 +34,11 @@ Results include **Diffraction**, **EMCD Angular Maps**, **Virtual Detector EELS*
 
 **FCC Ni default** creates the conventional cubic Ni reference, a = 3.524 Å. **Load CIF…** reads a CIF through ASE; **Inspect structure…** reports source hash, cell, sites and warnings. The GUI file-import route is CIF, not a general browser for every ASE-supported format.
 
-Reciprocal geometry can be inspected more broadly than inelastic scattering. The bundled Adaptive provider supports neutral Z=1–118; unsupported provider/species combinations produce explicit geometry-only messages. Disordered/partial occupancies and unsupported cells are not silently replaced. Current EELS/EMCD additionally requires the verified conventional FCC Ni structure. Importing an arbitrary CIF does not construct a material-specific MDFF or validate its magnetic response.
+Reciprocal geometry can be inspected more broadly than inelastic scattering. The bundled Adaptive provider supports neutral Z=1–118; unsupported provider/species combinations produce explicit geometry-only messages. Disordered/partial occupancies and unsupported cells are not silently replaced. The original Ni providers require the verified conventional FCC Ni structure. Opt-in imported tensors and declared approximate atomic sources additionally support eligible single-element, full-occupancy, translation-equivalent ionization sites. Importing an arbitrary CIF does not construct a material-specific MDFF or validate its magnetic response.
 
 ## 3. Diffraction settings
 
-This Windows release bundles Adaptive Dirac–Padé 2026 neutral Z=1–118 factors for ordered multi-element **elastic** diffraction: see [neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md). The provider selector defaults to Adaptive for new calculations, including Ni; select **Ni Lobato 2014 (legacy compatibility)** to reproduce historical Ni studies. Old projects without a provider field restore Lobato explicitly. Only the external legacy option requires `EMCD_SIM_LEGACY_ATOMIC_TABLE`; its absence does not break bundled-provider calculations. The previous v0.7.0-beta.1 binary is preserved and does not contain this feature. The inelastic/EMCD gate still requires verified conventional FCC Ni.
+This Windows release bundles Adaptive Dirac–Padé 2026 neutral Z=1–118 factors for ordered multi-element **elastic** diffraction: see [neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md). The provider selector defaults to Adaptive for new calculations, including Ni; select **Ni Lobato 2014 (legacy compatibility)** to reproduce historical Ni studies. Old projects without a provider field restore Lobato explicitly. Only the external legacy option requires `EMCD_SIM_LEGACY_ATOMIC_TABLE`; its absence does not break bundled-provider calculations. The previous v0.7.0-beta.1 binary is preserved and does not contain this feature. The historical Ni providers retain their Ni eligibility gates; generalized sources require the separately declared element, edges, state, frame and eligible equivalent sites.
 
 In this release, signed three-index hkl labels refer to the ASE-imported CIF cell shown in the structure summary. No automatic primitive reduction is performed. A transformed cell needs an explicit index-basis transformation; four-index Miller–Bravais input is unsupported. [001] hexagonal patterns use the actual nonorthogonal reciprocal metric. BCC Fe (110) belongs to [001] by the zone law; CsCl (100) survives because its species factors differ. Partial/disordered occupancies remain unsupported. Oversized reciprocal searches fail with a diagnostic rather than silently truncating support.
 
@@ -320,11 +320,11 @@ Current convention is **forward_born_dagger_g_minus_h_v1**, with `Re Tr(RT)`, co
 
 |Identity|Current public Windows package|
 |---|---|
-|Display / Python / Windows numeric version|v0.8.0-beta.1 / 0.8.0b1 / 0.8.0.1|
+|Display / Python / Windows numeric version|v0.8.1-beta.1 / 0.8.1b1 / 0.8.1.1|
 |Release tag target|Exact accepted Windows build-source commit; see release notes/About|
-|Binary source|Same commit as v0.8.0-beta.1 tag target|
+|Binary source|Same commit as v0.8.1-beta.1 tag target|
 |Windows acceptance|See version-specific release acceptance and source manifest|
-|Portable ZIP SHA256|See v0.8.0-beta.1 SHA256SUMS.txt and release acceptance|
+|Portable ZIP SHA256|See v0.8.1-beta.1 SHA256SUMS.txt and release acceptance|
 |Physics compatibility|Ni event kernels unchanged; new calculations use Adaptive elastic factors|
 
 Five native orientations, eight exact scientific comparisons, eighteen worker/cancellation scenarios and native overlay/export tests passed within their recorded profiles. These are bounded, partly overlapping inventories, not universal certification. Those earlier inventories refer to v0.7.0. See the [v0.8.0 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1), [release notes](RELEASE_NOTES_0_8_0_BETA_1.md) and [Windows acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_0_BETA_1_ACCEPTANCE.md); the [v0.7.0 acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md) is preserved. Historical acceptance/release notes retain their milestone-specific “not published” statements; the public release entry is authoritative for current publication state.
@@ -336,3 +336,59 @@ Five native orientations, eight exact scientific comparisons, eighteen worker/ca
 The earlier 8 nm, 200 kV walkthrough remains in the [pre-overhaul manual at its immutable source revision](https://github.com/dingpengem/EMCD-Sim/blob/08d04fc35fca2071cc7e73af0aaa1de45e49a3f4/docs/USER_GUIDE.md#validated-ni-017-8-nm-double-example). It is not the small current Quick Start. The completed 200 kV thickness and corrected 300 kV studies are separate datasets; neither is recalculated or relabeled here. The [new tutorial case study](TUTORIAL.md#part-vii-practical-ni-017-case-study) reuses verified existing 9/30 nm spectra with explicitly different percentage definitions.
 
 Historical development, validation reports and older galleries remain linked in the [Documentation Index](INDEX.md). Planned/experimental features must not be treated as available merely because a source or architecture document exists.
+
+## Generalized sources in v0.8.1-beta.1
+
+The following describes the Part 1B source/candidate workflow. Its acceptance
+status and exact candidate identity are recorded in
+[the consolidation report](GENERALIZED_CODE_CONSOLIDATION_0_8_1.md); it does not
+alter the historical published binary or scientific examples.
+
+The three MDFF choices remain visible for every crystal. **XMCD-constrained MDFF**
+reads the original five-column XAS/XMCD file directly. Outside historical Ni,
+declare the file's element/edge, native selected energies, axis, RP-minus-LP
+handedness, relative reference scale, provenance and assumptions. Two reliable
+L3/L2 features may populate native energies; ambiguous assignments remain user
+declarations. No WIEN2k installation or separate tensor JSON is required. The
+bundled Ni source cannot substitute for another element.
+
+**Atomic Ionization MDFF** accepts explicit atomic parameter JSON directly;
+validate its checksum, then acknowledge the approximate cubic 2p-to-3d model.
+The bundled synthetic Fe example is software test data, never physical Fe constants.
+With no parameter file, historical Ni controls retain their original interpretation.
+
+**Imported Complex MDFF Tensor** reads declared complex 3x3 tensors with explicit
+nonmagnetic or magnetic-state inputs. XMCD/import adapters support L2,3 and the
+end-to-end-tested K-edge declaration; other edge families remain rejected. K-edge
+maps, selected samples and exports keep their K label. L3/L2-specific peak
+normalization and L3 white-line diagnostics are unavailable for other edges.
+All declared providers use Manual numerics and supported equivalent sites in a
+fully occupied single-element crystal. Approximately 1.6% detector-refinement
+sensitivity remains a limitation; no broad convergence or experimental accuracy
+is established. Missing/altered inputs block rerun and invalidate acknowledgement
+while saved arrays remain viewable.
+
+### Historical Part 1 workflow
+
+Select the imported-MDFF provider for an explicitly declared Hermitian PSD complex
+3x3 dipole tensor source. Review element/L2,3 selection, frame, magnetic axis, units,
+explicit opposite states and SHA256; acknowledge the declarations and use Manual
+numerics. Source replacement or a missing source blocks rerun while saved arrays
+remain viewable. Multi-element/site-resolved ionization and AFM/SDW remain unsupported.
+
+The same panel's **Generate approximate atomic tensor from declared parameters**
+button accepts a complete parameter JSON and a fresh output path. The portable ZIP
+includes `_internal/examples/synthetic_fe_atomic_parameters.json`. This is an original
+synthetic software fixture, not measured/fitted Fe constants. The model supports
+2p-to-3d transitions in a declared cubic field, explicit radial integrals and spin
+holes, local +z spin and proper rigid frame rotations; material inputs are physically
+unvalidated. No quantitative Fe, Co or Cr model, many-body multiplet accuracy,
+general crystal-field symmetry or complete DFT MDFF is supplied. The original Ni
+provider/project behavior is unchanged. See [parameters and limits](GENERALIZED_ATOMIC_IONIZATION.md)
+and [import contract](GENERALIZED_SINGLE_ELEMENT_EMCD_DESIGN.md).
+
+Generalized XMCD-effective conversion is a Python API with explicit declarations;
+the portable GUI imports its generated tensor JSON, not an automatic Fe XMCD model.
+Intensities remain relative. Approximately 1.6% detector-refinement sensitivity in
+the reviewed finite cases remains a limitation; BW/MS agreement is not general
+convergence or experimental accuracy. [Release notes](RELEASE_NOTES_0_8_1_BETA_1.md).

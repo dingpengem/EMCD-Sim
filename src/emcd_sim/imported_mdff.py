@@ -5,6 +5,7 @@ import hashlib,json
 import numpy as np
 from ase.data import atomic_numbers
 from .mdff_tensor import DipoleTensor
+from .mdff_edges import validate_edge, validate_selected
 
 CONVENTION='d=<i|r|f>;T=d*d_dagger;I=ReTr(RT);angular_Q=2*pi*g'
 
@@ -51,7 +52,7 @@ class ImportedMDFF:
             'magnetic_state','magnetization_crystal','reversal','source','validity','status','convention'}
         if not isinstance(d,dict) or not required<=d.keys():raise ValueError('Imported MDFF missing required declarations')
         if d['schema']!=1 or d['convention']!=CONVENTION:raise ValueError('Unsupported tensor schema/convention')
-        if d['element'] not in atomic_numbers or atomic_numbers[d['element']]<10 or d['edge']!='L2,3':raise ValueError('Declare a real element with a filled 2p core (Z>=10) and supported L2,3 edge')
+        validate_edge(d['element'],d['edge'])
         if d['units']!='angstrom^2/eV' or d['normalization']!='per_atom_relative':raise ValueError('Explicit angstrom^2/eV per_atom_relative tensor units required; no cross-section calibration')
         if d['basis'] not in ('crystal_cartesian','declared_local'):raise ValueError('Declare tensor Cartesian basis')
         frame=proper_frame(d['frame_to_crystal'])
@@ -61,9 +62,7 @@ class ImportedMDFF:
         if d['status'] not in ('synthetic','physical_source_unvalidated'):raise ValueError('Import status must be synthetic or physical_source_unvalidated; importing does not establish scientific validation')
         e=np.asarray(d['energy_ev'],float)
         if e.ndim!=1 or len(e)<2 or not np.isfinite(e).all() or e[0]<=0 or np.any(np.diff(e)<=0):raise ValueError('Strictly increasing positive finite energy grid required')
-        if not isinstance(d['selected_ev'],dict) or set(d['selected_ev'])!={'L3','L2'}:raise ValueError('Explicit native L3/L2 selected energies required')
-        l3,l2=[d['selected_ev'][k] for k in ('L3','L2')]
-        if not np.isfinite([l3,l2]).all() or not e[0]<=l3<l2<=e[-1]:raise ValueError('Selected L3/L2 energies must lie inside native coverage')
+        validate_selected(d['element'],d['edge'],d['selected_ev'],e[[0,-1]])
         m=np.asarray(d['magnetization_crystal'],float)
         if m.shape!=(3,) or not np.isfinite(m).all() or not np.isfinite(np.linalg.norm(m)) or np.linalg.norm(m)<1e-12:raise ValueError('Declare a finite nonzero crystal Cartesian magnetic/reference axis with finite norm')
         def tensor(name):
@@ -119,5 +118,7 @@ class ImportedMDFF:
     def provenance(self):
         result=dict(path=self.path,sha256=self.sha256,energy_bounds_ev=self.energy_ev[[0,-1]].tolist(),**{k:self.metadata[k] for k in ('element','edge','selected_ev','units','normalization','basis','frame_to_crystal','magnetic_state','magnetization_crystal','reversal','source','validity','status','convention')})
         for key in ('atomic_model','atomic_parameters','atomic_parameter_document','atomic_parameter_source_utf8','atomic_parameter_sha256','atomic_parameter_path'):
+            if key in self.metadata:result[key]=self.metadata[key]
+        for key in ('provider_identity','xmcd_declarations','xmcd_source_path'):
             if key in self.metadata:result[key]=self.metadata[key]
         return result

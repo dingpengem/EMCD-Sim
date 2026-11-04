@@ -48,8 +48,13 @@ class NormalizationControls(QtWidgets.QWidget):
 
     def set_result(self,result,labels=None):
         if self.result is result:return
+        supported=getattr(result['config'],'core_edge','L2,3')=='L2,3'
+        self.mode.model().item(self.mode.findData('peak')).setEnabled(supported)
+        if not supported and self.mode.currentData()=='peak':
+            with QtCore.QSignalBlocker(self.mode):self.mode.setCurrentIndex(0)
         self.result=result;self.reference.blockSignals(True);self.reference.clear();self.reference.addItems(labels or ['BW when available']);self.reference.blockSignals(False);self.reset()
-        try:validate_pair(result,'L3');reason=''
+        edge=next(iter(result['maps']),'L3')
+        try:validate_pair(result,edge);reason=''
         except ValueError as exc:reason=str(exc)
         self.map_mode.model().item(2).setEnabled(not bool(reason));self.map_mode.model().item(2).setToolTip(reason)
         self.pair_warning.setText(reason if self.show_maps else '')

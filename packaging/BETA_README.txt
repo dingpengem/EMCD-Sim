@@ -1,85 +1,107 @@
-EMCD-Sim v0.8.0-beta.1 - Windows-only Research Beta
-Windows x64 portable research prerelease; unsigned. Python package 0.8.0b1.
-Windows numeric file/product version 0.8.0.1.
+EMCD-Sim v0.8.1-beta.1 - Part 1B LOCAL Windows Research Candidate
+Windows x64 portable research software; unsigned. Python package 0.8.1b1.
+Windows numeric file/product version 0.8.1.1 remains unchanged.
 Physics convention: forward_born_dagger_g_minus_h_v1.
-The release tag targets the exact accepted build source in About/build_info.json.
-New GUI calculations default to bundled Adaptive Dirac-Pade neutral Z=1-118
-elastic factors. Ni Lobato remains the historical compatibility provider; old
-projects without provider settings restore Lobato. Provider identity and
-coefficient digests are saved with new projects. Ordered multi-element CIFs
-support elastic diffraction, including non-FCC indexing. Inelastic MDFF/EMCD
-remains restricted to the verified conventional FCC Ni model.
-The Apache-2.0 coefficient subset has separate LICENSE/NOTICE/provenance.
-No upstream HDF5 archive or h5py is needed by the bundled JSON evaluator.
-The unlicensed legacy Z=1-98 table is NOT bundled; its optional adapter
-requires external data and enforces the documented low-g reliability guard.
-Linux/macOS are not certified or packaged in this Windows-only release.
-Linux retains a bool_dealloc shutdown abort; macOS retains a Qt modal-test
-stall. These known CI issues have not been suppressed.
-
-CRITICAL SCIENTIFIC COMPATIBILITY NOTICE
-Legacy Windows packages before v0.7.0-beta.1 used a superseded Born/MDFF
-convention affecting magnetic-odd EMCD signs. Revalidate or recalculate
-historical signed L3/L2 spectra before corrected interpretation. Do not
-silently flip/relabel old arrays. Preserve original arrays/source/version
-and convention provenance; missing convention is unknown/legacy-unverified.
-This does not imply that all historical nonmagnetic EELS, diffraction or
-thickness trends are wrong. Corrected source 4f578156 still used the old
-version label, so exact source/convention metadata is authoritative.
-Absolute experimental magnetic handedness remains uncalibrated.
+Exact build source, version and coefficient identity are in About/build_info.json.
+This local build does not push, create a tag, or publish a release.
 
 Extract the complete folder. Run EMCD-Sim.exe; keep _internal beside it.
-Python, Conda and WIEN2k are not required to run this application.
-Use your own writable folder for saved projects and exports.
-SHA256SUMS.txt lists the application files. The archive checksum is supplied
-separately. This package is tested on the development Windows host;
-independent clean-machine acceptance has not been performed.
+Python, Conda and WIEN2k are not required. Use a writable project/export folder.
+SHA256SUMS.txt lists the application files; the ZIP checksum is supplied separately.
+Acceptance is on the development Windows host, not an independent clean PC/VM.
+Linux/macOS applications are not certified or packaged by this candidate.
 
-The bundled five-column Ni spectrum is the repository-tracked example only.
-It does not include WIEN2k code, executables, licensed source or private
-calculation companions. To use another spectrum, browse to a five-column
-WIEN2k XMCD file, validate it, then explicitly declare magnetization axis,
-RP/LP convention and L3/L2 assignment. Missing data blocks calculation;
-saved projects remain viewable without recalculating missing spectra.
-Native calculated energies are not an experimental energy calibration.
-The production reference selections 831.4778/848.698 eV differ from the
-source-audit L3 magnetic extremum 831.271 eV. Record the actual selection.
+ELASTIC SCATTERING
+New GUI calculations default to bundled Adaptive Dirac-Pade neutral Z=1-118
+elastic factors. Ni Lobato remains selectable for historical compatibility;
+old projects without a provider restore Lobato. Provider identity and coefficient
+digests are saved. Ordered fully occupied multi-element CIFs support elastic
+diffraction and non-FCC indexing. This does not supply multi-element MDFF.
+The coefficient subset retains separate Apache-2.0 LICENSE/NOTICE/provenance.
+No upstream HDF5 archive or h5py is required by its bundled JSON evaluator.
+The unlicensed legacy Z=1-98 table is NOT bundled. Its optional external adapter
+retains its documented reciprocal-space validity and low-g reliability guards.
 
-Single Channeling is entrance-only. Double Channeling includes incoming,
-localized ionization and reduced-energy outgoing elastic propagation.
-BW, Multislice and Both use the selected actual model. The GUI uses
-projected IAM potentials, not an atomic-3D electrostatic multislice model.
-Exact (200) Bragg alignment does not establish physical two-beam isolation.
-The explicit [001] row restriction excludes off-row beams; [017] retains
-its full finite ZOLZ basis. The separate 213-beam [001] elastic audit is
-not the source of the restricted-row EELS reference.
+THREE MDFF CHOICES, ONE PROPAGATION FRAMEWORK
+The same choices are visible for every crystal:
+1. XMCD-constrained MDFF
+2. Atomic Ionization MDFF
+3. Imported Complex MDFF Tensor
+Run eligibility depends on valid source/model inputs and supported equivalent
+sites in a fully occupied single-element crystal, not menu visibility.
+Shared BW/MS Single/Double propagation and tensor contraction are independent of
+the element. No multi-element, inequivalent-site, AFM/SDW or complex magnetic
+structure model is added.
 
-Upper spectral panel: raw detector A/B EELS on a common arbitrary-unit scale.
-Signal Display: Raw (a.u.) / EMCD Asymmetry (%), default Raw.
-Raw lower panel: signed magnetic and nonmagnetic differences.
-Asymmetry lower panel: one total 100*(A_plus-B_plus)/(A_plus+B_plus) curve.
-The total can include nonmagnetic diffraction asymmetry. Advanced magnetic-only
-and nonmagnetic percentages share N_A+N_B. Display switching preserves physics.
-Maps use actual mirrored points, not detector-integrated percentages.
-Old Relative preferences migrate to explicitly labeled advanced components.
-Post-edge correction is an advanced diagnostic, not intrinsic magnetic EMCD.
-Two-energy saved results remain discrete samples, not fabricated spectra.
-CSV/NPZ exports retain raw and percentage values in either display mode.
-Projects preserve their inputs, results and spectral display/energy selection.
+XMCD-constrained: browse a compatible five-column XAS/XMCD file, validate its
+native unshifted energy range and checksum, and acknowledge magnetic axis,
+RP-minus-LP handedness and edge assignments. The original Ni source/workflow is
+preserved. Other elements require their own declared source, provenance,
+assumptions and relative reference scale; Ni data/energies are never substituted.
+Ambiguous features require explicit native-energy selections. No separate tensor
+JSON, DFT wavefunctions, or WIEN2k installation is required. The axisymmetric
+effective tensor is approximate, not a complete ab-initio complex MDFF.
 
-Memory budgets: 512/1024/2048(default)/4096/8192 MiB. Jobs are rejected when
-the estimated process peak exceeds the budget or 50% of available RAM.
-Settings are never silently reduced. Reference Ni settings, not mandatory
-defaults: beam 4.6 A^-1, Fourier potential 6.2 A^-1, FFT 48, depth 257,
-maximum MS step 0.04 nm, float64/complex128; crystallographic g=1/d.
+Atomic Ionization: select explicit parameter JSON directly in the Atomic panel,
+validate it, and acknowledge the approximate model. The original synthetic Fe
+example is _internal/examples/synthetic_fe_atomic_parameters.json. Its numbers
+are software test inputs, not measured, fitted or quantitatively validated Fe.
+Every material input must be declared. This provider is restricted to the accepted
+Sc-Zn 2p-to-cubic-3d L2,3 model, local +z spin and proper rigid frame rotations.
+It is not an arbitrary crystal-field, core-loss-edge or many-body multiplet model.
+Without explicit JSON, the historical Ni controls retain their original Ni-only
+interpretation; those electronic parameters are not transferred to other elements.
 
-Research limitations: XMCD-constrained approximate MDFF, no full DFT-derived
-MDFF, branch-frozen longitudinal transfer, finite projected ZOLZ and cutoffs,
-no calibrated absolute EELS cross section or electron-count SNR. Agreement at
-representative settings does not establish convergence for every geometry,
-thickness or energy. No claim of quantitative experimental predictivity.
+Imported Complex MDFF: supply the declared complex 3x3 dipole tensor JSON, units,
+normalization, frame, element/edge, magnetic state, provenance and checksum.
+Nonmagnetic input supplies an explicit even state. Magnetic input supplies both
+states and their shared even tensor. A missing general magnetic state is never
+manufactured by conjugation. Hermiticity, PSD, finite values, source identity,
+energy coverage and conventions are checked without clipping or extrapolation.
 
-Responsive UI: Settings and Diffraction remain side by side. Drag the
-three-column splitters; click chevron headers to collapse optional controls
-or Project Results. Very narrow windows offer a one-click Results strip.
-Layout preferences are independent of scientific project settings.
+Declared sources use explicit Manual numerics. Source adapters validate the L2,3
+contract and have bounded synthetic K-edge workflow tests. Other edge families
+remain rejected; a synthetic K test is not physical arbitrary-edge validation.
+Atomic Ionization does not provide K transitions. L3/L2 peak normalization and
+L3 white-line diagnostics remain limited to L2,3. Raw and pointwise asymmetry
+signals retain their actual declared edge labels. Requested sampling may
+interpolate within the native range; no energy-axis shift is applied.
+
+SOURCE AND PROJECT INTEGRITY
+Provider identity, original input bytes/checksum, conventions, frame and model
+provenance are retained. Missing/changed data blocks rerun and clears previous
+acknowledgement. Revalidation is explicit; no provider substitution occurs.
+Saved arrays remain viewable when an external source is unavailable. Failed atomic
+generation does not replace an existing successful result with stale source state.
+SHA256 establishes file identity, not scientific authenticity or physical accuracy.
+
+SIGNALS AND NUMERICAL LIMITATIONS
+Single Channeling is entrance-only; Double includes localized ionization and
+reduced-energy outgoing elastic propagation. BW and FFT MS use the selected
+actual model. The potential is projected IAM, not an atomic-3D electrostatic model.
+Crystallographic g=1/d; angular Q=2*pi*g. Intensity uses Re Tr(RT).
+Exact target Bragg alignment does not establish physical two-beam isolation.
+
+EELS retains original detector A/B signals on a shared arbitrary-unit scale.
+Raw lower signals are signed magnetic/nonmagnetic differences. Conventional
+asymmetry uses 100*(A_plus-B_plus)/(A_plus+B_plus) and can include even imbalance.
+Maps use actual mirrored points, not detector-integrated percentages. Post-edge
+correction is an optional diagnostic, not intrinsic magnetic EMCD. Sparse selected
+energies are points, not fabricated spectra. CSV/NPZ retain original signed values.
+
+Exact Ni regression means compatibility, not quantitatively accurate metallic Ni.
+Synthetic Fe and K cases are software/math tests. No calibrated absolute cross
+section, electron-count SNR, full DFT MDFF, or experimental accuracy is established.
+Approximately 1.6% detector-refinement sensitivity remains a limitation in reviewed
+finite cases. BW/MS agreement is neither general convergence nor material accuracy.
+Check beam/potential support, FFT mesh, depth/step and detector sampling separately.
+Memory guards reject unsupported requests; scientific settings are not reduced
+silently to fit resources.
+
+HISTORICAL COMPATIBILITY
+Earlier pre-v0.7 Windows packages used a superseded magnetic Born/MDFF convention.
+Preserve their arrays and provenance; revalidate signed results before corrected
+interpretation. Missing convention metadata remains unknown/legacy-unverified,
+not silently corrected. Absolute experimental magnetic handedness is uncalibrated.
+Historical Ni examples retain their original Lobato/provider provenance; 9/30 nm
+figures and raw scientific data were not regenerated or relabeled by consolidation.

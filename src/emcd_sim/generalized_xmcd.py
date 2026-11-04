@@ -7,6 +7,7 @@ from ase.data import atomic_numbers
 from .wien2k_xmcd import load_wien2k_xmcd
 from .xmcd_effective_mdff import effective_tensor_from_xmcd
 from .imported_mdff import CONVENTION,ImportedMDFF
+from .mdff_edges import validate_edge
 
 
 def export_declared_xmcd(source_path,declaration,output):
@@ -19,7 +20,7 @@ def export_declared_xmcd(source_path,declaration,output):
         'normalization','convention','source','validity','status','source_sha256','reference_tensor_scale_angstrom2_per_ev','reversal_assumption','magnetic_state'}
     if not isinstance(declaration,dict) or not keys<=declaration.keys():raise ValueError('Element-specific XMCD declarations are incomplete')
     d=declaration
-    if d['element'] not in atomic_numbers or d['element']=='X' or d['edge']!='L2,3':raise ValueError('Declare source element and L2,3 edges')
+    validate_edge(d['element'],d['edge'])
     if d['handedness']!='RP_minus_LP_in_declared_axis' or d['convention']!=CONVENTION or d['normalization']!='source_max_nonmagnetic':
         raise ValueError('Explicit RP/LP handedness, corrected dipole convention and normalization assumptions required')
     if d['magnetic_state']!='uniform_fm' or d['reversal_assumption']!='axisymmetric_XMCD_odd_shared_XAS':

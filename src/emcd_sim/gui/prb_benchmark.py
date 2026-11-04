@@ -64,7 +64,7 @@ def benchmark_readout(result, *, selection='l3-peak', energy_ev=None, windows=No
     s = result['spectra']
     e = np.asarray(s['energy_ev'], float)
     a, b = np.asarray(s['I_A_plus'], float), np.asarray(s['I_B_plus'], float)
-    if (e.ndim != 1 or len(e) < 2 or not np.isfinite(e).all() or np.any(np.diff(e) <= 0)
+    if (e.ndim != 1 or not len(e) or not np.isfinite(e).all() or np.any(np.diff(e) <= 0)
             or a.shape != e.shape or b.shape != e.shape):
         raise ValueError('Benchmark needs original A/B spectra on one finite increasing saved energy axis.')
     cfg, settings = result['config'], result['settings']
@@ -112,6 +112,7 @@ def benchmark_readout(result, *, selection='l3-peak', energy_ev=None, windows=No
     curves, masks = benchmark_spectra(s)
     record['masks'] = masks
     if selection == 'l3-peak':
+        if getattr(cfg,'core_edge','L2,3')!='L2,3':raise ValueError('L3 peak benchmark is available only for declared L2,3 sources; choose a saved energy sample')
         lo, hi = map(float, (windows or default_windows(result))['L3'])
         if (not np.isfinite([lo, hi]).all() or not e[0] <= lo < hi <= e[-1]
                 or hi >= (cfg.l3+cfg.l2)/2):
@@ -134,7 +135,7 @@ def benchmark_readout(result, *, selection='l3-peak', energy_ev=None, windows=No
         if not np.isfinite(energy) or not e[0] <= energy <= e[-1]:
             raise ValueError('Selected benchmark energy must lie inside the saved native energy range.')
         index = int(np.argmin(abs(e-energy)))
-        if len(e)==2 and abs(e[index]-energy)>1e-7:raise ValueError('Requested energy was not calculated; only the two saved native edge samples are available.')
+        if (len(e)<=2 or getattr(cfg,'energy_scope','full')=='edges') and abs(e[index]-energy)>1e-7:raise ValueError('Requested energy was not calculated; only the saved native edge samples are available.')
         record['requested_energy_ev'] = energy
         record['energy_selection_definition'] = 'Nearest original saved sample to requested energy; no interpolation or maximization; lower energy at a tie'
     else:
@@ -142,6 +143,8 @@ def benchmark_readout(result, *, selection='l3-peak', energy_ev=None, windows=No
     record.update(evaluation_energy_ev=float(e[index]), saved_sample_index=index,
                   selected_edge='L3' if e[index] < (cfg.l3+cfg.l2)/2 else 'L2',
                   I_A_plus=_scalar(a[index]), I_B_plus=_scalar(b[index]))
+    if getattr(cfg,'selected_edges',()):
+        record['selected_edge']=min(cfg.selected_edges,key=lambda item:abs(item[1]-e[index]))[0]
     for key, values in curves.items():
         record[key] = _scalar(values[index])
     if record['prb_relative_dichroism_percent'] is None:
