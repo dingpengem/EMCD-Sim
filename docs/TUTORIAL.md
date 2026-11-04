@@ -255,15 +255,19 @@ This example uses the completed **fresh full recalculation**, `outputs/ni_300kv_
 
 The [new provenance](images/ni017_flipm_recomputed/provenance.json) records completion, settings, XMCD SHA256, source-array and figure hashes, and independent four-spectrum checks. The recalculation independently reproduces the earlier selected-energy values; the table below is checked against the new arrays rather than copied from the old study.
 
-![Conventional and Flip-M percentages at both thicknesses](images/ni017_flipm_recomputed/summary_percent.png)
+### Primary example: raw EMCD differences (a.u.)
 
-Conventional panels use `S_AB` for all three contributions; fixed-A Flip-M panels use `S_flip`. The blue total and dashed red magnetic Flip-M curves overlap exactly; the green reversal-even residual is zero. The primary portrait figures below show each decomposition and the distinct magnetic combinations separately.
+![Raw conventional A/B and fixed-detector Flip-M EMCD differences at 9 and 30 nm](images/ni017_flipm_recomputed/summary_raw.png)
 
-![Raw conventional and Flip-M differences at both thicknesses](images/ni017_flipm_recomputed/summary_raw.png)
+These are signed **raw differences (a.u.)**, not percentage asymmetries. Conventional A/B is `D_conv = (M_A-M_B)+(N_A-N_B)`; its nonmagnetic A/B component retains the actual energy-dependent spectral shape. Fixed-A Flip-M is `D_flip,A = 2M_A`: its total and magnetic curves overlap, and its ideal nonmagnetic **residual is zero** (which does not mean `N_A(E)=0`). The raw panels share a common a.u. scale across thicknesses, without individual peak rescaling.
 
-Raw panels share an a.u. axis across thicknesses; percentage panels share a percent axis. Neither uses individual peak rescaling. Raw magnetic intensity and normalized magnetic contrast are different quantities.
+### Supplementary example: normalized EMCD asymmetry (%)
 
-### All twelve spectral figures
+![Sum-normalized conventional and Flip-M EMCD asymmetries at 9 and 30 nm](images/ni017_flipm_recomputed/summary_percent.png)
+
+For normalized percentages only, the three conventional A/B contributions share `S_AB = I_A(+M)+I_B(+M)`, whereas Flip-M uses `S_flip = I_A(+M)+I_A(-M)`. Do not mix these denominators or mistake these percentages for raw intensity differences. The detailed portraits below show both representations.
+
+### Detailed raw a.u. figures and supplementary asymmetry (%) figures
 
 Each linked preview derives from a 6 x 7 inch, 300 dpi PNG and vector SVG retained in the new study's `documentation_figures/raw_au/` or `documentation_figures/asymmetry_percent/` directory. All curves use the saved energy samples without smoothing or added spectral interpolation.
 
@@ -280,12 +284,7 @@ Each linked preview derives from a 6 x 7 inch, 300 dpi PNG and vector SVG retain
 
 These are signed point samples at native calculated energies, not edge integrals or experimentally calibrated Ni thresholds. Conventional component percentages below use `S_AB`; Flip-M uses `S_flip`.
 
-|Thickness|Native edge (eV)|Conventional (%)|Magnetic A/B (pp)|Nonmagnetic A/B (pp)|Flip-M A (%)|
-|---|---|---:|---:|---:|---:|
-|9 nm|L3, 831.271|+16.057750|+14.383760|+1.673989|+13.602163|
-|9 nm|L2, 848.698|-21.350511|-22.995762|+1.645252|-22.008620|
-|30 nm|L3, 831.271|-2.937059|+1.728143|-4.665203|+0.687425|
-|30 nm|L2, 848.698|-7.271259|-2.724962|-4.546297|-1.115669|
+**Primary native-energy results: raw EMCD differences (a.u.)**
 
 |Thickness|Edge|Conventional (a.u.)|Magnetic A/B (a.u.)|Nonmagnetic A/B (a.u.)|Flip-M A (a.u.)|
 |---|---|---:|---:|---:|---:|
@@ -293,6 +292,15 @@ These are signed point samples at native calculated energies, not edge integrals
 |9 nm|L2|-0.0102652335|-0.0110562634|+0.0007910298|-0.0106709398|
 |30 nm|L3|-0.0069728067|+0.0041027467|-0.0110755534|+0.0015732525|
 |30 nm|L2|-0.0119059756|-0.0044618593|-0.0074441163|-0.0017130793|
+
+**Supplementary native-energy results: normalized asymmetry (%)**
+
+|Thickness|Native edge (eV)|Conventional (%)|Magnetic A/B (pp)|Nonmagnetic A/B (pp)|Flip-M A (%)|
+|---|---|---:|---:|---:|---:|
+|9 nm|L3, 831.271|+16.057750|+14.383760|+1.673989|+13.602163|
+|9 nm|L2, 848.698|-21.350511|-22.995762|+1.645252|-22.008620|
+|30 nm|L3, 831.271|-2.937059|+1.728143|-4.665203|+0.687425|
+|30 nm|L2, 848.698|-7.271259|-2.724962|-4.546297|-1.115669|
 
 The [selected-energy CSV](images/ni017_flipm_recomputed/selected_native_L3_L2.csv) includes all four intensities, both denominators and both magnetic detector responses. At 30 nm L3, positive magnetic A/B is outweighed by negative nonmagnetic imbalance, reversing the conventional sign without reversing magnetization. Absolute nonmagnetic/magnetic ratios are 0.116 and 2.70 at L3 (9 and 30 nm), and 0.0715 and 1.67 at L2.
 
