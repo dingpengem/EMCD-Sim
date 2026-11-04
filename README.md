@@ -67,13 +67,13 @@ The default Ni spectral model constructs an **effective MDFF constrained by XMCD
 
 ## Example results
 
-![Recalculated Ni conventional A/B and fixed-detector Flip-M asymmetries at 9 and 30 nm](docs/images/ni017_flipm_recomputed/summary_percent.png)
+![Recalculated raw EMCD differences (a.u.) for conventional A/B and fixed-detector Flip-M at 9 and 30 nm](docs/images/ni017_flipm_recomputed/summary_raw.png)
 
-*Ni [017], 300 kV, exact (200) Bragg, Y = +15 mrad, Bloch-wave Double Channeling; newly recalculated at both thicknesses. Dotted lines mark native L3/L2 energies.*
+*Raw EMCD differences (a.u.) for Ni [017], 300 kV, exact (200) Bragg, Y = +15 mrad, Bloch-wave Double Channeling; independently recalculated at 9 and 30 nm. All curves retain their signed, shared model intensity scale without individual peak normalization. Dotted lines mark native L3/L2 energies.*
 
-Conventional A/B EMCD includes nonmagnetic diffraction imbalance. Ideal magnetization reversal at fixed detector A cancels that reversal-even contribution, while the underlying nonmagnetic EELS remains nonzero. Magnetic-only A/B (`M_A-M_B`) and Flip-M (`2M_A`) measure different magnetic combinations and use different percentage denominators. Both retain diffraction dependence. Thickness changes the magnetic response and contamination: at 30 nm L3 the imbalance reverses the conventional sign. These two thicknesses establish no universal trend.
+In raw a.u., conventional A/B is `D_conv = I_A(+M)-I_B(+M) = (M_A-M_B)+(N_A-N_B)`, whereas fixed-detector Flip-M is `D_flip,A = I_A(+M)-I_A(-M) = 2M_A`. Ideal Flip-M has a **zero nonmagnetic residual**, even though the underlying nonmagnetic EELS `N_A(E)` remains nonzero. The conventional A/B nonmagnetic difference varies with energy and reverses the apparent conventional L3 sign at 30 nm. These two magnetic measurements remain thickness- and diffraction-dependent; two thicknesses do not establish a universal trend.
 
-See the [raw a.u. comparison](docs/images/ni017_flipm_recomputed/summary_raw.png), [full tutorial and native-energy values](docs/TUTORIAL.md#part-vii-practical-ni-017-case-study), and [figure provenance](docs/images/ni017_flipm_recomputed/README.md). These research plots are derived from saved spectra, not a new GUI plotting mode.
+See the [supplementary normalized asymmetry (%) comparison](docs/images/ni017_flipm_recomputed/summary_percent.png), [full tutorial and native-energy raw values](docs/TUTORIAL.md#part-vii-practical-ni-017-case-study), and [figure provenance](docs/images/ni017_flipm_recomputed/README.md). Percentage asymmetries use different A/B and Flip-M denominators and should not be confused with the raw a.u. curves above. These research plots are post-processed from saved spectra, not a new GUI plotting mode.
 
 ## Scientific limitations
 
