@@ -1,3 +1,14 @@
+# v0.8.1-beta.1 - Windows-only Research Beta
+
+- Generalized single-element imported MDFF and explicit atomic 2p-to-3d research
+  workflows, GUI generation, source provenance and unchanged Ni compatibility.
+- Conservative cleanup: 64 modules retained with evidence; five unused imports
+  removed; no scientific function or kernel/default changed.
+- Fresh portable Windows build with extracted-EXE imported/atomic/project/export
+  acceptance. Publication is gated by the separate versioned acceptance record.
+- Synthetic Fe remains physically unvalidated; no multiplet/DFT, AFM/SDW or
+  multi-element site-resolved MDFF is supplied. See [release notes](RELEASE_NOTES_0_8_1_BETA_1.md).
+
 # Changelog
 
 ## v0.8.0-beta.1 — Windows-only Research Beta (2026-11-03)

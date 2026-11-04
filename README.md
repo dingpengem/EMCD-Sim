@@ -2,7 +2,7 @@
 
 A research simulation tool for **electron magnetic circular dichroism (EMCD)** in transmission electron microscopy.
 
-**[Download v0.8.0-beta.1 — Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1)** · [Installation](docs/INSTALL_WINDOWS.md) · [Quick Start](docs/QUICK_START.md) · [Tutorial](docs/TUTORIAL.md) · [User Manual](docs/USER_GUIDE.md)
+**[Download v0.8.1-beta.1 — Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1)** · [Installation](docs/INSTALL_WINDOWS.md) · [Quick Start](docs/QUICK_START.md) · [Tutorial](docs/TUTORIAL.md) · [User Manual](docs/USER_GUIDE.md)
 
 > **Magnetic-sign compatibility:** earlier released v0.6.1 Windows betas used a superseded Born/MDFF convention. Their signed magnetic EMCD results require revalidation before comparison with corrected results. Preserve original arrays and provenance; do not silently flip or relabel old data. Missing convention metadata means unknown or legacy-unverified. Absolute experimental magnetic handedness remains uncalibrated.
 
@@ -12,7 +12,7 @@ EMCD-Sim combines dynamical electron diffraction, approximate core-loss scatteri
 
 This is **beta research software**, not a generally converged or experimentally calibrated EMCD predictor. The Windows package passed native automated acceptance; independent installation on a separate clean PC or VM has **not been tested**.
 
-The current source adds [declared generalized atomic ionization](docs/GENERALIZED_ATOMIC_IONIZATION.md): an approximate research model with exact historical Ni regression and synthetic non-Ni demonstrations. It is not included in the released Windows package and does not establish quantitative Fe EMCD.
+This Research Beta adds [declared generalized atomic ionization](docs/GENERALIZED_ATOMIC_IONIZATION.md): an approximate research model with exact historical Ni regression and synthetic non-Ni demonstrations. It is included in the Windows package as an opt-in declared-source workflow and does not establish quantitative Fe EMCD.
 
 ## Features
 
@@ -22,12 +22,12 @@ The current source adds [declared generalized atomic ionization](docs/GENERALIZE
 |Diffraction geometry|Exact target Bragg alignment; full finite ZOLZ, explicit systematic-row and ideal 000 + target approximations; interactive beam selection and detector A/B placement.|
 |Live viewer|Projected-ZA dragging, distinct Thales and ZOLZ Laue circles, stale-preview invalidation, pan/zoom and reversible full-basis view.|
 |Propagation|Bloch-wave, FFT Multislice and Both-method comparison; Single and Double Channeling.|
-|Inelastic models|XMCD-constrained effective Hermitian MDFF and a non-DFT Ni atomic-transition approximation; crystal-frame magnetization and reversal.|
+|Inelastic models|Original Ni XMCD/atomic compatibility; declared complex single-element MDFF import and approximate cubic 2p-to-3d atomic generation with explicit material inputs and reversal states.|
 |Signals|Selected L3/L2 samples or full energy-dependent EELS; angular maps; raw magnetic/nonmagnetic differences and conventional A/B asymmetry.|
 |Research workflow|Change thickness or diffraction conditions, save separate runs and compare them. There is no one-click general thickness/mistilt survey in the GUI.|
 |Results and safety|Checksummed projects, Results Browser, CSV/NPZ and PNG/SVG exports, cooperative cancellation, numerical preflight and worker/memory controls.|
 
-Five representative orientations—[001], [017], [117], [111] and [710]—have bounded packaged-runtime checks. This is functional support, **not quantitative convergence certification** for every configuration. Non-Ni structures can be inspected, but the current EELS/EMCD GUI requires the verified conventional FCC Ni cell. See [capabilities and limitations](docs/USER_GUIDE.md#scientific-limitations-and-responsible-interpretation).
+Five representative orientations—[001], [017], [117], [111] and [710]—have bounded packaged-runtime checks. This is functional support, **not quantitative convergence certification** for every configuration. The original Ni providers retain their conventional FCC Ni gate. Opt-in declared sources additionally support eligible single-element, full-occupancy, translation-equivalent ionization sites; arbitrary CIF import does not supply a material-specific MDFF. See [capabilities and limitations](docs/USER_GUIDE.md#scientific-limitations-and-responsible-interpretation).
 
 ![Historical v0.7.0-beta.1 Windows interface (before the unified-provider selector) with settings, diffraction geometry and selected-energy EELS](docs/images/v070b1/gui_overview.png)
 
@@ -35,7 +35,7 @@ Five representative orientations—[001], [017], [117], [111] and [710]—have b
 
 ## Download and installation
 
-1. Download [EMCD-Sim-v0.8.0-beta.1-Windows.zip](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.8.0-beta.1/EMCD-Sim-v0.8.0-beta.1-Windows.zip) and [SHA256SUMS.txt](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.8.0-beta.1/SHA256SUMS.txt).
+1. Download [EMCD-Sim-v0.8.1-beta.1-Windows.zip](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.8.1-beta.1/EMCD-Sim-v0.8.1-beta.1-Windows.zip) and [SHA256SUMS.txt](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.8.1-beta.1/SHA256SUMS.txt).
 2. Verify SHA256, then extract the **complete** portable ZIP into a writable folder.
 3. Open `EMCD-Sim/EMCD-Sim.exe`. Keep `_internal` and all accompanying files beside it.
 
@@ -81,9 +81,10 @@ See the [supplementary normalized asymmetry (%) comparison](docs/images/ni017_fl
 
 ## Scientific limitations
 
-The Windows-only **v0.8.0-beta.1 Research Beta** bundles an Apache-2.0 [neutral-atom elastic provider for Z=1–118](docs/ELASTIC_ATOMIC_FACTORS.md), Adaptive Dirac–Padé 2026. It is the new GUI/provider-factory default; Ni Lobato remains selectable, and historical saved projects without a provider retain Lobato. The raw unversioned Python potential constructor also retains Lobato compatibility. The separate Z=1–98 legacy adapter still requires an external table with unverified redistribution rights. Ni-specific MDFF/EMCD eligibility is unchanged. See the [local acceptance and limitations](docs/acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md). The previous v0.7.0-beta.1 binary is preserved; historical Ni examples retain their original Lobato values. Linux/macOS packaged applications are not certified or offered by this release.
+The Windows-only **v0.8.1-beta.1 Research Beta** bundles an Apache-2.0 [neutral-atom elastic provider for Z=1–118](docs/ELASTIC_ATOMIC_FACTORS.md), Adaptive Dirac–Padé 2026. It is the new GUI/provider-factory default; Ni Lobato remains selectable, and historical saved projects without a provider retain Lobato. The raw unversioned Python potential constructor also retains Lobato compatibility. The separate Z=1–98 legacy adapter still requires an external table with unverified redistribution rights. Original Ni eligibility is unchanged; generalized imported/atomic routes require separately declared sources and eligible equivalent single-element sites. See the [local acceptance and limitations](docs/acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md). The previous v0.8.0-beta.1 and older binaries are preserved; historical Ni examples retain their original Lobato values. Linux/macOS packaged applications are not certified or offered by this release.
 
 - Effective XMCD and atomic-transition MDFF approximations; no complete complex DFT Ni MDFF or DFT calculation is supplied.
+- Synthetic Fe is a software demonstration, not quantitative Fe EMCD. The atomic model is cubic and approximate, with explicit radial/spin/material inputs; no validated Co/Cr, multiplet, AFM/SDW or multi-element site-resolved MDFF is supplied. [Parameters and limits](docs/GENERALIZED_ATOMIC_IONIZATION.md).
 - Projected independent-atom potential and finite ZOLZ support; no genuine atomic-3D multislice, complete HOLZ, comprehensive TDS/absorptive or convergent-probe/CBED model.
 - Numerical convergence depends on basis, potential, FFT mesh, depth, slice step and detector sampling. [111] lower-support convergence remains uncertified; accurate elastic intensities alone do not certify EMCD.
 - Native source energies and absolute magnetic handedness are not experimentally calibrated. A prescribed crystal magnetization vector does not determine the specimen surface normal or equilibrium magnetic state.
@@ -101,10 +102,10 @@ The Windows-only **v0.8.0-beta.1 Research Beta** bundles an Apache-2.0 [neutral-
 |[Physics and numerics](docs/PHYSICS.md)|Current equations, model boundaries and source map|
 |[Scientific limitations](docs/USER_GUIDE.md#scientific-limitations-and-responsible-interpretation)|Convergence and interpretation limits|
 |[Documentation index](docs/INDEX.md)|Technical references and historical records|
-|[Public release notes](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1)|Published prerelease scope and downloads|
-|[v0.8.0 release notes](docs/RELEASE_NOTES_0_8_0_BETA_1.md) / [Changelog](docs/CHANGELOG.md)|Preserved development history|
+|[Public release notes](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1)|Published prerelease scope and downloads|
+|[v0.8.1 release notes](docs/RELEASE_NOTES_0_8_1_BETA_1.md) / [Changelog](docs/CHANGELOG.md)|Current scope; [v0.8.0 history](docs/RELEASE_NOTES_0_8_0_BETA_1.md) preserved|
 
-**Provenance:** the v0.8.0-beta.1 tag targets the exact accepted Windows build-source commit. About/build information, SHA256SUMS.txt and the build manifest record the binary identity; see the [Windows release acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_0_BETA_1_ACCEPTANCE.md). The [v0.7.0-beta.1 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1) and its [acceptance record](docs/WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md) remain historical and unchanged. Experimental/planned architecture is listed separately in the [index](docs/INDEX.md#experimental-and-planned-work).
+**Provenance:** the v0.8.1-beta.1 tag targets the exact accepted Windows build-source commit. About/build information, SHA256SUMS.txt and the build manifest record the binary identity; see the [Windows release acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_1_BETA_1_ACCEPTANCE.md). The [v0.7.0-beta.1 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1) and its [acceptance record](docs/WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md) remain historical and unchanged. Experimental/planned architecture is listed separately in the [index](docs/INDEX.md#experimental-and-planned-work).
 
 ## Citation and license
 

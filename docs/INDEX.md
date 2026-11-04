@@ -48,3 +48,14 @@ Historical reports retain their original version, sign convention, settings, lab
 The [generalized Multislice architecture](GENERALIZED_MULTISLICE_ARCHITECTURE.md) describes the engine now used by the bounded projected backend. The [Atomic 3D development plan](ATOMIC_3D_MULTISLICE_DEVELOPMENT.md) is a plan, **not a released atomic-3D implementation**. Complete complex DFT-derived Ni MDFF, comprehensive HOLZ/TDS/absorption, calibrated experimental handedness/counts and arbitrary-material quantitative EMCD are not established by these documents.
 
 Retired/source-only research drivers are not buttons in the released GUI. To reproduce a historical study, preserve its exact source/settings/checkpoints and resolve its convention/convergence warnings; do not rerun it merely to read the current guides.
+
+## v0.8.1-beta.1 declared-source research workflows
+
+- [Release notes](RELEASE_NOTES_0_8_1_BETA_1.md)
+- [Generalized single-element source contract](GENERALIZED_SINGLE_ELEMENT_EMCD_DESIGN.md)
+- [Explicit approximate atomic model](GENERALIZED_ATOMIC_IONIZATION.md)
+- [Independent local merge acceptance](GENERALIZED_ATOMIC_IONIZATION_MERGE_ACCEPTANCE.md)
+- [Cleanup inventory and acceptance](SOURCE_CODE_CLEANUP_0_8_1.md)
+
+Synthetic non-Ni examples are mathematical software tests, not validated material
+EMCD. Historical figure and release acceptance records retain their original scope.

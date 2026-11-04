@@ -1,14 +1,15 @@
-EMCD-Sim v0.8.0-beta.1 - Windows-only Research Beta
-Windows x64 portable research prerelease; unsigned. Python package 0.8.0b1.
-Windows numeric file/product version 0.8.0.1.
+EMCD-Sim v0.8.1-beta.1 - Windows-only Research Beta
+Windows x64 portable research prerelease; unsigned. Python package 0.8.1b1.
+Windows numeric file/product version 0.8.1.1.
 Physics convention: forward_born_dagger_g_minus_h_v1.
 The release tag targets the exact accepted build source in About/build_info.json.
 New GUI calculations default to bundled Adaptive Dirac-Pade neutral Z=1-118
 elastic factors. Ni Lobato remains the historical compatibility provider; old
 projects without provider settings restore Lobato. Provider identity and
 coefficient digests are saved with new projects. Ordered multi-element CIFs
-support elastic diffraction, including non-FCC indexing. Inelastic MDFF/EMCD
-remains restricted to the verified conventional FCC Ni model.
+support elastic diffraction, including non-FCC indexing. Original Ni providers keep their Ni eligibility gate. Opt-in declared imported
+tensors and approximate cubic 2p-to-3d atomic sources support eligible equivalent-site
+single-element research calculations. They do not provide universal quantitative EMCD.
 The Apache-2.0 coefficient subset has separate LICENSE/NOTICE/provenance.
 No upstream HDF5 archive or h5py is needed by the bundled JSON evaluator.
 The unlicensed legacy Z=1-98 table is NOT bundled; its optional adapter
@@ -83,3 +84,16 @@ Responsive UI: Settings and Diffraction remain side by side. Drag the
 three-column splitters; click chevron headers to collapse optional controls
 or Project Results. Very narrow windows offer a one-click Results strip.
 Layout preferences are independent of scientific project settings.
+
+GENERALIZED ATOMIC / IMPORTED SOURCES
+Use the imported tensor panel and explicit parameter JSON. The original synthetic
+Fe example is at _internal/examples/synthetic_fe_atomic_parameters.json. Every
+material-dependent input must be declared. Generated tensors retain parameter bytes,
+SHA256 and explicit reversal states. The local spin axis is +z; only rigid frame
+rotations of the cubic model are supported. Intensities are relative.
+Synthetic Fe calculations are software tests only, not quantitatively validated Fe
+EMCD. No validated Co/Cr parameters, full DFT MDFF, many-body multiplets, AFM/SDW,
+general crystal-field symmetry or multi-element site-resolved MDFF is provided.
+Finite-case BW/MS agreement does not establish broad convergence or experimental
+accuracy; detector refinement sensitivity remains. Historical Ni figures retain
+their original Lobato/provider provenance and were not regenerated for this release.

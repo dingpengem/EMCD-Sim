@@ -8,7 +8,7 @@ import time
 import traceback
 from unittest.mock import patch
 import numpy as np
-from PySide6 import QtWidgets
+from PySide6 import QtWidgets, QtGui
 
 
 def run(output, historical_project=None):
@@ -23,6 +23,11 @@ def run(output, historical_project=None):
     from emcd_sim.gui.results import mdff_label
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    if not QtGui.QFontDatabase.families():
+        from matplotlib import get_data_path
+        font=QtGui.QFontDatabase.addApplicationFont(str(Path(get_data_path())/'fonts/ttf/DejaVuSans.ttf'))
+        families=QtGui.QFontDatabase.applicationFontFamilies(font)
+        if families:app.setFont(QtGui.QFont(families[0],9))
     app.setQuitOnLastWindowClosed(False)
     report=dict(build=build_info(),frozen=bool(getattr(sys,'frozen',False)),executable=sys.executable,
         qt_platform=app.platformName(),cases=[],checks=[],errors=[],complete=False,closed_cleanly=False)
