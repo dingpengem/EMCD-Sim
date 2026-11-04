@@ -457,9 +457,14 @@ def main():
     parser.add_argument('--desktop-acceptance',type=Path,help='Opt-in portable-build GUI and small BW/MS Single/Double acceptance')
     parser.add_argument('--desktop-orientation',choices=['001','017','117','111','710'],default='017',help='Orientation for the bounded desktop acceptance only')
     parser.add_argument('--scientific-acceptance',type=Path,help='Opt-in bounded matched Python/frozen Ni [017] raw-reversal reference')
+    parser.add_argument('--unified-elastic-acceptance',type=Path,help='Opt-in bounded unified-provider native GUI acceptance in a new folder')
+    parser.add_argument('--unified-historical-project',type=Path,help='Read-only historical Ni project for unified-provider acceptance')
     args=parser.parse_args()
     from .runtime import configure_logging, LABEL, build_info
     configure_logging()
+    if args.unified_elastic_acceptance:
+        from .unified_elastic_acceptance import run
+        return run(args.unified_elastic_acceptance,args.unified_historical_project)
     if args.scientific_acceptance:
         from .scientific_acceptance import run
         return run(args.scientific_acceptance)

@@ -1,5 +1,15 @@
 # Windows candidate build
 
+The local unified-elastic candidate keeps version 0.7.0b1 and uses a separate build root and local-candidate label. The Adaptive Dirac–Padé JSON coefficients, provenance, Apache-2.0 LICENSE and NOTICE are collected from `emcd_sim/data/adaptive_dirac_pade_2026`. Neither h5py nor the upstream HDF5 archives are runtime requirements; the original unlicensed atomic table remains external. CIF support still uses the declared ASE imports and space-group data.
+
+After building from a clean committed source, exercise the actual EXE on Windows:
+
+```powershell
+EMCD-Sim.exe --unified-elastic-acceptance C:/new-acceptance-output --unified-historical-project C:/existing-Ni-project
+```
+
+This opt-in mode requires a fresh output directory and a genuine checksummed historical Ni project. It runs real GUI workers, saves/reopens projects, imports Fe/CsCl/ZnO CIFs, validates rendered indices/clicks, checks the Ni-only MDFF gate and runs only two selected Ni energies. Automated file-dialog selections choose the supplied local paths. Saved historical arrays are opened read-only; a copy is saved under the new output directory. Run without a headless Qt override for native acceptance and inspect process exit, `acceptance.json`, screenshots and logs. No release/tag or public-binary replacement is implied. See [local main acceptance](../docs/acceptance/unified-elastic-2026-11-03/MAIN_INTEGRATION_ACCEPTANCE.md).
+
 Current local candidate: **v0.7.0-beta.1 / 0.7.0b1**, convention
 `forward_born_dagger_g_minus_h_v1`. Use a fresh Python 3.11 Windows build venv
 without `--system-site-packages`. Install the same declared inputs as Actions:
