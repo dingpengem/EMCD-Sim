@@ -1,0 +1,443 @@
+{
+  "result": "PART 1B LOCAL ACCEPTANCE: GO",
+  "tested_source": "1c77fb1227cae87bf417fffaeb321bfba59d116e",
+  "feature_tip": "b96714bb907bfab8f8f49750a92c0076a6f5246a",
+  "merge_candidate_source": "98570c62cc205fa82f855a4033a4d683faf80837",
+  "main_baseline": "0f981bf4864cbb84ccc496fa32900ee7919b95e6",
+  "source_regression": {
+    "source": "1c77fb1227cae87bf417fffaeb321bfba59d116e",
+    "exit_code": 0,
+    "collected": 818,
+    "passed": 779,
+    "skipped": 39,
+    "failed": 0,
+    "errors": 0,
+    "duration_seconds": 1155.2839999999997,
+    "skip_reasons": {
+      "Optional stored GUI reference": 1,
+      "Saved project fixture unavailable": 3,
+      "Full benchmark outputs are not complete": 3,
+      "Optional saved angular references unavailable": 6,
+      "Full checkpointed thickness calculation still incomplete": 3,
+      "Local legacy reference project unavailable": 1,
+      "Saved BW/MS fixture not available; never run a fallback simulation": 1,
+      "Optional GUI and existing real Stage D results required": 8,
+      "Optional saved benchmark unavailable": 1,
+      "Requires original local WIEN2k audit companions; not distributed": 1,
+      "Optional local WIEN2k companion audit; original files are not distributed with the package": 1,
+      "Local four-point benchmark not generated": 2,
+      "Local MS validation outputs not generated": 3,
+      "Optional saved result fixture unavailable": 1,
+      "Optional real saved Ni project unavailable": 1,
+      "Optional saved GUI reference unavailable": 1,
+      "Pinned offline HDF5 inputs unavailable": 1,
+      "Optional historical saved project is unavailable": 1
+    }
+  },
+  "post_merge": {
+    "passed": 50,
+    "skipped": 1,
+    "failed": 0,
+    "errors": 0,
+    "finished_utc": "2026-11-04T19:31:25.2861789Z",
+    "source": "98570c62cc205fa82f855a4033a4d683faf80837",
+    "exit_code": 0
+  },
+  "native": {
+    "cases": [
+      {
+        "name": "Ni_xmcd_single",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "comparison": 0.00032945034278085005,
+        "label": "XMCD-effective, native axis"
+      },
+      {
+        "name": "Ni_xmcd_double",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "comparison": 0.0006593227630042392,
+        "label": "XMCD-effective, native axis"
+      },
+      {
+        "name": "Ni_ni-atomic_single",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "comparison": 0.0003302171062392723,
+        "label": "Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni"
+      },
+      {
+        "name": "Ni_ni-atomic_double",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "comparison": 0.0006617875268144831,
+        "label": "Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni"
+      },
+      {
+        "name": "Fe_imported_single",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "comparison": 0.0006396961091371369,
+        "label": "SYNTHETIC TEST ONLY; approximate atomic Fe 2p-3d model; physically unvalidated parameters"
+      },
+      {
+        "name": "Fe_imported_double",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "comparison": 0.0012815790733429451,
+        "label": "SYNTHETIC TEST ONLY; approximate atomic Fe 2p-3d model; physically unvalidated parameters"
+      },
+      {
+        "name": "Fe_atomic_single",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "comparison": 0.0006396961091371369,
+        "label": "SYNTHETIC TEST ONLY; approximate atomic Fe 2p-3d model; physically unvalidated parameters"
+      },
+      {
+        "name": "Fe_atomic_double",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "comparison": 0.0012815790733429451,
+        "label": "SYNTHETIC TEST ONLY; approximate atomic Fe 2p-3d model; physically unvalidated parameters"
+      },
+      {
+        "name": "Fe_declared-xmcd_single",
+        "coverage": "edges",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "edge": "L2,3",
+        "status": "SYNTHETIC TEST ONLY"
+      },
+      {
+        "name": "Fe_declared-xmcd_double",
+        "coverage": "edges",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "edge": "L2,3",
+        "status": "SYNTHETIC TEST ONLY"
+      },
+      {
+        "name": "O_declared-xmcd_single",
+        "coverage": "edges",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "edge": "K",
+        "status": "SYNTHETIC TEST ONLY"
+      },
+      {
+        "name": "O_declared-xmcd_double",
+        "coverage": "edges",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "edge": "K",
+        "status": "SYNTHETIC TEST ONLY"
+      },
+      {
+        "name": "O_declared-xmcd_single",
+        "coverage": "full",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "edge": "K",
+        "status": "SYNTHETIC TEST ONLY"
+      },
+      {
+        "name": "O_declared-xmcd_double",
+        "coverage": "full",
+        "project_roundtrip": true,
+        "methods": [
+          "bloch",
+          "fft-multislice"
+        ],
+        "edge": "K",
+        "status": "SYNTHETIC TEST ONLY"
+      }
+    ],
+    "checks": [
+      "CIF import and declared-source generation",
+      "Scientific PNG/SVG/CSV exports from completed generalized result",
+      "Failed generation invalidates stale GUI state",
+      "Source checksum rejects replacement",
+      "Partial atomic provenance rejected",
+      "Genuine historical Lobato project and archived elastic control",
+      "Explicit nonmagnetic imported state",
+      "Fixed three-model menu for Ni/Fe/Co/Cr; direct Fe XMCD and non-3d K-edge Single/Double BW/MS, maps/exports/reopen",
+      "Fixed three-model menu for Ni/Fe/Co/Cr; direct Fe XMCD and non-3d K-edge Single/Double BW/MS, maps/exports/reopen",
+      "Clean startup, all real GUI worker cases, exports/screenshots and shutdown"
+    ],
+    "frozen": true,
+    "qt_platform": "windows",
+    "closed_cleanly": true,
+    "exit_code": 0
+  },
+  "normal_startup": {
+    "exit_code": 0,
+    "source": "98570c62cc205fa82f855a4033a4d683faf80837",
+    "windows_product_version": "v0.8.1-beta.1",
+    "windows_file_version": "0.8.1.1",
+    "screenshot": "C:\\Users\\peng863\\EMCD-Sim\\build\\v081-mdff-main-integration\\outputs\\part1b\\normal-startup.png",
+    "finished_utc": "2026-11-04T19:45:25.5835332Z"
+  },
+  "package": {
+    "files_verified": 614,
+    "source": "98570c62cc205fa82f855a4033a4d683faf80837",
+    "version": "0.8.1b1",
+    "dirty": false,
+    "zip_sha256": "292421848efbfb0464fa3d61b342c4360c7e834f2c0e9804bbe81ce4dd0003e8",
+    "zip_bytes": 108735641,
+    "exe_sha256": "343bee8e45e2dbf759f3f6f56dea79fd61723641d1e76520b98cbff7de83a401",
+    "manifest_sha256": "9b45c45f26f83c0fb6c827cd172671af7bc335b7dba8b08d5f4a03df101bf854",
+    "runtime_source_files_verified": 68,
+    "third_party_license_groups_verified": 17,
+    "apache_coefficient_notices_verified": true,
+    "external_legacy_table_bundled": false,
+    "upstream_hdf5_bundled": false
+  },
+  "protected_original": {
+    "baseline": "C:\\Users\\peng863\\EMCD-Sim\\build\\v081-release-source\\outputs\\v081-release\\exe-native",
+    "candidate": "outputs\\part1b\\exe-native",
+    "cases": 8,
+    "arrays": 1080,
+    "bitwise_equal_arrays": 1080,
+    "max_absolute_difference": 0.0,
+    "failures": [],
+    "case_details": [
+      {
+        "project": "Fe_atomic_double_project",
+        "arrays": 135
+      },
+      {
+        "project": "Fe_atomic_single_project",
+        "arrays": 135
+      },
+      {
+        "project": "Fe_imported_double_project",
+        "arrays": 135
+      },
+      {
+        "project": "Fe_imported_single_project",
+        "arrays": 135
+      },
+      {
+        "project": "Ni_ni-atomic_double_project",
+        "arrays": 135
+      },
+      {
+        "project": "Ni_ni-atomic_single_project",
+        "arrays": 135
+      },
+      {
+        "project": "Ni_xmcd_double_project",
+        "arrays": 135
+      },
+      {
+        "project": "Ni_xmcd_single_project",
+        "arrays": 135
+      }
+    ]
+  },
+  "matched_source": {
+    "baseline": "C:\\Users\\peng863\\EMCD-Sim\\build\\v081-unified-mdff\\outputs\\part1b\\source-native",
+    "candidate": "outputs\\part1b\\exe-native",
+    "cases": 14,
+    "arrays": 1758,
+    "bitwise_equal_arrays": 1758,
+    "max_absolute_difference": 0.0,
+    "failures": [],
+    "case_details": [
+      {
+        "project": "Fe_atomic_double_project",
+        "arrays": 135
+      },
+      {
+        "project": "Fe_atomic_single_project",
+        "arrays": 135
+      },
+      {
+        "project": "Fe_declared-xmcd_double_project",
+        "arrays": 135
+      },
+      {
+        "project": "Fe_declared-xmcd_single_project",
+        "arrays": 135
+      },
+      {
+        "project": "Fe_imported_double_project",
+        "arrays": 135
+      },
+      {
+        "project": "Fe_imported_single_project",
+        "arrays": 135
+      },
+      {
+        "project": "full-k/O_declared-xmcd_double_project",
+        "arrays": 102
+      },
+      {
+        "project": "full-k/O_declared-xmcd_single_project",
+        "arrays": 102
+      },
+      {
+        "project": "Ni_ni-atomic_double_project",
+        "arrays": 135
+      },
+      {
+        "project": "Ni_ni-atomic_single_project",
+        "arrays": 135
+      },
+      {
+        "project": "Ni_xmcd_double_project",
+        "arrays": 135
+      },
+      {
+        "project": "Ni_xmcd_single_project",
+        "arrays": 135
+      },
+      {
+        "project": "O_declared-xmcd_double_project",
+        "arrays": 102
+      },
+      {
+        "project": "O_declared-xmcd_single_project",
+        "arrays": 102
+      }
+    ]
+  },
+  "preservation": {
+    "part1_zip_sha256": "c485928a87a3c25aebf1fe749527ec8d3a2fdea7da6d1da648e4297d352d7e9e",
+    "part1_evidence_files_verified": 13,
+    "unrelated_root_files_preserved": 19,
+    "protected_source_files": [
+      "src/emcd_sim/single_channeling_tensor.py",
+      "src/emcd_sim/double_channeling.py",
+      "src/emcd_sim/multislice_double_channeling.py",
+      "src/emcd_sim/mdff_tensor.py",
+      "src/emcd_sim/xmcd_effective_mdff.py",
+      "src/emcd_sim/atomic_ionization.py",
+      "src/emcd_sim/ionization_sites.py",
+      "src/emcd_sim/scattering.py",
+      "src/emcd_sim/elastic_providers.py",
+      "src/emcd_sim/adaptive_scattering.py"
+    ],
+    "historical_data_and_figures_unchanged": true,
+    "old_reference_manifests_unchanged": true
+  },
+  "feature_files": [
+    "README.md",
+    "docs/GENERALIZED_ATOMIC_IONIZATION.md",
+    "docs/GENERALIZED_CODE_CONSOLIDATION_0_8_1.md",
+    "docs/GENERALIZED_SINGLE_ELEMENT_EMCD_DESIGN.md",
+    "docs/INDEX.md",
+    "docs/MDFF_FUNCTION_INVENTORY_0_8_1.csv",
+    "docs/USER_GUIDE.md",
+    "packaging/BETA_README.txt",
+    "packaging/native_acceptance.py",
+    "scripts/inventory_mdff_architecture.py",
+    "src/emcd_sim/generalized_xmcd.py",
+    "src/emcd_sim/gui/channeling.py",
+    "src/emcd_sim/gui/component_display.py",
+    "src/emcd_sim/gui/emcd_forward.py",
+    "src/emcd_sim/gui/forward_pipeline.py",
+    "src/emcd_sim/gui/generalized_forward.py",
+    "src/emcd_sim/gui/imported_tensor_ui.py",
+    "src/emcd_sim/gui/normalization_controls.py",
+    "src/emcd_sim/gui/numerical_settings.py",
+    "src/emcd_sim/gui/prb_benchmark.py",
+    "src/emcd_sim/gui/prb_controls.py",
+    "src/emcd_sim/gui/project_io.py",
+    "src/emcd_sim/gui/propagation.py",
+    "src/emcd_sim/gui/provider_ui.py",
+    "src/emcd_sim/gui/results.py",
+    "src/emcd_sim/gui/results_browser.py",
+    "src/emcd_sim/gui/signal_normalization.py",
+    "src/emcd_sim/gui/stage_b.py",
+    "src/emcd_sim/imported_mdff.py",
+    "src/emcd_sim/mdff_edges.py",
+    "src/emcd_sim/mdff_providers.py",
+    "src/emcd_sim/ni_local_mdff.py",
+    "tests/fixtures/unified_mdff_scope_v1.json",
+    "tests/single_element_source_guard.py",
+    "tests/test_single_element_forward.py",
+    "tests/test_solver_settings_ui.py",
+    "tests/test_unified_mdff_providers.py",
+    "tests/test_unified_provider_gui.py",
+    "tests/test_v070_metadata.py"
+  ],
+  "runtime_defaults": {
+    "elastic": "adaptive-dirac-pade-2026",
+    "historical_elastic": "nickel-lobato-2014",
+    "mdff_choices": [
+      "XMCD-constrained MDFF",
+      "Atomic Ionization MDFF",
+      "Imported Complex MDFF Tensor"
+    ]
+  },
+  "publication": {
+    "pushed": false,
+    "tag_created": false,
+    "release_published": false,
+    "release_ci_triggered": false,
+    "original_binary_replaced": false
+  },
+  "limitations": [
+    "Approximate effective/atomic dipole models; no quantitative Fe or K-edge physical validation",
+    "Atomic provider restricted to explicit Sc-Zn cubic 2p-to-3d L2,3, local +z and rigid frame rotations",
+    "Only L2,3 and bounded synthetic K declaration workflows; other edge families rejected",
+    "Single element and supported equivalent sites; no multi-element, inequivalent-site, AFM/SDW or complex magnetic model",
+    "Approximately 1.6% detector-refinement sensitivity remains; no broad convergence/experimental accuracy",
+    "Same-host Windows acceptance; independent clean PC/VM untested",
+    "Unlicensed legacy atomic table remains external; no redistribution permission inferred"
+  ],
+  "evidence_sha256": {
+    "feature/committed-full.xml": "3edfabd55d33867196fa4c364d2729f8b85c0686de9070134cb5a907cc6154fa",
+    "feature/committed-full.log": "d7b752c92cc66a361736193c177f5a20ae9443e7b4c7de423ad17932af993019",
+    "feature/committed-full-exit-status.json": "a40be557ace8495b300ae2d026b27f6a0fbcfdc4af5ef3b64ccf99e9dcd1cc38",
+    "feature/committed-test-source-identity.json": "c1de442f49299ced1058e1075e8f8d1d2899eadb623a097c4725429def63743f",
+    "integration/postmerge.xml": "69870ca2831ae3cd67e52f6cc69e076fbb24797159a3697acab244c635cfddcf",
+    "integration/exe-native/acceptance.json": "74fc16fe5e4136f7b58eb0a7b71ff8ca90debfcbaee46f3eea581c5fe90a973f",
+    "integration/native-launch.json": "f5490ce3c33e4b463c11dcfc32643b1059b1986077c19207de8a36cde1838c42",
+    "integration/normal-startup.png": "828e0d76c158bae150781b833682003935fef02d10c9d9c10fc47589149af10a",
+    "integration/package-verification.json": "30b882434f087a8bc899880c583301383067018fbbfd25170ee5f1a5b935c65b",
+    "integration/native-original-comparison.json": "511d8cbc79de38eb4b18fca52375076d77c53a9933f388d9620af30d393fcd0f",
+    "integration/native-source-comparison.json": "34c609138e50f3956406cde274e657cfbf45fc447f069e496a12447fbe0486a8"
+  }
+}

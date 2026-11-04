@@ -1,6 +1,6 @@
 # Unified MDFF consolidation, v0.8.1 Part 1B
 
-Status: source acceptance passed; merged-source Windows candidate acceptance pending.
+**PART 1B LOCAL ACCEPTANCE: GO.** Completed locally on 2026-11-04 (America/Los_Angeles). No push, tag, release or release CI was performed.
 
 The immutable Part 1 scientific source is
 `654ed042b1b9638a43112e215a129c1a8d1bf186`; its acceptance documentation is
@@ -53,12 +53,7 @@ No function was classified F merely because a static scan found no callers.
 
 ## Acceptance gates
 
-Passed: independent atomic transition/tensor equality; 1,080 protected arrays;
-provider integrity and project round trips; synthetic edge/site checks; complete
-Windows source suite on the exact clean commit below. Pending: local merge,
-post-merge checks, fresh packaged EXE workflows, manifest and SHA256 verification.
-Final source and ZIP hashes will be recorded only after those gates pass.
-No publication is authorized.
+All local gates passed: exact Ni/Fe controls, provider/source validation, complete Windows regression, normal local merge, post-merge checks, fresh extracted EXE, normal startup/shutdown, complete manifest and SHA256 verification. Publication remains outside this acceptance.
 
 ## Implemented provider boundary
 
@@ -183,3 +178,139 @@ K workflows with clean shutdown. Comparing the original Part 1 EXE's eight proje
 against current source GUI controls gave **1,080/1,080 strictly bitwise-equal arrays**
 (dtype, shape and bytes, including NaNs/signed zeros), maximum absolute difference 0.
 These controls are retained for the fresh extracted-EXE comparison.
+
+
+## Final merge and fresh Windows candidate
+
+| Identity | Exact value |
+| --- | --- |
+| Complete-regression source | `1c77fb1227cae87bf417fffaeb321bfba59d116e` |
+| Reviewed feature tip including portable guidance | `b96714bb907bfab8f8f49750a92c0076a6f5246a` |
+| Original local main | `0f981bf4864cbb84ccc496fa32900ee7919b95e6` |
+| Normal no-ff merge / exact candidate build source | `98570c62cc205fa82f855a4033a4d683faf80837` |
+| Version | `0.8.1b1`, display `v0.8.1-beta.1`, Windows `0.8.1.1` |
+| Physics convention | `forward_born_dagger_g_minus_h_v1` (unchanged) |
+| Candidate ZIP bytes | 108735641 |
+| Candidate ZIP SHA256 | `292421848efbfb0464fa3d61b342c4360c7e834f2c0e9804bbe81ce4dd0003e8` |
+| EXE SHA256 | `343bee8e45e2dbf759f3f6f56dea79fd61723641d1e76520b98cbff7de83a401` |
+| Build-manifest SHA256 | `9b45c45f26f83c0fb6c827cd172671af7bc335b7dba8b08d5f4a03df101bf854` |
+
+The feature remains intact. The dedicated integration worktree performed a normal
+two-parent merge from original main; no conflict, reset or history rewrite occurred.
+The merged tree exactly matched the feature. Post-merge checks passed **50 tests,
+1 optional skip, 0 failures/errors, exit 0**. All 171 tested canonical production,
+test and packaging Python/spec identities matched. The intervening feature commit
+updated only documentation/portable README; it did not change tested runtime code.
+Clean local main advanced to the accepted merge. This subsequent acceptance record
+is documentation-only; the executable continues to identify the exact build source
+above rather than a later documentation commit.
+
+The fresh ZIP is local at
+`build/v081-mdff-main-integration/build/windows-v081b1-part1b/EMCD-Sim-v0.8.1-beta.1-Windows.zip`.
+Its extraction, source worktree and all intermediate evidence remain preserved.
+The old Part 1 ZIP was neither reused for this build nor replaced.
+
+## Extracted-EXE acceptance and numerical comparison
+
+The actual frozen EXE ran with Qt's native `windows` platform, source Python paths
+and external legacy-table configuration removed, and a Windows-only PATH.
+All **14/14 workflows passed**, with clean worker/window shutdown and process exit 0.
+A separate ordinary GUI `--smoke-screenshot` startup/default diffraction/shutdown
+also exited 0. The PE version resource and saved project software version match
+the unchanged v0.8.1-beta.1 identity. No missing coefficient/import error or native
+crash occurred. Original historical Ni project loading retained Lobato and its
+archived elastic control (absolute tolerance 2e-12); its saved arrays were not edited.
+
+| Native workflow | Spectral coverage | Result |
+| --- | --- | --- |
+| Ni_xmcd_single | edges | PASS |
+| Ni_xmcd_double | edges | PASS |
+| Ni_ni-atomic_single | edges | PASS |
+| Ni_ni-atomic_double | edges | PASS |
+| Fe_imported_single | edges | PASS |
+| Fe_imported_double | edges | PASS |
+| Fe_atomic_single | edges | PASS |
+| Fe_atomic_double | edges | PASS |
+| Fe_declared-xmcd_single | edges | PASS |
+| Fe_declared-xmcd_double | edges | PASS |
+| O_declared-xmcd_single | edges | PASS |
+| O_declared-xmcd_double | edges | PASS |
+| O_declared-xmcd_single | full | PASS |
+| O_declared-xmcd_double | full | PASS |
+
+Every workflow used both BW and FFT MS with the named Single/Double model.
+The four original Ni workflows cover historical XMCD and atomic inputs; the Fe
+workflows exercise imported complex tensors and direct atomic parameters. Additional
+declared Fe XMCD and synthetic O K inputs exercise direct file input, actual edge
+labels, save/reopen and K PNG/SVG exports. Imported K workflows were independently
+covered by the source GUI suite; synthetic K testing is not physical arbitrary-edge
+validation. Co/Cr menu visibility was checked without claiming material validity.
+Explicit nonmagnetic import, partial atomic provenance rejection, changed-source
+rejection and failed generation invalidation also passed in the frozen application.
+
+**Original Part 1 versus new EXE: 1,080/1,080 scientific arrays bitwise equal across
+eight controls, maximum absolute difference 0.** Matched current source versus new
+EXE: **1,758/1,758 arrays bitwise equal across all 14 workflows**, maximum absolute
+difference 0. Dtype, shape and raw bytes were compared, including NaN/signed-zero
+representations. These are numerical compatibility checks, not material accuracy.
+
+## Packaging, preservation and redistribution
+
+All **614** manifest files verified by size and SHA256; exact extracted file
+membership and both internal/outer SHA256 lists verified. All **68** runtime source
+hashes matched the clean build tree. The 118-element coefficient subset, its Apache
+LICENSE/NOTICE/provenance, application MIT license and **17** dependency-license
+groups verified. ASE CIF spacegroup data, the explicit synthetic atomic example
+and repository-tracked Ni source verified. No external legacy scattering table or
+upstream HDF5 archive was bundled. Runtime does not need WIEN2k or external Python.
+
+The original Part 1 archive/hash and 13 evidence hashes remain unchanged, as do all
+19 unrelated root-worktree files, protected kernel/provider sources, historical
+research arrays/checkpoints, figure assets and original reference manifests. The
+raw a.u. Flip-M example remains primary, normalized percentages supplementary;
+the 9/30 nm examples retain their original Lobato provenance. No large reference
+study was regenerated. No binary/scientific output was added to Git.
+
+## Complete-run skip accounting
+
+These are the 39 actual skips, not passing tests. Existing incomplete/private
+studies were not generated to fill them; their absence is explicit.
+
+| Skip reason | Count |
+| --- | ---: |
+| Optional stored GUI reference | 1 |
+| Saved project fixture unavailable | 3 |
+| Full benchmark outputs are not complete | 3 |
+| Optional saved angular references unavailable | 6 |
+| Full checkpointed thickness calculation still incomplete | 3 |
+| Local legacy reference project unavailable | 1 |
+| Saved BW/MS fixture not available; never run a fallback simulation | 1 |
+| Optional GUI and existing real Stage D results required | 8 |
+| Optional saved benchmark unavailable | 1 |
+| Requires original local WIEN2k audit companions; not distributed | 1 |
+| Optional local WIEN2k companion audit; original files are not distributed with the package | 1 |
+| Local four-point benchmark not generated | 2 |
+| Local MS validation outputs not generated | 3 |
+| Optional saved result fixture unavailable | 1 |
+| Optional real saved Ni project unavailable | 1 |
+| Optional saved GUI reference unavailable | 1 |
+| Pinned offline HDF5 inputs unavailable | 1 |
+| Optional historical saved project is unavailable | 1 |
+
+## Review evidence and remaining limits
+
+[Machine-readable acceptance and artifact hashes](acceptance/unified-mdff-part1b-2026-11-04/LOCAL_ACCEPTANCE.json)
+and [all 39 Part 1B feature files](acceptance/unified-mdff-part1b-2026-11-04/FEATURE_FILES.txt)
+accompany this report. The complete proposed diff is preserved locally as
+`build/atomic-ionization-main-integration/outputs/part1b/proposed-final.patch`.
+Original and interrupted logs are retained alongside the successful committed run.
+
+There are **no outstanding essential local-acceptance blockers**. Remaining
+scientific restrictions above remain: approximate dipole models, no quantitative
+Fe/K claim, only the implemented atomic transition, supported single-element sites,
+detector sensitivity, no broad convergence/experimental validation, and no independent
+clean-PC test. Licensing compliance does not establish quantitative scattering accuracy.
+The legacy table's rights remain unresolved and its data remain excluded.
+
+No push, tag, release, public EXE replacement, release CI, Part 2 or v0.9 work occurred.
+Publication requires the user's separate instruction. **Stop after Part 1B.**
