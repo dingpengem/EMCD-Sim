@@ -1,0 +1,23 @@
+{
+  "base": "2f9c130099dce5df4e4609b521c42f53c5385518",
+  "canonical_sha256": {
+    "src/emcd_sim/atomic_ionization.py": "c8c04cd18c07576daaa1a53efe27ad227b3da32f77641627191d8a915cd9ea47",
+    "src/emcd_sim/double_channeling.py": "b100633aac6c3aeccedd86ac150c4c1e91cddcd486ce3cb816cac58833c86918",
+    "src/emcd_sim/generalized_xmcd.py": "e39ba89f7f72ed912903001cf48f98494e99c4a6bb10cf22bebaf3e87eb37e65",
+    "src/emcd_sim/gui/channeling.py": "8d21f03d1eacfa72f6970625604a1a06fe945462523a8b3efa9f8b210ac829bc",
+    "src/emcd_sim/gui/generalized_forward.py": "2d373aef0d9723583692161e0e508c07f64ef2e39ac18d25b457673ffa4e73a8",
+    "src/emcd_sim/gui/imported_tensor_ui.py": "7f98b96c0ec935e05766cf5c6f299954e631981930ba0b41b65758f2652569a1",
+    "src/emcd_sim/gui/numerical_settings.py": "f883504527e1c20f276db67bbd92f2458ec0fa09723601e9affdd3037310d009",
+    "src/emcd_sim/gui/project_io.py": "6d7add26a0c8e3d1ffadef76dd8317db8553b95b7f1bc333b6cc91e4fe8c60f8",
+    "src/emcd_sim/gui/propagation.py": "7f5727ccf84f435aeb529c282c2f87207419cc48a0fdabac4dd3f13ed0534c8f",
+    "src/emcd_sim/gui/results.py": "c475d796309e7723d8ed95643a423848bace03fd365c1d6a9af8d18a0b2649cb",
+    "src/emcd_sim/gui/results_browser.py": "e7d2e346985ae0d058dd740c8547e7d55287efd145515837a642699adcc10651",
+    "src/emcd_sim/gui/stage_b.py": "73a13e24823c494d56600bc930c04b29ca24f97123d74cf9f842c9a3518b5f24",
+    "src/emcd_sim/imported_mdff.py": "4308b766bdbc067f0792aff7cbc899f67d3ffe67cc6121661777d98870e42f84",
+    "src/emcd_sim/ionization_sites.py": "ecdb47d8e1e6f239567e5e06b143de40f76024057b1de9af55525f1090cbe461",
+    "src/emcd_sim/multislice_double_channeling.py": "68ecf130ce9e8f976a1bfffbae122e0aa3cd3db9d8d9f0c94d9dc8870fb7edb0"
+  },
+  "physics_convention": "forward_born_dagger_g_minus_h_v1",
+  "review": "Opt-in validated localized sites; original default kernel source reconstructed exactly. GUI/source/project additions are independent from immutable earlier snapshots.",
+  "schema": 1
+}

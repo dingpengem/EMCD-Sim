@@ -50,17 +50,17 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
         if info['potential_support_warning']:info['numerical_warnings'].append(info['potential_support_warning'])
     else:info['potential_support_warning']=''
     nominal_zone=primitive_direction(settings.zone)
-    if nominal_zone==(1,1,7) and cfg.grid<97:
+    if nominal_zone==(1,1,7) and cfg.grid<97 and cfg.model!='imported':
         info['numerical_warnings'].append('Coarse [117] detector sampling: grid17 differed from grid97 by 0.2296 percentage points at 30 nm. '
             'Refine angular/aperture sampling; grid97 is not a general convergence guarantee.')
-    if nominal_zone==(1,1,1):
+    if nominal_zone==(1,1,1) and cfg.model!='imported':
         info['numerical_warnings'].append('Ni [111] quantitative convergence is not certified: the tested 200 kV, 2 nm joint refinement '
             'changed raw detector intensity by 0.1094%, above the unchanged 0.1% limit. '
             'Beam/potential support dominates; BW/MS agreement and fine detector sampling do not certify other configurations. '
             'See docs/GENERALIZED_MULTISLICE_MERGE_READINESS.md.')
     if cfg.propagation!='bloch':
-        from .emcd_forward import material_reason
-        reason=material_reason(structure)
+        from .generalized_forward import material_reason
+        reason=material_reason(structure,cfg)
         if reason:raise ValueError(reason)
         if not isinstance(cfg.fft_grid,int) or not 12<=cfg.fft_grid<=128 or cfg.fft_grid%2:raise ValueError('FFT grid must be even, 12–128')
         if not np.isfinite(cfg.slice_step) or not .001<=cfg.slice_step<=10:raise ValueError('Maximum slice step must be 0.001–10 nm')

@@ -59,7 +59,7 @@ def angular_schedule(model,cfg,energy):
     return qx,qy,weights,detector_support,selected
 
 
-def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared_incoming=None,*,energy_checkpoint=None,execution_workers=None):
+def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared_incoming=None,*,energy_checkpoint=None,execution_workers=None,ionization_sites=None):
     """Full field at selected map energies, detector-only elsewhere, on one grid.
 
     Detector-only skips exactly zero-weight pixels. Fractional weights and all
@@ -72,7 +72,9 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
     dq2=(qx[0,1]-qx[0,0])**2
     full_weights=np.stack([weights[k].ravel() for k in ('A','B')])
     spectra={f'I_{d}_{s}':np.empty(len(energy)) for s in ('plus','minus') for d in ('A','B')}
-    maps={};phase=fcc_site_phase_matrix(model);elastic=model.elastic
+    maps={};elastic=model.elastic
+    phase=fcc_site_phase_matrix(model) if ionization_sites is None else ionization_sites.single_phase(elastic.crystal,elastic.beams.hkl)
+    site_arguments={} if ionization_sites is None else dict(ionization_sites=ionization_sites)
     # Directly evaluate both mirror directions for any orientation. A reference
     # symmetry is a diagnostic, not an input used to manufacture a response.
     supports={}
@@ -132,7 +134,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
                 if method=='bloch':
                     r=double_channeling_response(elastic,float(e),batch,settings.thickness,
                         method='analytic' if cfg.systematic_row else 'numerical',depth_steps=cfg.depth,
-                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,cancelled=cancelled)
+                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,cancelled=cancelled,**site_arguments)
                     return r,None
                 grid,incoming=prepared_incoming
                 r,diag=multislice_double_channeling_response(elastic,float(e),batch,settings.thickness,
@@ -140,7 +142,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
                     systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
                     projected_geometry=projected_geometry_for(settings,elastic.crystal,cfg.fft_generators),
                     depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,memory_budget_mib=cfg.memory_budget_mib,
-                    prepared_grid=grid,prepared_incoming=incoming,cancelled=cancelled)
+                    prepared_grid=grid,prepared_incoming=incoming,cancelled=cancelled,**site_arguments)
                 return r,diag
             # MS chunks bound cancellation latency without retaining outgoing
             # depth stacks. BW retains its existing per-call dense admission.

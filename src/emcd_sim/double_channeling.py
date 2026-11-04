@@ -161,7 +161,7 @@ def equivalent_site_phases(incoming_hkl,outgoing_hkl,positions):
 
 
 def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoing_beams=None,
-        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None,cancelled=None):
+        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None,cancelled=None,ionization_sites=None):
     """Detector-resolved integrated Cartesian response (pixels,3,3).
 
     Average over equivalent Ni basis sites, continuous uniform depth density,
@@ -186,9 +186,9 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
             incoming=prepared_incoming
         else:incoming = BlochStates.solve(elastic.hamiltonian_nm_inv(), elastic.beams.hkl.index((0,0,0)))
         delta = np.asarray(elastic.beams.hkl)[:, None, :]-np.asarray(ob.hkl)[None, :, :]
-        if not all(s == 'Ni' for s in elastic.crystal.species):
+        if ionization_sites is None and not all(s == 'Ni' for s in elastic.crystal.species):
             raise ValueError('Equivalent-site response currently supports Ni only')
-        positions = elastic.crystal.fractional_positions
+        positions = elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)
         if len(positions) == 0:
             raise ValueError('At least one core site required')
         phases,site_weights = equivalent_site_phases(elastic.beams.hkl,ob.hkl,positions)

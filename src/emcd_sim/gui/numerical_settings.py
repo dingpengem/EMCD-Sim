@@ -112,6 +112,8 @@ class NumericalSettingsUI:
         before=self.numerical_snapshot()
         try:
             if self.numerical_mode.currentIndex()==0:
+                if self.model_box.currentIndex()==2:
+                    raise ValueError('Imported MDFF requires explicit Manual numerical settings; Ni presets are not transferred')
                 # Source validation is separate from configuration selection.
                 cfg=ForwardSettings(propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],
                     fft_generators=self.saved_fft_generators(),

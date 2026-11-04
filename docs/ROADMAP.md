@@ -1,5 +1,13 @@
 # Magnetic EMCD project roadmap
 
+## Current local development: v0.8.1 generalized single-element tensors
+
+The public baseline is v0.8.0-beta.1, Windows-only. The local `feat/generalized-single-element-emcd` milestone adds an explicit imported complex-dipole-MDFF route, equivalent localized ionization sites and existing Single/Double BW/FFT propagation. See [design and contracts](GENERALIZED_SINGLE_ELEMENT_EMCD_DESIGN.md) and [validation/status](GENERALIZED_SINGLE_ELEMENT_EMCD_VALIDATION.md). No release, merge, push or executable build is implied.
+
+The first end-to-end BCC Fe demonstration is **SYNTHETIC TEST ONLY**. A physically sourced Fe tensor and independent quantitative comparison remain the next scientific requirement. Historical Ni XMCD/atomic routes and normalization remain intact. Co/Cr material-specific spectroscopy, generalized atomic spectra, AFM/SDW and inequivalent/multi-element site MDFF remain unsupported. Imported physical sources are research inputs, not automatic scientific validation.
+
+Source portability remains a goal; Linux/macOS are not certified packaged platforms and their existing CI issues are outside this milestone. The older planning sections below are retained as development history, not current claims that Double Channeling or unified elastic factors are absent.
+
 EMCD-Sim is independent of QCBED (separate code, Git history and `emcd-python` environment) and must remain native on Windows, macOS and Linux.
 
 ## Scope and quantitative terminology

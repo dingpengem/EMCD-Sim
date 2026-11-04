@@ -14,6 +14,8 @@ from ..wien2k_xmcd import load_wien2k_xmcd
 from .responsive import CollapsibleSection
 from .results import ResultsView,comparison_text
 from .numerical_settings import NumericalSettingsUI
+from .imported_tensor_ui import ImportedTensorUI
+from .generalized_forward import material_reason,energy_grid,tensors,calculate
 
 
 class EMCDWorker(QtCore.QThread):
@@ -51,7 +53,7 @@ class EMCDWorker(QtCore.QThread):
             self.cancellation_times['stopped']=time.perf_counter()
 
 
-class StageB(NumericalSettingsUI):
+class StageB(NumericalSettingsUI,ImportedTensorUI):
     emcd_ready=QtCore.Signal()
     def mdff_controls(self):
         self.emcd_result=None;self.source_info=None;self.validated_path=None
@@ -74,6 +76,8 @@ class StageB(NumericalSettingsUI):
         advanced=QtWidgets.QGroupBox('Advanced atomic radial controls');advanced.setCheckable(True);advanced.setChecked(False);body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(advanced);outer.addWidget(body);self.form.addRow(advanced);body.setVisible(False);advanced.toggled.connect(body.setVisible);self.form=QtWidgets.QFormLayout(body)
         self.number('atomic_zeff_2p','Zeff 2p',25,1,40,self.emcd_stale);self.number('atomic_zeff_3d','Zeff 3d',9,1,40,self.emcd_stale)
         self.radial_override=QtWidgets.QCheckBox('Use explicit radial dipole (Å)');self.form.addRow(self.radial_override);self.number('radial','Radial dipole (Å)',.05,.00001,10,self.emcd_stale)
+        self.imported_mdff_controls()
+        self.model_box.addItem('Imported complex dipole MDFF (single element)')
         self.form=saved;self.button('Preview source / tensor spectrum...',self.preview_mdff)
         self.model_box.currentIndexChanged.connect(self.model_changed)
         self.axis.textChanged.connect(self.emcd_stale);self.declaration.toggled.connect(self.emcd_stale);self.source_path.textChanged.connect(self.source_changed);self.radial_override.toggled.connect(self.emcd_stale)
@@ -94,7 +98,7 @@ class StageB(NumericalSettingsUI):
         box=QtWidgets.QSpinBox();box.setRange(12,128);box.setSingleStep(2);box.setValue(32);self.spin['fft_grid']=box;self.form.addRow('FFT grid (even)',box);box.valueChanged.connect(self.emcd_stale)
         box.setToolTip('Controls the FFT representation of Multislice propagation. It must support the selected beam basis and potential Fourier bandwidth. Not the angular/detector q grid.')
         self.spin['slice_step'].setToolTip('MS-only maximum split-step distance (0.001–10 nm) between requested depth planes, not a fixed slice thickness. Depth integration nodes and angular sampling remain separate controls. Large steps require convergence checks against smaller steps.')
-        label=QtWidgets.QLabel('FFT: structure-derived projected ZOLZ, with a target-aligned crystal frame and bounded sampling. Full finite, explicit row, or ideal two-beam support. EMCD remains the Ni research model; agreement is not convergence.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
+        label=QtWidgets.QLabel('FFT: structure-derived projected ZOLZ, with a target-aligned crystal frame and bounded sampling. Full finite, explicit row, or ideal two-beam support. Legacy XMCD/atomic providers remain Ni-specific; imported tensors require validated sites and source declarations. Agreement is not convergence.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
         self.solver_note=QtWidgets.QLabel();self.solver_note.setWordWrap(True);self.form.addRow(self.solver_note)
         self.sync_solver_controls()
 
@@ -242,7 +246,7 @@ class StageB(NumericalSettingsUI):
     def forward_settings(self):
         if self.spin['grid'].value()%2==0:raise ValueError('Choose an odd angular / detector grid size so qy=0 is sampled exactly.')
         atomic=NiLocalConfig(**{k:self.spin['atomic_'+k].value() for k in asdict(NiLocalConfig())})
-        mode='xmcd' if self.model_box.currentIndex()==0 else 'atomic';axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
+        mode=('xmcd','atomic','imported')[self.model_box.currentIndex()];axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')
         if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):raise ValueError('Validate the current XMCD source first')
         cfg=ForwardSettings(fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
@@ -250,6 +254,7 @@ class StageB(NumericalSettingsUI):
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
+        if mode=='imported':cfg=self.imported_forward_settings(cfg)
         from .propagation import resolve_fft_configuration
         return resolve_fft_configuration(self.structure,self.settings(),cfg)
 
@@ -258,10 +263,11 @@ class StageB(NumericalSettingsUI):
             self.refresh();return
         self.sync_solver_controls()
         if not hasattr(self,'emcd_button') or getattr(self,'_restoring',False):return
-        reason=material_reason(self.structure);cfg=None;info=None
+        reason='' if self.model_box.currentIndex()==2 else material_reason(self.structure);cfg=None;info=None
         try:
             if getattr(self,'_numerical_error',None):raise ValueError(self._numerical_error)
             cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
+            reason=material_reason(self.structure,cfg)
             if cfg.model=='xmcd' and not cfg.axis_declared:raise ValueError('Declare XMCD conventions before Run EMCD')
             if cfg.model=='atomic' and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
             from .propagation import numerical_info
@@ -303,7 +309,7 @@ class StageB(NumericalSettingsUI):
                 source=load_wien2k_xmcd(cfg.source);e=source.energy_ev;curves=[(source.right+source.left,'XAS = RP + LP'),(source.right-source.left,'XMCD = RP - LP')]
             else:
                 t=tensors(cfg,e,np.eye(3))[0].tensor_angstrom2_per_ev;curves=[(np.trace(t,axis1=-2,axis2=-1).real/3,'Re Tr(T)/3'),(t[:,0,1].imag,'Im Txy (magnetic)'),(t[:,2,2].real,'Re Tzz')]
-            dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Native XMCD source' if cfg.model=='xmcd' else 'Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni');dialog.resize(900,600);layout=QtWidgets.QVBoxLayout(dialog)
+            dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Imported tensor: '+self.imported_info.metadata['status'] if cfg.model=='imported' else ('Native XMCD source' if cfg.model=='xmcd' else 'Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni'));dialog.resize(900,600);layout=QtWidgets.QVBoxLayout(dialog)
             fig=Figure(layout='constrained');canvas=FigureCanvasQTAgg(fig);layout.addWidget(NavigationToolbar2QT(canvas,dialog));choice=QtWidgets.QComboBox();choice.addItems(['Full spectrum','L3 zoom','L2 zoom']);layout.addWidget(choice);layout.addWidget(canvas);ax=fig.subplots()
             def draw(*_):
                 ax.clear()
@@ -320,7 +326,7 @@ class StageB(NumericalSettingsUI):
             self.resolve_numerical_ui()
             if self._numerical_error:raise ValueError(self._numerical_error)
             cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
-            reason=material_reason(self.structure)
+            reason=material_reason(self.structure,cfg)
             reason=reason or self.input_source_reason()
             if reason:raise ValueError(reason)
             from .propagation import numerical_info

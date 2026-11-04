@@ -76,13 +76,15 @@ def test_historical_and_current_guards_work_without_git():
         test_historical_windows_identity_and_original_units_preserved()
         assert_reviewed_current_sources()
 
-def test_approved_physics_kernel_content_unchanged_across_line_endings():
+def test_approved_default_physics_kernel_content_unchanged_across_line_endings():
     from physics_source_guard import canonical_sha256
+    from single_element_source_guard import assert_current_extension,legacy_kernel_source
+    assert_current_extension()
     for name,sha in KERNELS.items():
         raw=(ROOT/'src/emcd_sim'/name).read_bytes()
         lf=raw.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')
         for checkout in (raw,lf,lf.replace(b'\n',b'\r\n')):
-            assert canonical_sha256(checkout)==sha,name
+            assert canonical_sha256(legacy_kernel_source('src/emcd_sim/'+name,checkout))==sha,name
 
 def test_unit_changes_give_identical_bw_ms_single_double_numerical_arrays():
     d=Path(os.environ.get('EMCD_UNIT_IDENTITY_DIRECTORY',str(ROOT/'outputs/unit_labels')))

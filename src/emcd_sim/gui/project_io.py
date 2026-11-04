@@ -95,6 +95,10 @@ def config_from_dict(value):
     d=dict(value);d['atomic']=NiLocalConfig(**d.get('atomic',{}))
     for k in ('magnetization','centers','window','fft_generators'):
         if k in d and d[k] is not None:d[k]=tuple(tuple(v) if isinstance(v,list) else v for v in d[k])
+    if d.get('model')=='imported':
+        from .generalized_forward import ImportedSettings
+        if d.get('site_indices') is not None:d['site_indices']=tuple(d['site_indices'])
+        return ImportedSettings(**d)
     return ForwardSettings(**d)
 
 
@@ -248,6 +252,9 @@ def source_status(result):
         expected=cfg.source_sha256 or (result['metadata'].get('source_audit') or {}).get('sha256','')
         p=Path(result.get('source_overrides',{}).get('xmcd',cfg.source))
         status['xmcd']=entry(p,expected,cfg.source)
+    if cfg.model=='imported':
+        p=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
+        status['mdff']=entry(p,cfg.source_sha256,cfg.source)
     s=result.get('structure_snapshot')
     if s and s.get('sha256'):
         p=Path(result.get('source_overrides',{}).get('cif',s['source']));status['cif']=entry(p,s['sha256'],s['source'])
