@@ -9,10 +9,12 @@ jobs:
   tests:
     name: ${{ matrix.os }} / Python 3.11
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
     env:
       QT_QPA_PLATFORM: offscreen
       OPENBLAS_NUM_THREADS: '1'
       OMP_NUM_THREADS: '1'
+      PYTHONUNBUFFERED: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +35,6 @@ jobs:
       - name: Install package and test requirements
         run: python -m pip install -e ".[dev,gui]"
       - name: Run focused regression tests
-        run: python -m pytest -q
+        run: python -m pytest -v -o faulthandler_timeout=120
       - name: Smoke-test current desktop launcher
         run: python -m emcd_sim.gui --help
