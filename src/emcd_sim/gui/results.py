@@ -11,6 +11,12 @@ from .signal_normalization import DisplaySettings, normalized_spectra, angular_d
 from .normalization_controls import NormalizationControls
 
 
+def mdff_label(result):
+    if result['config'].model=='imported':
+        return result['metadata'].get('scientific_status','RESEARCH / APPROXIMATE')+'; imported '+result['config'].ionizing_element+' dipole tensor'
+    return 'XMCD-effective, native axis' if result['config'].model=='xmcd' else 'Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni'
+
+
 def geometry_description(result):
     """Describe the saved basis explicitly; Bragg alignment is not isolation."""
     settings=result['settings'];cfg=result['config']
@@ -25,6 +31,7 @@ def spectral_coverage_label(result):
     if len(e)==2:return 'Selected L3/L2 samples'
     audit=result['metadata'].get('source_audit') or {}
     bounds=audit.get('bounds')
+    if result['config'].model=='imported':bounds=result['metadata'].get('imported_mdff',{}).get('energy_bounds_ev')
     if bounds is not None and not np.allclose(e[[0,-1]],bounds,rtol=0,atol=1e-9):return 'Calculated energy subset'
     return 'Full spectrum'
 
@@ -72,7 +79,7 @@ def draw_maps(fig,result,edge,method=None,field=None,display=None,*,signal_mode=
         ax.set_title(title,fontsize=9);bar=fig.colorbar(im,ax=ax,shrink=.7,pad=.02);bar.set_label(meta['units'],fontsize=7);bar.ax.tick_params(labelsize=7)
     e=cfg.l3 if edge=='L3' else cfg.l2
     solver_label='BW-MS numerical solver difference' if method=='difference' else method+' '+cfg.channeling_model.title()+' Channeling'
-    fig.suptitle(f'{edge}: {e:.3f} eV | {solver_label} | '+('Relative intensity (a.u.)' if display.map_mode=='raw' else ('Local magnetic fraction (%)' if display.map_mode=='local' else 'Paired angular asymmetry (%)'))+f'\n'+('XMCD-effective, native axis' if cfg.model=='xmcd' else 'Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni'),fontsize=11)
+    fig.suptitle(f'{edge}: {e:.3f} eV | {solver_label} | '+('Relative intensity (a.u.)' if display.map_mode=='raw' else ('Local magnetic fraction (%)' if display.map_mode=='local' else 'Paired angular asymmetry (%)'))+f'\n'+mdff_label(result),fontsize=11)
 
     fig._emcd_display_metadata=dict(kind='angular',map_mode=display.map_mode,fields=display_meta,shared_color_scale=display.shared_scale,masked_color='#c8c8c8',note='No integrated-peak scaling of angular densities.')
 
@@ -112,11 +119,12 @@ def _draw_eels_diagnostics(fig,result,zoom='Full spectrum',method=None,display=N
             limits=ax.get_ylim();limit=max(abs(limits[0]),abs(limits[1]));ax.set_ylim(-limit,limit)
         legend=ax.legend(fontsize=7,ncols=2,loc='upper right')
         for proxy,line in zip(legend.get_lines(),lines):proxy.set_picker(5);legends.append((proxy,line))
-    axes[-1].set_xlabel('Native energy loss (eV)' if cfg.model=='xmcd' else 'Atomic model energy loss (eV)')
+    axes[-1].set_xlabel('Declared imported energy loss (eV)' if cfg.model=='imported' else ('Native energy loss (eV)' if cfg.model=='xmcd' else 'Atomic model energy loss (eV)'))
     axes[-1].set_xlim((e[0],e[-1]) if zoom not in ('L3 zoom','L2 zoom') else ((cfg.l3-5,cfg.l3+5) if zoom=='L3 zoom' else (cfg.l2-5,cfg.l2+5)))
     factors=', '.join(name+' alpha='+('%.9g'%r['metadata']['alpha'] if r['metadata']['alpha'] is not None else 'disabled') for name,r in chosen.items())
     note='; '.join(dict.fromkeys(meta.get('warning','') for _,meta in normalized if meta.get('warning')))
     fig.suptitle(cfg.channeling_model.title()+' Channeling | '+units+' | '+factors+'\n'+('Selected L3/L2 samples only; full EELS not calculated.' if len(e)==2 else (note or 'Common reference; corrected = processed magnetic + residual even; solid BW / dashed MS')),fontsize=10)
+    if cfg.model=='imported':fig.suptitle(fig._suptitle.get_text()+'\n'+mdff_label(result),fontsize=10)
     fig._emcd_display_metadata=dict(kind='spectra',normalization=[meta for _,meta in normalized],zoom=zoom)
     return legends
 
@@ -148,11 +156,13 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
     limits=(cfg.l3-5,cfg.l3+5) if zoom=='L3 zoom' else (cfg.l2-5,cfg.l2+5) if zoom=='L2 zoom' else (float(e[0]),float(e[-1]))
     axes[-1].set_xlim(limits)
     from .component_display import MODES
-    title=f'{MODES.get(component_mode, "Magnetic-only / Nonmagnetic Asymmetry diagnostics")} | {cfg.channeling_model.title()} Channeling | {method} | Ni {list(result["settings"].zone)}, {result["settings"].thickness:g} nm'
+    element=cfg.ionizing_element if cfg.model=='imported' else 'Ni'
+    title=f'{MODES.get(component_mode, "Magnetic-only / Nonmagnetic Asymmetry diagnostics")} | {cfg.channeling_model.title()} Channeling | {method} | {element} {list(result["settings"].zone)}, {result["settings"].thickness:g} nm'
     if points:title+='\nSelected native L3/L2 samples only; full EELS spectrum not calculated'
     elif spectral_coverage_label(result)=='Calculated energy subset':title+='\nCalculated energy subset; full native range not covered'
     title+='\n'+geometry_description(result)
-    title+='\n'+zoom+'; actual native energy samples'
+    title+='\n'+zoom+'; '+('declared/interpolated tensor energy samples' if cfg.model=='imported' else 'actual native energy samples')
+    if cfg.model=='imported':title+='\n'+mdff_label(result)
     fig.suptitle(title,fontsize=11)
     fig._emcd_display_metadata=dict(kind='primary spectra',component_mode=component_mode,records=records,
         eels='Original +M detector A/B intensities, shared arbitrary-unit scale; no background or peak scaling',
@@ -193,6 +203,7 @@ def draw_component_maps(fig,result,edge,method=None,signal_mode='raw'):
     e=r['config'].l3 if edge=='L3' else r['config'].l2
     sampling=f'Angular Grid: {qx.shape[1]} x {qx.shape[0]}; q spacing: {dx:.6g}, {dy:.6g} Å⁻¹'
     fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry\n'+sampling,fontsize=10)
+    if r['config'].model=='imported':fig.suptitle(fig._suptitle.get_text()+'\n'+mdff_label(r),fontsize=10)
     fig._emcd_display_metadata=dict(kind='primary angular components',edge=edge,method=method,**meta,shared_color_scale=True,
         angular_grid_shape=list(qx.shape),q_spacing_inv_angstrom=[float(dx),float(dy)],display_interpolation='nearest')
 
@@ -246,6 +257,7 @@ def draw_comparison(fig,result,display=None):
     fig._emcd_display_metadata=dict(kind='BW/MS comparison',spectra=[meta for _,meta in normalized],map_mode=map_mode,solver_errors='Original raw arrays; never independently peak-normalized')
     diag=result['comparison'];fig.suptitle('Independent BW / FFT MS | '+cfg.model+' | '+str(result['settings'].zone)+', '+str(result['settings'].thickness)+' nm\nCoherence relative error %.3g; FFT norm error %.3g. Fixed potential cutoff: agreement is not physical convergence.'%(diag['coherence']['l2_relative'],diag['fft']['norm_error']),fontsize=11)
     fig.suptitle(cfg.channeling_model.title()+' Channeling | '+fig._suptitle.get_text()+'\n'+normalized[0][1]['units']+' | reference '+normalized[0][1]['reference_run']+' '+normalized[0][1]['reference_method'],fontsize=10)
+    if cfg.model=='imported':fig.suptitle(fig._suptitle.get_text()+'\n'+mdff_label(result),fontsize=10)
 
 
 from .responsive import FlowLayout, CollapsibleSection, FigurePresentation

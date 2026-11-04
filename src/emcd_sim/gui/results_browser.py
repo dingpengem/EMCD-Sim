@@ -33,8 +33,9 @@ class Registry:
             existing.update(channeling_model=result['config'].channeling_model,propagation=result['config'].propagation)
             self.persist();return existing
         s=result['settings'];cfg=result['config'];stamp=(result.get('project_manifest') or {}).get('created_utc',datetime.now(timezone.utc).isoformat())
-        record=dict(id=uuid.uuid4().hex,path=resolved,name=name or f'Ni [{" ".join(map(str,s.zone))}] | {s.thickness:g} nm | X={s.tilt[0]:+.3f}, Y={s.tilt[1]:+.3f} | {cfg.model} | {cfg.propagation}',
-            created_utc=stamp,material='Ni',zone=list(s.zone),target=list(s.target),tx=s.tilt[0],ty=s.tilt[1],thickness=s.thickness,model=cfg.model,channeling_model=cfg.channeling_model,propagation=cfg.propagation,legacy=result.get('read_only_legacy',False))
+        element=cfg.ionizing_element if cfg.model=='imported' else 'Ni'
+        record=dict(id=uuid.uuid4().hex,path=resolved,name=name or f'{element} [{" ".join(map(str,s.zone))}] | {s.thickness:g} nm | X={s.tilt[0]:+.3f}, Y={s.tilt[1]:+.3f} | {cfg.model} | {cfg.propagation}',
+            created_utc=stamp,material=element,zone=list(s.zone),target=list(s.target),tx=s.tilt[0],ty=s.tilt[1],thickness=s.thickness,model=cfg.model,channeling_model=cfg.channeling_model,propagation=cfg.propagation,legacy=result.get('read_only_legacy',False))
         self.records.append(record);self.persist();return record
     def remove(self,id):self.records=[r for r in self.records if r['id']!=id];self.persist()
     def rename(self,id,name):
@@ -244,7 +245,8 @@ class ProjectWorkspace:
         if path and (Path(path)/'project.json').exists():self.save_to_path(path,True);return
         parent=QtWidgets.QFileDialog.getExistingDirectory(self,'New project parent folder')
         if not parent:return
-        zone='Ni_'+'_'.join(map(str,self.emcd_result['settings'].zone))
+        cfg=self.emcd_result['config'];element=cfg.ionizing_element if cfg.model=='imported' else 'Ni'
+        zone=element+'_'+'_'.join(map(str,self.emcd_result['settings'].zone))
         name,ok=QtWidgets.QInputDialog.getText(self,'Save Project As','New project folder name',text=zone+'_'+datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%SZ'))
         if not ok:return
         if not name.strip() or Path(name).name!=name or name in ('.','..'):self.error('Use one folder name.');return
@@ -285,6 +287,8 @@ class ProjectWorkspace:
     def use_result_settings(self):
         if self.busy or self.emcd_result is None:return
         r=self.emcd_result;s=r['settings'];c=r['config']
+        if c.model not in ('xmcd','atomic','imported'):
+            self.error('Saved MDFF provider is unsupported; results remain viewable without migrating inputs.');return
         from .project_io import frame_rerun_reason,elastic_provider_reason
         provider_reason=elastic_provider_reason(r)
         if provider_reason:self.error(provider_reason);return
@@ -302,7 +306,7 @@ class ProjectWorkspace:
             controls={self.zone:' '.join(map(str,s.zone)),self.target:' '.join(map(str,s.target)),self.axis:' '.join(map(str,c.magnetization)),self.source_path:r.get('source_overrides',{}).get('xmcd',c.source)}
             for widget,value in controls.items():
                 with QtCore.QSignalBlocker(widget):widget.setText(value)
-            for widget,index in ((self.model_box,0 if c.model=='xmcd' else 1),(self.propagation_box,['bloch','fft-multislice','both'].index(c.propagation))):
+            for widget,index in ((self.model_box,('xmcd','atomic','imported').index(c.model)),(self.propagation_box,['bloch','fft-multislice','both'].index(c.propagation))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
             for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),(self.energy_scope,('full','edges').index(c.energy_scope))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
@@ -328,6 +332,7 @@ class ProjectWorkspace:
                 if expected and p.is_file() and sha256(p)==expected:self.source_info=inspect_source(p);self.validated_path=str(p);self.source_status.setText('Restored saved source, verified SHA256; native selected energies preserved.')
                 else:self.source_status.setText('Saved data remains available. Rerun disabled: locate original XMCD and verify SHA256.')
             self.input_source_requirements=[]
+            if c.model=='imported':self.restore_imported_settings(c,r.get('source_overrides',{}).get('mdff'))
             for name,status in source_status(r).items():
                 if name=='cif':self.input_source_requirements.append(status)
         finally:self._restoring=False

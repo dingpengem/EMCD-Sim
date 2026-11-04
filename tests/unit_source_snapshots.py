@@ -51,8 +51,10 @@ def assert_reviewed_current_sources(overrides=None,*,scope_bytes=None):
     scope=json.loads(scope_bytes)
     assert scope['schema']==1 and scope['candidate_source']=='29697538f57c5cc9bf84b7012b51a57a40c9a52b'
     assert set(scope['canonical_sha256'])=={'src/emcd_sim/'+name for name in manifest['files']}
+    from single_element_source_guard import extension
+    reviewed_extension=extension()
     for name in manifest['files']:
         path='src/emcd_sim/'+name
         content=(overrides or {}).get(path)
         if content is None:content=(ROOT/path).read_bytes()
-        assert hashlib.sha256(canonical(content)).hexdigest()==scope['canonical_sha256'][path],f'Unreviewed current source: {path}'
+        assert hashlib.sha256(canonical(content)).hexdigest()==reviewed_extension.get(path,scope['canonical_sha256'][path]),f'Unreviewed current source: {path}'

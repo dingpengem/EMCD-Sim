@@ -14,12 +14,14 @@ def canonical_sha256(content):
 
 
 def assert_registered_sources(overrides=None):
+    from single_element_source_guard import assert_current_extension,legacy_kernel_source
+    assert_current_extension(overrides)
     manifest = json.loads(MANIFEST.read_text(encoding='utf-8'))
     assert manifest['schema'] == 1 and manifest['active'] == CONVENTION
     for name, item in manifest['versions'][CONVENTION]['files'].items():
         content = (overrides or {}).get(name)
         if content is None:
             content = (ROOT/name).read_bytes()
-        assert canonical_sha256(content) == item['canonical_sha256'], (
+        assert canonical_sha256(legacy_kernel_source(name,content)) == item['canonical_sha256'], (
             f'Unregistered physics change: {name}; review physics and register a new convention/version explicitly')
     return manifest

@@ -273,7 +273,7 @@ def _validate_grid_context(grid,elastic,outgoing_beams):
 def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         fft_grid=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,
         depth_steps=257,slice_step_nm=.04,outgoing_beams=None,outgoing_potential=True,
-        batch_pixels=32,memory_budget_mib=2048,prepared_grid=None,prepared_incoming=None,projected_geometry=None,cancelled=None):
+        batch_pixels=32,memory_budget_mib=2048,prepared_grid=None,prepared_incoming=None,projected_geometry=None,cancelled=None,ionization_sites=None):
     """Adjoint FFT detector fields contracted coherently at independent depths.
 
     Retain all FFT harmonics during propagation; the explicit incoming/outgoing
@@ -311,7 +311,7 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         ii,oi=grid.indices(elastic.beams.hkl),grid.indices(ob.hkl)
         keep_i=np.zeros(grid.potential.size,bool);keep_i[ii]=True
         keep_o=np.zeros(grid.potential.size,bool);keep_o[oi]=True
-        phases,site_weights=equivalent_site_phases(elastic.beams.hkl,ob.hkl,elastic.crystal.fractional_positions)
+        phases,site_weights=equivalent_site_phases(elastic.beams.hkl,ob.hkl,elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal))
         if not len(phases):raise ValueError('At least one localized Ni site required')
         qz=-characteristic_qz_angstrom_inv(energy_ev,elastic.microscope.acceleration_kv)
         response=np.zeros((len(q),3,3),complex)
