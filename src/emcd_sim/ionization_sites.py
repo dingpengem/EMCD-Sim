@@ -4,6 +4,16 @@ import hashlib
 import numpy as np
 
 
+def single_site_phase_matrix(hkl, positions):
+    """Per-site mean exp(+2*pi*i*(h_i-h_j).r), with input ordering intact.
+
+    Eligibility and crystal-context checks belong to the calling adapter.
+    Do not wrap/reduce coordinates here: preserve historical rounding.
+    """
+    h=np.asarray(hkl,int);p=np.asarray(positions,float)
+    return np.exp(2j*np.pi*(h[:,None,:]-h[None,:,:])@p.T).mean(axis=-1)
+
+
 @dataclass(frozen=True)
 class IonizationSites:
     element: str
@@ -74,8 +84,7 @@ class IonizationSites:
         return self.all_positions[list(self.indices)]
 
     def single_phase(self,crystal,hkl):
-        p=self.positions_for(crystal);h=np.asarray(hkl,int)
-        return np.exp(2j*np.pi*(h[:,None,:]-h[None,:,:])@p.T).mean(axis=-1)
+        return single_site_phase_matrix(hkl,self.positions_for(crystal))
 
     def provenance(self):
         return dict(element=self.element,indices=list(self.indices),fractional_positions=self.all_positions[list(self.indices)].tolist(),

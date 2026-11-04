@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from .ionization_sites import single_site_phase_matrix
 from .elastic import depth_coherence
 from .geometry import characteristic_qz_angstrom_inv
 from .mdff_tensor import DipoleTensor, cycles_to_angular_q
@@ -27,8 +28,7 @@ def fcc_site_phase_matrix(model: EMCDSimulation) -> np.ndarray:
     positions = np.asarray(crystal.fractional_positions, dtype=float)
     if not len(positions) or not all(s == "Ni" for s in crystal.species):
         raise ValueError("Equivalent-site tensor backend currently requires only Ni atoms")
-    phase = np.exp(2j * np.pi * (hkl[:, None, :] - hkl[None, :, :]) @ positions.T)
-    return phase.mean(axis=-1)
+    return single_site_phase_matrix(hkl, positions)
 
 
 def _tensor_angular_maps(model: EMCDSimulation, tensor_matrix: np.ndarray,
