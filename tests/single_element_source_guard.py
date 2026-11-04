@@ -7,7 +7,7 @@ EXTENSION_SHA256='0599a74e3b48d4182b34bd7f91c9ac7b62bf7e3cb4fb2817e348f288f343fc
 
 
 ATOMIC_EXTENSION_SHA256='5bd0ecb4f65c7ca713179b8b9f652d8cc47e8ceae6f0e4ceaab5d492980ec302'
-REFACTOR_SHA256='7e7e24b3694c4f02904033a3ab8a05f41c087302f8ebdeabc1d12aac89504f15'
+REFACTOR_SHA256='ed5acc0cb5583b7b3988436c59aa59a297e307003395289e2772174a1399ff16'
 CONSOLIDATION_SHA256='e49f4392817744babe6dcca42ecf983f82f4d885f1356740e9e346775e7720d3'
 
 
@@ -35,8 +35,13 @@ def extension():
     assert hashlib.sha256(canonical(raw)).hexdigest()==REFACTOR_SHA256,'Unreviewed Part 1C source scope'
     refactor=json.loads(raw)
     assert refactor['base']=='133c3da6e69d633b0e1ea61a4de8005820885bbb'
-    return dict(d['canonical_sha256'],**dict(atomic['canonical_sha256'],
+    reviewed=dict(d['canonical_sha256'],**dict(atomic['canonical_sha256'],
         **dict(consolidation['canonical_sha256'],**refactor['canonical_sha256'])))
+    for path in refactor['removed_modules']:
+        assert not (ROOT/path).exists(),'Retired production module reintroduced: '+path
+        reviewed.pop(path,None)
+    return reviewed
+
 
 
 def legacy_kernel_source(path,content):

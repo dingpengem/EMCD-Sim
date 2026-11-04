@@ -14,6 +14,7 @@ BASE='2f9c130099dce5df4e4609b521c42f53c5385518'
 def archived(path,name,package):
     module=types.ModuleType(name);module.__package__=package;sys.modules[name]=module
     source=subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig')
+    source=source.replace('..ni_local_mdff import','..historical_ni import')
     exec(compile(source,'immutable_pre_feature_'+path,'exec'),module.__dict__)
     return module
 

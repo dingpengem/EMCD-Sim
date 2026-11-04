@@ -6,15 +6,21 @@
   "canonical_sha256": {
     "src/emcd_sim/atomic_dipole.py": "826a323e5cb51b12454171598f5bea4dfa8cf4d53d0f31ee057079146e9a5cfb",
     "src/emcd_sim/atomic_ionization.py": "fa083d58e6758b421286d219b9528de001d67ece950ca59d4829555d70c7f1d0",
-    "src/emcd_sim/gui/emcd_forward.py": "fd4290eae308cb2ff6cdeac40676f7d115fde2df61eba37c0c0edc2b885bb1e3",
+    "src/emcd_sim/generalized_xmcd.py": "1079eac695f2b1862bafb9f96bd79c7e83e05279ea8e8e3586da6017cabe9ef8",
+    "src/emcd_sim/gui/emcd_forward.py": "266cd88c9b6038b02e4cd2a559037a5c0f1162162df61b69c0f5804c58871a97",
     "src/emcd_sim/gui/forward_pipeline.py": "26b0541e32e5e3fc6f42310c9d757fcdb8f87d02ba02a79e7df6255cec4a5dd1",
-    "src/emcd_sim/gui/generalized_forward.py": "fe1eb94ec276b8cd4e7e6dc04ed5c9887a2b52de482b4feeebef87e257404cd5",
-    "src/emcd_sim/gui/legacy_ni_provider.py": "9b47f0e81342bc80baa797fa8a7a3f6cfa6f61cebb10e355c838984fcbad81c7",
+    "src/emcd_sim/gui/generalized_forward.py": "7c9525d7feb125c56227a81c74b240622cc624ed233ae4506234dc63ad0c397f",
+    "src/emcd_sim/gui/project_io.py": "69c4da0df37ebdb2d34d91b0c293435dcfb4f2aeb7c959f458cf34e40b8d70d9",
     "src/emcd_sim/gui/provider_preparation.py": "5e10d71ccbb886a8631fa90f39610b127c21d127df7e5e38abdb92c66eb1cde8",
-    "src/emcd_sim/gui/stage_b.py": "cb9dc06f2edd593bffed222efb34372dce8084e0da12d84e95f72d682c655c47",
+    "src/emcd_sim/gui/stage_b.py": "7436e28c282a60b78ff4f7ba3a156b540c0ee9dc54bf224aa68d9c2cd0f97258",
+    "src/emcd_sim/historical_ni.py": "00a5e36cf59f05f4c953e3209336041ce5f35b9ca738eaa33a4eef53f9ab1c40",
     "src/emcd_sim/ionization_sites.py": "eebbabf7e95a83f6fe4e4e2e2dc3dd03da111ebfda88f94b19d4c90fa66ed302",
-    "src/emcd_sim/mdff_providers.py": "ef55fef8abacccacfe43d9158b7cd9aa0f85c95a20e92cc4ac9232228afe0fc0",
-    "src/emcd_sim/ni_local_mdff.py": "cf397ff281d1449519fe08ecedccd35c36807fbf1a130238873035aee4ee5e62",
+    "src/emcd_sim/mdff_orientation.py": "eb25b96e734f68cdafb3581f19a1798b52f8441ea68a886ed3ede9cd89a5dbe5",
+    "src/emcd_sim/mdff_providers.py": "b814bd55d8d8fe91f510a1d963d251f3ba17d72b201decd576986e8804078da8",
     "src/emcd_sim/single_channeling_tensor.py": "783c0a855e4a23346c1cfd62d1d959b2db9f56fa5ac08f927d50d74e691ad2d5"
-  }
+  },
+  "removed_modules": [
+    "src/emcd_sim/ni_local_mdff.py",
+    "src/emcd_sim/gui/legacy_ni_provider.py"
+  ]
 }

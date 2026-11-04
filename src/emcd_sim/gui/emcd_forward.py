@@ -6,7 +6,7 @@ from time import perf_counter
 import numpy as np
 from .geometry import Structure, Settings, geometry, elastic_model, excitation, za_from_tilt
 from ..geometry import VirtualDetector, electron_wavelength_angstrom
-from ..ni_local_mdff import NiLocalConfig
+from ..historical_ni import NiLocalConfig
 from ..wien2k_xmcd import load_wien2k_xmcd
 from ..emcd_angular_plots import paired_geometry, paired_maps
 from ..xmcd_postedge_normalization import analyze_postedge_spectra
@@ -76,28 +76,9 @@ class ForwardSettings:
     fft_generators: tuple|None=None
 
 
-def material_reason(structure):
-    """Historical public API; production dispatch uses prepare_provider."""
-    from .legacy_ni_provider import material_reason as legacy_reason
-    return legacy_reason(structure)
-
-
-def axis_rotation(axis):
-    """Compatibility export of the established axis convention."""
-    from .legacy_ni_provider import axis_rotation as rotation
-    return rotation(axis)
-
-
-def tensors(cfg,energy,R):
-    """Historical public API with exact direct requested-energy evaluation."""
-    from .legacy_ni_provider import tensors as legacy_tensors
-    return legacy_tensors(cfg,energy,R)
-
-
-def energy_grid(cfg,requested=None):
-    """Historical public API; retain native bounds and sampling exactly."""
-    from .legacy_ni_provider import energy_grid as legacy_grid
-    return legacy_grid(cfg,requested)
+# Historical imports remain aliases, not additional forward implementations.
+from ..historical_ni import material_reason, tensors, energy_grid
+from ..mdff_orientation import axis_rotation
 
 
 from ..cancellation import Cancelled, check_cancelled

@@ -9,7 +9,7 @@ from emcd_sim.gui import generalized_forward as forward
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.gui.project_io import config_from_dict,save_project,load_project,rerun_reason
 from emcd_sim.imported_mdff import ImportedMDFF,CONVENTION
-from emcd_sim.ni_local_mdff import NiLocalConfig,ni_local_transitions
+from emcd_sim.historical_ni import NiLocalConfig,ni_local_transitions
 from emcd_sim.mdff_tensor import dipole_tensor_from_transitions
 from single_element_helpers import write_source
 from test_atomic_ionization import parameter_file

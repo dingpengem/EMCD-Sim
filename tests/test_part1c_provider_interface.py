@@ -42,3 +42,14 @@ def test_declared_xmcd_uses_same_preparation_interface(tmp_path):
         np.testing.assert_array_equal(a.tensor_angstrom2_per_ev,b.tensor_angstrom2_per_ev)
     path.write_bytes(path.read_bytes()+b' ')
     with pytest.raises(ValueError,match='checksum changed'):provider.revalidate_source()
+
+
+def test_retired_modules_absent_and_no_production_imports():
+    import ast
+    from pathlib import Path
+    root=Path(__file__).resolve().parents[1]/'src/emcd_sim'
+    assert not (root/'ni_local_mdff.py').exists()
+    assert not (root/'gui/legacy_ni_provider.py').exists()
+    for path in root.rglob('*.py'):
+        for node in ast.walk(ast.parse(path.read_text(encoding='utf-8-sig'))):
+            if isinstance(node,ast.ImportFrom):assert node.module is None or not node.module.endswith('ni_local_mdff')

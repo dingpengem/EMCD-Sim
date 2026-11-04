@@ -49,7 +49,7 @@ def test_momentum_units_and_phase_conjugation():
 
 
 def test_atomic_transition_provider_uses_same_complex_contraction():
-    from emcd_sim.ni_local_mdff import NiLocalConfig, ni_local_transitions
+    from emcd_sim.historical_ni import NiLocalConfig, ni_local_transitions
     from emcd_sim.mdff_tensor import dipole_tensor_from_transitions, gaussian_broadening_ev
     cfg=NiLocalConfig(eg_up_holes=.1,t2g_up_holes=.1,eg_down_holes=.6,t2g_down_holes=.6)
     ds=ni_local_transitions(cfg)

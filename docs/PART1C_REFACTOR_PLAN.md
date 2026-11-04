@@ -6,7 +6,7 @@ Baseline: 133c3da6e69d633b0e1ea61a4de8005820885bbb; scientific source 98570c62.
 2. Replace the reachable duplicate Ni transition loop with an explicit historical_drop policy
    in transitions_for_material; retain strict generalized validation and original Ni metadata.
 3. Share Single phase arithmetic with historical eligibility wrappers intact. Keep Double phases unchanged.
-4. Prepare every model through one provider interface. HistoricalNiProvider preserves direct requested-energy
+4. Prepare every model through one provider interface. HistoricalNiProvider in historical_ni preserves direct requested-energy
    evaluation, legacy sampling, rotation, reversal validation and source identity; no interpolation migration.
 5. Use one documented forward entry, retaining API wrappers required by existing projects/callers.
 6. Check each change against immutable Git references, then full Windows source and extracted EXE acceptance.
@@ -31,7 +31,7 @@ HistoricalNiSites preserves unwrapped positions and the original per-atom mean; 
 IonizationSites retains strict equivalence/context checks. Both Single paths call
 single_site_phase_matrix. Double equivalent_site_phases is unchanged.
 
-Atomic angular/radial algebra now lives in atomic_dipole. ni_local_mdff retains NiLocalConfig,
+Atomic angular/radial algebra now lives in atomic_dipole. historical_ni retains NiLocalConfig,
 public aliases, metadata mapping and CLI support. transitions_for_material is the only
 transition event loop; strict rejects tiny nonzero amplitudes, historical_drop omits them
 exactly as the historical tiny-radial implementation did. No interpolation replaces direct
@@ -52,3 +52,12 @@ software demonstrations. Approximately 1.6% detector-refinement sensitivity and 
 of broad quantitative/experimental validation remain. Native acceptance is same-host,
 not clean-PC certification. Historical manifests and scientific arrays are not rewritten;
 Part 1C has an additive source-identity manifest and immutable-source equivalence tests.
+
+
+## Additional module-retirement requirement
+
+Production callers now bypass ni_local_mdff entirely, and that obsolete module is removed;
+all input compatibility lives in historical_ni. The intermediate gui/legacy_ni_provider
+module was removed, generic axis rotation moved to mdff_orientation, and four old GUI
+wrappers became aliases. See PART1C_MODULE_RETIREMENT.md for dependency evidence and
+retained modules. No accepted reference or previously completed test output was removed.

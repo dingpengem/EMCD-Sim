@@ -1,14 +1,14 @@
 """Provider eligibility and common forward entry point; no propagation kernels."""
 from dataclasses import dataclass
 import numpy as np
-from . import emcd_forward as ni
+from . import emcd_forward as compatibility
 from ..imported_mdff import ImportedMDFF
 from ..mdff_edges import selected_samples, validate_selected
 from ..mdff_providers import load_provider
 
 
 @dataclass(frozen=True)
-class ImportedSettings(ni.ForwardSettings):
+class ImportedSettings(compatibility.ForwardSettings):
     model: str='imported'
     source: str=''
     ionizing_element: str=''
@@ -78,7 +78,7 @@ def source_for(cfg):
 
 def material_reason(structure,cfg=None):
     from ..mdff_providers import prepare_provider
-    return prepare_provider(cfg or ni.ForwardSettings()).material_reason(structure)
+    return prepare_provider(cfg or compatibility.ForwardSettings()).material_reason(structure)
 
 
 def energy_grid(cfg,requested=None):

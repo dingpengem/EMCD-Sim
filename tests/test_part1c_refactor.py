@@ -3,7 +3,7 @@ from dataclasses import asdict
 import subprocess, sys, types
 import numpy as np
 import pytest
-from emcd_sim.ni_local_mdff import NiLocalConfig, ni_local_transitions
+from emcd_sim.historical_ni import NiLocalConfig, ni_local_transitions
 from emcd_sim.atomic_ionization import transitions_for_material
 from emcd_sim.atomic_dipole import dipole_2p_to_3d
 from emcd_sim.ionization_sites import single_site_phase_matrix
@@ -14,7 +14,8 @@ def accepted_module(path, name):
     module=types.ModuleType(package+'.'+name)
     module.__package__=package;sys.modules[module.__name__]=module
     raw=subprocess.check_output(['git','show','98570c62cc205fa82f855a4033a4d683faf80837:src/emcd_sim/'+path])
-    exec(compile(raw.decode('utf-8-sig'),path,'exec'),module.__dict__)
+    source=raw.decode('utf-8-sig').replace('..ni_local_mdff import','..historical_ni import')
+    exec(compile(source,path,'exec'),module.__dict__)
     return module
 
 

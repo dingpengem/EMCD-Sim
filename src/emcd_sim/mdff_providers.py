@@ -64,5 +64,5 @@ def prepare_provider(cfg):
     if is_declared(cfg):
         from .gui.provider_preparation import DeclaredMDFFProvider
         return DeclaredMDFFProvider(cfg)
-    from .gui.legacy_ni_provider import HistoricalNiProvider
+    from .historical_ni import HistoricalNiProvider
     return HistoricalNiProvider(cfg)

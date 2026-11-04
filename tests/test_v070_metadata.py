@@ -18,16 +18,26 @@ def test_forward_computation_ast_is_unchanged_except_approved_metadata_and_prior
     # Part 1C relocates compatibility functions, retaining each body exactly.
     # The new wrappers and complete current scope are checked independently.
     accepted=ast.parse(subprocess.check_output(['git','show','98570c62:'+path],cwd=ROOT).decode('utf-8-sig'))
-    relocated=ast.parse((ROOT/'src/emcd_sim/gui/legacy_ni_provider.py').read_text(encoding='utf-8-sig'))
-    for name in ('material_reason','axis_rotation','tensors','energy_grid'):
+    relocated=ast.parse((ROOT/'src/emcd_sim/historical_ni.py').read_text(encoding='utf-8-sig'))
+    orientation=ast.parse((ROOT/'src/emcd_sim/mdff_orientation.py').read_text(encoding='utf-8-sig'))
+    moved=('material_reason','axis_rotation','tensors','energy_grid')
+    for name in moved:
         find_function=lambda tree:next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
-        assert ast.dump(find_function(relocated))==ast.dump(find_function(accepted))
-        current.body[current.body.index(find_function(current))]=copy.deepcopy(find_function(accepted))
-    # Restore the accepted import inventory after the explicitly tested move.
+        actual=copy.deepcopy(find_function(orientation if name=='axis_rotation' else relocated))
+        if name=='material_reason':
+            expected_import=ast.parse('from .gui.geometry import Structure').body[0]
+            assert ast.dump(actual.body[0])==ast.dump(expected_import)
+            actual.body.pop(0)
+        assert ast.dump(actual)==ast.dump(find_function(accepted))
+    # Aliases replace the four functions. Restore only these reviewed moves and
+    # the import inventory before applying the earlier complete computation guard.
     remaining=[n for n in current.body if not isinstance(n,(ast.Import,ast.ImportFrom))]
     current.body=[];it=iter(remaining)
     for n in accepted.body:
-        current.body.append(copy.deepcopy(n) if isinstance(n,(ast.Import,ast.ImportFrom)) else next(it))
+        if isinstance(n,(ast.Import,ast.ImportFrom)) or isinstance(n,ast.FunctionDef) and n.name in moved:
+            current.body.append(copy.deepcopy(n))
+        else:current.body.append(next(it))
+    assert list(it)==[]
 
     # Retain the complete computation guard: allow only the exact new metadata
     # import/expression, plus the already approved d1c93ba Ni species gate.

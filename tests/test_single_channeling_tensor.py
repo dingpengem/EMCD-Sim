@@ -7,7 +7,7 @@ import pytest
 from emcd_sim.benchmark import nickel_physical_benchmark
 from emcd_sim.geometry import characteristic_qz_angstrom_inv
 from emcd_sim.mdff_tensor import TransitionDataset, dipole_tensor_from_transitions, cycles_to_angular_q
-from emcd_sim.ni_local_mdff import NiLocalConfig, ni_local_transitions
+from emcd_sim.historical_ni import NiLocalConfig, ni_local_transitions
 from emcd_sim.single_channeling_tensor import _tensor_angular_maps, fcc_site_phase_matrix, run_tensor_single_channeling
 
 

@@ -7,7 +7,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from emcd_sim.ni_local_mdff import (
+from emcd_sim.historical_ni import (
     BOHR_ANGSTROM, NiLocalConfig, cubic_orbital_coefficients,
     hydrogenic_radial_dipole_angstrom, ni_local_transitions,
 )
@@ -76,7 +76,7 @@ def test_npz_roundtrip_and_cli_windows_safe(tmp_path):
     ds.save_npz(p)
     assert np.allclose(TransitionDataset.load_npz(p).dipoles_angstrom,ds.dipoles_angstrom)
     target=tmp_path/'Ni local test with spaces'
-    r=subprocess.run([sys.executable,'-m','emcd_sim.ni_local_mdff',
+    r=subprocess.run([sys.executable,'-m','emcd_sim.historical_ni',
                       '--output',str(target)],check=True,capture_output=True,text=True,timeout=90)
     summary=json.loads(r.stdout)
     assert summary['quantitative_Ni'] is False
@@ -86,7 +86,7 @@ def test_npz_roundtrip_and_cli_windows_safe(tmp_path):
 
 
 def test_tabulated_atomic_hf_radial_provider():
-    from emcd_sim.ni_local_mdff import radial_dipole_from_table
+    from emcd_sim.historical_ni import radial_dipole_from_table
     zp,zd=25.,9.
     r=np.linspace(0,8,160001)
     ap,ad=zp/BOHR_ANGSTROM,2*zd/(3*BOHR_ANGSTROM)
@@ -107,7 +107,7 @@ def test_radial_csv_cli(tmp_path):
     f=tmp_path/'Radial waves.csv'
     np.savetxt(f,np.column_stack((r,rp,rd)),delimiter=',',header='radius_angstrom,R_2p,R_3d',comments='')
     output=tmp_path/'With external radial'
-    subprocess.run([sys.executable,'-m','emcd_sim.ni_local_mdff',
+    subprocess.run([sys.executable,'-m','emcd_sim.historical_ni',
                     '--radial-table',str(f),'--output',str(output)],
                    check=True,timeout=90,capture_output=True,text=True)
     m=json.loads((output/'metadata.json').read_text())

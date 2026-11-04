@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from emcd_sim.mdff_tensor import dipole_tensor_from_transitions, TransitionDataset
-from emcd_sim.ni_local_mdff import core_spinor_amplitude, ni_2p_to_3d_dipole
+from emcd_sim.historical_ni import core_spinor_amplitude, ni_2p_to_3d_dipole
 from emcd_sim.transition_csv import import_transition_csv
 
 

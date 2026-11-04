@@ -4,7 +4,7 @@ import pytest
 from emcd_sim.generalized_xmcd import export_declared_xmcd
 from emcd_sim.imported_mdff import CONVENTION
 from emcd_sim.atomic_ionization import dipole_2p_to_3d,AtomicMaterialParameters,transitions_for_material
-from emcd_sim.ni_local_mdff import ni_2p_to_3d_dipole,NiLocalConfig
+from emcd_sim.historical_ni import ni_2p_to_3d_dipole,NiLocalConfig
 
 
 def test_declared_element_xmcd_source_without_ni_calibration(tmp_path):

@@ -8,9 +8,9 @@ parameters are physically unvalidated. No physical Fe EMCD prediction is supplie
 
 `emcd_sim.atomic_ionization` separates explicitly supplied material parameters from
 shared 2p spin-orbit/Clebsch–Gordan/complex dipole mathematics. The shared functions
-alias the historical angular helpers in `ni_local_mdff.py`. Part 1B routes the Ni
-compatibility API through the shared generator where exact equality is established;
-its tiny-radial event-dropping reference path is retained separately. Ni defaults,
+live in `atomic_dipole.py`. Part 1C routes historical Ni inputs from
+`historical_ni.py` through one shared generator with an explicit tiny-amplitude
+event-dropping policy. The obsolete `ni_local_mdff.py` module was removed. Ni defaults,
 elastic providers/defaults and propagation kernels remain unchanged. No Ni electronic
 parameters are inferred for another element. Historical project interpretation is
 preserved while production orchestration is shared across providers.
