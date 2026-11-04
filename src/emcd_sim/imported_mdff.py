@@ -68,8 +68,11 @@ class ImportedMDFF:
         if m.shape!=(3,) or not np.isfinite(m).all() or np.linalg.norm(m)<1e-12:raise ValueError('Declare finite nonzero crystal Cartesian magnetic/reference axis')
         def tensor(name):
             try:
-                v=d[name];a=np.asarray(v['real'],float)+1j*np.asarray(v['imag'],float)
+                v=d[name];real=np.asarray(v['real'],float);imag=np.asarray(v['imag'],float)
             except (KeyError,TypeError,ValueError) as exc:raise ValueError('Missing/invalid explicit tensor '+name) from exc
+            if real.shape!=(len(e),3,3) or imag.shape!=(len(e),3,3):
+                raise ValueError('Each tensor real/imag component requires shape (n_energy,3,3); broadcasting is unsupported')
+            a=real+1j*imag
             return psd_tensor(e,a,d['source'])
         if d['magnetic_state']=='nonmagnetic':
             if d['reversal']!='identical_nonmagnetic' or any(k in d for k in ('T_plus','T_minus')):raise ValueError('Nonmagnetic source requires T and identical_nonmagnetic declaration')

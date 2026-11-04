@@ -49,3 +49,14 @@ def test_nonmagnetic_and_unsupported_material(tmp_path):
     np.testing.assert_array_equal(r['spectra']['M_A'],0)
     np.testing.assert_array_equal(r['spectra']['M_B'],0)
     with pytest.raises(ValueError,match='single-element'):calculate(Structure.nickel(),settings,cfg)
+
+
+def test_changed_external_source_during_calculation_discards_result(tmp_path):
+    s=Structure(bulk('Fe','bcc',a=2.866,cubic=True))
+    settings=Settings(zone=(0,0,1),target=(1,1,0),tilt=(0,0),thickness=.1,beam_cutoff=.6,potential_cutoff=1.2)
+    p=write_source(tmp_path/'mutable.json');original=p.read_bytes()
+    cfg=settings_for_source(p,energy_scope='edges',grid=9,depth=9,subpixels=8,angular_maps=False)
+    def replace_source(stage):
+        if stage=='Validating imported tensor and equivalent localized events':p.write_bytes(original+b' ')
+    with pytest.raises(ValueError,match='checksum changed'):calculate(s,settings,cfg,progress=replace_source)
+    assert p.read_bytes()!=original

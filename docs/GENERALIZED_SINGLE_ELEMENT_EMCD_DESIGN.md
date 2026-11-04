@@ -36,6 +36,8 @@ Historical source manifests and snapshots remain immutable. Any source guards af
 
 `ImportedMDFF.load(path, expected_sha256='')` reads UTF-8 JSON, never Python/pickle. The exact file-byte SHA256 is computed at import, recorded in settings/projects, rechecked before running and checked again before accepting a completed result. A file cannot contain its own complete-byte hash; that identity lives in project provenance. A valid import needs:
 
+Real and imaginary components must each have the complete `(n_energy,3,3)` shape; scalar or missing-energy-axis broadcasting is rejected. Element-specific XMCD conversion reads its declared input bytes once, hashes that snapshot, and evaluates both states from a private copy. Replacing the original path during conversion cannot change either tensor or mislabel its source digest. Original source/validity declarations must be nonempty before generated explanatory text is appended.
+
 |Field|Required value/meaning|
 |---|---|
 |`schema`, `element`, `edge`|`1`, an ASE periodic-table symbol with filled 2p core (Z>=10), `L2,3`|

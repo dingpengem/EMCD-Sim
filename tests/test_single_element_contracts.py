@@ -104,6 +104,7 @@ def test_import_and_rotation_interpolation(tmp_path,nonmagnetic):
 @pytest.mark.parametrize('mutation',[
     lambda d:d.update(units='barn/eV'),lambda d:d.update(source=''),lambda d:d.update(edge='K'),
     lambda d:d.update(magnetic_state='afm'),lambda d:d.pop('T_minus'),
+    lambda d:d.update(convention='legacy_same_index_R_ab_T_ab'),
     lambda d:d.update(frame_to_crystal=[[1,0,0],[0,1,0],[0,0,-1]]),
     lambda d:d['energy_ev'].__setitem__(2,707),lambda d:d['T_plus']['real'][0][0].__setitem__(0,-100),
     lambda d:d['T_plus']['real'][0][0].__setitem__(1,10),lambda d:d['T_even']['real'][0][0].__setitem__(0,5),
@@ -143,3 +144,14 @@ def test_small_amplitude_nonhermitian_source_is_not_accepted_by_absolute_toleran
     d['T_plus']['real'][0][0][1]=1e-20
     p=tmp_path/'bad_tiny.json';p.write_text(json.dumps(d))
     with pytest.raises(ValueError,match='Hermitian'):ImportedMDFF.load(p)
+
+
+@pytest.mark.parametrize('component,shape',[('real',()),('imag',()),('imag',(3,3))])
+def test_component_shapes_cannot_be_silently_broadcast(tmp_path,component,shape):
+    d=document()
+    for name in ('T_plus','T_minus','T_even'):
+        d[name]={'real':np.ones((len(d['energy_ev']),3,3)).tolist(),
+                 'imag':np.zeros((len(d['energy_ev']),3,3)).tolist()}
+        d[name][component]=(np.ones(shape) if component=='real' else np.zeros(shape)).tolist()
+    p=tmp_path/'broadcast.json';p.write_text(json.dumps(d))
+    with pytest.raises(ValueError,match='shape'):ImportedMDFF.load(p)

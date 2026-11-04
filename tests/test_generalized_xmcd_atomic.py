@@ -29,6 +29,9 @@ def test_declared_element_xmcd_source_without_ni_calibration(tmp_path):
         with pytest.raises(ValueError,match='incomplete'):export_declared_xmcd(path,bad,tmp_path/'bad.json')
     bad=dict(declaration,reversal_assumption='conjugate_any_tensor')
     with pytest.raises(ValueError,match='reversal'):export_declared_xmcd(path,bad,tmp_path/'bad.json')
+    for key in ('source','validity'):
+        bad=dict(declaration);bad[key]=''
+        with pytest.raises(ValueError,match='nonempty'):export_declared_xmcd(path,bad,tmp_path/'bad.json')
 
 
 def test_atomic_math_shared_ni_defaults_unchanged_and_non_ni_disabled():
@@ -36,3 +39,27 @@ def test_atomic_math_shared_ni_defaults_unchanged_and_non_ni_disabled():
     assert (NiLocalConfig().l3_ev,NiLocalConfig().zeff_2p)==(852.7,25.)
     p=AtomicMaterialParameters('Fe',(710.,723.),.03,(.2,.6),.3,.8,1.,'Hypothetical explicit parameters; NOT validated Fe')
     with pytest.raises(ValueError,match='not implemented/validated'):transitions_for_material(p)
+
+
+def test_xmcd_conversion_uses_only_the_declared_input_bytes(tmp_path,monkeypatch):
+    from emcd_sim import generalized_xmcd as provider
+    from emcd_sim.wien2k_xmcd import load_wien2k_xmcd
+    e=np.linspace(704,730,17);n=.3+np.exp(-((e-710)/2)**2);m=.05*np.exp(-((e-710)/2)**2)
+    original=tmp_path/'input.xmcd'
+    np.savetxt(original,np.column_stack((e,n+m,n-m,2*m,2*n)))
+    declaration=dict(element='Fe',edge='L2,3',selected_ev=dict(L3=710,L2=723),magnetization_crystal=[0,0,1],
+        handedness='RP_minus_LP_in_declared_axis',eta=1.,beta=1.,normalization='source_max_nonmagnetic',convention=CONVENTION,
+        source='Synthetic source-mutation regression',validity='SYNTHETIC TEST ONLY',status='synthetic',
+        source_sha256=hashlib.sha256(original.read_bytes()).hexdigest(),reference_tensor_scale_angstrom2_per_ev=1.,
+        magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
+    baseline=provider.export_declared_xmcd(original,declaration,tmp_path/'baseline.json')
+    def replace_original_after_validation(path):
+        result=load_wien2k_xmcd(path)
+        np.savetxt(original,np.column_stack((e,n-m,n+m,-2*m,2*n)))
+        return result
+    monkeypatch.setattr(provider,'load_wien2k_xmcd',replace_original_after_validation)
+    result=provider.export_declared_xmcd(original,declaration,tmp_path/'mutation.json')
+    assert hashlib.sha256(original.read_bytes()).hexdigest()!=declaration['source_sha256']
+    np.testing.assert_array_equal(result.plus.tensor_angstrom2_per_ev,baseline.plus.tensor_angstrom2_per_ev)
+    np.testing.assert_array_equal(result.minus.tensor_angstrom2_per_ev,baseline.minus.tensor_angstrom2_per_ev)
+    assert result.metadata['xmcd_declarations']['source_sha256']==declaration['source_sha256']

@@ -1,6 +1,7 @@
 """Declared element-specific axisymmetric XMCD proxy; not a complete DFT MDFF."""
 from pathlib import Path
 import hashlib,json
+from tempfile import TemporaryDirectory
 import numpy as np
 from ase.data import atomic_numbers
 from .wien2k_xmcd import load_wien2k_xmcd
@@ -23,13 +24,21 @@ def export_declared_xmcd(source_path,declaration,output):
         raise ValueError('Explicit RP/LP handedness, corrected dipole convention and normalization assumptions required')
     if d['magnetic_state']!='uniform_fm' or d['reversal_assumption']!='axisymmetric_XMCD_odd_shared_XAS':
         raise ValueError('Declare uniform FM and the approximate axisymmetric XMCD-odd/shared-XAS reversal model')
-    source=load_wien2k_xmcd(source_path)
-    if not d['source_sha256'] or source.source_sha256!=d['source_sha256']:raise ValueError('Declared element-specific XMCD source checksum mismatch')
+    for key in ('source','validity'):
+        if not isinstance(d[key],str) or not d[key].strip():raise ValueError('Explicit source provenance and validity assumptions must be nonempty')
+    # Read/hash exactly once. The unchanged Ni evaluator reads paths, so give
+    # both states the same private snapshot rather than rereading mutable input.
+    raw_source=Path(source_path).read_bytes()
+    if not d['source_sha256'] or hashlib.sha256(raw_source).hexdigest()!=d['source_sha256']:
+        raise ValueError('Declared element-specific XMCD source checksum mismatch')
     from .gui.emcd_forward import axis_rotation
     frame=axis_rotation(d['magnetization_crystal'])
     scale=d['reference_tensor_scale_angstrom2_per_ev']
     if not np.isfinite(scale) or scale<=0:raise ValueError('Declare a positive relative reference tensor amplitude in angstrom^2/eV; no automatic atomic calibration')
-    plus,minus=[effective_tensor_from_xmcd(source_path,source.energy_ev,eta=s*d['eta'],beta=d['beta']) for s in (1,-1)]
+    with TemporaryDirectory(prefix='emcd-declared-xmcd-') as temporary:
+        snapshot=Path(temporary)/'source.xmcd';snapshot.write_bytes(raw_source)
+        source=load_wien2k_xmcd(snapshot)
+        plus,minus=[effective_tensor_from_xmcd(snapshot,source.energy_ev,eta=s*d['eta'],beta=d['beta']) for s in (1,-1)]
     a,b=[scale*np.einsum('ia,eab,jb->eij',frame,t.tensor_angstrom2_per_ev,frame) for t in (plus,minus)]
     enc=lambda x:dict(real=x.real.tolist(),imag=x.imag.tolist())
     doc=dict(schema=1,element=d['element'],edge=d['edge'],energy_ev=source.energy_ev.tolist(),selected_ev=d['selected_ev'],

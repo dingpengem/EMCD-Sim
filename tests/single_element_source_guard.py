@@ -3,7 +3,7 @@ from pathlib import Path
 import hashlib,json
 
 ROOT=Path(__file__).resolve().parents[1]
-EXTENSION_SHA256='fdc2775266d214ae0659cdd2e51ce29ed63e4f0cb71f84fac38357f4550551f2'
+EXTENSION_SHA256='783850c96d07cbf7e088068560ca20657799526849c6f49c61d17b22957db145'
 
 
 def canonical(content):return content.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')

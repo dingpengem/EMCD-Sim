@@ -3,7 +3,7 @@
   "canonical_sha256": {
     "src/emcd_sim/atomic_ionization.py": "c8c04cd18c07576daaa1a53efe27ad227b3da32f77641627191d8a915cd9ea47",
     "src/emcd_sim/double_channeling.py": "b100633aac6c3aeccedd86ac150c4c1e91cddcd486ce3cb816cac58833c86918",
-    "src/emcd_sim/generalized_xmcd.py": "e39ba89f7f72ed912903001cf48f98494e99c4a6bb10cf22bebaf3e87eb37e65",
+    "src/emcd_sim/generalized_xmcd.py": "3d77a0c970b42c4fbf68780596524da2019e57313163b426a599480c775c9c48",
     "src/emcd_sim/gui/channeling.py": "8d21f03d1eacfa72f6970625604a1a06fe945462523a8b3efa9f8b210ac829bc",
     "src/emcd_sim/gui/generalized_forward.py": "bc5399dfa9c3463c8bb9bf2648831f67baec878c9f49a6d93f70a379360988bc",
     "src/emcd_sim/gui/imported_tensor_ui.py": "7f98b96c0ec935e05766cf5c6f299954e631981930ba0b41b65758f2652569a1",
@@ -13,7 +13,7 @@
     "src/emcd_sim/gui/results.py": "c475d796309e7723d8ed95643a423848bace03fd365c1d6a9af8d18a0b2649cb",
     "src/emcd_sim/gui/results_browser.py": "e7d2e346985ae0d058dd740c8547e7d55287efd145515837a642699adcc10651",
     "src/emcd_sim/gui/stage_b.py": "73a13e24823c494d56600bc930c04b29ca24f97123d74cf9f842c9a3518b5f24",
-    "src/emcd_sim/imported_mdff.py": "4308b766bdbc067f0792aff7cbc899f67d3ffe67cc6121661777d98870e42f84",
+    "src/emcd_sim/imported_mdff.py": "5df1274c3a4bba965d889a0d3f1f77038618dc272e1498931f27be34e46b9977",
     "src/emcd_sim/ionization_sites.py": "cb6c5abc4c0da94eb51d6e986d998c13df2391d66d4489f0337375e18334d958",
     "src/emcd_sim/multislice_double_channeling.py": "68ecf130ce9e8f976a1bfffbae122e0aa3cd3db9d8d9f0c94d9dc8870fb7edb0"
   },
