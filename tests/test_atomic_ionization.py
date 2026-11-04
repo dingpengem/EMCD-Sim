@@ -253,3 +253,26 @@ def test_failed_atomic_generation_invalidates_previous_source(tmp_path,monkeypat
         assert Path(source.path).exists() and not (tmp_path/'new.json').exists()
     finally:
         w.close();app.processEvents()
+
+
+@pytest.mark.parametrize('missing',('atomic_model','atomic_parameters','atomic_parameter_document',
+    'atomic_parameter_source_utf8','atomic_parameter_sha256','atomic_parameter_path'))
+def test_atomic_provenance_cannot_be_partially_stripped(tmp_path,missing):
+    from emcd_sim.imported_mdff import ImportedMDFF
+    source=export_atomic_parameters(parameter_file(tmp_path/'parameters.json'),tmp_path/'tensor.json')
+    d=json.loads(Path(source.path).read_bytes());d.pop(missing)
+    # Preserve PSD/shared-even constraints so they cannot mask the provenance bypass.
+    for key in ('T_plus','T_minus','T_even'):
+        for component in ('real','imag'):d[key][component]=(2*np.asarray(d[key][component])).tolist()
+    path=tmp_path/'partial.json';path.write_text(json.dumps(d))
+    with pytest.raises(ValueError,match='atomic.*provenance|Atomic.*provenance'):
+        ImportedMDFF.load(path)
+
+
+def test_atomic_unknown_provenance_field_rejected(tmp_path):
+    from emcd_sim.imported_mdff import ImportedMDFF
+    source=export_atomic_parameters(parameter_file(tmp_path/'parameters.json'),tmp_path/'tensor.json')
+    d=json.loads(Path(source.path).read_bytes());d['atomic_other_model']='unreviewed'
+    path=tmp_path/'unknown.json';path.write_text(json.dumps(d))
+    with pytest.raises(ValueError,match='atomic.*provenance|Atomic.*provenance'):
+        ImportedMDFF.load(path)

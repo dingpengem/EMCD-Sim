@@ -86,7 +86,15 @@ class ImportedMDFF:
             if not np.allclose(v,even.tensor_angstrom2_per_ev,rtol=1e-10,atol=1e-12*max(float(abs(v).max()),1e-300)):
                 raise ValueError('Explicit magnetic states do not share the declared nonmagnetic tensor')
         else:raise ValueError('Only nonmagnetic and uniform_fm states supported; AFM/ferrimagnetic/SDW unsupported')
-        if 'atomic_model' in d:
+        # Atomic declarations are a reserved, complete schema. In particular,
+        # stripping only the model tag must not turn generated data into an
+        # unchecked ordinary import while retaining atomic provenance claims.
+        atomic_fields={key for key in d if key.startswith('atomic_')}
+        required_atomic={'atomic_model','atomic_parameters','atomic_parameter_document',
+            'atomic_parameter_source_utf8','atomic_parameter_sha256','atomic_parameter_path'}
+        if atomic_fields and atomic_fields!=required_atomic:
+            raise ValueError('Incomplete or unsupported atomic model provenance')
+        if atomic_fields:
             from .atomic_ionization import validate_embedded_atomic
             validate_embedded_atomic(d,plus,minus)
         return cls(e,plus,minus,even,d,digest,str(p.resolve()))

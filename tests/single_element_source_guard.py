@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 EXTENSION_SHA256='0599a74e3b48d4182b34bd7f91c9ac7b62bf7e3cb4fb2817e348f288f343fc76'
 
 
-ATOMIC_EXTENSION_SHA256='57922e8c0c44fca74f765c30baa53d304e3e77a0de78b0004fb2cf9818f33ad1'
+ATOMIC_EXTENSION_SHA256='5bd0ecb4f65c7ca713179b8b9f652d8cc47e8ceae6f0e4ceaab5d492980ec302'
 
 
 def canonical(content):return content.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')

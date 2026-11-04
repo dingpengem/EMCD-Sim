@@ -93,6 +93,11 @@ source blocks rerun; missing sources leave saved results viewable. The original
 parameter file is no longer needed to rerun an unchanged generated source, since its
 exact content is embedded. Updating parameters requires a new source and explicit
 revalidation. External imported tensor conventions remain strict and unchanged.
+The `atomic_` metadata namespace is reserved: a partial declaration (including a
+removed model tag) or unknown atomic field is rejected. A source with no atomic
+declarations is an ordinary imported tensor, not a verified generated model; its
+different checksum cannot replace a saved project's source silently. Checksums
+bind bytes and declarations, not scientific truth or authorship.
 
 Generated sources use the existing `ImportedSettings` serialization and generalized
 Single/Double Channeling BW/FFT Multislice route, not a new contraction kernel. The
