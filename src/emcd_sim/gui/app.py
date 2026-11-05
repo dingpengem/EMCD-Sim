@@ -190,11 +190,15 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             target_valid=s.target in hkl and s.target!=(0,0,0)
             elastic_reason=self.structure.elastic_reason_for(s.elastic_provider)
             supported=not elastic_reason and target_valid
+            numerical_reason=self._numerical_error or ''
             self.run_button.setEnabled(supported and not self.busy);self.align_button.setEnabled(target_valid and not self.busy)
+            elastic_notice=('Elastic Preview uses the displayed settings unchanged; no automatic preset was applied for these inputs. Inherited values are not independently convergence-validated for this material. MDFF/EELS automatic settings remain unavailable: '+numerical_reason if numerical_reason else '')
+            self.run_button.setToolTip(elastic_reason or elastic_notice or 'Calculate elastic diffraction for the current structure and settings.')
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(elastic_reason or 'IAM BW elastic preview supported; EMCD material eligibility is separate.'))
             old_limits=(self.ax.get_xlim(),self.ax.get_ylim()) if self.ax.has_data() else ((-1.3,1.3),(-1.3,1.3))
             self.ax.clear();fresh=self.preview_is_current(s)
             self._diffraction_spots=self.ax.scatter(g[:,0],g[:,1],s=28,facecolors='none',edgecolors='.5',zorder=3)
+            if elastic_reason:self._diffraction_spots.set_label('Unfiltered reciprocal-lattice points; no intensities')
             self.update_preview_status(s)
             for h,(gx,gy) in zip(hkl,g):self.ax.annotate(str(h),(gx,gy),xytext=(4,5),textcoords='offset points',fontsize=7,zorder=4)
             self.ax.plot(0,0,'kx',ms=7,label='Transmitted (000)',zorder=4)
@@ -214,7 +218,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
                     self.ax.add_patch(Circle(p,self.spin['radius'].value(),fill=False,color='purple',ls='-' if name=='A' else '--',zorder=5));self.ax.annotate(name,p,xytext=(6,-10),textcoords='offset points',zorder=5)
             self.pair_label.setText('Exact y-mirrored A/B pair.' if np.allclose(self.detectors[0],[self.detectors[1,0],-self.detectors[1,1]],atol=1e-9,rtol=0) else 'Manual / non-y-mirrored A/B pair. Mirrored-map analysis will require validation.')
             limits=((-s.beam_cutoff-.2,s.beam_cutoff+.2),)*2 if fit else old_limits
-            self.ax.set(xlim=limits[0],ylim=limits[1],aspect='equal',xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)',title='Elastic diffraction — exit intensities' if fresh else 'Current reciprocal geometry — no current intensities')
+            plot_title=('Reciprocal lattice only — elastic provider unavailable' if elastic_reason else 'Elastic diffraction — exit intensities' if fresh else 'Current reciprocal geometry — no current intensities')
+            self.ax.set(xlim=limits[0],ylim=limits[1],aspect='equal',xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)',title=plot_title)
             self.update_diffraction_legend();self.canvas.draw_idle()
             support=('explicit ideal 000 + target two-beam basis' if s.basis_mode=='two-beam' else
                 'explicit target systematic row' if self.row_projection.isChecked() else 'full radial ZOLZ cutoff')
@@ -222,13 +227,23 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
                 f'Current tilt: {s.tilt} mrad\nZA: {za} Å⁻¹\nSelected target: {s.target}\n'
                 'Generalized projected ZOLZ IAM: BW / FFT Single or Double Channeling EMCD/EELS through Run EMCD / EELS.\nSingle includes incoming diffraction; Double also includes reduced-energy outgoing diffraction. No absorption/TDS, atomic 3D potential or physical CBED disks.\n'
                 + ('Current inputs match last completed preview.' if fresh else 'Inputs differ from last preview, or no preview exists. Right diffraction table is the last completed result.')
-                +f'\nCompleted previews this session: {len(self.history)}')
-            self.statusBar().showMessage(f'{len(hkl)} included reciprocal points. '+('Current preview.' if fresh else 'Geometry only; press Preview diffraction explicitly.'))
+                +f'\nCompleted previews this session: {len(self.history)}'
+                + ('\n'+elastic_reason+'\nOpen markers are unfiltered reciprocal-lattice points, not intensity-calculated reflections; systematic absences are not filtered without supported elastic factors.' if elastic_reason else '\n'+elastic_notice if elastic_notice else ''))
+            self.statusBar().showMessage(f'{len(hkl)} included reciprocal points. '+(elastic_reason or elastic_notice or ('Current preview.' if fresh else 'Geometry only; press Preview diffraction explicitly.')))
         except Exception as exc:
+            message=str(exc)
+            beam_limit=isinstance(exc,ValueError) and 'beams exceed the interactive limit' in message
+            if beam_limit:
+                message+='\nSelect Manual (Advanced) in Numerical Settings, then lower the Beam / MDFF cutoff for this structure and zone. Loading a CIF retains previous settings. No cutoff or beam limit was changed automatically.'
+            elif self.numerical_mode.currentIndex()==0:
+                message+='\nSelect Manual (Advanced) to edit elastic cutoffs, or correct the zone/target. No numerical settings were changed automatically.'
             self.invalidate_basis_view();self._basis_view_geometry=None;self.basis_view_button.setEnabled(False);self.toolbar.update()
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'IAM elastic species supported; geometry needs correction.'))
-            self.info.setPlainText(self.structure.description()+'\n\nNo valid current geometry: '+str(exc))
-            self.run_button.setEnabled(False);self.align_button.setEnabled(False);self.tabs.setTabText(0,'Diffraction (last preview)');self.ax.clear();self.ax.set_title('Invalid configuration — no current plot');self.canvas.draw_idle();self.selection.setText(str(exc));self.statusBar().showMessage(str(exc))
+            self.info.setPlainText(self.structure.description()+'\n\nNo valid current geometry: '+message)
+            self.run_button.setEnabled(False);self.align_button.setEnabled(False);self.tabs.setTabText(0,'Diffraction (last preview)');self.ax.clear();self.ax.set_title('Beam limit exceeded — no current plot' if beam_limit else 'Invalid configuration — no current plot')
+            if beam_limit:
+                self.ax.text(.5,.5,str(exc).split('.')[0]+'.\nSelect Manual (Advanced),\nthen lower the Beam / MDFF cutoff.',transform=self.ax.transAxes,ha='center',va='center',wrap=True)
+            self.canvas.draw_idle();self.selection.setText(message);self.statusBar().showMessage(message)
 
         self.emcd_stale()
 
@@ -368,11 +383,13 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         if self.busy:return
         try:
             self.resolve_numerical_ui()
-            if self._numerical_error:raise ValueError(self._numerical_error)
+            # MDFF Automatic-policy failures do not invalidate displayed elastic
+            # controls. Validate those controls and their provider independently;
+            # Run EMCD / EELS retains its existing _numerical_error gate.
+            reason=self.structure.elastic_reason_for(self.settings().elastic_provider)
+            if reason:raise ValueError(reason)
             s=self.settings();actual=geometry(self.structure,s,systematic_row=self.row_projection.isChecked())
         except Exception as exc:self.error(str(exc));return
-        reason=self.structure.elastic_reason_for(self.settings().elastic_provider)
-        if reason:self.error(reason);return
         if s.target not in actual[2] or s.target==(0,0,0):self.error('Select a valid nonzero target');return
         self.refresh()
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0);self.emcd_button.setEnabled(False)
