@@ -25,7 +25,7 @@ emcd-ni-local-mdff = "emcd_sim.historical_ni:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-emcd_sim = ["data/adaptive_dirac_pade_2026/*"]
+emcd_sim = ["data/adaptive_dirac_pade_2026/*", "data/edge_references_v1/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

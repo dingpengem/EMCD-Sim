@@ -70,7 +70,9 @@ def legacy_kernel_source(path,content):
 
 
 def assert_current_extension(overrides=None):
-    for path,digest in extension().items():
+    from mdff_editor_source_scope import current_sources
+    expected=current_sources(extension(),overrides,prefix='Unregistered physics change: ')
+    for path,digest in expected.items():
         raw=(overrides or {}).get(path)
         if raw is None:raw=(ROOT/path).read_bytes()
         assert hashlib.sha256(canonical(raw)).hexdigest()==digest,'Unregistered physics change: '+path

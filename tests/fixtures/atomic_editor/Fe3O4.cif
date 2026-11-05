@@ -1,0 +1,33 @@
+# Original synthetic composition/site-catalogue test only; NOT a physical spinel structure.
+data_image0
+_chemical_formula_structural       Fe3O4
+_chemical_formula_sum              "Fe3 O4"
+_cell_length_a       8.4
+_cell_length_b       8.4
+_cell_length_c       8.4
+_cell_angle_alpha    90.0
+_cell_angle_beta     90.0
+_cell_angle_gamma    90.0
+
+_space_group_name_H-M_alt    "P 1"
+_space_group_IT_number       1
+
+loop_
+  _space_group_symop_operation_xyz
+  'x, y, z'
+
+loop_
+  _atom_site_type_symbol
+  _atom_site_label
+  _atom_site_symmetry_multiplicity
+  _atom_site_fract_x
+  _atom_site_fract_y
+  _atom_site_fract_z
+  _atom_site_occupancy
+  Fe  Fe1       1.0  0.0  0.043478260869565216  0.08695652173913043  1.0000
+  Fe  Fe2       1.0  0.13043478260869565  0.17391304347826086  0.21739130434782608  1.0000
+  Fe  Fe3       1.0  0.2608695652173913  0.30434782608695654  0.34782608695652173  1.0000
+  O   O1        1.0  0.391304347826087  0.43478260869565216  0.47826086956521735  1.0000
+  O   O2        1.0  0.5217391304347826  0.5652173913043478  0.6086956521739131  1.0000
+  O   O3        1.0  0.6521739130434783  0.6956521739130435  0.7391304347826086  1.0000
+  O   O4        1.0  0.782608695652174  0.826086956521739  0.8695652173913043  1.0000

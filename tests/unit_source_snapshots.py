@@ -78,16 +78,19 @@ def load_gui_scope(*,manifest_bytes=None,baseline_bytes=None):
 
 
 def assert_reviewed_current_sources(overrides=None,*,scope_bytes=None,gui_scope_bytes=None):
-    """Validate historical evidence, then require the explicit GUI candidate v1.
+    """Validate history, the BCC GUI scope, then the reviewed editor scope.
 
     The baseline map remains independently available and pinned. Only app.py
-    receives a new expected digest; all other expectations remain unchanged.
+    receives the BCC digest before the separate editor scope validates and
+    extends current expectations. Historical baseline maps remain unchanged.
     """
     baseline=reviewed_baseline_sources(scope_bytes=scope_bytes)
     gui,_=load_gui_scope(manifest_bytes=gui_scope_bytes)
     assert baseline[GUI_PATH]==gui['baseline_canonical_sha256'],'GUI scope parent identity mismatch'
     expected=dict(baseline)
     expected[GUI_PATH]=gui['candidate_canonical_sha256']
+    from mdff_editor_source_scope import current_sources
+    expected=current_sources(expected,overrides)
     for path,digest in expected.items():
         content=(overrides or {}).get(path)
         if content is None:content=(ROOT/path).read_bytes()

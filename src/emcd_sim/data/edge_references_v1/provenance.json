@@ -1,0 +1,19 @@
+{
+  "library": "xraylib-4.2.1-sc-zn-l23-v1",
+  "schema": 1,
+  "upstream_commit": "f7a4a5cd8eb6d48bb5f496553ac479c2dd42674f",
+  "upstream_tag": "xraylib-4.2.1",
+  "title": "xraylib absorption edge energies, data/edges.dat",
+  "url": "https://github.com/tschoonj/xraylib/blob/f7a4a5cd8eb6d48bb5f496553ac479c2dd42674f/data/edges.dat",
+  "definition": "Tabulated elemental absorption edge energies, not EELS peak maxima or material-specific threshold predictions.",
+  "units": "eV",
+  "license": "BSD-3-Clause",
+  "license_url": "https://github.com/tschoonj/xraylib/blob/f7a4a5cd8eb6d48bb5f496553ac479c2dd42674f/license_all.txt",
+  "upstream_data_sha256": "f0eaecfaf3cac3fadb0d0ba39eb5630e80b42ad78812ee900290307b4dc389f0",
+  "subset_sha256": "c1148890893361165a8cdfbfd6bdf5b54dfd16a2b669e5620596b775e87fd9bb",
+  "reference_version": "xraylib 4.2.1",
+  "review_date": "2026-11-04",
+  "coverage": "Sc-Zn, L3 and L2 only; no inferred uncertainty",
+  "redistribution_review": "Project-wide license_all.txt explicitly permits source and binary redistribution; no data-specific restriction was identified in the tagged data/README. Original license retained; not Gatan data.",
+  "transformation": "Select exactly Z21-30 L2/L3 raw rows. Preserve source numeric strings in eV; no conversion, fitting, rounding or synthetic values."
+}
