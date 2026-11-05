@@ -6,6 +6,7 @@ import pytest
 from emcd_sim import multislice_double_channeling as ms
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
 from legacy_geometry import Ni017Geometry
+from historical_xmcd_test_support import historical_xmcd_source,relocate_historical_xmcd_config
 
 
 def tool():
@@ -49,12 +50,20 @@ def test_hooks_restore_after_exception():
     assert before==(ms.FFTSplitStep.advance,np.fft.fftn,np.fft.ifftn)
 
 
-def test_saved_reference_setup_never_propagates():
+def test_saved_reference_setup_never_propagates(tmp_path):
     from unittest.mock import patch
     p=tool()
     if not p.REFERENCE.exists():pytest.skip('Optional saved benchmark unavailable')
-    with patch.object(ms,'incident_fields',side_effect=AssertionError('Setup must not propagate')),patch.object(ms,'multislice_double_channeling_response',side_effect=AssertionError('Setup must not calculate outgoing response')):
+    from runtime_fixtures import fingerprints
+    saved=p.load_project(p.REFERENCE);before=fingerprints(saved)
+    source=historical_xmcd_source(tmp_path)
+    expected=relocate_historical_xmcd_config(saved['config'],source)
+    with patch.object(p,'load_project',return_value=dict(saved,config=expected)),patch.object(ms,'incident_fields',side_effect=AssertionError('Setup must not propagate')),patch.object(ms,'multislice_double_channeling_response',side_effect=AssertionError('Setup must not calculate outgoing response')):
         case=p.setup()
+    from dataclasses import replace
+    assert case['cfg']==expected
+    assert replace(case['cfg'],source=saved['config'].source)==saved['config']
+    assert fingerprints(case['saved'])==before and fingerprints(saved)==before
     assert case['cfg'].depth==64 and len(case['query'])==7857
     assert case['tensors'][0].energy_ev[0]==case['cfg'].l3
 

@@ -12,6 +12,7 @@ from emcd_sim.gui.project_io import config_from_dict,load_project
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.gui.emcd_forward import ForwardSettings
+from historical_xmcd_test_support import historical_xmcd_source,relocate_historical_xmcd_config
 
 BASE='2ede25e63827830617b335a4df6d9d521ac65a9b'
 
@@ -120,17 +121,21 @@ def test_general_ms_orientation_supported_but_non_zolz_target_rejected(window):
         numerical_info(Structure.nickel(),replace(Settings(),zone=(1,1,1),target=(2,0,0)),replace(ForwardSettings(),propagation='fft-multislice'),check_memory=False)
 
 
-def test_saved_settings_and_arrays_preserved_without_solver(window):
+def test_saved_settings_and_arrays_preserved_without_solver(window,tmp_path):
     path=Path('outputs/v060_release/source_native/single_both_project')
     if not path.exists():pytest.skip('Optional saved GUI reference unavailable')
     from runtime_fixtures import fingerprints
     saved=load_project(path);before=fingerprints(saved)
     cfg=replace(saved['config'],propagation='fft-multislice',grid=65,memory_budget_mib=512,fft_grid=48,slice_step=.025)
-    window.emcd_result=dict(saved,config=cfg);window.use_result_settings()
+    source=historical_xmcd_source(tmp_path)
+    expected=relocate_historical_xmcd_config(cfg,source)
+    overrides=dict(saved.get('source_overrides',{}),xmcd=expected.source)
+    window.emcd_result=dict(saved,config=cfg,source_overrides=overrides);window.use_result_settings()
     assert not window.ms_settings_group.isHidden()
-    assert window.forward_settings()==cfg
+    assert window.forward_settings()==expected
+    assert replace(expected,source=cfg.source)==cfg
     for i in (0,2,1):window.propagation_box.setCurrentIndex(i)
-    assert window.forward_settings()==cfg and fingerprints(saved)==before
+    assert window.forward_settings()==expected and fingerprints(saved)==before
 
 
 def test_solver_configuration_and_physics_unchanged():
