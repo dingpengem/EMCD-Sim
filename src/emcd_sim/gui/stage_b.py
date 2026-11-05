@@ -72,6 +72,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.source_status=QtWidgets.QLabel('Validate source before calculation.');self.source_status.setWordWrap(True);self.form.addRow(self.source_status)
         at=QtWidgets.QWidget();self.form=QtWidgets.QFormLayout(at);self.mdff_stack.addWidget(at)
         self.atomic_parameter_controls()
+        legacy=CollapsibleSection('Legacy Ni Parameters - Historical Compatibility Only',expanded=False)
+        self.legacy_atomic_section=legacy;self.form.addRow(legacy);self.form=QtWidgets.QFormLayout(legacy.body)
         label=QtWidgets.QLabel('Historical Ni compatibility controls below: used only for Ni without explicit parameter JSON. Approximate 2p-to-3d, non-DFT, not quantitative metallic Ni; crystal [001] magnetization only.');label.setWordWrap(True);self.form.addRow(label)
         cfg=NiLocalConfig()
         for key,title,lo,hi in [('l3_ev','L3 (eV)',1,10000),('l2_ev','L2 (eV)',1,10000),('crystal_field_10dq_ev','10Dq (eV)',0,5),('exchange_split_ev','Exchange (eV)',0,5),('eg_up_holes','eg up holes',0,1),('eg_down_holes','eg down holes',0,1),('t2g_up_holes','t2g up holes',0,1),('t2g_down_holes','t2g down holes',0,1)]:
@@ -264,6 +266,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         return resolve_fft_configuration(self.structure,self.settings(),cfg)
 
     def emcd_stale(self,*_):
+        self.sync_atomic_editor_structure()
         if self.resolve_numerical_ui():
             self.refresh();return
         self.sync_solver_controls()
@@ -310,6 +313,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.info.setPlainText(base)
 
     def preview_mdff(self):
+        if self.model_box.currentIndex()==1 and self.atomic_editor.active:
+            self.atomic_editor.preview();return
         try:
             cfg=self.forward_settings();e=energy_grid(cfg)
             from .generalized_forward import is_declared,source_for

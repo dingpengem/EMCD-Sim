@@ -33,6 +33,12 @@ class ProviderUI:
 
     def atomic_parameter_controls(self):
         self.atomic_provider_info=None
+        from .atomic_editor import AtomicParameterEditor
+        from .runtime import workspace
+        self.atomic_editor=AtomicParameterEditor(lambda:getattr(self,'workspace',None) or workspace(),self)
+        self.form.addRow(self.atomic_editor)
+        self.atomic_editor.invalidated.connect(self.atomic_parameters_changed)
+        self.atomic_editor.sourceReady.connect(self.atomic_editor_source_ready)
         self.atomic_parameter_path=QtWidgets.QLineEdit();self.form.addRow('Explicit atomic parameter JSON',self.atomic_parameter_path)
         button=QtWidgets.QPushButton('Browse atomic parameters…');button.clicked.connect(self.browse_atomic_parameters);self.form.addRow(button)
         button=QtWidgets.QPushButton('Validate atomic parameters');button.clicked.connect(self.validate_atomic_parameters);self.form.addRow(button)
@@ -44,6 +50,10 @@ class ProviderUI:
         self.atomic_declaration.toggled.connect(self.emcd_stale)
 
     def atomic_parameters_changed(self,*_):
+        if _ and isinstance(_[0],str):self.atomic_editor.external_source_pending=bool(_[0].strip())
+        self.atomic_editor.validated_path=None;self.atomic_editor.validated_sha256=None
+        self.atomic_editor.invalidate_preview('Atomic source or parameter identity changed')
+        self.atomic_editor.status.setText('UNVALIDATED input/source change; generate or validate the current parameters again. No stale tensor may execute.')
         self.atomic_provider_info=None;self.atomic_declaration.setChecked(False)
         self.atomic_provider_status.setText('Atomic input changed; validate its checksum and parameters again.')
         self.emcd_stale()
@@ -52,11 +62,26 @@ class ProviderUI:
         path,_=QtWidgets.QFileDialog.getOpenFileName(self,'Explicit approximate atomic parameters','','JSON (*.json)')
         if path:self.atomic_parameter_path.setText(path);self.validate_atomic_parameters()
 
+    def atomic_editor_source_ready(self,path):
+        self.atomic_parameter_path.setText(path)
+        self.atomic_editor.external_source_pending=False
+        self.validate_atomic_parameters()
+
+    def sync_atomic_editor_structure(self):
+        if hasattr(self,'atomic_editor') and not getattr(self,'_restoring',False):
+            self.atomic_editor.set_crystal(self.structure)
+
     def validate_atomic_parameters(self,*_,expected_sha256=None):
         self.atomic_provider_info=None;self.atomic_declaration.setChecked(False)
+        self.atomic_editor.validated_path=None;self.atomic_editor.validated_sha256=None
         try:
-            cfg=settings_for_provider(self.atomic_parameter_path.text(),'atomic')
+            path=self.atomic_parameter_path.text().strip()
+            if not path:raise ValueError('Select or create explicit atomic parameters; the source path is empty')
+            from .atomic_editor_model import read_document
+            read_document(path)  # Check GUI input/allocation bounds before tensor generation.
+            cfg=settings_for_provider(path,'atomic')
             if expected_sha256 and cfg.source_sha256!=expected_sha256:raise ValueError('Atomic parameter checksum changed; acknowledgement invalidated')
+            self.atomic_editor.load_document(path,validated=True)
             self.atomic_provider_info=cfg
             self.axis.setText(' '.join(map(str,cfg.magnetization)))
             self.atomic_provider_status.setText(cfg.ionizing_element+'; APPROXIMATE / physically unvalidated\nSHA256 '+cfg.source_sha256)
@@ -69,6 +94,7 @@ class ProviderUI:
         if base.model=='atomic':
             path=self.atomic_parameter_path.text().strip()
             if not path:
+                if self.atomic_editor.active:raise ValueError('Generalized atomic editor has unvalidated edits; generate the current source first')
                 if symbols!={'Ni'}:raise ValueError('Atomic Ionization requires explicit element-specific parameters; Ni defaults are not transferred')
                 return base
             cfg=self.atomic_provider_info
@@ -100,6 +126,7 @@ class ProviderUI:
 
     def restore_provider_settings(self,cfg,path=None):
         if cfg.model=='atomic':
+            self.atomic_editor.set_crystal(self.structure,preserve_validation=True)
             with QtCore.QSignalBlocker(self.atomic_parameter_path):self.atomic_parameter_path.setText(path or cfg.source)
             self.validate_atomic_parameters(expected_sha256=cfg.source_sha256)
             with QtCore.QSignalBlocker(self.atomic_declaration):self.atomic_declaration.setChecked(bool(self.atomic_provider_info and cfg.axis_declared))

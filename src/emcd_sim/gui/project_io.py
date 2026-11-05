@@ -213,6 +213,36 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             from ase.io import write
             write(temp/'structure.cif',restore_structure(snapshot).atoms,format='cif')
         managed=set(ARRAY_FILES)|{'project.json','metadata.json','comparison_metadata.json','input_parameters.json','structure.json','structure.cif','validity.json','display_state.json'}
+        # Optional portable copy of a verified source-backed atomic input. Old
+        # projects remain unchanged/readable; missing sources are never invented.
+        atomic_attachment=None;cfg=result['config']
+        if cfg.model=='atomic' and getattr(cfg,'provider_schema',None)==1:
+            source_path=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
+            # Only editor-managed documents opt into portable persistence.
+            # Existing external JSON projects retain their original-source rules.
+            try:raw=source_path.read_bytes() if source_path.is_file() else None
+            except OSError:raw=None
+            # A completed declared result already embeds its original input
+            # bytes. A matching checksum permits preserving that exact evidence,
+            # never reconstructing parameters from current editor controls.
+            if raw is None or hashlib.sha256(raw).hexdigest()!=cfg.source_sha256:
+                embedded=meta.get('imported_mdff',{}).get('atomic_parameter_source_utf8')
+                raw=embedded.encode('utf-8') if isinstance(embedded,str) else None
+            editor_managed=False
+            if raw is not None and hashlib.sha256(raw).hexdigest()==cfg.source_sha256:
+                try:
+                    editor_managed='\nEMCD_EDITOR_REFERENCE_V1=' in json.loads(raw)['parameters']['source']
+                except (ValueError,KeyError,TypeError):pass
+            if editor_managed:
+                # Keep the portable filename short for Windows project paths.
+                # The full identity is pinned in the existing file manifest.
+                filename='atomic_input.json'
+                if (root/filename).exists():
+                    previous=json.loads((root/'project.json').read_text(encoding='utf-8'))
+                    if previous.get('atomic_parameter_source',{}).get('path')!=filename:
+                        raise ValueError('Project attachment name conflicts with an existing user file; use Save As')
+                (temp/filename).write_bytes(raw);managed.add(filename)
+                atomic_attachment=dict(path=filename,sha256=cfg.source_sha256)
         if root.exists():
             for child in root.iterdir():
                 if child.name in managed:continue
@@ -233,6 +263,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             source_provenance=dict(xmcd_path=result['config'].source if result['config'].model=='xmcd' else None,xmcd_sha256=(meta.get('source_audit',{}).get('sha256') if meta.get('source_audit') else result['config'].source_sha256) if result['config'].model=='xmcd' else None,
                 crystal_path=snapshot.get('source') if snapshot else None,crystal_sha256=snapshot.get('sha256') if snapshot else None),
             limitations=result.get('project_warnings',[]),array_convention='method__edge__field maps(qy,qx); method__field spectra(energy); method__amplitudes(depth,beam); explicit labels; no pickle')
+        if atomic_attachment:manifest['atomic_parameter_source']=atomic_attachment
         _json(temp/'project.json',manifest);check('Validating saved project');load_project(temp,progress=lambda s:None)
         check('Finalizing complete project')
         if root.exists():_rename_folder(root,backup,cancelled)
@@ -427,6 +458,15 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     result.update(project_path=str(root),project_manifest=manifest,project_warnings=warnings,structure_snapshot=snapshot,read_only_legacy=manifest is None,fft_recipe_error=fft_recipe_error)
     result['project_convention_status']=convention_status
     if manifest and 'display_state.json' in manifest['files']:result['display_state']=json.loads((root/'display_state.json').read_text(encoding='utf-8'))
+    if manifest and manifest.get('atomic_parameter_source'):
+        attachment=manifest['atomic_parameter_source'];source=safe_path(root,attachment['path'])
+        cfg=result['config']
+        if (cfg.model!='atomic' or getattr(cfg,'provider_schema',None)!=1
+                or attachment['sha256']!=cfg.source_sha256
+                or manifest['files'].get(attachment['path'])!=cfg.source_sha256
+                or sha256(source)!=cfg.source_sha256):
+            raise ValueError('Atomic project source identity mismatch')
+        result['source_overrides']=dict(mdff=str(source))
     check('Saved results ready; no physical recalculation')
     return result
 

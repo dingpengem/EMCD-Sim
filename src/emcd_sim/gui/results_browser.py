@@ -215,9 +215,20 @@ class ProjectWorkspace:
         self.statusBar().showMessage('Project operation '+('cancelled; previous selected result preserved.' if cancelled else ('complete; no forward calculation.' if self._io_success else 'failed; previous result/project preserved.')))
     def open_project_path(self,path,*,legacy=False,record=None,relocated=False):
         def loaded(result):
+            # Loader-verified project attachments take precedence over browser
+            # locations, which can be empty or stale after project relocation.
+            overrides=dict((record or {}).get('source_overrides',{}))
+            verified=result.get('source_overrides',{})
+            statuses=source_status(result) if verified else {}
+            for kind,source_path in verified.items():
+                if not statuses.get(kind,{}).get('verified'):
+                    raise ValueError('Conflicting verified project source identity: '+kind)
+                overrides[kind]=source_path
             if record and relocated:record['path']=str(Path(path).resolve());self.browser.registry.persist()
             row=record or self.browser.register(result,path)
-            self.browser.cache[row['id']]=result;result['source_overrides']=row.get('source_overrides',{});self.browser.refresh();self.browser.select_id(row['id']);self.display_saved_result(result,row)
+            if not record:
+                overrides=dict(row.get('source_overrides',{}),**overrides)
+            self.browser.cache[row['id']]=result;result['source_overrides']=overrides;self.browser.refresh();self.browser.select_id(row['id']);self.display_saved_result(result,row)
         self.io_operation(lambda cancel,progress:load_project(path,legacy=legacy,cancelled=cancel,progress=progress),loaded)
     def open_project_dialog(self):
         path=QtWidgets.QFileDialog.getExistingDirectory(self,'Open complete EMCD project folder')
@@ -340,6 +351,8 @@ class ProjectWorkspace:
                 with QtCore.QSignalBlocker(self.explicit_xmcd):self.explicit_xmcd.setChecked(False)
                 with QtCore.QSignalBlocker(self.atomic_parameter_path):self.atomic_parameter_path.clear()
                 self.atomic_provider_info=None
+                with QtCore.QSignalBlocker(self.atomic_editor.use_editor):self.atomic_editor.use_editor.setChecked(False)
+                self.atomic_editor.validated_path=None;self.atomic_editor.validated_sha256=None
                 for widget,value in ((self.xmcd_element,'Ni'),(self.xmcd_edge,'L2,3'),(self.xmcd_selected,'')):
                     with QtCore.QSignalBlocker(widget):widget.setText(value)
                 for widget in self.xmcd_l23_controls:widget.setVisible(True)

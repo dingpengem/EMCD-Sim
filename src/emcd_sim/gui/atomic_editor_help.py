@@ -1,0 +1,53 @@
+﻿"""User-facing physical definitions for the existing atomic model only."""
+VISIBLE_LABELS = {
+ 'l3':'L3 Reference Energy, E_L3 (eV)', 'l2':'L2 Reference Energy, E_L2 (eV)',
+ 'cf':'Crystal-Field Splitting, \u0394CF = 10Dq (eV)',
+ 'exchange':'Spin Exchange Splitting, \u0394ex (eV)',
+ 'radial':'2p\u21923d Radial Dipole Integral (\u00c5)',
+ 'sigma':'Gaussian Broadening, \u03c3 (eV)',
+ 'emin':'Minimum Energy Loss (eV)', 'emax':'Maximum Energy Loss (eV)',
+ 'samples':'Number of Samples',
+}
+PLAIN_LANGUAGE = {
+ 'l3':'Sets the reference energy for transitions from 2p3/2 core states; this need not be the white-line maximum.',
+ 'l2':'Sets the 2p1/2 reference; its difference from E_L3 is the derived core-SOC reference separation.',
+ 'cf':'Controls the energy separation between the eg and t2g groups of 3d orbitals.',
+ 'exchange':'Controls the effective energy difference between spin-up and spin-down final states.',
+ 'radial':'Scales the radial part of complex dipoles; changing D by c scales tensor weights by c squared.',
+ 'holes':'Weights each unoccupied orbital/spin state; electron occupancy is 1 minus hole occupancy.',
+ 'frame':'Maps the whole local orbital/spin frame to crystal Cartesian coordinates, not spin alone.',
+ 'sigma':'Controls the width of each atomic transition line in the calculated spectrum.',
+ 'emin':'Sets the first sampled tensor energy, without changing the physical transition energies.',
+ 'emax':'Sets the last sampled tensor energy; coverage is checked and is not extended automatically.',
+ 'samples':'Controls numerical sampling of the declared range, not transition energies or convergence certification.',
+ 'source':'Cite the sources of the physical inputs; an editable value is not automatically calibrated.',
+ 'radial_source':'Identify a wavefunction calculation, fitted effective integral, or explicitly synthetic choice.',
+ 'assumptions':'Declare how this approximate cubic independent-electron model represents the chosen material.',
+ 'validity':'State missing physics and limitations; mathematical validity does not prove material accuracy.',
+ 'status':'Declare synthetic or physically unvalidated provenance; quantitative validation is not an available status.',
+ 'element':'CIF presence, model applicability and executable site eligibility are distinct requirements.',
+ 'edge':'The atomic generator implements only electric-dipole 2p-to-3d L2,3 transitions.',
+ 'normalization':'Relative per-atom tensor units do not establish comparable absolute cross sections between materials.',
+}
+DETAILS = {
+ 'l3':'E_L3 is a reference excitation energy, not necessarily the L3 white-line maximum. Cubic and exchange shifts are added by the generator. Elemental binding/absorption references are starting points; chemical shifts are not determined from the CIF.',
+ 'l2':'Delta_SO = E_L2 - E_L3. There is no additional independent core-SOC fit parameter in this implementation. Require 0 < E_L3 < E_L2.',
+ 'cf':'E(eg)=+0.6 Delta_CF and E(t2g)=-0.4 Delta_CF. Thus E(eg)-E(t2g)=Delta_CF and 2*(+0.6)+3*(-0.4)=0 preserves the degeneracy-weighted orbital centroid. eg has two orbitals; t2g has three. Larger splitting can alter subpeak structure, but exchange, holes and broadening also matter, so resolved peaks are not guaranteed. This is a nonnegative effective cubic parameter, not a general tetragonal/trigonal Hamiltonian. Metallic BCC Fe has band-like states not fully described by this model.',
+ 'exchange':'Delta_E_ex = -spin_sign * magnetization_sign * Delta_ex / 2. This is not total exchange energy or a local spin moment. Existing reversal swaps the spin-hole populations and exchange shifts. Full many-body exchange/multiplet physics is absent.',
+ 'radial':'D = integral_0^infinity R_2p(r) R_3d(r) r^3 dr for full radial wavefunctions normalized with r^2 dr. D combines with angular and SOC amplitudes to form d=<i|r|f>. Scaling D by c gives c^2 tensor scaling at fixed other inputs. It does not independently fix magnetic asymmetry. A calculated radial integral, fitted effective value and synthetic choice are different sources; Z alone does not calibrate D. Extreme positive radial values may still fail existing numerical amplitude bounds; no clipping is performed.',
+ 'holes':'Authoritative row order: d(z2),d(x2-y2),d(xy),d(xz),d(yz); each has independent up/down holes in [0,1], not all zero. h weights allowed final-state transitions; n_electron=1-h in this simplified interpretation. Different distributions change even/odd relative tensor components. Total spin moment cannot uniquely specify these ten weights. No normalization or implicit eg/t2g averaging is performed.',
+ 'sigma':'G_sigma(E-E_n)=exp[-(E-E_n)^2/(2 sigma^2)]/(sqrt(2*pi)*sigma). FWHM=2*sqrt(2*ln(2))*sigma. Sigma is a standard deviation, not FWHM. Larger sigma overlaps subpeaks and generally lowers line maxima for fixed integrated weight. A numerical initial value is phenomenological, not an experimentally calibrated resolution.',
+ 'frame':'Local M=(0,0,1) is fixed. R maps local axes into crystal Cartesian axes; require R.T R=I and det R=+1. Crystal M=R@(0,0,1). Rotate the complete orbital/spin model. Independently rotating spin relative to a fixed anisotropic crystal field, arbitrary noncollinear textures and automatic frame repair are not implemented. Identity is a starting coordinate choice, not a CIF-derived magnetic structure.',
+ 'emin':'The explicit grid must be positive finite, strictly increasing and cover both declared edges. Suggested margins are numerical starting choices, not physical spectral coverage or convergence certification. A changed reference never silently rewrites a user grid.',
+ 'emax':'No source extrapolation, automatic extension, chemical shift or arbitrary range repair is performed. Preview uses the exact declared grid, including imported nonuniform samples until grid controls are edited.',
+ 'samples':'New uniform grids use inclusive linspace(min,max,N). GUI sample and input-size bounds prevent unsupported allocations; they do not change the standalone generator or establish convergence. Imported explicit grids remain exact until a grid edit.',
+}
+ORIGIN_LABELS = {
+ 'cif_derived':'CIF-derived identity', 'tabulated_reference':'Tabulated elemental reference',
+ 'synthetic_demonstration':'Explicit synthetic demonstration', 'imported_synthetic':'Imported synthetic input',
+ 'user_entered':'User-entered / overridden', 'imported_physical_source':'Imported physically unvalidated source',
+ 'imported_override_unverified':'Imported override; tabulated provenance unverified',
+ 'numerical_starting':'Numerical starting configuration; uncalibrated',
+ 'coordinate_starting':'Initial coordinate choice; not measured magnetization',
+ 'model_constraint':'Fixed constraint of the implemented model',
+}
