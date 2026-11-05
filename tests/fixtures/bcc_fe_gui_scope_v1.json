@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "scope_id": "bcc-fe-gui-v1",
+  "baseline_commit": "cdd5dc3efa43e4f3874e011aa1cfc98f80cf46dd",
+  "path": "src/emcd_sim/gui/app.py",
+  "baseline_snapshot": "bcc_fe_gui_baseline_v1.py.txt",
+  "baseline_canonical_sha256": "b5783a8014864a44705f1d8c0173ec34ce18171e78406617112d6bbada41d68f",
+  "candidate_canonical_sha256": "9f42e1e3c4aad3a0f20c136335cf5c1b64fce85949fb6b49415113ccf555ae90",
+  "authorized_methods": [
+    "MainWindow.refresh",
+    "MainWindow.start_preview"
+  ],
+  "physics_convention": "forward_born_dagger_g_minus_h_v1"
+}

@@ -10,6 +10,10 @@ FIXTURES=Path(__file__).parent/'fixtures'
 MANIFEST_SHA256='5616769da62ac86993b64883f198b85e3e050d638fd7e37cd3b7223cca8c3693'
 ARCHIVE_SHA256='5cbc066ad681e765b0478b2c56300c53a5f197e67ad075704460b4be68c378a1'
 CURRENT_SCOPE_SHA256='8e4ecaf4e799120e14edade99cb69b67afad004e018618993ce3338914acce5a'
+GUI_SCOPE_SHA256='a3a23ce6c92cbb52c4b6a019f406b36d38a30ac329a68e2cd8c4ded8463d9d32'
+GUI_PATH='src/emcd_sim/gui/app.py'
+GUI_BASELINE_SHA256='b5783a8014864a44705f1d8c0173ec34ce18171e78406617112d6bbada41d68f'
+GUI_CANDIDATE_SHA256='9f42e1e3c4aad3a0f20c136335cf5c1b64fce85949fb6b49415113ccf555ae90'
 COMMITS=dict(pre_unit='cf8fa647d1cbe7457362f54fbd4ecdce5c65cea5',
              unit='b3edf65e8f539b6f4e37e35b8b35144566b7838a',
              zolz='dfd60115e73cf0fcfc4c7d7c44432c667c771b34')
@@ -37,14 +41,8 @@ def load_snapshots(*,manifest_bytes=None,archive_bytes=None):
     return manifest,sources
 
 
-def assert_reviewed_current_sources(overrides=None,*,scope_bytes=None):
-    """Protect the current scope separately from the immutable unit-only audit.
-
-    Historical unit-only evidence remains immutable. The current scope is a
-    separately pinned manifest of the reviewed unified-elastic candidate; it
-    does not relabel those additions as unit-only changes. No executable or
-    string changes are silently whitelisted; future changes need scope review.
-    """
+def reviewed_baseline_sources(*,scope_bytes=None):
+    """Build the original reviewed map; never overlay or relabel its identity."""
     manifest,_=load_snapshots()
     if scope_bytes is None:scope_bytes=(FIXTURES/'unified_elastic_current_scope_v1.json').read_bytes()
     assert hashlib.sha256(canonical(scope_bytes)).hexdigest()==CURRENT_SCOPE_SHA256,'Unreviewed current scope manifest'
@@ -53,8 +51,44 @@ def assert_reviewed_current_sources(overrides=None,*,scope_bytes=None):
     assert set(scope['canonical_sha256'])=={'src/emcd_sim/'+name for name in manifest['files']}
     from single_element_source_guard import extension
     reviewed_extension=extension()
-    for name in manifest['files']:
-        path='src/emcd_sim/'+name
+    return {('src/emcd_sim/'+name):reviewed_extension.get('src/emcd_sim/'+name,scope['canonical_sha256']['src/emcd_sim/'+name]) for name in manifest['files']}
+
+
+def _validate_gui_scope(scope):
+    """Closed, single-file scope; even a repinned manifest cannot add kernels."""
+    expected=dict(schema=1,scope_id='bcc-fe-gui-v1',
+        baseline_commit='cdd5dc3efa43e4f3874e011aa1cfc98f80cf46dd',
+        path=GUI_PATH,baseline_snapshot='bcc_fe_gui_baseline_v1.py.txt',
+        baseline_canonical_sha256=GUI_BASELINE_SHA256,
+        candidate_canonical_sha256=GUI_CANDIDATE_SHA256,
+        authorized_methods=['MainWindow.refresh','MainWindow.start_preview'],
+        physics_convention='forward_born_dagger_g_minus_h_v1')
+    assert isinstance(scope,dict) and type(scope.get('schema')) is int and scope==expected,'Unsupported GUI source scope'
+
+
+def load_gui_scope(*,manifest_bytes=None,baseline_bytes=None):
+    """Read pinned evidence only: no Git, network, execution, or hash adoption."""
+    raw=(FIXTURES/'bcc_fe_gui_scope_v1.json').read_bytes() if manifest_bytes is None else manifest_bytes
+    assert hashlib.sha256(canonical(raw)).hexdigest()==GUI_SCOPE_SHA256,'Unreviewed GUI scope manifest'
+    scope=json.loads(raw)
+    _validate_gui_scope(scope)
+    baseline=(FIXTURES/'bcc_fe_gui_baseline_v1.py.txt').read_bytes() if baseline_bytes is None else baseline_bytes
+    assert hashlib.sha256(canonical(baseline)).hexdigest()==GUI_BASELINE_SHA256,'Unreviewed GUI baseline snapshot'
+    return scope,baseline
+
+
+def assert_reviewed_current_sources(overrides=None,*,scope_bytes=None,gui_scope_bytes=None):
+    """Validate historical evidence, then require the explicit GUI candidate v1.
+
+    The baseline map remains independently available and pinned. Only app.py
+    receives a new expected digest; all other expectations remain unchanged.
+    """
+    baseline=reviewed_baseline_sources(scope_bytes=scope_bytes)
+    gui,_=load_gui_scope(manifest_bytes=gui_scope_bytes)
+    assert baseline[GUI_PATH]==gui['baseline_canonical_sha256'],'GUI scope parent identity mismatch'
+    expected=dict(baseline)
+    expected[GUI_PATH]=gui['candidate_canonical_sha256']
+    for path,digest in expected.items():
         content=(overrides or {}).get(path)
         if content is None:content=(ROOT/path).read_bytes()
-        assert hashlib.sha256(canonical(content)).hexdigest()==reviewed_extension.get(path,scope['canonical_sha256'][path]),f'Unreviewed current source: {path}'
+        assert hashlib.sha256(canonical(content)).hexdigest()==digest,f'Unreviewed current source: {path}'

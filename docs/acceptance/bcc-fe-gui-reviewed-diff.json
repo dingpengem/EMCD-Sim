@@ -1,0 +1,22 @@
+{
+  "baseline_commit": "cdd5dc3efa43e4f3874e011aa1cfc98f80cf46dd",
+  "integration_base": "b449edff0959058dc70b270e5fdf0f99fd485590",
+  "path": "src/emcd_sim/gui/app.py",
+  "baseline_canonical_sha256": "b5783a8014864a44705f1d8c0173ec34ce18171e78406617112d6bbada41d68f",
+  "baseline_exe_source_raw_sha256": "e0fe86007cfd048e430cc57e9fe0c179dab0c91d7c48b80c1411be3bae11e269",
+  "candidate_canonical_sha256": "9f42e1e3c4aad3a0f20c136335cf5c1b64fce85949fb6b49415113ccf555ae90",
+  "candidate_worktree_raw_sha256": "c1d68170373dd743979445b762ac9dc738d1d48ad99d8a7301019fa660648102",
+  "authorized_methods": [
+    "refresh",
+    "start_preview"
+  ],
+  "authorized_changes": [
+    "Display the unchanged beam-limit failure and Manual/cutoff guidance.",
+    "Label unsupported-provider geometry as unfiltered reciprocal-lattice points, not diffraction intensities.",
+    "Use supported elastic provider, displayed elastic settings, geometry and target validation for Preview eligibility.",
+    "Retain the MDFF Automatic policy invocation and all existing EELS/EMCD guards; do not change settings or claim Fe convergence."
+  ],
+  "historical_identity_checks_against_candidate": "expected mismatch; not waived or relabeled as passing",
+  "scope": "GUI-only reviewed-diff attestation; not a replacement or extension of historical scientific source manifests",
+  "future_manifest": "Any future version-specific accepted-source manifest requires independent acceptance; no historical source-hash assertions are changed here."
+}
