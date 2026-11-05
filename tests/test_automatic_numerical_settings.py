@@ -13,6 +13,8 @@ from emcd_sim.gui.emcd_forward import ForwardSettings
 from emcd_sim.gui.numerical_settings import resolve_parameters,REFERENCE_SOURCE_SHA256
 from emcd_sim.gui.project_io import load_project,save_project
 from emcd_sim.gui.propagation import numerical_info
+from historical_xmcd_test_support import (HISTORICAL_XMCD_SHA256, historical_xmcd_source,
+    relocate_historical_xmcd_config)
 
 
 @pytest.fixture
@@ -151,6 +153,7 @@ def test_project_roundtrip_metadata_and_arrays(window,tmp_path,mode):
     path=Path('outputs/v060_release/source_native/single_both_project')
     if not path.exists():pytest.skip('Saved project fixture unavailable')
     result=load_project(path);before=fingerprints(result)
+    source=historical_xmcd_source(tmp_path)
     # No solver: store UI provenance alongside an existing saved result.
     selection=dict(mode=mode,actual=dict(beam=result['settings'].beam_cutoff),
                    manual_overrides=window.numerical_snapshot(),provenance=dict(source='Saved configuration',status='Retained saved parameters'))
@@ -159,18 +162,49 @@ def test_project_roundtrip_metadata_and_arrays(window,tmp_path,mode):
     loaded=load_project(destination)
     assert loaded['metadata']['numerical_selection']==json.loads(json.dumps(selection))
     assert fingerprints(loaded)==before
+    expected=relocate_historical_xmcd_config(loaded['config'],source)
+    loaded['source_overrides']=dict(loaded.get('source_overrides',{}),xmcd=expected.source)
     window.emcd_result=loaded;window.use_result_settings()
     assert window.numerical_mode.currentIndex()==(0 if mode=='automatic' else 1)
-    assert window.settings()==loaded['settings'] and window.forward_settings()==loaded['config']
+    assert window.settings()==loaded['settings'] and window.forward_settings()==expected
+    assert replace(expected,source=loaded['config'].source)==loaded['config']
+    assert fingerprints(loaded)==before
 
 
-def test_legacy_keeps_explicit_manual(window):
+def test_legacy_keeps_explicit_manual(window,tmp_path):
     path=Path('outputs/v060_release/source_native/single_both_project')
     if not path.exists():pytest.skip('Saved project fixture unavailable')
     result=load_project(path);assert 'numerical_selection' not in result['metadata']
+    from runtime_fixtures import fingerprints
+    before=fingerprints(result)
+    source=historical_xmcd_source(tmp_path)
+    expected=relocate_historical_xmcd_config(result['config'],source)
+    result['source_overrides']=dict(result.get('source_overrides',{}),xmcd=expected.source)
     window.emcd_result=result;window.use_result_settings()
     assert window.numerical_mode.currentIndex()==1
-    assert window.settings()==result['settings'] and window.forward_settings()==result['config']
+    assert window.settings()==result['settings'] and window.forward_settings()==expected
+    assert replace(expected,source=result['config'].source)==result['config']
+    assert fingerprints(result)==before
+
+
+@pytest.mark.parametrize('failure',['missing','tampered','incorrect_mapping','wrong_saved_identity'])
+def test_historical_source_relocation_rejects_unverified_identity(tmp_path,failure):
+    from emcd_sim.gui.project_io import source_status
+    source=historical_xmcd_source(tmp_path)
+    cfg=ForwardSettings(source='recorded-original.xmcd',source_sha256=HISTORICAL_XMCD_SHA256)
+    positive=relocate_historical_xmcd_config(cfg,source)
+    assert replace(positive,source=cfg.source)==cfg
+    assert source_status(dict(config=cfg,metadata={},source_overrides=dict(xmcd=positive.source)))['xmcd']['verified']
+    if failure=='missing':source=tmp_path/'missing.xmcd'
+    elif failure=='tampered':source.write_bytes(source.read_bytes()+b' changed source bytes')
+    elif failure=='incorrect_mapping':source=Path(__file__).resolve().parents[1]/'data/wien2k_ni/Ni_fm.xmcd'
+    else:cfg=replace(cfg,source_sha256='0'*64)
+    original=asdict(cfg)
+    result=dict(config=cfg,metadata={},source_overrides=dict(xmcd=str(source)))
+    assert not source_status(result)['xmcd']['verified']
+    with pytest.raises(ValueError,match='Historical XMCD source|historical XMCD saved identity'):
+        relocate_historical_xmcd_config(cfg,source)
+    assert asdict(cfg)==original
 
 
 def test_memory_rejection_does_not_lower_settings(window,monkeypatch):
