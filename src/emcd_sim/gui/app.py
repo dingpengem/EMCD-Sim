@@ -41,7 +41,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.splitter=QtWidgets.QSplitter();self.setCentralWidget(self.splitter)
         self.inputs=QtWidgets.QWidget();self.form_layout=QtWidgets.QVBoxLayout(self.inputs)
         scroll=QtWidgets.QScrollArea();scroll.setWidgetResizable(True);scroll.setWidget(self.inputs);scroll.setMinimumWidth(320);self.splitter.addWidget(scroll)
-        self.section('A. Crystal Structure');self.button('FCC Ni default',self.default_structure);self.button('Load CIF…',self.load_cif)
+        self.section('Material');self.button('Open CIF…',self.load_cif)
         self.structure_label=QtWidgets.QLabel();self.structure_label.setWordWrap(True);self.form.addRow(self.structure_label)
         self.button('Inspect structure…',self.inspect_structure)
         from ..elastic_providers import CHOICES
@@ -72,7 +72,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.section('C. Microscope & Sample')
         self.number('kv','Voltage (kV)',300,20,1000,self.tilt_changed)
         self.number('thickness','Thickness (nm)',30,.1,1000,self.refresh)
-        self.section('D. MDFF Model',False)
+        self.section('Model',True)
         self.mdff_controls()
         self.section('E. Propagation Method')
         self.propagation_controls()
@@ -113,6 +113,10 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.zone.returnPressed.connect(self.apply_orientation);self.target.returnPressed.connect(self.apply_orientation)
         self.sync_za();self.restore_detectors();self.refresh();self.setup_stage_b();self.setup_stage_d(workspace)
         self.responsive=ResponsiveLayout(self)
+        from .mdff_usability import configuration_dialog
+        configuration_dialog(self)
+        self.mdff_dialog.hide()
+        self.model_box.setCurrentIndex(1)
 
     def section(self,title,expanded=True):
         group=CollapsibleSection(title,expanded=expanded);group.setObjectName('settings_'+''.join(c if c.isalnum() else '_' for c in title));self.form=QtWidgets.QFormLayout(group.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);self.form_layout.addWidget(group)

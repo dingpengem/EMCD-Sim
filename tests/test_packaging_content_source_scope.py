@@ -5,14 +5,15 @@ import packaging_content_source_scope as scope
 import mdff_editor_source_scope as editor
 import physics_source_guard as physics
 import unit_source_snapshots as units
+from mdff_usability_source_scope import packaging_parent_scope
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def positive():
-    scope.load(ROOT)
     units.assert_reviewed_current_sources()
     physics.assert_registered_sources()
+    packaging_parent_scope()
 
 
 @pytest.mark.parametrize('path', [*scope.MODIFIED,
@@ -41,7 +42,7 @@ def test_additive_scope_rejects_target_mutation(path):
 def test_historical_editor_maps_and_archive_are_still_independent():
     positive()
     historical, archive = editor.load_scope()
-    amended = scope.load(ROOT)
+    amended = packaging_parent_scope()
     assert len(historical['candidate']) == 18 and len(historical['protected_parent']) == 93
     assert set(archive) == set(editor.MODIFIED)
     assert set(amended['modified']) & set(historical['candidate']) == {'packaging/emcd_gui.spec'}

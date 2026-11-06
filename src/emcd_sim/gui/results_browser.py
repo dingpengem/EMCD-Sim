@@ -310,6 +310,7 @@ class ProjectWorkspace:
             self.error('Saved parallel-worker request is unsupported (Automatic/Manual, 1–4). Saved results remain viewable; inputs were not replaced or clamped.');return
         try:structure=restore_structure(r.get('structure_snapshot'))
         except Exception as exc:self.error(str(exc));return
+        if self.model_box.currentIndex()==2:self._remember_manual_state()
         self._restoring=True
         try:
             self.structure=structure;self.last_result=None;self.table.setRowCount(0)
@@ -332,7 +333,7 @@ class ProjectWorkspace:
             with QtCore.QSignalBlocker(self.worker_mode):self.worker_mode.setCurrentIndex(0 if c.worker_mode=='automatic' else 1)
             with QtCore.QSignalBlocker(self.worker_count):self.worker_count.setValue(c.parallel_workers)
             self.worker_count.setEnabled(c.worker_mode=='manual')
-            values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial or .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
+            values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial if c.radial is not None else .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
             values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()});self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()
             self.sync_angular_resolution()
             for widget,checked in ((self.correction,c.correction),(self.radial_override,c.radial is not None),(self.declaration,c.axis_declared)):
@@ -353,6 +354,9 @@ class ProjectWorkspace:
                 self.atomic_provider_info=None
                 with QtCore.QSignalBlocker(self.atomic_editor.use_editor):self.atomic_editor.use_editor.setChecked(False)
                 self.atomic_editor.validated_path=None;self.atomic_editor.validated_sha256=None
+                if c.model=='atomic':
+                    from .saved_atomic_ui import restore
+                    restore(self.atomic_editor,c,self.structure)
                 for widget,value in ((self.xmcd_element,'Ni'),(self.xmcd_edge,'L2,3'),(self.xmcd_selected,'')):
                     with QtCore.QSignalBlocker(widget):widget.setText(value)
                 for widget in self.xmcd_l23_controls:widget.setVisible(True)

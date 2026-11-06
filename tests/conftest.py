@@ -13,6 +13,12 @@ import sys
 import pytest
 
 
+def pytest_collection_modifyitems(config, items):
+    # Exact reviewed replacements execute both historical and current contracts.
+    from mdff_workflow_registration import install
+    install(config, items)
+
+
 @pytest.fixture(autouse=True)
 def release_test_owned_gui_resources(request):
     qt = sys.modules.get('PySide6.QtWidgets')
