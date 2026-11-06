@@ -21,14 +21,21 @@ from historical_xmcd_test_support import (HISTORICAL_XMCD_SHA256, historical_xmc
 def window(tmp_path):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with ExitStack() as stack:
+        solvers=[]
         for name in ('emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.stage_b.calculate',
                      'emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.stage_b.EMCDWorker.run',
                      'emcd_sim.gui.propagation.propagate','emcd_sim.gui.channeling.double_channeling_response',
                      'emcd_sim.gui.channeling.multislice_double_channeling_response'):
-            stack.enter_context(patch(name,side_effect=AssertionError('Unexpected scientific solve')))
-        w=MainWindow(workspace=tmp_path/'workspace');w.model_box.setCurrentIndex(1)
+            solvers.append(stack.enter_context(patch(name,side_effect=AssertionError('Unexpected scientific solve'))))
+        # Automatic starting presets apply to the built-in Ni workflow, not
+        # the redesigned parameter-backed Atomic provider (Manual required).
+        w=MainWindow(workspace=tmp_path/'workspace');w.model_box.setCurrentIndex(0)
+        w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
+        assert set(w.structure.atoms.get_chemical_symbols())=={'Ni'}
+        assert w.source_info and w.validated_path==w.source_path.text()
         yield w
         w.close();app.processEvents()
+        for solver in solvers:solver.assert_not_called()
 
 
 def reference_config(**kwargs):

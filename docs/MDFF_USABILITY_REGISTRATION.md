@@ -24,9 +24,9 @@ convention and workflow test bodies remain unchanged. `extension()`,
 `reviewed_baseline_sources()`, `load_snapshots()`, `load_gui_scope()` and the
 original editor `load_scope()` retain their historical meanings.
 
-The v2 manifest names exactly 25 candidate paths, 13 parent files (eight UI
-parents plus the five registration integration parents), protected unchanged
-base files and fourteen explicit registration bootstrap paths. The parent ZIP comes
+The v3 manifest names exactly 25 candidate paths, 14 parent files (eight UI
+parents plus the six registration integration parents), protected unchanged
+base files and seventeen explicit registration bootstrap paths. The parent ZIP comes
 only from actual base Git blobs, with raw, canonical and Git blob identities.
 Text canonicalization is UTF-8-sig / CRLF to LF; binary evidence remains raw.
 Duplicate, unsafe, extra or missing declarations and malformed digests reject.
@@ -34,7 +34,7 @@ Duplicate, unsafe, extra or missing declarations and malformed digests reject.
 The loader and its manifest pin are review trust roots; they are authenticated
 by the registration-only and combined patches and external delivery inventories,
 not a circular self-hash claim. The parent archive has a pinned hash in the
-pinned manifest. The other eleven registration support files have fixed hashes
+pinned manifest. The other fourteen registration support files have fixed hashes
 in that manifest. No runtime writer or automatic pin update is provided.
 
 The frozen v1 manifest and parent archive retain their original working bytes.
@@ -48,6 +48,14 @@ loader using only authenticated parent bytes. All original mutation assertions
 remain active; historical packaging manifests and archives are not repinned.
 
 ## Active five-test mapping
+
+V3 additionally registers the automatic-numerics test fixture correction. Its
+configuration-only tests explicitly select and validate the supported Ni XMCD
+workflow; they no longer prepare a generic Atomic provider while expecting the
+Ni-only Automatic policy. All numerical assertions remain unchanged, and every
+forbidden solver mock must remain uncalled. V1 and V2 manifests/archives remain
+unchanged and independently available; no scientific or accepted UI/model
+identity is replaced by this test-infrastructure correction.
 
 The exact five names in `mdff_usability_source_scope.WORKFLOWS` are intercepted
 when ordinarily collected from `test_atomic_parameter_editor.py`. No item is

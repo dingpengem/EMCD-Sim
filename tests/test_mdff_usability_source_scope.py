@@ -44,7 +44,7 @@ def test_positive_and_independent_historical_queries():
     assert original==history.extension() and baseline==units.reviewed_baseline_sources()
     assert old['scope_id']=='generalized-mdff-editor-v1'
     assert declaration['accepted_patch_sha256']==scope.ACCEPTED_PATCH
-    assert len(declaration['candidate'])==25 and len(parents)==13
+    assert len(declaration['candidate'])==25 and len(parents)==14
     packaging=scope.packaging_parent_scope()
     assert packaging['parent_commit']=='3609dfc762749024a3c6726c3763ef33f3e46482'
     assert packaging['modified']['tests/test_mdff_editor_source_scope.py']['canonical_sha256']==declaration['parent_files']['tests/test_mdff_editor_source_scope.py']['canonical_sha256']

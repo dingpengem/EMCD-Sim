@@ -54,7 +54,7 @@ def main():
         assert all(digest(p.parent/name)==value for name,value in child['hashes'].items())
         record['workflow_contracts'].append(dict(junit=str(p.relative_to(out)),sha256=digest(p),cases=cases(p),run_sha256=digest(p.parent/'run.json'),source_unchanged=child['source_unchanged'],exit_code=child['exit_code']))
     if result.returncode==0:
-        assert len(record['cases'])==77 and all(c['outcome']=='passed' for c in record['cases']),'Required checks must all execute and pass'
+        assert len(record['cases'])==80 and all(c['outcome']=='passed' for c in record['cases']),'Required checks must all execute and pass'
         assert len(record['workflow_contracts'])==10,'All five historical/current workflow pairs must execute'
         assert sum(len(c['cases']) for c in record['workflow_contracts'])==11
         assert all(c['exit_code']==0 and c['source_unchanged'] and all(t['outcome']=='passed' for t in c['cases']) for c in record['workflow_contracts'])
