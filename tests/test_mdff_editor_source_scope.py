@@ -28,6 +28,8 @@ def positive_gate():
 def isolated(tmp_path, monkeypatch):
     scope, _ = editor.load_scope()
     paths = set(historical.extension()) | set(units.reviewed_baseline_sources()) | set(editor.MODIFIED+editor.ADDED+editor.PROTECTED+editor.HISTORY) | {editor.MANIFEST_PATH, editor.ARCHIVE_PATH}
+    from packaging_content_source_scope import support_paths
+    paths |= support_paths(editor.ROOT)
     for path in paths:
         target = tmp_path/path; target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(editor.ROOT/path, target)

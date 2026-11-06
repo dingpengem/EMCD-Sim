@@ -10,6 +10,8 @@ $env:PYTHONPATH = "$root/src" + $(if ($previousPythonPath) { ";$previousPythonPa
 try {
     & $Python "$PSScriptRoot/check_windows_metadata.py"
     if ($LASTEXITCODE -ne 0) { throw 'Windows build metadata preflight failed; install the declared build requirements into the selected interpreter.' }
+    & $Python "$PSScriptRoot/check_package_contents.py" --environment
+    if ($LASTEXITCODE -ne 0) { throw 'Required packaging assets or reviewed Qt environment failed preflight.' }
     $applicationVersion = (& $Python -c "from emcd_sim import __version__; print(__version__)").Trim()
     if ($LASTEXITCODE -ne 0 -or -not $applicationVersion) { throw 'Cannot read source application version' }
     $displayVersion = (& $Python -c "from emcd_sim import __display_version__; print(__display_version__)").Trim()
@@ -28,6 +30,8 @@ try {
     if ($buildStatus -ne 0) { throw 'PyInstaller build failed' }
     $appRoot = (Resolve-Path "$BuildRoot/dist/EMCD-Sim").Path
     Copy-Item -LiteralPath "$root/packaging/BETA_README.txt" -Destination "$appRoot/README.txt"
+    & $Python "$PSScriptRoot/check_package_contents.py" --dist $appRoot
+    if ($LASTEXITCODE -ne 0) { throw 'Required package content or Qt binary inventory failed; do not archive this distribution.' }
     $fileRecords = @(Get-ChildItem -LiteralPath $appRoot -Recurse -File | ForEach-Object {
         [pscustomobject]@{path=$_.FullName.Substring($appRoot.Length+1).Replace('\','/');bytes=$_.Length;sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
     })

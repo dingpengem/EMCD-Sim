@@ -1,0 +1,22 @@
+{
+  "retrieved_utc": "2026-11-06",
+  "runtime_file_version": "14.44.35211.0",
+  "sources": [
+    {
+      "path": "Microsoft-VC-Runtime-2015-2022-License.docx",
+      "url": "https://visualstudio.microsoft.com/wp-content/uploads/2021/09/Visual-C-Runtime-2015-2022-License-1.docx",
+      "final_url": "https://visualstudio.microsoft.com/wp-content/uploads/2021/09/Visual-C-Runtime-2015-2022-License-1.docx",
+      "bytes": 39644,
+      "sha256": "f1e3d56ceb2ad68aae0711b910375009e651ac5530fa0760f0dea6e81e54fae1"
+    },
+    {
+      "path": "Microsoft-VS2022-redistribution.html",
+      "url": "https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution",
+      "final_url": "https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution",
+      "bytes": 62616,
+      "sha256": "0765582c10991bdab5d8577a9569bb8889ce373977e7683620ffc038df4d7969"
+    }
+  ],
+  "rendering": "DOCX word/document.xml; paragraph text in document order; original retained.",
+  "limitation": "License text collection is not proof of distributor Visual Studio entitlement. Verify applicable redistribution rights before release."
+}

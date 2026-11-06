@@ -1,0 +1,1210 @@
+Mesa/LLVM software OpenGL renderer notices. Original HTML and version-specific source licenses are retained.
+
+===== LLVM-3.6.2-LICENSE.txt =====
+Raw SHA256: e3bc36440fc927c62d5cc24efeefe225a14d4e34ffeb0c92e430625cce9ee444
+==============================================================================
+LLVM Release License
+==============================================================================
+University of Illinois/NCSA
+Open Source License
+
+Copyright (c) 2003-2014 University of Illinois at Urbana-Champaign.
+All rights reserved.
+
+Developed by:
+
+    LLVM Team
+
+    University of Illinois at Urbana-Champaign
+
+    http://llvm.org
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal with
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimers.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimers in the
+      documentation and/or other materials provided with the distribution.
+
+    * Neither the names of the LLVM Team, University of Illinois at
+      Urbana-Champaign, nor the names of its contributors may be used to
+      endorse or promote products derived from this Software without specific
+      prior written permission.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
+SOFTWARE.
+
+==============================================================================
+Copyrights and Licenses for Third Party Software Distributed with LLVM:
+==============================================================================
+The LLVM software contains code written by third parties.  Such software will
+have its own individual LICENSE.TXT file in the directory in which it appears.
+This file will describe the copyrights, license, and restrictions which apply
+to that code.
+
+The disclaimer of warranty in the University of Illinois Open Source License
+applies to all code in the LLVM Distribution, and nothing in any of the
+other licenses gives permission to use the names of the LLVM Team or the
+University of Illinois to endorse or promote products derived from this
+Software.
+
+The following pieces of software have additional or alternate copyrights,
+licenses, and/or restrictions:
+
+Program             Directory
+-------             ---------
+Autoconf            llvm/autoconf
+                    llvm/projects/ModuleMaker/autoconf
+Google Test         llvm/utils/unittest/googletest
+OpenBSD regex       llvm/lib/Support/{reg*, COPYRIGHT.regex}
+pyyaml tests        llvm/test/YAMLParser/{*.data, LICENSE.TXT}
+ARM contributions   llvm/lib/Target/ARM/LICENSE.TXT
+md5 contributions   llvm/lib/Support/MD5.cpp llvm/include/llvm/Support/MD5.h
+
+===== Mesa-11.2.2-license.html =====
+Raw SHA256: 288ddfae338be168ef2492c21de42ee2f5c8ebc5a734b4e58b37007141bc2d6d
+
+
+
+  
+  License / Copyright Information
+  
+
+
+
+
+  
+The Mesa 3D Graphics Library
+
+
+
+
+
+
+
+Disclaimer
+
+
+
+
+Mesa is a 3-D graphics library with an API which is very similar to
+that of OpenGL.*
+To the extent that Mesa utilizes the OpenGL command syntax or state
+machine, it is being used with authorization from Silicon Graphics,
+Inc.(SGI). However, the author does not possess an OpenGL license
+from SGI, and makes no claim that Mesa is in any way a compatible
+replacement for OpenGL or associated with SGI. Those who want a
+licensed implementation of OpenGL should contact a licensed
+vendor.
+
+
+
+
+
+Please do not refer to the library as MesaGL (for legal
+reasons). It's just Mesa or The Mesa 3-D graphics
+library. 
+
+
+
+
+
+
+* OpenGL is a trademark of Silicon Graphics Incorporated.
+
+
+
+
+
+
+License / Copyright Information
+
+
+
+
+The Mesa distribution consists of several components.  Different copyrights
+and licenses apply to different components.  For example, some demo programs
+are copyrighted by SGI, some of the Mesa device drivers are copyrighted by
+their authors.  See below for a list of Mesa's main components and the license
+for each.
+
+
+
+
+The core Mesa library is licensed according to the terms of the MIT license.
+This allows integration with the XFree86, Xorg and DRI projects.
+
+
+
+
+The default Mesa license is as follows:
+
+
+
+
+
+Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+
+
+
+Attention, Contributors
+
+
+
+
+When contributing to the Mesa project you must agree to the licensing terms
+of the component to which you're contributing.
+The following section lists the primary components of the Mesa distribution
+and their respective licenses.
+
+
+
+
+
+Mesa Component Licenses
+
+
+
+
+Component         Location               License
+------------------------------------------------------------------
+Main Mesa code    src/mesa/              Mesa (MIT)
+
+Device drivers    src/mesa/drivers/*     MIT, generally
+
+Ext headers       include/GL/glext.h     Khronos
+                  include/GL/glxext.h
+
+C11 thread        include/c11/threads*.h Boost (permissive)
+emulation
+
+
+
+
+
+In general, consult the source files for license terms.
+
+
+
+
+
+
+
+===== Qt-6.12-LLVM-attribution.html =====
+Raw SHA256: bfe20ff114060c7210dce227e8e76cb3af29a8b7a4f872120fe66b7fcf4321ef
+
+  
+
+  
+  
+  
+  LLVM Attribution | Qt 6.12
+  
+  
+  
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+   wpThemeFolder = 'https://qt.io/wp-content/themes/oneqt'; 
+  
+ $(document).ready(function(){
+   $("input[type=radio]").on("click", function() {
+   var lbl = $(this).next().text();
+   $("input[type=radio]:not(checked)").filter(function() {
+     if ($(this).next().text() == lbl)
+         $(this).prop("checked", true);
+   });
+   });
+ });
+  
+  
+    $(function () {
+      if (document.documentElement.getAttribute('data-theme') === 'dark')
+        $('input#th-toggle').prop('checked', true);
+      $('input#th-toggle').change(function() {
+        var theme = this.checked ? 'dark' : 'light';
+        localStorage.setItem('theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
+        $('#sidebar-toctree').jstree(true).set_theme('default' + `${theme === 'dark' ? '-dark' : ''}`);
+      });
+    });
+  
+  
+  
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-5QQXBTC');
+  
+  
+
+
+
+
+    
+
+        
+            
+                Back to Qt.io
+            
+            
+                Contact Us
+                Blog
+                Download Qt
+            
+        
+
+        
+            
+                
+                    
+                
+            
+            
+            
+                
+
+                
+                    
+                        
+English
+
+                    
+                
+
+                
+
+                  
+                    
+                        
+                        
+                    
+                  
+                
+
+                
+
+                    Qt Academy
+                
+
+                
+
+                    Archives
+                
+
+                
+
+                    Snapshots
+                
+
+            
+            
+            
+                
+            
+        
+    
+
+
+
+    
+        
+            
+            
+            
+                        
+                
+                                        
+                                            
+                                    
+                                
+                    Filter topics
+                    
+                    Topic not in active filterClear
+                
+                                
+                
+                    
+                    
+                                                
+                    
+                
+            
+        
+        
+            
+                
+                    
+                        
+                            
+                            Search
+                            .js-qt-search-component{z-index:1000;}
+                        
+                                        
+                        
+                            
+Qt 6.12
+
+                            
+Qt Licensing
+
+                            
+LLVM Attribution
+
+                        
+                    
+                
+            
+            
+                
+                    
+                    
+
+
+
+
+Mesa llvmpipe
+License Changes
+
+
+
+
+
+LLVM Attribution
+
+
+
+
+The provided binaries of Qt include a static copy of LLVM inside the qdoc and lupdate binaries.
+
+
+Most of LLVM is under the University of Illinois/NCSA Open Source License:
+
+
+University of Illinois/NCSA
+Open Source License
+
+Copyright (c) 2003-2017 University of Illinois at Urbana-Champaign.
+All rights reserved.
+
+Developed by:
+
+    LLVM Team
+
+    University of Illinois at Urbana-Champaign
+
+    http://llvm.org
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal with
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimers.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimers in the
+      documentation and/or other materials provided with the distribution.
+
+    * Neither the names of the LLVM Team, University of Illinois at
+      Urbana-Champaign, nor the names of its contributors may be used to
+      endorse or promote products derived from this Software without specific
+      prior written permission.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
+SOFTWARE.
+
+
+Furthermore, LLVM contains code from OpenBSD regex :
+
+
+$OpenBSD: COPYRIGHT,v 1.3 2003/06/02 20:18:36 millert Exp $
+
+Copyright 1992, 1993, 1994 Henry Spencer.  All rights reserved.
+This software is not subject to any license of the American Telephone
+and Telegraph Company or of the Regents of the University of California.
+
+Permission is granted to anyone to use this software for any purpose on
+any computer system, and to alter it and redistribute it, subject
+to the following restrictions:
+
+1. The author is not responsible for the consequences of use of this
+   software, no matter how awful, even if they arise from flaws in it.
+
+2. The origin of this software must not be misrepresented, either by
+   explicit claim or by omission.  Since few users ever read sources,
+   credits must appear in the documentation.
+
+3. Altered versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.  Since few users
+   ever read sources, credits must appear in the documentation.
+
+4. This notice may not be removed or altered.
+
+
+Copyright (c) 1994
+The Regents of the University of California.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. Neither the name of the University nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+@(#)COPYRIGHT    8.1 (Berkeley) 3/16/94
+
+
+Furthermore, LLVM contains code from md5:
+
+
+This is an OpenSSL-compatible implementation of the RSA Data Security, Inc.
+MD5 Message-Digest Algorithm (RFC 1321).
+
+Homepage:
+http://openwall.info/wiki/people/solar/software/public-domain-source-code/md5
+
+Author:
+Alexander Peslyak, better known as Solar Designer <solar at openwall.com>
+
+This software was written by Alexander Peslyak in 2001.  No copyright is
+claimed, and the software is hereby placed in the public domain.
+In case this attempt to disclaim copyright and place the software in the
+public domain is deemed null and void, then the software is
+Copyright (c) 2001 Alexander Peslyak and it is hereby released to the
+general public under the following terms:
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted.
+
+There's ABSOLUTELY NO WARRANTY, express or implied.
+
+(This is a heavily cut-down "BSD license".)
+
+This differs from Colin Plumb's older public domain implementation in that
+no exactly 32-bit integer data type is required (any 32-bit or wider
+unsigned integer data type will do), there's no compile-time endianness
+configuration, and the function prototypes match OpenSSL's.  No code from
+Colin Plumb's implementation has been reused; this comment merely compares
+the properties of the two independent implementations.
+
+The primary goals of this implementation are portability and ease of use.
+It is meant to be fast, but not as fast as possible.  Some known
+optimizations are not included to reduce source code size and avoid
+compile-time configuration.
+
+
+
+
+
+Mesa llvmpipe
+License Changes
+
+
+
+
+
+© 2026 The Qt Company Ltd.
+   Documentation contributions included herein are the copyrights of
+   their respective owners.     The documentation provided herein is licensed under the terms of the    GNU Free Documentation    License version 1.3 as published by the Free Software Foundation.     Qt and respective logos are     trademarks of The Qt Company Ltd. in Finland and/or other countries
+   worldwide. All other trademarks are property of their respective owners. 
+
+
+                    
+                
+                
+                    
+                                            
+                                        
+                                                Next
+                        
+                            
+
+License Changes
+
+
+                        
+                                                Previous
+                        
+                            
+
+Mesa llvmpipe
+
+
+                        
+                                            
+                                    
+            
+        
+    
+
+
+
+    
+        
+            
+                
+                    
+                    
+                    
+                
+                
+                    
+                    
+                    
+                    
+                
+                
+                        Contact Us
+                
+
+            
+            
+                
+
+                        
+
+  
+Qt Group
+   
+    
+Our Story
+
+    
+Brand
+
+    
+News
+
+    
+Careers
+
+    
+Investors
+
+    
+Qt Products
+
+    
+Software Quality Products
+
+   
+
+  
+Licensing
+   
+    
+License Agreement
+
+    
+Open Source
+
+    
+Plans and pricing
+
+    
+Download
+
+    
+FAQ
+
+   
+
+  
+Learn Qt
+   
+    
+For Learners
+
+    
+For Students and Teachers
+
+    
+Qt Documentation
+
+    
+Qt Forum
+
+   
+
+  
+Support & Services
+   
+    
+Professional Services
+
+    
+Customer Success
+
+    
+Support Services
+
+    
+Partners
+
+    
+Qt World
+
+   
+
+ 
+
+      
+   
+
+        
+            
+                
+                    
+ 
+  
+© 2026 The Qt Company
+
+  
+Feedback
+
+ 
+
+                    
+Qt Group includes The Qt Company Oy and its global subsidiaries and affiliates.
+
+                
+            
+            
+            
+        
+    
+
+
+===== Qt-6.12-Mesa-attribution.html =====
+Raw SHA256: 55432a584d21f4c4c7e058a5244c5488bda97f94182504b723a668de203d210f
+
+  
+
+  
+  
+  
+  Mesa llvmpipe | Qt 6.12
+  
+  
+  
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+   wpThemeFolder = 'https://qt.io/wp-content/themes/oneqt'; 
+  
+ $(document).ready(function(){
+   $("input[type=radio]").on("click", function() {
+   var lbl = $(this).next().text();
+   $("input[type=radio]:not(checked)").filter(function() {
+     if ($(this).next().text() == lbl)
+         $(this).prop("checked", true);
+   });
+   });
+ });
+  
+  
+    $(function () {
+      if (document.documentElement.getAttribute('data-theme') === 'dark')
+        $('input#th-toggle').prop('checked', true);
+      $('input#th-toggle').change(function() {
+        var theme = this.checked ? 'dark' : 'light';
+        localStorage.setItem('theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
+        $('#sidebar-toctree').jstree(true).set_theme('default' + `${theme === 'dark' ? '-dark' : ''}`);
+      });
+    });
+  
+  
+  
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-5QQXBTC');
+  
+  
+
+
+
+
+    
+
+        
+            
+                Back to Qt.io
+            
+            
+                Contact Us
+                Blog
+                Download Qt
+            
+        
+
+        
+            
+                
+                    
+                
+            
+            
+            
+                
+
+                
+                    
+                        
+English
+
+                    
+                
+
+                
+
+                  
+                    
+                        
+                        
+                    
+                  
+                
+
+                
+
+                    Qt Academy
+                
+
+                
+
+                    Archives
+                
+
+                
+
+                    Snapshots
+                
+
+            
+            
+            
+                
+            
+        
+    
+
+
+
+    
+        
+            
+            
+            
+                        
+                
+                                        
+                                            
+                                    
+                                
+                    Filter topics
+                    
+                    Topic not in active filterClear
+                
+                                
+                
+                    
+                    
+                                                
+                    
+                
+            
+        
+        
+            
+                
+                    
+                        
+                            
+                            Search
+                            .js-qt-search-component{z-index:1000;}
+                        
+                                        
+                        
+                            
+Qt 6.12
+
+                            
+Qt Licensing
+
+                            
+Mesa llvmpipe
+
+                        
+                    
+                
+            
+            
+                
+                    
+                    
+
+
+
+
+Macros for Building with CMake
+LLVM Attribution
+
+
+
+
+
+Mesa llvmpipe
+
+
+
+
+Mesa is a 3-D graphics library with an API which is very similar to that of OpenGL. The llvmpipe software renderer allows running of OpenGL applications without any hardware / driver support.
+
+
+Shipped as part of the binary packages for Windows (opengl32sw.dll).
+
+
+Copyright (C) 1999-2007  Brian Paul.
+
+
+MIT License Boost Software License 1.0
+
+
+Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+BRIAN PAUL BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Copyright (c) 2013-2016 The Khronos Group Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and/or associated documentation files (the
+"Materials"), to deal in the Materials without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Materials, and to
+permit persons to whom the Materials are furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Materials.
+
+THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+
+
+C11 <threads.h> emulation library
+
+(C) Copyright yohhoy 2012.
+Distributed under the Boost Software License, Version 1.0.
+
+Permission is hereby granted, free of charge, to any person or organization
+obtaining a copy of the software and accompanying documentation covered by
+this license (the "Software") to use, reproduce, display, distribute,
+execute, and transmit the Software, and to prepare [[derivative work]]s of the
+Software, and to permit third-parties to whom the Software is furnished to
+do so, all subject to the following:
+
+The copyright notices in the Software and this entire statement, including
+the above license grant, this restriction and the following disclaimer,
+must be included in all copies of the Software, in whole or in part, and
+all derivative works of the Software, unless such copies or derivative
+works are solely in the form of machine-executable object code generated by
+a source language processor.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT
+SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE
+FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+
+
+
+
+Macros for Building with CMake
+LLVM Attribution
+
+
+
+
+
+© 2026 The Qt Company Ltd.
+   Documentation contributions included herein are the copyrights of
+   their respective owners.     The documentation provided herein is licensed under the terms of the    GNU Free Documentation    License version 1.3 as published by the Free Software Foundation.     Qt and respective logos are     trademarks of The Qt Company Ltd. in Finland and/or other countries
+   worldwide. All other trademarks are property of their respective owners. 
+
+
+                    
+                
+                
+                    
+                                            
+                                        
+                                                Next
+                        
+                            
+
+LLVM Attribution
+
+
+                        
+                                                Previous
+                        
+                            
+
+Macros for Building with CMake
+
+
+                        
+                                            
+                                    
+            
+        
+    
+
+
+
+    
+        
+            
+                
+                    
+                    
+                    
+                
+                
+                    
+                    
+                    
+                    
+                
+                
+                        Contact Us
+                
+
+            
+            
+                
+
+                        
+
+  
+Qt Group
+   
+    
+Our Story
+
+    
+Brand
+
+    
+News
+
+    
+Careers
+
+    
+Investors
+
+    
+Qt Products
+
+    
+Software Quality Products
+
+   
+
+  
+Licensing
+   
+    
+License Agreement
+
+    
+Open Source
+
+    
+Plans and pricing
+
+    
+Download
+
+    
+FAQ
+
+   
+
+  
+Learn Qt
+   
+    
+For Learners
+
+    
+For Students and Teachers
+
+    
+Qt Documentation
+
+    
+Qt Forum
+
+   
+
+  
+Support & Services
+   
+    
+Professional Services
+
+    
+Customer Success
+
+    
+Support Services
+
+    
+Partners
+
+    
+Qt World
+
+   
+
+ 
+
+      
+   
+
+        
+            
+                
+                    
+ 
+  
+© 2026 The Qt Company
+
+  
+Feedback
+
+ 
+
+                    
+Qt Group includes The Qt Company Oy and its global subsidiaries and affiliates.
+
+                
+            
+            
+            
+        
+    
+
+
+===== Qt-Mesa-prebuilt-sha256sums.txt =====
+Raw SHA256: 33b7e10b5a4fb6828052e2135ff1e3ec69e89fa0a2e5a8d3f2499644cdba39f8
+0d5881bcd78bc55241ce0c50f081149c04f756379c599cc27520f975d2f33925  opengl32sw-32-mesa_11_2_2-signed_sha256.7z
+c61f801c1760aa24b02c7a8354323cddf368b86f8f5c34b50b3b224f7d728afd  opengl32sw-64-mesa_11_2_2-signed_sha256.7z

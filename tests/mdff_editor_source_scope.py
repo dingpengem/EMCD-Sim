@@ -109,16 +109,28 @@ def load_scope(*, manifest_bytes=None, archive_bytes=None):
 
 def current_sources(parent_sources, overrides=None, *, prefix='Unreviewed current source: '):
     scope, _ = load_scope()
+    from packaging_content_source_scope import load as load_packaging_scope
+    packaging_scope = load_packaging_scope(ROOT, overrides)
+    amended = packaging_scope['modified']
+    # Original maps and archive ordering remain independently authenticated.
+    for path in set(amended) & (set(scope['candidate']) | set(scope['protected_parent'])):
+        old = scope['candidate'].get(path, scope['protected_parent'].get(path))
+        old_digest = old.get('canonical_sha256', old.get('sha256'))
+        assert packaging_scope['parent_files'][path]['canonical_sha256'] == old_digest, 'Packaging/editor parent disagreement: '+path
     expected = dict(parent_sources)
     for path, entry in scope['protected_parent'].items():
         if path in expected and entry['mode'] == 'canonical':
             assert expected[path] == entry['sha256'], 'Historical parent disagreement: '+path
-        assert digest(read_source(path, overrides, prefix), entry['mode']) == entry['sha256'], prefix+path
+        target = amended[path]['sha256'] if path in amended else entry['sha256']
+        assert digest(read_source(path, overrides, prefix), entry['mode']) == target, prefix+path
+        if path in amended and path in expected:
+            expected[path] = amended[path]['canonical_sha256']
     for path, entry in scope['candidate'].items():
         if path in MODIFIED and path in expected:
             assert expected[path] == scope['parent_archive']['files'][path]['canonical_sha256'], 'Editor scope ordering/parent mismatch: '+path
         raw = read_source(path, overrides, prefix)
         key = 'raw_sha256' if entry['mode'] == 'raw' else 'canonical_sha256'
-        assert digest(raw, entry['mode']) == entry[key], prefix+path
-        expected[path] = entry['canonical_sha256']
+        target = amended[path]['sha256'] if path in amended else entry[key]
+        assert digest(raw, entry['mode']) == target, prefix+path
+        expected[path] = amended[path]['canonical_sha256'] if path in amended else entry['canonical_sha256']
     return expected
