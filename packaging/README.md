@@ -1,5 +1,28 @@
 # Windows candidate build
 
+Packaging correction for internal MDFF candidate 3609dfc7: required CIFs are
+`_internal/examples/Fe_BCC_a2.8665.cif` and `Ni_FCC_a3.52.cif` beside their
+provenance/redistribution README and MIT license. Qt licenses and component
+notices are accessible at `_internal/licenses/qt/README.txt`; the eight readable
+notice collections have byte-exact upstream ZIPs and per-member provenance.
+These paths are relative to the extracted application folder, not a working
+directory. Existing scientific data and registered XMCD bytes remain unchanged.
+
+`check_package_contents.py --environment` authenticates pinned inputs before
+PyInstaller (also called by the spec). After collection, `--dist <app-folder>`
+requires every asset and its raw hash, the manifest's independently pinned hash,
+and the exact reviewed Qt/binding/plugin/translation inventory. Missing/changed assets
+or new Qt components stop the build before ZIP creation. These pins are a review
+boundary; do not regenerate them as part of building or use a different Qt wheel
+without a new license/content review. Direct spec builds collect the same assets;
+run the post-collection check before accepting their distribution.
+
+The audited DLLs are Qt 6.12.0 except Qt PDF 6.140.0 (wheel
+PySide6_Pdf 6.12.0.140). Virtual Keyboard is GPLv3/commercial. The license
+collection is not a complete corresponding-source offer or release approval;
+see the component inventory's explicit redistribution limitations. Keep offline
+isolation and the upstream HDF5 comparison UNVERIFIED until separately tested.
+
 The Windows-only v0.8.1-beta.1 Research Beta uses version 0.8.1b1 and uses a separate build root and local-candidate label. The Adaptive Dirac–Padé JSON coefficients, provenance, Apache-2.0 LICENSE and NOTICE are collected from `emcd_sim/data/adaptive_dirac_pade_2026`. Neither h5py nor the upstream HDF5 archives are runtime requirements; the original unlicensed atomic table remains external. CIF support still uses the declared ASE imports and space-group data.
 
 After building from a clean committed source, exercise the actual EXE on Windows:

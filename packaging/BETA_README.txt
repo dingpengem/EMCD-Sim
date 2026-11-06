@@ -105,3 +105,10 @@ interpretation. Missing convention metadata remains unknown/legacy-unverified,
 not silently corrected. Absolute experimental magnetic handedness is uncalibrated.
 Historical Ni examples retain their original Lobato/provider provenance; 9/30 nm
 figures and raw scientific data were not regenerated or relabeled by consolidation.
+Packaged structure examples: _internal/examples/Fe_BCC_a2.8665.cif and
+_internal/examples/Ni_FCC_a3.52.cif. Select these files in the CIF open dialog.
+Their provenance and MIT redistribution terms are in _internal/examples/README.txt
+and LICENSE.txt. The Ni example uses a=3.52 angstrom; built-in Ni uses 3.524.
+Qt component licenses, notices and provenance: _internal/licenses/qt/README.txt.
+Virtual Keyboard has GPLv3/commercial terms; this internal candidate is not a
+release-compliance certification. See the component-specific notice inventory.

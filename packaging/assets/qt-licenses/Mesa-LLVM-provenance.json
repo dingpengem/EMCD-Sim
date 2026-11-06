@@ -1,0 +1,145 @@
+{
+  "sources": [
+    {
+      "path": "Qt-6.12-Mesa-attribution.html",
+      "url": "https://doc.qt.io/qt-6/qt-attribution-llvmpipe.html",
+      "final_url": "https://doc.qt.io/qt-6/qt-attribution-llvmpipe.html",
+      "bytes": 23095,
+      "sha256": "55432a584d21f4c4c7e058a5244c5488bda97f94182504b723a668de203d210f"
+    },
+    {
+      "path": "Qt-6.12-LLVM-attribution.html",
+      "url": "https://doc.qt.io/qt-6/qt-attribution-llvm.html",
+      "final_url": "https://doc.qt.io/qt-6/qt-attribution-llvm.html",
+      "bytes": 25171,
+      "sha256": "bfe20ff114060c7210dce227e8e76cb3af29a8b7a4f872120fe66b7fcf4321ef"
+    },
+    {
+      "path": "LLVM-3.6.2-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-3.6.2/llvm/LICENSE.TXT",
+      "final_url": "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-3.6.2/llvm/LICENSE.TXT",
+      "bytes": 3281,
+      "sha256": "e3bc36440fc927c62d5cc24efeefe225a14d4e34ffeb0c92e430625cce9ee444"
+    },
+    {
+      "path": "Qt-Mesa-prebuilt-sha256sums.txt",
+      "url": "https://download.qt.io/development_releases/prebuilt/llvmpipe/windows/sha256sums.txt",
+      "final_url": "https://download.qt.io/development_releases/prebuilt/llvmpipe/windows/sha256sums.txt",
+      "bytes": 218,
+      "sha256": "33b7e10b5a4fb6828052e2135ff1e3ec69e89fa0a2e5a8d3f2499644cdba39f8"
+    },
+    {
+      "url": "https://archive.mesa3d.org/older-versions/11.x/11.2.2/mesa-11.2.2.tar.xz",
+      "final_url": "https://archive.mesa3d.org/older-versions/11.x/11.2.2/mesa-11.2.2.tar.xz",
+      "bytes": 7860932,
+      "sha256": "40e148812388ec7c6d7b6657d5a16e2e8dabba8b97ddfceea5197947647bdfb4",
+      "member": "mesa-11.2.2/docs/license.html",
+      "member_sha256": "288ddfae338be168ef2492c21de42ee2f5c8ebc5a734b4e58b37007141bc2d6d"
+    }
+  ],
+  "prebuilt_archive": {
+    "url": "https://download.qt.io/development_releases/prebuilt/llvmpipe/windows/opengl32sw-64-mesa_11_2_2-signed_sha256.7z",
+    "sha256": "c61f801c1760aa24b02c7a8354323cddf368b86f8f5c34b50b3b224f7d728afd",
+    "bytes": 5023568,
+    "verified_official_sha256sums": true
+  },
+  "binary_comparison": {
+    "records": [
+      {
+        "path": "C:\\Users\\peng863\\EMCD-Sim\\build\\mdff-packaging-assets\\outputs\\packaging-correction\\mesa-prebuilt\\opengl32sw.dll",
+        "bytes": 20639888,
+        "sha256": "b04de4541863bc7d8879040a78889c4849c1b1da2784c4630f734c146c2998ce",
+        "timestamp": 1465899728,
+        "sections": {
+          ".text": {
+            "bytes": 14596096,
+            "sha256": "39880e8a7f5ca7e58e7aa0a635508842dace554d77f62267cb2927e48d951307"
+          },
+          ".rdata": {
+            "bytes": 5155328,
+            "sha256": "bfb5d97db84e01d1a4582b95a2fa089ea1d4334197fb6255c5ad2ddc68728190"
+          },
+          ".data": {
+            "bytes": 102400,
+            "sha256": "92d30b6c15da74da87b4c3b895c3e8a60011a8148aba544411ba880adead4994"
+          },
+          ".pdata": {
+            "bytes": 671744,
+            "sha256": "d76fecd0034546cb4ee93b89731499d7fbe090bd902b85ea8e37dbf5f8f6ab38"
+          },
+          ".gfids": {
+            "bytes": 2560,
+            "sha256": "a5b43c1bda6b3849d8f0ce54e9a963c0bd9db7126628299015c46683a9cc6678"
+          },
+          ".tls": {
+            "bytes": 512,
+            "sha256": "4c6474903705cb450bb6434c29e8854f17d8324efca1fdb9ee9008599060883a"
+          },
+          "_RDATA": {
+            "bytes": 6144,
+            "sha256": "1c959b16af1c1954ed8e22d0f900399174496c17c34dcbbde3393b8a0930ac9e"
+          },
+          ".reloc": {
+            "bytes": 91648,
+            "sha256": "bbb9a7cd9f484b2e2e45681562013b59925909a6d4361b1a71b56bc8207bf0ee"
+          }
+        },
+        "security_directory": {
+          "offset": 20627456,
+          "size": 12432
+        }
+      },
+      {
+        "path": "C:\\Users\\peng863\\EMCD-Sim\\build\\internal-mdff-3609dfc7-final\\dist\\EMCD-Sim\\_internal\\PySide6\\opengl32sw.dll",
+        "bytes": 20639544,
+        "sha256": "18aedc7a4b610f53bcc7b7a5c5ed9293c7e86f030e3273ad54ed3bb1ebd36702",
+        "timestamp": 1465899728,
+        "sections": {
+          ".text": {
+            "bytes": 14596096,
+            "sha256": "39880e8a7f5ca7e58e7aa0a635508842dace554d77f62267cb2927e48d951307"
+          },
+          ".rdata": {
+            "bytes": 5155328,
+            "sha256": "bfb5d97db84e01d1a4582b95a2fa089ea1d4334197fb6255c5ad2ddc68728190"
+          },
+          ".data": {
+            "bytes": 102400,
+            "sha256": "92d30b6c15da74da87b4c3b895c3e8a60011a8148aba544411ba880adead4994"
+          },
+          ".pdata": {
+            "bytes": 671744,
+            "sha256": "d76fecd0034546cb4ee93b89731499d7fbe090bd902b85ea8e37dbf5f8f6ab38"
+          },
+          ".gfids": {
+            "bytes": 2560,
+            "sha256": "a5b43c1bda6b3849d8f0ce54e9a963c0bd9db7126628299015c46683a9cc6678"
+          },
+          ".tls": {
+            "bytes": 512,
+            "sha256": "4c6474903705cb450bb6434c29e8854f17d8324efca1fdb9ee9008599060883a"
+          },
+          "_RDATA": {
+            "bytes": 6144,
+            "sha256": "1c959b16af1c1954ed8e22d0f900399174496c17c34dcbbde3393b8a0930ac9e"
+          },
+          ".reloc": {
+            "bytes": 91648,
+            "sha256": "bbb9a7cd9f484b2e2e45681562013b59925909a6d4361b1a71b56bc8207bf0ee"
+          }
+        },
+        "security_directory": {
+          "offset": 20627456,
+          "size": 12088
+        }
+      }
+    ],
+    "all_section_bytes_equal": true
+  },
+  "binary_version_evidence": {
+    "mesa": "11.2.2",
+    "llvm": "3.6.2",
+    "method": "Embedded ASCII version strings; original captured list in mesa-binary-strings.json."
+  },
+  "interpretation": "All PE section bytes match the authenticated Qt prebuilt. Complete raw file hashes differ; no binary was replaced or normalized."
+}

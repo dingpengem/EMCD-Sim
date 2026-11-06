@@ -7,6 +7,9 @@ root = Path(SPECPATH).parent
 sys.path.insert(0, str(root / 'packaging'))
 from check_windows_metadata import LICENSE_DISTRIBUTIONS, require_metadata
 checked_distributions = require_metadata()
+from check_package_contents import check_environment, datas as required_datas
+check_environment()
+required_assets = required_datas(root)
 sys.path.insert(0, str(root / 'src'))
 stage = root / os.environ.get('EMCD_GUI_BUILD_ROOT','build/windows-rc') / 'resources'
 stage.mkdir(parents=True, exist_ok=True)
@@ -48,7 +51,7 @@ a = Analysis([str(root/'packaging/launcher.py')], pathex=[str(root/'src')],
            (str(root/'docs/examples/synthetic_fe_atomic_parameters.json'),'examples'),
            (str(checked_distributions['ase'].locate_file('ase/spacegroup/spacegroup.dat')),'ase/spacegroup'),
            (str(root/'src/emcd_sim/data/adaptive_dirac_pade_2026'),'emcd_sim/data/adaptive_dirac_pade_2026'),
-           (str(root/'src/emcd_sim/data/edge_references_v1'),'emcd_sim/data/edge_references_v1')]+licenses,
+           (str(root/'src/emcd_sim/data/edge_references_v1'),'emcd_sim/data/edge_references_v1')]+licenses+required_assets,
     hiddenimports=['matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg','ase.io.cif','ase.io.jsonio','ase.io.extxyz'],
     hooksconfig={'matplotlib': {'backends': ['Agg', 'QtAgg', 'svg']}},
     excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow'], noarchive=False)

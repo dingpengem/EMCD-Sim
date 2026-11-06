@@ -1,0 +1,636 @@
+{
+  "commit": "2811457ceff8f0c24a1c4d14f947a283a17239d0",
+  "version": "6.12.0",
+  "records": [
+    {
+      "member": "LICENSES/BSD-3-Clause.txt",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/LICENSES/BSD-3-Clause.txt",
+      "bytes": 1469,
+      "sha256": "9f0490f18656c6f2435bd14f603ef0c96434d1825615363dce43abb42ed1dcce"
+    },
+    {
+      "member": "LICENSES/GPL-3.0-only.txt",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/LICENSES/GPL-3.0-only.txt",
+      "bytes": 35147,
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+    },
+    {
+      "member": "LICENSES/LicenseRef-Qt-Commercial.txt",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/LICENSES/LicenseRef-Qt-Commercial.txt",
+      "bytes": 462,
+      "sha256": "9b1f50aae6267f9d5e0ceb6775ee86450262c25ec7c0573e151fe5d3f18a4700"
+    },
+    {
+      "member": "LICENSES/Qt-GPL-exception-1.0.txt",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/LICENSES/Qt-GPL-exception-1.0.txt",
+      "bytes": 965,
+      "sha256": "40678d338ce53cd93f8b22b281a2ecbcaa3ee65ce60b25ffb0c462b0530846b2"
+    },
+    {
+      "member": "tag-object.json",
+      "url": "https://api.github.com/repos/qt/qttranslations/git/tags/a35a766dd1a30d98b7647819d747700f91a1b429",
+      "bytes": 665,
+      "sha256": "8c322c58797476549f81e46428468ef2b72b7feb4adbc928b2680e2adf59214c"
+    },
+    {
+      "member": "tag.json",
+      "url": "https://api.github.com/repos/qt/qttranslations/git/ref/tags/v6.12.0",
+      "bytes": 339,
+      "sha256": "88d5d43f934ed833f2541daa044f51850386e061d0491418680931c87b7657f1"
+    },
+    {
+      "member": "translations/qt_ar.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_ar.ts",
+      "bytes": 197,
+      "sha256": "6e639a9cc15ea000e433f4be1864601e5245af7a7d8def953939579ca365d81b"
+    },
+    {
+      "member": "translations/qt_bg.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_bg.ts",
+      "bytes": 197,
+      "sha256": "fb635d32e913598b06b3a9b9c4b5bf55922f159a93dcae2e055f9e4ed698b358"
+    },
+    {
+      "member": "translations/qt_ca.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_ca.ts",
+      "bytes": 197,
+      "sha256": "8c376fad1bfd66bb32f65faacb14043add5d7cbd905b90073e4c5ea1ad532b60"
+    },
+    {
+      "member": "translations/qt_cs.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_cs.ts",
+      "bytes": 221,
+      "sha256": "b70c56106dc50a9cc5212a1ed256ab37c2712b4c4dc92cee2298346c2afe7f68"
+    },
+    {
+      "member": "translations/qt_da.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_da.ts",
+      "bytes": 221,
+      "sha256": "a9e84faac4d787981f7242778037b6167903e5d320ccbd07c79234a2d95e862f"
+    },
+    {
+      "member": "translations/qt_de.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_de.ts",
+      "bytes": 221,
+      "sha256": "0ade4a54b443f4922a8c24e6a7bcbb429a49ebb123a439d2619dc01891d61981"
+    },
+    {
+      "member": "translations/qt_es.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_es.ts",
+      "bytes": 221,
+      "sha256": "8c340efcff8cf1f415281b7db9cb12388c7f1ac7ffd718526897a5f049b87a97"
+    },
+    {
+      "member": "translations/qt_fa.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_fa.ts",
+      "bytes": 221,
+      "sha256": "ac3493cdfa8e635761b947b664b6b188c38e34bfdd2bb36cc5c0b0d02402bfaa"
+    },
+    {
+      "member": "translations/qt_fi.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_fi.ts",
+      "bytes": 221,
+      "sha256": "b8b3d48d7f2556a8c7a8933d65fbb4bcb24784295b63127a8eb563a0b74b39f0"
+    },
+    {
+      "member": "translations/qt_fr.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_fr.ts",
+      "bytes": 221,
+      "sha256": "5898b9bb083485311cf0bf52e29e5f56bad0d6dfa20c99386182f4ba8aca2f00"
+    },
+    {
+      "member": "translations/qt_gd.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_gd.ts",
+      "bytes": 173,
+      "sha256": "b2a270cfdb14c70b4821bc58b176b40168a0d649bee83ea8c2debb4a79fb9584"
+    },
+    {
+      "member": "translations/qt_gl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_gl.ts",
+      "bytes": 390047,
+      "sha256": "cc47a730b6d4c16d3d3d82ac5d71f5eeadc1979933361f0918d120dac4d700fe"
+    },
+    {
+      "member": "translations/qt_he.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_he.ts",
+      "bytes": 173,
+      "sha256": "719682507faffd0b3b421dffde8c42d146d9ddbe97f96d1b04fa8799e57bc204"
+    },
+    {
+      "member": "translations/qt_help_ar.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_ar.ts",
+      "bytes": 12406,
+      "sha256": "f3fff062f70774a45e6a4588d863562b0f80e66c583cb8d81b6a7fdfa8d556ce"
+    },
+    {
+      "member": "translations/qt_help_bg.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_bg.ts",
+      "bytes": 14310,
+      "sha256": "2f23ab629e4d22ad5fada5c58f931a92b29c9219660e25cab435bc3a4159f03b"
+    },
+    {
+      "member": "translations/qt_help_ca.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_ca.ts",
+      "bytes": 20030,
+      "sha256": "08115beaf9bcaefbfb5eb03b9fbb5da28b761ab2b40c8a6d29fb0171aa9a928d"
+    },
+    {
+      "member": "translations/qt_help_cs.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_cs.ts",
+      "bytes": 18285,
+      "sha256": "aef24d6615ada9a6a8efd7acbb54eeb2f89ad8815d5f58059ffb612364a97e0f"
+    },
+    {
+      "member": "translations/qt_help_da.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_da.ts",
+      "bytes": 6000,
+      "sha256": "60cfc86228c59648d17d2fbe9a47d2dc81b911ef24abe933422cf725d2f756b5"
+    },
+    {
+      "member": "translations/qt_help_de.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_de.ts",
+      "bytes": 9245,
+      "sha256": "765b086d462f7595ca67b1ec1ca6c3888ef8d434fdbbcfcbff5ed6d4ac13c322"
+    },
+    {
+      "member": "translations/qt_help_es.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_es.ts",
+      "bytes": 12315,
+      "sha256": "097e47ebfd2f225d41a8aa11f9688bb400496bb1300d4da485057c6103de07c7"
+    },
+    {
+      "member": "translations/qt_help_fr.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_fr.ts",
+      "bytes": 19780,
+      "sha256": "062703a98beb963b8a9ff979731aebe5a0c57f4a631acfd4969dea6a8c0d817d"
+    },
+    {
+      "member": "translations/qt_help_gl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_gl.ts",
+      "bytes": 12552,
+      "sha256": "a48180a0c01c7eb0b0c0360416a63fb02e2ccc5d8ba53e54a723e5b2ee59fc34"
+    },
+    {
+      "member": "translations/qt_help_hr.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_hr.ts",
+      "bytes": 6264,
+      "sha256": "cd4e4be3a19f92a9cd2b925778495e951c5e889ebb323961fa64d2e408dfa18f"
+    },
+    {
+      "member": "translations/qt_help_hu.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_hu.ts",
+      "bytes": 19843,
+      "sha256": "ea9b032d16756975c8dacb1073f40a5622483268443752ba5b3aa682fb8dcd9a"
+    },
+    {
+      "member": "translations/qt_help_it.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_it.ts",
+      "bytes": 17872,
+      "sha256": "5afed95e2856c48c716c72a7d91b5366d8f09c642c25db9379f486de18b6ad56"
+    },
+    {
+      "member": "translations/qt_help_ja.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_ja.ts",
+      "bytes": 12917,
+      "sha256": "e7187599e5b6285f3e4a29a1135fe09e9d5c0f4df5f61faaac786e88505ba68f"
+    },
+    {
+      "member": "translations/qt_help_ka.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_ka.ts",
+      "bytes": 11366,
+      "sha256": "b94ef621c57c84a4faf37b1020826d3f5db4a95d0b50b4378a631f7558107d40"
+    },
+    {
+      "member": "translations/qt_help_kk.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_kk.ts",
+      "bytes": 10060,
+      "sha256": "c972e98873dcd02efd2ff1162024a6cb506a1725141c5488b0aaf5c51d997366"
+    },
+    {
+      "member": "translations/qt_help_ko.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_ko.ts",
+      "bytes": 9225,
+      "sha256": "14aec5670ff461d446130776cc8fce237871c2831217adda6fc50963422f4dd7"
+    },
+    {
+      "member": "translations/qt_help_nl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_nl.ts",
+      "bytes": 7959,
+      "sha256": "e570a4945a2eaf02017285ec79f9d0d3289256d8cb5462ce48a3789b5a63c696"
+    },
+    {
+      "member": "translations/qt_help_nn.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_nn.ts",
+      "bytes": 9801,
+      "sha256": "3cd21dd31c7d6b1ed42a023816482c7a39506ad0a3b7229ee535cdcf304a796e"
+    },
+    {
+      "member": "translations/qt_help_pl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_pl.ts",
+      "bytes": 11685,
+      "sha256": "b1a252c55fe3cc972cd8c4479f4b0be21b667ab36ee0f9bd6a4d9f5fb5009f90"
+    },
+    {
+      "member": "translations/qt_help_pt_BR.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_pt_BR.ts",
+      "bytes": 19187,
+      "sha256": "2ed3c85655250df0a2922e98669da00c4534f8e348a85e7e8f5ed09ff5f82925"
+    },
+    {
+      "member": "translations/qt_help_ru.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_ru.ts",
+      "bytes": 10287,
+      "sha256": "ba6b65b0fc49a714a955b777e45d8aba742b18874089d47fd19f85fc11db2eaf"
+    },
+    {
+      "member": "translations/qt_help_sk.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_sk.ts",
+      "bytes": 12587,
+      "sha256": "def7c736a6d0edeb0b342abb19b726fea1097fc080da6fb2a620589c7dabd3c7"
+    },
+    {
+      "member": "translations/qt_help_sl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_sl.ts",
+      "bytes": 13104,
+      "sha256": "a6fbf09a731617878956643496bbac8bbfd1bfa49dd4b80063cd856dcb9ff57a"
+    },
+    {
+      "member": "translations/qt_help_sv.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_sv.ts",
+      "bytes": 8934,
+      "sha256": "79e4878a9b7ba57e14dc36e7d92d1ba30b401255990178faf18a7cc9ef152d2f"
+    },
+    {
+      "member": "translations/qt_help_tr.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_tr.ts",
+      "bytes": 9154,
+      "sha256": "d21697d8e5d0ec84666393a09dfaf33009f8c734044435d68cbad9fa95017be0"
+    },
+    {
+      "member": "translations/qt_help_uk.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_uk.ts",
+      "bytes": 13620,
+      "sha256": "c65da27df1db187264bb8284899ccaf7ae01a49ca5b8c1683fd416ca78b4c0ef"
+    },
+    {
+      "member": "translations/qt_help_zh_CN.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_zh_CN.ts",
+      "bytes": 8626,
+      "sha256": "961798610c59ef06ec814097092d053a886908fc984dff2b33652596ced01f9c"
+    },
+    {
+      "member": "translations/qt_help_zh_TW.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_help_zh_TW.ts",
+      "bytes": 18993,
+      "sha256": "940cb33d594a9ea0d1fad002d6cbfcdd437e14fb030039300136754b3afdc61b"
+    },
+    {
+      "member": "translations/qt_hr.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_hr.ts",
+      "bytes": 197,
+      "sha256": "2ebb60b82df548152fdf8b74cbb55b7284fe6d42c32d4d19a3f24e579b5a4f85"
+    },
+    {
+      "member": "translations/qt_hu.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_hu.ts",
+      "bytes": 221,
+      "sha256": "9b38576afc027fb332889c20285bbc9a6d3f69b9786ef5c85857638a04c483c4"
+    },
+    {
+      "member": "translations/qt_it.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_it.ts",
+      "bytes": 221,
+      "sha256": "e8d0d3758546802ecff52bcbe6b6956e79c2c28580294c7fa4903727ccccb6be"
+    },
+    {
+      "member": "translations/qt_ja.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_ja.ts",
+      "bytes": 197,
+      "sha256": "2143ec2ad6694d470c8067d5fa0fb0250891eabfe292195d119286129dd5a733"
+    },
+    {
+      "member": "translations/qt_ka.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_ka.ts",
+      "bytes": 224,
+      "sha256": "03cb403dc86090bb1428f8707bbc1d14fe2bcbc1cf039846bde01a5f1824d5b9"
+    },
+    {
+      "member": "translations/qt_kk.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_kk.ts",
+      "bytes": 196,
+      "sha256": "34a0ffcb084f02d3e96c71546f480ae4cfda0cf566fa618e4dd5914e9dfcabac"
+    },
+    {
+      "member": "translations/qt_ko.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_ko.ts",
+      "bytes": 197,
+      "sha256": "9d72edb79271722a1a6559c5d6f62fe56e0e996024f04163bca99d29b18cf9b8"
+    },
+    {
+      "member": "translations/qt_lg.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_lg.ts",
+      "bytes": 157,
+      "sha256": "072de06044f7c0b82809fc752831e385bc1bdc9290d1f7572e5d7638c4ff1298"
+    },
+    {
+      "member": "translations/qt_lt.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_lt.ts",
+      "bytes": 357131,
+      "sha256": "34cd8864c4e99bad69ce6ab10b971bde881df98f9e67f447d55b2d1268c682eb"
+    },
+    {
+      "member": "translations/qt_lv.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_lv.ts",
+      "bytes": 173,
+      "sha256": "6dac37e23798ad5486ee1aed11a129f44173b0406435f53f5d3453e5068e6772"
+    },
+    {
+      "member": "translations/qt_nl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_nl.ts",
+      "bytes": 221,
+      "sha256": "50f8afee06341a597f769c9a3adaeb21742b44ec81b1186d926025332770e84c"
+    },
+    {
+      "member": "translations/qt_nn.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_nn.ts",
+      "bytes": 221,
+      "sha256": "d5137cb5601d3dcc0d5adfeb5e590e3a9d4412d88162f89b2ab1188c51519d99"
+    },
+    {
+      "member": "translations/qt_pl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_pl.ts",
+      "bytes": 221,
+      "sha256": "880f44a7f257b8c5676d657e19606313379c9eb00b5570d3b5b08861a71eb32a"
+    },
+    {
+      "member": "translations/qt_pt_BR.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_pt_BR.ts",
+      "bytes": 206,
+      "sha256": "e814870d5e811d8d6b8c26d3d5db353a9ac0c58149b80b712eed47a8e48b6518"
+    },
+    {
+      "member": "translations/qt_pt_PT.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_pt_PT.ts",
+      "bytes": 281611,
+      "sha256": "51a8cea254e1404c7a1ec1a7d915c344024a72eac23c5d9b2bfca176c7500494"
+    },
+    {
+      "member": "translations/qt_ru.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_ru.ts",
+      "bytes": 197,
+      "sha256": "6933821b9d997ac42d04c878e49ec63a8a672358461a42aa8dd7cf04b514ed01"
+    },
+    {
+      "member": "translations/qt_sk.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_sk.ts",
+      "bytes": 197,
+      "sha256": "f322578e5a92204fb1296d2941082803bc4890a4e0fcad003625960e3ab34339"
+    },
+    {
+      "member": "translations/qt_sl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_sl.ts",
+      "bytes": 348933,
+      "sha256": "91f0cadf1642ecd9ab66d12142f4cced98da4ecd3143fb8fb176345ca0ba7f75"
+    },
+    {
+      "member": "translations/qt_sv.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_sv.ts",
+      "bytes": 197,
+      "sha256": "175c9efd278347dad2647c71aa72b6d7072ec185399059f53b2bf194af22e214"
+    },
+    {
+      "member": "translations/qt_tr.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_tr.ts",
+      "bytes": 197,
+      "sha256": "46f0c674b98b4d443832dee56bd162c14a420ce95a307e6c47deb5c2c7426dea"
+    },
+    {
+      "member": "translations/qt_uk.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_uk.ts",
+      "bytes": 221,
+      "sha256": "99779971e93300b4eb4a5c1159b9ef285e2c5cda29bf978d43b24c1a78b8e262"
+    },
+    {
+      "member": "translations/qt_zh_CN.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_zh_CN.ts",
+      "bytes": 206,
+      "sha256": "c43cc25a85e5c9bb1554df351539496d7a44f3e3765f73a348d9326aecb45412"
+    },
+    {
+      "member": "translations/qt_zh_TW.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qt_zh_TW.ts",
+      "bytes": 218,
+      "sha256": "bc687c498d7be096a0320d7adcd7e1a293843472b4b8c49280c8887822348913"
+    },
+    {
+      "member": "translations/qtbase_ar.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_ar.ts",
+      "bytes": 251337,
+      "sha256": "9cc7598dcbb8725845ccf9de32eee5207890b89b7021b24a09b614710e15fab7"
+    },
+    {
+      "member": "translations/qtbase_bg.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_bg.ts",
+      "bytes": 250848,
+      "sha256": "a6b79cd0ff1508007c7d1c9d5996427e61ea7190804b6b903381d7ffbcf369c1"
+    },
+    {
+      "member": "translations/qtbase_ca.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_ca.ts",
+      "bytes": 438448,
+      "sha256": "a1e8075257829ee70be1e04d9c0d3b90abcb5849c50060c07cea92fbd48d5005"
+    },
+    {
+      "member": "translations/qtbase_cs.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_cs.ts",
+      "bytes": 240509,
+      "sha256": "5d0b2995e8f854ee030ab244ade96ef7ded6a3ba4ed9322790e6e29821db0de5"
+    },
+    {
+      "member": "translations/qtbase_da.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_da.ts",
+      "bytes": 245277,
+      "sha256": "df6c2af7ad83654f07ce62aaca02deaf248dff05e732ebcff85c8fcbe16d6231"
+    },
+    {
+      "member": "translations/qtbase_de.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_de.ts",
+      "bytes": 279269,
+      "sha256": "d5c095eed97c9b1fdd68f9606d125d93c20974dce41482b5ec9daee6762795d1"
+    },
+    {
+      "member": "translations/qtbase_es.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_es.ts",
+      "bytes": 222096,
+      "sha256": "cbba11fe55472d43c8f5489e56d1c23d7984ff3d340bf2926fbda8a542b03cce"
+    },
+    {
+      "member": "translations/qtbase_fa.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_fa.ts",
+      "bytes": 250417,
+      "sha256": "0ec4836bae7a99d3e8b53a1960061deb63d8a4db0820eef7a87ad06dee456186"
+    },
+    {
+      "member": "translations/qtbase_fi.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_fi.ts",
+      "bytes": 240609,
+      "sha256": "759927c13f2d8789acfa20c4b60b6c139d675ec9ee2047702037c1c32acd8efb"
+    },
+    {
+      "member": "translations/qtbase_fr.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_fr.ts",
+      "bytes": 282516,
+      "sha256": "ac94190645f4f61e73f6330de7e91e50254a7a85aebb84bd45884fdfef140079"
+    },
+    {
+      "member": "translations/qtbase_gd.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_gd.ts",
+      "bytes": 252735,
+      "sha256": "0c4e2f3f44ebc199698250ba24ab12acc17dda93d701867dc109da76a2b1b1da"
+    },
+    {
+      "member": "translations/qtbase_he.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_he.ts",
+      "bytes": 225272,
+      "sha256": "2ca36a6f66324a5f37f0d137fc88a5efb3f62dcfee82671cbbda05c9a205c6c0"
+    },
+    {
+      "member": "translations/qtbase_hr.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_hr.ts",
+      "bytes": 249060,
+      "sha256": "d521870695346c16c4eaa65f14279e510dba4badffc0523fc8034a787ea041a5"
+    },
+    {
+      "member": "translations/qtbase_hu.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_hu.ts",
+      "bytes": 274350,
+      "sha256": "59468b8ddea338e69509d72038aaa58c8ece9c14ba67fb02ba785905001b2300"
+    },
+    {
+      "member": "translations/qtbase_it.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_it.ts",
+      "bytes": 231142,
+      "sha256": "cf04e569b908c9a3ab198803e8b0de399a4ffaa9c9e00297a24e9de0e3face75"
+    },
+    {
+      "member": "translations/qtbase_ja.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_ja.ts",
+      "bytes": 232489,
+      "sha256": "49b0c934ebc91d01a881f262b47305cf74a2a8ba90eefce90785b0dfb9c6c53c"
+    },
+    {
+      "member": "translations/qtbase_ka.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_ka.ts",
+      "bytes": 334131,
+      "sha256": "0e1e5aacb4f5cb73305db8d1397fb23b65b64975d5506fd109b0ba7b51f4562d"
+    },
+    {
+      "member": "translations/qtbase_kk.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_kk.ts",
+      "bytes": 404143,
+      "sha256": "94987b5d68e67901a9ebc0ee0cfa1784305c762bf53e26490e7f57ce6336f284"
+    },
+    {
+      "member": "translations/qtbase_ko.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_ko.ts",
+      "bytes": 268964,
+      "sha256": "cac6d0d038538b8b7056223b4b905f47e8c12fb5e22c57dec0166a6e675a25fb"
+    },
+    {
+      "member": "translations/qtbase_lg.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_lg.ts",
+      "bytes": 393077,
+      "sha256": "65d1d4ac8264c6b432e7b9e88b1fda808fd7ae909a0336ff5b2211811ca55609"
+    },
+    {
+      "member": "translations/qtbase_lv.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_lv.ts",
+      "bytes": 215164,
+      "sha256": "83c7d082289b4b18e892e56224d87626f07f5e7fe2f22ab1d9647b966fb471e0"
+    },
+    {
+      "member": "translations/qtbase_nl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_nl.ts",
+      "bytes": 269880,
+      "sha256": "1ff8694322abf30469213615f8ffae3696e4ccdcd1573e9052f08f1f47bc1873"
+    },
+    {
+      "member": "translations/qtbase_nn.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_nn.ts",
+      "bytes": 265680,
+      "sha256": "fa12e48b6537ae7c8eb61c720cbc0525d972c411a243358962574c34be820b2e"
+    },
+    {
+      "member": "translations/qtbase_pl.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_pl.ts",
+      "bytes": 233737,
+      "sha256": "2fcb5f01637e19d563af2077ccca0570a7db0291a7383c48d0b6d8aaee2400b4"
+    },
+    {
+      "member": "translations/qtbase_pt_BR.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_pt_BR.ts",
+      "bytes": 394769,
+      "sha256": "d4e1afb5baa7b9d2580b417c7e03d1f0026b6f29b3e250f491c7db943a439667"
+    },
+    {
+      "member": "translations/qtbase_ru.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_ru.ts",
+      "bytes": 300975,
+      "sha256": "0daef5edb8f40287917370f0d0113b9e5987daea6bace45a263aa7c3dce8a41b"
+    },
+    {
+      "member": "translations/qtbase_sk.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_sk.ts",
+      "bytes": 168374,
+      "sha256": "53f8b510e23db0bbc3c59d5dc61287414269cb3f46ae92430d95b2f255678dde"
+    },
+    {
+      "member": "translations/qtbase_sv.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_sv.ts",
+      "bytes": 359554,
+      "sha256": "49b1896eb6025c5c01d18c84f0c3155ba7a1070d40c70822ef3d2381f60e216d"
+    },
+    {
+      "member": "translations/qtbase_tr.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_tr.ts",
+      "bytes": 363094,
+      "sha256": "d46258be01e58f7a07dc18f9342a1112ed9056feb3e2d9500fc1bf723de69dfc"
+    },
+    {
+      "member": "translations/qtbase_uk.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_uk.ts",
+      "bytes": 306360,
+      "sha256": "6f80fc5ba719531fc9e7fa975c33737048ba1173648e472f8033ec3e9fe16242"
+    },
+    {
+      "member": "translations/qtbase_zh_CN.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_zh_CN.ts",
+      "bytes": 269504,
+      "sha256": "e63a70eedd900438ec1c63877c525bcda5c8292803bf0e228995de09fb9ddeb7"
+    },
+    {
+      "member": "translations/qtbase_zh_TW.ts",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/translations/qtbase_zh_TW.ts",
+      "bytes": 260176,
+      "sha256": "0b4ffa974ced7836800680db328911b770f0732dec9d39850c482156cf99fc58"
+    },
+    {
+      "member": "CMakeLists.txt",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/CMakeLists.txt",
+      "bytes": 962,
+      "sha256": "e54ba7fefca4e1411ee008eeda5f8f3593273a626536b75715846de318b11b15"
+    },
+    {
+      "member": "licenseRule.json",
+      "url": "https://raw.githubusercontent.com/qt/qttranslations/2811457ceff8f0c24a1c4d14f947a283a17239d0/licenseRule.json",
+      "bytes": 2401,
+      "sha256": "0087aedb53430fb236602d1965834ff1c902e905b672b759a22ce9665f8a836c"
+    }
+  ],
+  "missing_ts_counterparts": [
+    "translations/qtbase_en.ts: <HTTPError 404: 'Not Found'>",
+    "translations/qt_en.ts: <HTTPError 404: 'Not Found'>",
+    "translations/qt_help_en.ts: <HTTPError 404: 'Not Found'>"
+  ],
+  "missing_ts_explanation": "Three 33-byte English catalogs have no tracked TS counterpart at this tag; wheel RECORD and raw hashes authenticate them. No claim that a missing source was reconstructed."
+}
