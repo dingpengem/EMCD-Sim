@@ -45,9 +45,10 @@ def test_historical_editor_maps_and_archive_are_still_independent():
     amended = packaging_parent_scope()
     assert len(historical['candidate']) == 18 and len(historical['protected_parent']) == 93
     assert set(archive) == set(editor.MODIFIED)
-    assert set(amended['modified']) & set(historical['candidate']) == {'packaging/emcd_gui.spec'}
+    assert set(amended['modified']) & set(historical['candidate']) == {'packaging/emcd_gui.spec', 'pyproject.toml'}
     assert set(amended['modified']) & set(historical['protected_parent']) == {
-        'packaging/BETA_README.txt', 'packaging/README.md', 'packaging/build_windows.ps1'}
+        'packaging/BETA_README.txt', 'packaging/README.md', 'packaging/build_windows.ps1',
+        'src/emcd_sim/__init__.py', 'packaging/windows_version_info.txt'}
 
 
 def test_packaging_scope_cannot_authorize_a_kernel_even_with_new_manifest_pin(monkeypatch):

@@ -2,7 +2,7 @@
   "schema": 1,
   "files": {
     "packaging/assets/bundled-qt-components.json": {
-      "sha256": "94d2cf75bc6bb89a5ec0e120301a70be64ea070cd6bf5d0fa5ce26a4071902fc",
+      "sha256": "e5161f5310acaab400e4e3b36ffe6787f7d4d4046bb24458bc6ff0ee5c71f3f8",
       "destination": "_internal/licenses/qt/bundled-qt-components.json"
     },
     "packaging/assets/examples/Fe_BCC_a2.8665.cif": {
@@ -154,12 +154,16 @@
       "destination": "_internal/licenses/qt/qtvirtualkeyboard-upstream.zip"
     },
     "packaging/assets/qt-licenses/README.txt": {
-      "sha256": "2527390dfc727be2becd83f763957bbedae536f63af0658fef162f0fa1c4fb70",
+      "sha256": "649d9bde70a75ec4d24413206eeae05e7144617f865c94e2fa2731df3a2e4c4c",
       "destination": "_internal/licenses/qt/README.txt"
     },
     "packaging/assets/qt-licenses/upstream-provenance.json": {
-      "sha256": "c40300f6daaf605b01ac659598ced9a5498d6a856437ef2bdcb5edb3fb13f952",
+      "sha256": "8e8ef7ca5ef701a403bb4764abfec8447e1f2a5ee735f287df086b8eb945fbdc",
       "destination": "_internal/licenses/qt/upstream-provenance.json"
+    },
+    "packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md": {
+      "sha256": "4b7ffa33d00dc55f79b25e16c7877b662c469c9256d93402216e5e7944fa0f62",
+      "destination": "_internal/licenses/qt/SOURCE_AND_REPLACEMENT.md"
     }
   }
 }

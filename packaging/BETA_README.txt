@@ -1,4 +1,4 @@
-EMCD-Sim v0.8.1-beta.1 - Part 1B LOCAL Windows Research Candidate
+EMCD-Sim v0.8.1-beta.2 - Part 1B LOCAL Windows Research Candidate
 Windows x64 portable research software; unsigned. Python package 0.8.1b1.
 Windows numeric file/product version 0.8.1.1 remains unchanged.
 Physics convention: forward_born_dagger_g_minus_h_v1.
@@ -112,3 +112,13 @@ and LICENSE.txt. The Ni example uses a=3.52 angstrom; built-in Ni uses 3.524.
 Qt component licenses, notices and provenance: _internal/licenses/qt/README.txt.
 Virtual Keyboard has GPLv3/commercial terms; this internal candidate is not a
 release-compliance certification. See the component-specific notice inventory.
+
+DISTRIBUTION PREREQUISITES AND SOURCE
+Install Microsoft's official x64 Visual C++ v14 runtime (14.44.35211 or newer)
+directly from https://aka.ms/vc14/vc_redist.x64.exe . Windows 10/11 x64 required.
+No Microsoft runtime DLL copies or installer are included in this package.
+Qt PDF and Virtual Keyboard are unused and excluded, with their dependency chain.
+Download EMCD-Sim-v0.8.1-beta.2-Qt-sources.zip from the same release page for
+matching LGPL component sources and build/replacement instructions. Also see
+_internal/licenses/qt/SOURCE_AND_REPLACEMENT.md and the included license texts.
+EMCD-Sim remains MIT licensed; dependency licenses apply separately.

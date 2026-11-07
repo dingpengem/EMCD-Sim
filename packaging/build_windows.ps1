@@ -1,7 +1,8 @@
 param([string]$Python = "$PSScriptRoot/../build/windows-rc/venv/Scripts/python.exe",
-      [string]$BuildRoot = "build/windows-v0.8.1-beta.1",
+      [string]$BuildRoot = "build/windows-v0.8.1-beta.2",
       [string]$BuildLabel = "",
-      [string]$ArchiveName = "")
+      [string]$ArchiveName = "",
+      [Parameter(Mandatory=$true)][string]$CorrespondingSourceRoot)
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path "$PSScriptRoot/..").Path
 Push-Location $root
@@ -10,13 +11,14 @@ $env:PYTHONPATH = "$root/src" + $(if ($previousPythonPath) { ";$previousPythonPa
 try {
     & $Python "$PSScriptRoot/check_windows_metadata.py"
     if ($LASTEXITCODE -ne 0) { throw 'Windows build metadata preflight failed; install the declared build requirements into the selected interpreter.' }
-    & $Python "$PSScriptRoot/check_package_contents.py" --environment
+    & $Python "$PSScriptRoot/check_package_contents.py" --environment --source-root $CorrespondingSourceRoot
     if ($LASTEXITCODE -ne 0) { throw 'Required packaging assets or reviewed Qt environment failed preflight.' }
     $applicationVersion = (& $Python -c "from emcd_sim import __version__; print(__version__)").Trim()
     if ($LASTEXITCODE -ne 0 -or -not $applicationVersion) { throw 'Cannot read source application version' }
     $displayVersion = (& $Python -c "from emcd_sim import __display_version__; print(__display_version__)").Trim()
     if (-not $BuildLabel) { $BuildLabel = (& $Python -c "from emcd_sim.gui.runtime import LABEL; print(LABEL)").Trim() }
     if (-not $ArchiveName) { $ArchiveName = "EMCD-Sim-$displayVersion-Windows.zip" }
+    $sourceArchiveName = "EMCD-Sim-$displayVersion-Qt-sources.zip"
     # PyInstaller logs progress to stderr; Windows PowerShell must not treat
     # those informational native records as terminating script errors.
     $nativePreference = $ErrorActionPreference
@@ -41,5 +43,20 @@ try {
     Compress-Archive -LiteralPath $appRoot -DestinationPath "$BuildRoot/$ArchiveName"
     $archiveHash = Get-FileHash -LiteralPath "$BuildRoot/$ArchiveName" -Algorithm SHA256
     ($archiveHash.Hash.ToLowerInvariant()+'  '+$ArchiveName) | Set-Content -LiteralPath "$BuildRoot/SHA256SUMS.txt" -Encoding ASCII
+    $sourceStage = "$BuildRoot/corresponding-source"
+    New-Item -ItemType Directory -Path $sourceStage | Out-Null
+    $sourceProvenance = Get-Content -LiteralPath "$root/packaging/assets/qt-licenses/upstream-provenance.json" -Raw | ConvertFrom-Json
+    foreach ($package in $sourceProvenance.source_packages) {
+        Copy-Item -LiteralPath (Join-Path $CorrespondingSourceRoot $package.filename) -Destination $sourceStage
+    }
+    Copy-Item -LiteralPath "$root/packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md" -Destination "$sourceStage/README.md"
+    Copy-Item -LiteralPath "$root/packaging/assets/qt-licenses/upstream-provenance.json" -Destination $sourceStage
+    git archive --format=zip --output="$sourceStage/EMCD-Sim-source.zip" HEAD
+    if ($LASTEXITCODE -ne 0) { throw 'Corresponding application source archive failed' }
+    Compress-Archive -Path "$sourceStage/*" -CompressionLevel NoCompression -DestinationPath "$BuildRoot/$sourceArchiveName"
+    $sourceHash = Get-FileHash -LiteralPath "$BuildRoot/$sourceArchiveName" -Algorithm SHA256
+    ($sourceHash.Hash.ToLowerInvariant()+'  '+$sourceArchiveName) | Add-Content -LiteralPath "$BuildRoot/SHA256SUMS.txt" -Encoding ASCII
+    $manifest['corresponding_source'] = [ordered]@{archive=$sourceArchiveName;sha256=$sourceHash.Hash.ToLowerInvariant();packages=$sourceProvenance.source_packages}
+    $manifest | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath "$BuildRoot/build_manifest.json" -Encoding UTF8
     $archiveHash
 } finally { $env:PYTHONPATH = $previousPythonPath; Pop-Location }

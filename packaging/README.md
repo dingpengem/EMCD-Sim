@@ -23,7 +23,7 @@ collection is not a complete corresponding-source offer or release approval;
 see the component inventory's explicit redistribution limitations. Keep offline
 isolation and the upstream HDF5 comparison UNVERIFIED until separately tested.
 
-The Windows-only v0.8.1-beta.1 Research Beta uses version 0.8.1b1 and uses a separate build root and local-candidate label. The Adaptive Dirac–Padé JSON coefficients, provenance, Apache-2.0 LICENSE and NOTICE are collected from `emcd_sim/data/adaptive_dirac_pade_2026`. Neither h5py nor the upstream HDF5 archives are runtime requirements; the original unlicensed atomic table remains external. CIF support still uses the declared ASE imports and space-group data.
+The Windows-only v0.8.1-beta.1 Research Beta uses version 0.8.1b1 and uses a separate build root and local-candidate label. The Adaptive Diracâ€“PadÃ© JSON coefficients, provenance, Apache-2.0 LICENSE and NOTICE are collected from `emcd_sim/data/adaptive_dirac_pade_2026`. Neither h5py nor the upstream HDF5 archives are runtime requirements; the original unlicensed atomic table remains external. CIF support still uses the declared ASE imports and space-group data.
 
 After building from a clean committed source, exercise the actual EXE on Windows:
 
@@ -33,7 +33,7 @@ EMCD-Sim.exe --unified-elastic-acceptance C:/new-acceptance-output --unified-his
 
 This opt-in mode requires a fresh output directory and a genuine checksummed historical Ni project. It runs real GUI workers, saves/reopens projects, imports Fe/CsCl/ZnO/monoclinic CIFs, validates rendered indices/clicks, checks the Ni-only MDFF gate and runs only two selected Ni energies for each of Single and Double Channeling, with magnetization reversal and saved-project checks. Automated file-dialog selections choose the supplied local paths. Saved historical arrays are opened read-only; a copy is saved under the new output directory. Run without a headless Qt override for native acceptance and inspect process exit, `acceptance.json`, screenshots and logs. This command only performs acceptance; publishing is a separate authorized step. See [local main acceptance](../docs/acceptance/unified-elastic-2026-11-03/MAIN_INTEGRATION_ACCEPTANCE.md).
 
-Current release: **v0.8.1-beta.1 / 0.8.1b1**, convention
+Current release: **v0.8.1-beta.2 / 0.8.1b2**, convention
 `forward_born_dagger_g_minus_h_v1`. Use a fresh Python 3.11 Windows build venv
 without `--system-site-packages`. Install the same declared inputs as Actions:
 
@@ -52,11 +52,11 @@ missing metadata is not ignored and license collection is not removed.
 Scientific dependency pins, production numerical defaults and physics conventions are unchanged. Version metadata is updated separately from cleanup.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python ./build/windows-build-env/Scripts/python.exe -BuildRoot build/windows-v0.8.1-beta.1-release
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python ./build/windows-build-env/Scripts/python.exe -BuildRoot build/windows-v0.8.1-beta.2-release -CorrespondingSourceRoot C:/path/to/verified-qt-6.12.0-sources
 ```
 
-Default archive: `EMCD-Sim-v0.8.1-beta.1-Windows.zip`. Windows numeric version:
-0.8.1.1; ProductVersion: v0.8.1-beta.1. Use a new output root: previous
+Default archive: `EMCD-Sim-v0.8.1-beta.2-Windows.zip`. Windows numeric version:
+0.8.1.2; ProductVersion: v0.8.1-beta.2. Use a new output root: previous
 packages must not be overwritten. The exact local source commit, clean/dirty
 state, convention, build environment and native validation are documented in
 [release acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_1_BETA_1_ACCEPTANCE.md).
@@ -171,3 +171,20 @@ original synthetic parameter example is collected explicitly; no broad hidden
 imports or external unlicensed table are added. CI runs this mode in addition to
 the five established desktop orientation checks. Same-host native acceptance is
 not clean-PC certification or quantitative Fe EMCD validation.
+
+## beta.2 dependency distribution
+
+Keep the established dependency environment unchanged. Download the five official
+6.12.0 archives listed in assets/qt-licenses/upstream-provenance.json to the
+CorrespondingSourceRoot passed above. The build checks the existing pinned
+provenance, creates the Windows ZIP and a companion Qt-sources ZIP including the
+exact committed application source. Publish both ZIPs and SHA256SUMS together.
+The spec excludes unused PDF/VirtualKeyboard plugins and their dependency chain.
+It stages two NumPy DLL import-name fixes without changing executable sections
+and excludes all Microsoft CRT/UCRT/API-set copies. The package checker enforces
+the retained Qt inventory and absence of app-local Microsoft runtime DLLs.
+Users must install the official Microsoft x64 v14 runtime directly. Verify the
+extracted EXE loads that system runtime, then preview, calculate, save and reopen.
+See [source and replacement instructions](assets/qt-licenses/SOURCE_AND_REPLACEMENT.md).
+No scientific regression is added solely for this trimming; the prior failed full
+run and scoped prerelease exception remain recorded in the beta.2 release notes.

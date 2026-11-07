@@ -4,17 +4,19 @@
 
 ## Choose the correct version
 
-The latest published Windows Research Beta is [v0.8.1-beta.1](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1). The current-main MDFF redesign is prepared for **v0.8.1-beta.2**, which is **unpublished** while its [redistribution review remains open](RELEASE_NOTES_0_8_1_BETA_2.md#publication-status). The tested local development package is `0.8.1b1`, source `aaa69a1`; renaming it does not make it beta.2.
-
-Use documentation matching your binary. The [published beta.1 installation guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.1/docs/INSTALL_WINDOWS.md) describes its older interface. New-editor instructions require the local development build or current-main source until a new binary is published.
+The Windows Research Beta is [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), package version `0.8.1b2`. It includes the MDFF editor redesign and explicit XMCD selection repair. Earlier beta.1 assets and their matching documentation remain available.
 
 ## Windows binary installation
 
-1. Open the intended version's release page and download its **complete Windows ZIP**. GitHub's automatic source archive and an outer Actions artifact wrapper are not the portable application. Published beta.1 supplies `EMCD-Sim-v0.8.1-beta.1-Windows.zip`.
+On Windows 10/11 x64, first install the **official Microsoft x64 Visual C++ v14 Redistributable, 14.44.35211 or newer**, directly from [Microsoft's runtime page](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) ([official x64 download](https://aka.ms/vc14/vc_redist.x64.exe)). The package includes no Microsoft runtime DLL copies or installer. Windows supplies the UCRT/API sets. A missing `MSVCP140.dll` or `VCRUNTIME140*.dll` means this prerequisite needs installation/repair; do not copy DLLs from download sites.
+
+The accompanying **EMCD-Sim-v0.8.1-beta.2-Qt-sources.zip** supplies matching Qt/PySide/Shiboken sources and [build/replacement instructions](../packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md). It is separate from the runnable ZIP. Qt PDF and Virtual Keyboard are excluded as unused; included dependency licenses remain separate from the application's MIT license.
+
+1. Open the intended version's release page and download its **complete Windows ZIP**. GitHub's automatic source archive and an outer Actions artifact wrapper are not the portable application. Beta.2 supplies `EMCD-Sim-v0.8.1-beta.2-Windows.zip`.
 2. Download the checksum file from that same release and compare the matching ZIP entry:
 
    ```powershell
-   Get-FileHash -LiteralPath '.\EMCD-Sim-v0.8.1-beta.1-Windows.zip' -Algorithm SHA256
+   Get-FileHash -LiteralPath '.\EMCD-Sim-v0.8.1-beta.2-Windows.zip' -Algorithm SHA256
    Get-Content -LiteralPath '.\SHA256SUMS.txt'
    ```
 
@@ -62,7 +64,7 @@ If `py` is unavailable, use your chosen interpreter's explicit path. Calling the
 
 ## Platform and verification status
 
-Windows x64 is the tested packaged platform. The `aaa69a1` EXE passed native ambiguity handling, Fe 710/723 eV preview/calculation, application-created saving, restart, reopening, and recalculation on the development host. Independent clean-PC/VM installation remains **unverified**. Linux/macOS are not supplied or certified; recorded interpreter-shutdown and Qt-modal CI problems remain limitations.
+Windows x64 is the tested packaged platform. The `aaa69a1` EXE passed native ambiguity handling, Fe 710/723 eV preview/calculation, application-created saving, restart, reopening, and recalculation on the development host. The rebuilt beta.2 EXE (`88dc9ec`, `0.8.1b2`) also passed the affected native workflow: ambiguous/L3-only rejection, explicit Fe 710/723 eV preview and calculation, normal application-created save, process restart/reopen, restored preview and recalculation. Its Microsoft runtime DLLs loaded from System32 with no dependency-environment paths. Independent clean-PC/VM installation remains **unverified**. Linux/macOS are not supplied or certified; recorded interpreter-shutdown and Qt-modal CI problems remain limitations.
 
 The full `7730e38` run remains **FAILED: 1,191 passed, 1 failed, 54 skipped**. The repair passed four focused cases. The user's prerelease-specific exception permits using this evidence without another complete regression; it does not waive scientific, security, redistribution, or formal publishing requirements. See [draft release notes](RELEASE_NOTES_0_8_1_BETA_2.md).
 

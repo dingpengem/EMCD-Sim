@@ -2,7 +2,7 @@
 
 [Home](../README.md) | [Installation](INSTALL_WINDOWS.md) | [MDFF workflows](MDFF_WORKFLOWS.md) | [Tutorial](TUTORIAL.md)
 
-This is a small functional demonstration for current main/the local MDFF development build. It is not a convergence result or timing guarantee. The next beta.2 package remains [unpublished](RELEASE_NOTES_0_8_1_BETA_2.md#publication-status); for the older published binary use the [beta.1 Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.1/docs/QUICK_START.md).
+This is a small functional demonstration for current main/the local MDFF development build. It is not a convergence result or timing guarantee. The next beta.2 package remains [prerelease](RELEASE_NOTES_0_8_1_BETA_2.md#publication-status); for the older published binary use the [beta.1 Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.1/docs/QUICK_START.md).
 
 ## 1. Start with the existing Ni example
 

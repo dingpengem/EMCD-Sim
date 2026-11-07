@@ -4,7 +4,7 @@ Research software for **electron magnetic circular dichroism (EMCD)**, core-loss
 
 [Published Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1) | [Installation](docs/INSTALL_WINDOWS.md) | [First calculation](docs/QUICK_START.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md) | [User manual](docs/USER_GUIDE.md)
 
-**Next prerelease: v0.8.1-beta.2, draft only.** Current main contains the MDFF update below. Its local Windows development EXE passed native verification and the user's trial, but redistribution of that bundle remains blocked by the dependency-license requirements in the [draft release notes](docs/RELEASE_NOTES_0_8_1_BETA_2.md#publication-status). No beta.2 binary or tag is available yet. The published beta.1 binary predates the editor redesign; its controls differ from current main.
+**Windows Research Beta v0.8.1-beta.2.** The [release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) includes the MDFF update below. Install the official Microsoft x64 v14 runtime first; see [installation and accompanying Qt sources](docs/INSTALL_WINDOWS.md) and [release notes](docs/RELEASE_NOTES_0_8_1_BETA_2.md). Earlier beta.1 assets remain unchanged.
 
 ## Main capabilities
 
@@ -32,7 +32,7 @@ Per-element drafts, parameter explanations, frame diagrams, component plots, and
 
 For a published binary, download the complete Windows ZIP and supplied checksum from its [version-specific release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1), verify it, and extract the entire `EMCD-Sim` folder. Keep `_internal` beside `EMCD-Sim.exe`. Binary users need neither Python, Conda, WIEN2k, nor an existing project JSON. Use the documentation for that binary version.
 
-For the new editor while beta.2 is unpublished, use the tested local development build or [install current main from source](docs/INSTALL_WINDOWS.md#source-installation). Then:
+For the new editor, install beta.2 or [install current main from source](docs/INSTALL_WINDOWS.md#source-installation). Then:
 
 1. Choose **File > New** for the bundled Ni structure, or **Open CIF...** for a supported structure.
 2. Set zone and target. Open **Configure MDFF...**, choose a model, and validate its inputs.
@@ -65,8 +65,8 @@ Earlier v0.6.1 binaries used a superseded magnetic-sign convention. Preserve ori
 | [User manual](docs/USER_GUIDE.md) / [Tutorial](docs/TUTORIAL.md) | Controls, propagation, detectors, normalization, and interpretation. |
 | [Atomic parameter reference](docs/ATOMIC_PARAMETER_EDITOR.md) / [Manual spectral model](docs/MANUAL_L23_TENSOR_MODEL.md) | Detailed definitions and implementation-era evidence. |
 | [Physics](docs/PHYSICS.md) / [Units](docs/PHYSICAL_UNITS.md) / [Limitations](docs/USER_GUIDE.md#scientific-limitations-and-responsible-interpretation) | Equations, conventions, and responsible use. |
-| [Draft beta.2 notes](docs/RELEASE_NOTES_0_8_1_BETA_2.md) / [Changelog](docs/CHANGELOG.md) / [Index](docs/INDEX.md) | Full feature update, compatibility, accurate validation history, and references. |
+| [Beta.2 notes](docs/RELEASE_NOTES_0_8_1_BETA_2.md) / [Changelog](docs/CHANGELOG.md) / [Index](docs/INDEX.md) | Full feature update, compatibility, accurate validation history, and references. |
 
 Cite the repository, exact release/commit, MDFF source, elastic provider, and numerical configuration. No software-paper DOI is claimed. Existing theory/normalization references are in [Physics: references and historical records](docs/PHYSICS.md#references-and-historical-records).
 
-Application source is [MIT](LICENSE). Adaptive coefficients have separate [Apache-2.0 licensing](src/emcd_sim/data/adaptive_dirac_pade_2026/LICENSE), [NOTICE](src/emcd_sim/data/adaptive_dirac_pade_2026/NOTICE), and provenance. Edge-reference data and dependencies retain their own licenses. The [Qt distribution notes](packaging/assets/qt-licenses/README.txt) identify unresolved redistribution requirements for the development bundle; application licensing does not override dependency terms.
+Application source is [MIT](LICENSE). Adaptive coefficients have separate [Apache-2.0 licensing](src/emcd_sim/data/adaptive_dirac_pade_2026/LICENSE), [NOTICE](src/emcd_sim/data/adaptive_dirac_pade_2026/NOTICE), and provenance. Edge-reference data and dependencies retain their own licenses. The [Qt distribution notes](packaging/assets/qt-licenses/README.txt) describe retained components, the accompanying source kit and replacement rights; application licensing does not override dependency terms.
