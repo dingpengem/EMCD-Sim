@@ -148,19 +148,22 @@ def _multisite_detector_data(raw,cfg,energy,qx,qy,weights,support):
 
 
 def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None,
-                       cancelled=lambda:False,*,energy_ev,reverse_magnetization=False):
+                       cancelled=lambda:False,*,energy_ev=None,energy_windows=None,reverse_magnetization=False):
     """Single Channeling with one complete-crystal propagation per solver.
 
-    Requires a common explicit energy grid covered by ALL group providers.
+    Supply a common energy_ev covered by ALL providers, or energy_windows
+    mapping group IDs to multisite_spectrum.ModeledEdgeWindow declarations.
+    Independent window grids are merged; sources cover their own complete
+    modeled windows, without extrapolation. Unlisted groups are explicitly
+    omitted from the partial spectrum but remain in its denominator.
     Results follow the existing methods/spectra/maps layout. groups contain
     per-group-atom detector means and contribution_weight=n_group/n_selected;
     weighted_sum retains unnormalized selected-atom sums. No cross-source
-    rescaling, disjoint-window padding, GUI or project persistence is provided.
+    rescaling, physical tail prediction, GUI or project persistence is provided.
     """
     from ..cancellation import check_cancelled
     from ..multisite import MultiSiteIonization
-    from ..mdff_providers import prepare_site_group_providers
-    from ..multisite_single_channeling import run_multisite_with_coherence
+    from ..multisite_spectrum import prepare_multisite_spectrum,contract_multisite_spectrum
     from .propagation import resolve_fft_configuration,numerical_info,propagate,compare_methods
     from .parallel_resources import require_supported
     from .memory_budget import reserve_memory
@@ -170,7 +173,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
         check_cancelled(cancelled)
         progress(message)
 
-    stage('Validating multi-site assignments and common MDFF coverage')
+    stage('Validating multi-site assignments and required MDFF coverage')
     cfg=cfg or MultiSiteForwardSettings()
     if not isinstance(cfg,MultiSiteForwardSettings) or cfg.model!='multisite' or cfg.channeling_model!='single':
         raise ValueError('MultiSiteForwardSettings with Single Channeling required')
@@ -178,15 +181,14 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     if not isinstance(reverse_magnetization,bool):raise ValueError('Global reversal must be a boolean')
     if not isinstance(sites,MultiSiteIonization):raise ValueError('Explicit multi-site assignments required')
     sites.validate_structure(structure)
-    energy=np.asarray(energy_ev,float)
-    if (energy.ndim!=1 or not len(energy) or not np.isfinite(energy).all()
-            or np.any(energy<=0) or np.any(np.diff(energy)<=0)
-            or not np.isfinite(settings.voltage) or settings.voltage<=0
-            or energy[-1]>=1000*settings.voltage):
-        raise ValueError('Require ascending positive common losses below incident energy')
+    if not np.isfinite(settings.voltage) or settings.voltage<=0:
+        raise ValueError('Positive incident voltage required')
     # Source identity, species, explicit states, local frames and native axes
     # are checked before geometry/resource work, including for FFT propagation.
-    prepared=prepare_site_group_providers(sites,energy,np.eye(3))
+    plan=prepare_multisite_spectrum(sites,energy_ev,energy_windows)
+    energy=plan['energy_ev']
+    if energy[-1]>=1000*settings.voltage:
+        raise ValueError('Require energy losses below incident energy')
     if (type(cfg.grid) is not int or not 9<=cfg.grid<=193 or cfg.grid%2!=1
             or type(cfg.depth) is not int or not 2<=cfg.depth<=1025
             or type(cfg.subpixels) is not int or not 4<=cfg.subpixels<=256):
@@ -199,8 +201,8 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     selections=cfg.selected_edges
     if not selections:
         selections=tuple((group.group_id+':'+label,loss)
-            for group,_,source in prepared for label,loss in source['selected_ev'].items()
-            if np.any(np.isclose(energy,loss,rtol=0,atol=1e-9)))
+            for group in sites.groups for label,loss in plan['sources'][group.group_id]['selected_ev'].items()
+            if np.any(np.isclose(energy,loss,rtol=0,atol=1e-9)&plan['active'][group.group_id]))
         if not selections:selections=tuple((f'E={loss:g}eV',float(loss)) for loss in np.unique(energy[[0,-1]]))
     if (len({label for label,_ in selections})!=len(selections)
             or any(not isinstance(label,str) or not label.strip() or not np.isfinite(loss)
@@ -221,7 +223,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     # Account for retained group/total arrays and full-energy query work in
     # addition to the existing conservative propagation/kernel estimates.
     methods_count=2 if cfg.propagation=='both' else 1
-    extra=(16*len(energy)*int(support.sum())*(len(sites.groups)+6)
+    extra=(16*len(energy)*int(support.sum())*(2*len(sites.groups)+12)
            +576*len(energy)*len(sites.groups)
            +methods_count*64*len(selections)*qx.size*(len(sites.groups)+2)
            +methods_count*256*len(energy)*(len(sites.groups)+2))/2**20
@@ -240,7 +242,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
             psi=waves[method]
             coherence=coherence_from_amplitudes(z,psi)
             stage('Contracting '+method+' multi-site Single Channeling')
-            raw=run_multisite_with_coherence(model,sites,coherence,energy,qx.ravel()[support],qy.ravel()[support],
+            raw=contract_multisite_spectrum(model,structure,sites,coherence,plan,qx.ravel()[support],qy.ravel()[support],
                 crystal_to_microscope=rotation,thickness_nm=settings.thickness,
                 reverse_magnetization=reverse_magnetization,cancelled=cancelled)
             data=_multisite_detector_data(raw['total'],cfg,energy,qx,qy,weights,support)
@@ -259,16 +261,17 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
             for key in ('magnetization_crystal','magnetization_local'):meta.pop(key,None)
             meta.update(multisite=raw['metadata'],mdff={key:entry['metadata'] for key,entry in result['groups'].items()},
                 mdff_provider='multisite',
-                scientific_status='SYNTHETIC TEST ONLY' if all(source['status']=='synthetic' for _,_,source in prepared) else 'RESEARCH / APPROXIMATE',
+                scientific_status='SYNTHETIC TEST ONLY' if all(source['status']=='synthetic' for source in plan['sources'].values()) else 'RESEARCH / APPROXIMATE',
                 numerics=info,execution=info['execution'],memory_admission=admission,
                 solver=method+' Single Channeling; independent localized site-group intensities',
                 incoming_propagation_seconds=incoming_seconds,
                 intensity_convention=raw['metadata']['intensity_convention'],
-                spectral_coverage='common_grid_all_providers',
+                spectral_coverage=plan['metadata']['coverage_mode'],
+                spectrum_kind='modeled_partial_core_edge_spectrum',
                 reversal='Explicit provider pairs exchanged together; fixed elastic state, detectors and frames',
                 detector_evaluation='Full grid at all energies' if cfg.angular_maps else 'Nonzero fractional-aperture support',
-                limitations='Projected neutral IAM; finite ZOLZ; Single Channeling only; common provider coverage; no absolute or cross-element calibration')
-            result['weighted_sum']['metadata']=dict(normalization='sum_over_selected_atoms')
+                limitations='Projected neutral IAM; finite ZOLZ; Single Channeling only; modeled partial core-edge spectrum; omitted channels/tails are not physical zeros; no absolute or cross-element calibration')
+            result['weighted_sum']['metadata']=dict(normalization='sum_over_selected_atoms',spectrum_kind='modeled_partial_core_edge_spectrum')
             if method=='fft-multislice':meta['fft']=fft_info['summary']
             methods[method]=result
             del raw
