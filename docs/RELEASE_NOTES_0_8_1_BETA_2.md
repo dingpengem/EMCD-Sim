@@ -1,4 +1,4 @@
-# v0.8.1-beta.2 - Windows Research Beta prerelease draft
+# v0.8.1-beta.2 - Windows Research Beta prerelease
 
 **Research Beta prerelease: v0.8.1-beta.2.** Package version `0.8.1b2`, Windows version `0.8.1.2`. This is a development/research candidate, not formal scientific release acceptance. The previous beta.1 assets remain unchanged.
 
@@ -67,3 +67,8 @@ The former binary redistribution blockers are addressed by explicit packaging ch
 See [installation prerequisites](INSTALL_WINDOWS.md) and [source/build/replacement instructions](../packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md). No dependency versions, scientific kernels or numerical tolerances changed for dependency trimming. Package inventories and directly affected existing pins are updated; earlier releases remain untouched.
 
 **The packaging conditions and affected native workflow are satisfied for this Research Beta prerelease.** Binary source commit: `88dc9ecaed4871043c96a6aa05f0972e23b3b93d` (clean), embedded `0.8.1b2` / Windows `0.8.1.2`. The Windows ZIP, companion source ZIP, SHA256SUMS and build inventory are supplied together. No second build or full scientific regression was run. Independent clean-PC/VM installation remains unverified; this prerelease is not formal scientific release acceptance.
+
+Published prerelease: https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2 .
+Local main integration: `004c4ac`; exact built/tagged source: `88dc9ec`.
+All four release assets are uploaded. The Windows and corresponding-source ZIPs
+were both verified publicly accessible (HTTP 200) without credentials.
