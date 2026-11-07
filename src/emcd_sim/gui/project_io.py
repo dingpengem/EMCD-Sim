@@ -132,8 +132,8 @@ class SavedCrystal:
         except KeyError as exc:raise ValueError('Reflection absent from saved diffraction context') from exc
 
 
-def plotting_model(meta,snapshot):
-    cfg=config_from_dict(meta['mdff']);settings=settings_from_dict(meta['settings'])
+def plotting_model(meta,snapshot,cfg=None):
+    cfg=cfg or config_from_dict(meta['mdff']);settings=settings_from_dict(meta['settings'])
     elastic=SimpleNamespace(crystal=SavedCrystal(meta,snapshot),beams=SimpleNamespace(hkl=tuple(tuple(h) for h in meta['beam_hkl'])),
         reciprocal_vectors_xy=np.asarray(meta['g']),microscope=SimpleNamespace(incident_k_xy=-np.asarray(meta['za_q']),acceleration_kv=settings.voltage,tilt_mrad_xy=settings.tilt))
     return SimpleNamespace(elastic=elastic,detectors={k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),cfg.centers)},chiral_groups=None)
@@ -146,6 +146,11 @@ def pack_arrays(result):
     spectra=dict(method_labels=np.asarray(labels),channeling_model=np.array(result['config'].channeling_model));diffraction=dict(method_labels=np.asarray(labels),depth_nm=result['depth_nm'],beam_hkl=np.asarray(meta['beam_hkl']),g=np.asarray(meta['g']),frame=np.asarray(meta['frame']),
         excitation_errors_inv_angstrom=excitation(np.asarray(meta['g']),result['settings'].tilt,result['settings'].voltage),zone_axis_q=np.asarray(meta['za_q']),transmitted_q=np.asarray(meta['transmitted_q']))
     for name,r in methods.items():
+        if r['config'].model=='multisite':
+            from .multisite_project import pack_method
+            pack_method(name,r,angular,spectra)
+            angular[name+'__coherence']=r['coherence'];diffraction[name+'__amplitudes']=r['amplitudes']
+            continue
         angular.update({name+'__'+edge+'__'+k:v for edge,m in r['maps'].items() for k,v in m.items()})
         angular[name+'__coherence']=r['coherence']
         from .prb_benchmark import benchmark_spectra
@@ -245,19 +250,29 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             shapes[name]={k:dict(shape=list(v.shape),dtype=str(v.dtype)) for k,v in values.items()}
         methods=result.get('methods',{result.get('method','bloch'):result})
         snapshot=result.get('structure_snapshot');meta=result['metadata']
+        multisite=result['config'].model=='multisite'
+        extra={}
+        if multisite:
+            from .multisite_project import project_metadata,attach_sources
+            extra['multisite_results']=project_metadata(result)
         _json(temp/'metadata.json',meta)
-        _json(temp/'comparison_metadata.json',dict(method_labels=list(methods),primary_method=result.get('method','bloch'),methods={name:r['metadata'] for name,r in methods.items()},diagnostics=result.get('comparison',{})))
-        _json(temp/'input_parameters.json',dict(settings=asdict(result['settings']),mdff=asdict(result['config']),structure_snapshot=snapshot))
+        _json(temp/'comparison_metadata.json',dict(method_labels=list(methods),primary_method=result.get('method','bloch'),methods={name:r['metadata'] for name,r in methods.items()},diagnostics=result.get('comparison',{}),**extra))
+        if multisite:
+            from .project_configuration import _encode_config
+            saved_cfg=_encode_config(result['config'])
+        else:saved_cfg=asdict(result['config'])
+        _json(temp/'input_parameters.json',dict(settings=asdict(result['settings']),mdff=saved_cfg,structure_snapshot=snapshot))
         _json(temp/'structure.json',snapshot)
         if result.get('display_state') is not None:_json(temp/'display_state.json',result['display_state'])
         from .emcd_forward import metrics
         _json(temp/'validity.json',{name:dict(postedge_valid=r['metadata']['alpha'] is not None,
             paired_map_valid={edge:'D_raw' in m for edge,m in r['maps'].items()},available_fields={edge:list(m) for edge,m in r['maps'].items()},
-            scalar_metric_valid={edge:{key:value is not None for key,value in row.items()} for edge,row in metrics(r).items()}) for name,r in methods.items()})
+            scalar_metric_valid={edge:{key:value is not None for key,value in row.items()} for edge,row in ({} if multisite else metrics(r)).items()}) for name,r in methods.items()})
         if snapshot:
             from ase.io import write
             write(temp/'structure.cif',restore_structure(snapshot).atoms,format='cif')
         managed=set(ARRAY_FILES)|{'project.json','metadata.json','comparison_metadata.json','input_parameters.json','structure.json','structure.cif','validity.json','display_state.json'}
+        multisite_sources=attach_sources(result,temp,managed) if multisite else None
         # Optional portable copy of a verified source-backed atomic input. Old
         # projects remain unchanged/readable; missing sources are never invented.
         atomic_attachment=None;cfg=result['config']
@@ -313,6 +328,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             limitations=result.get('project_warnings',[]),array_convention='method__edge__field maps(qy,qx); method__field spectra(energy); method__amplitudes(depth,beam); explicit labels; no pickle')
         if atomic_attachment:manifest['atomic_parameter_source']=atomic_attachment
         if manual_attachment:manifest['manual_tensor_source']=manual_attachment
+        if multisite_sources is not None:manifest['multisite_sources']=multisite_sources
         _json(temp/'project.json',manifest);check('Validating saved project');load_project(temp,progress=lambda s:None)
         check('Finalizing complete project')
         if root.exists():_rename_folder(root,backup,cancelled)
@@ -339,6 +355,11 @@ def source_status(result):
     if cfg.model=='imported' or (cfg.model=='atomic' and getattr(cfg,'provider_schema',None)==1):
         p=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
         status['mdff']=entry(p,cfg.source_sha256,cfg.source)
+    if cfg.model=='multisite':
+        for gid,group in result['groups'].items():
+            source=group['metadata']['source'];original=source['path']
+            p=Path(result.get('source_overrides',{}).get('group:'+gid,original))
+            status['group:'+gid]=entry(p,source.get('sha256',''),original)
     s=result.get('structure_snapshot')
     if s and s.get('sha256'):
         p=Path(result.get('source_overrides',{}).get('cif',s['source']));status['cif']=entry(p,s['sha256'],s['source'])
@@ -389,6 +410,8 @@ def rerun_reason(result):
     if reason:return reason
     for name,s in source_status(result).items():
         if not s['verified']:return name+' source unavailable or SHA256 mismatch; locate the original source before rerunning.'
+    if result['config'].model=='multisite' and not result.get('configuration'):
+        return 'Complete multi-site provider configuration declarations are unavailable; saved results remain viewable.'
     return ''
 
 
@@ -443,12 +466,20 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
                 if list(a.shape)!=specs[key]['shape'] or str(a.dtype)!=specs[key]['dtype']:raise ValueError('Project array shape/dtype mismatch: '+key)
     meta=json.loads((root/'metadata.json').read_text(encoding='utf-8'))
     cm=json.loads((root/'comparison_metadata.json').read_text(encoding='utf-8')) if (root/'comparison_metadata.json').exists() else {}
+    if meta.get('mdff_provider')=='multisite' and 'multisite_results' not in cm:raise ValueError('Saved multi-site result records are missing')
+    if 'multisite_results' in cm and cm['multisite_results'].get('version')!=1:raise ValueError('Unsupported saved multi-site result extension')
     snapshot=json.loads((root/'structure.json').read_text(encoding='utf-8')) if manifest else meta.get('structure_snapshot')
     labels=cm.get('method_labels',meta.get('method_labels',[meta.get('method','bloch')]))
     methods={};q=angular['qx'];qy=angular['qy'];fft_recipe_error=''
     for name in labels:
         check('Reconstructing saved '+name+' plotting context');mmeta=cm.get('methods',{}).get(name,meta)
-        settings=settings_from_dict(mmeta['settings']);cfg=config_from_dict(mmeta['mdff'])
+        settings=settings_from_dict(mmeta['settings'])
+        multisite='multisite_results' in cm
+        descriptor=cm.get('multisite_results',{}).get('methods',{}).get(name)
+        if multisite:
+            from .project_configuration import _decode_config
+            cfg=_decode_config(descriptor['config'])
+        else:cfg=config_from_dict(mmeta['mdff'])
         if cfg.propagation!='bloch' and cfg.fft_generators is None:
             from dataclasses import replace
             try:
@@ -468,11 +499,14 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
             raise ValueError('Saved diffraction/frame/target plotting context is inconsistent')
         if not {'alpha','pair_reason','correction_reason','limitations'}<=set(mmeta):raise ValueError('Saved method metadata lacks required interpretation/normalization fields')
         from ..mdff_edges import selected_samples
-        edge_labels=[edge for edge,_ in selected_samples(cfg)]
-        fields={edge:{k.split('__')[2]:v for k,v in angular.items() if k.startswith(name+'__'+edge+'__')} for edge in edge_labels}
+        edge_labels=list(descriptor['total']['maps']) if multisite else [edge for edge,_ in selected_samples(cfg)]
+        if multisite:
+            from .multisite_project import restore_entry
+            fields=restore_entry(descriptor['total'],angular,spectra)['maps']
+        else:fields={edge:{k.split('__')[2]:v for k,v in angular.items() if k.startswith(name+'__'+edge+'__')} for edge in edge_labels}
         if not any(fields.values()):
             fields={edge:{k[len(edge)+1:]:v for k,v in angular.items() if k.startswith(edge+'_')} for edge in edge_labels}
-        sp={k.split('__',1)[1]:v for k,v in spectra.items() if k.startswith(name+'__')}
+        sp=restore_entry(descriptor['total'],angular,spectra)['spectra'] if multisite else {k.split('__',1)[1]:v for k,v in spectra.items() if k.startswith(name+'__')}
         if not sp:sp={k:v for k,v in spectra.items() if k!='method_labels' and '__' not in k}
         C=angular.get(name+'__coherence',angular.get('coherence'))
         amps=diffraction.get(name+'__amplitudes',angular.get('amplitudes'));z=diffraction.get('depth_nm',angular.get('depth_nm'))
@@ -493,10 +527,13 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
         for key in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus','D_raw','D_mag','D_nonmag','Sigma_ref'):
             if sp[key].shape!=e.shape or not np.isfinite(sp[key]).all():raise ValueError('Saved detector spectrum dimensions/values are inconsistent')
         if not np.allclose(C,C.conj().T,rtol=1e-10,atol=1e-12):raise ValueError('Saved coherence is not Hermitian')
-        model=plotting_model(mmeta,snapshot)
+        model=plotting_model(mmeta,snapshot,cfg)
         weights={k:angular['weight_'+k] for k in ('A','B')}
         if any(w.shape!=q.shape or not np.isfinite(w).all() or np.any(w<0) or np.any(w>1) or not w.any() for w in weights.values()):raise ValueError('Saved fractional detector weights are inconsistent')
         methods[name]=dict(method=name,metadata=mmeta,model=model,settings=settings,config=cfg,maps=fields,spectra=sp,qx=q,qy=qy,weights=weights,coherence=C,depth_nm=z,amplitudes=amps,structure_snapshot=snapshot)
+        if multisite:
+            from .multisite_project import restore_groups
+            restore_groups(methods[name],descriptor,angular,spectra)
     primary=cm.get('primary_method','bloch' if 'bloch' in methods else labels[0]);result=dict(methods[primary],methods=methods,comparison=cm.get('diagnostics',meta.get('comparison',{})))
     result['metadata']=meta;result['fft']={k[len('fft_full__'):]:v for k,v in diffraction.items() if k.startswith('fft_full__')}
     if result['fft']:result['fft']['summary']=result['comparison'].get('fft',{})
@@ -507,6 +544,9 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     if not snapshot:warnings.append('Missing numeric crystal snapshot: full reproducibility and Use These Settings/rerun are unavailable.')
     result.update(project_path=str(root),project_manifest=manifest,project_warnings=warnings,structure_snapshot=snapshot,read_only_legacy=manifest is None,fft_recipe_error=fft_recipe_error)
     result['project_convention_status']=convention_status
+    if 'multisite_results' in cm:
+        from .multisite_project import restore_context
+        restore_context(result,cm['multisite_results'],manifest,root)
     if manifest and 'display_state.json' in manifest['files']:result['display_state']=json.loads((root/'display_state.json').read_text(encoding='utf-8'))
     if manifest and manifest.get('atomic_parameter_source'):
         attachment=manifest['atomic_parameter_source'];source=safe_path(root,attachment['path'])

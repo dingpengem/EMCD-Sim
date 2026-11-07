@@ -1,5 +1,6 @@
 """One production orchestration for all MDFF providers; accepted kernels unchanged."""
 from dataclasses import dataclass, replace
+from copy import deepcopy
 from time import perf_counter
 import numpy as np
 from .emcd_forward import _contract, Cancelled, ForwardSettings
@@ -322,6 +323,12 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
         snapshot=structure_snapshot(structure)
         result['structure_snapshot']=snapshot
         for method_result in methods.values():method_result['structure_snapshot']=snapshot
+        # Retain declarations for project persistence; no providers are inferred
+        # from the already-contracted spectra during restoration.
+        result['configuration']=deepcopy(dict(structure=structure,settings=settings,config=cfg,site_groups=sites,
+            magnetization_mode='local',reverse_magnetization=reverse_magnetization,
+            energy_ev=energy,energy_windows=energy_windows))
+        for method_result in methods.values():method_result['configuration']=result['configuration']
         check_cancelled(cancelled)
         return result
 
