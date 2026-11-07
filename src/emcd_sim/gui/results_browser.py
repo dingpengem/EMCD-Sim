@@ -34,6 +34,9 @@ class Registry:
             self.persist();return existing
         s=result['settings'];cfg=result['config'];stamp=(result.get('project_manifest') or {}).get('created_utc',datetime.now(timezone.utc).isoformat())
         element=getattr(cfg,'ionizing_element','Ni')
+        if cfg.model=='multisite':
+            from .multisite_results import material
+            element=material(result)
         record=dict(id=uuid.uuid4().hex,path=resolved,name=name or f'{element} [{" ".join(map(str,s.zone))}] | {s.thickness:g} nm | X={s.tilt[0]:+.3f}, Y={s.tilt[1]:+.3f} | {cfg.model} | {cfg.propagation}',
             created_utc=stamp,material=element,zone=list(s.zone),target=list(s.target),tx=s.tilt[0],ty=s.tilt[1],thickness=s.thickness,model=cfg.model,channeling_model=cfg.channeling_model,propagation=cfg.propagation,legacy=result.get('read_only_legacy',False))
         self.records.append(record);self.persist();return record
@@ -175,6 +178,7 @@ class ProjectWorkspace:
         if hasattr(self,'browser'):self.selected_record=self.browser.register(result)
     def display_saved_result(self,result,record=None):
         self.emcd_result=result;self.selected_record=record
+        if hasattr(self,'sync_result_capabilities'):self.sync_result_capabilities(result)
         for i,view in ((1,self.maps_view),(2,self.eels_view),(5,self.diffraction_view),(6,self.overview_view)):
             self.tabs.setTabEnabled(i,(i!=6 or len(result['methods'])==2) and (i!=1 or bool(result['maps'])));view.set_result(result)
         self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale()

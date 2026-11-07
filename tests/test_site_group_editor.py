@@ -198,6 +198,8 @@ def test_global_local_lock_legacy_settings_reopen_and_no_fallback(tmp_path,app,m
     monkeypatch.setattr(window,'store_ui_preferences',lambda:None)
     try:
         assert window.magnetization_mode == 'global' and window.axis.isEnabled()
+        window.numerical_mode.setCurrentIndex(1)
+        window.correction.setChecked(False)
         # Preserve exactly the legacy interpretation/settings rather than deriving local M.
         global_text = window.axis.text()
         with pytest.raises(ValueError,match='Atomic draft ready') as legacy_state:
@@ -209,9 +211,12 @@ def test_global_local_lock_legacy_settings_reopen_and_no_fallback(tmp_path,app,m
         assert not window.atomic_editor.direction.isEnabled() and not window.atomic_editor.apply_direction.isEnabled()
         assert 'Global magnetization is locked while site-specific magnetization is enabled.' in window.magnetization_mode_note.text()
         assert not window.emcd_button.isEnabled()
-        with pytest.raises(ValueError,match='No Global M fallback'):window.forward_settings(prepare=False)
+        from emcd_sim.gui.multisite_run import applied_inputs
+        local_cfg = window.forward_settings(prepare=False)
+        assert local_cfg.model == 'multisite'
+        with pytest.raises(ValueError,match='Apply'):applied_inputs(window,local_cfg)
         window.start_emcd()
-        assert errors and 'No Global M fallback' in errors[-1] and window.worker is None
+        assert errors and 'Apply' in errors[-1] and window.worker is None
         create(editor,'Ni-up',[0],'1 0 0');create(editor,'Ni-down',[1],'-1 0 0')
         np.testing.assert_allclose(viewer.view.scene.directions[:2],[[1,0,0],[-1,0,0]])
         viewer.apply_groups()

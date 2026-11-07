@@ -315,6 +315,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
                 scene.group_indices[mask] = number
                 scene.group_colors[mask] = site_group_color(number)
                 scene.directions[mask] = direction
+        if self.editor.reverse_magnetization:scene.directions[:] *= -1
         camera = (self.view.orientation.copy(),self.view.zoom,self.view.pan.copy())
         had_scene = self.view.scene is not None
         self.view.set_scene(scene)

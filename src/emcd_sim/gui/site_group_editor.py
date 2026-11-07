@@ -17,6 +17,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
     selectionChanged = QtCore.Signal(object)
     applied = QtCore.Signal(object)  # None means no executable configuration.
     modeChanged = QtCore.Signal(str)
+    pendingChanged = QtCore.Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -26,6 +27,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
         self._accepted_rows = ()
         self.dirty = False
         self._accepted_mode = 'global'
+        self.reverse_magnetization = self._accepted_reversal = False
         self.mdff_dialogs = {};self.energy_windows = {};self._mdff_status = {}
         self._accepted_mdff = ({},{},{},{})
         layout = QtWidgets.QVBoxLayout(self)
@@ -84,7 +86,8 @@ class SiteGroupEditor(QtWidgets.QWidget):
         self.buttons['Flip all local M'].setEnabled(local)
         self.mode_note.setText('Global magnetization is locked while site-specific magnetization is enabled.'
             if local else 'Legacy Global M is active. Local directions are retained but inactive; edit them in Local mode.')
-        self.dirty = self.rows() != self._accepted_rows or self.magnetization_mode != self._accepted_mode
+        self.dirty = (self.rows() != self._accepted_rows or self.magnetization_mode != self._accepted_mode
+                      or self.reverse_magnetization != self._accepted_reversal)
         self.update_status(); self.modeChanged.emit(self.magnetization_mode)
 
     def run_action(self, action):
@@ -119,6 +122,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
         self.load_groups(groups)
 
     def load_groups(self, groups):
+        self.reverse_magnetization = self._accepted_reversal = False
         for dialog in self.mdff_dialogs.values():dialog.close();dialog.deleteLater()
         self.mdff_dialogs = {};self.energy_windows = {};self._mdff_status = {}
         self._accepted_mdff = ({},{},{},{})
@@ -270,6 +274,12 @@ class SiteGroupEditor(QtWidgets.QWidget):
         """
         if self.magnetization_mode != 'local':raise ValueError('Enable Local Site Magnetization Mode first')
         if not self.rows():raise ValueError('Declare local site groups before reversing M')
+        from .generalized_forward import ImportedSettings
+        declared = [isinstance(row[4],ImportedSettings) for row in self.rows()]
+        if any(declared):
+            if not all(declared):raise ValueError('Configure all group MDFF providers before reversing their magnetic pairs')
+            self.reverse_magnetization = not self.reverse_magnetization
+            self.dirty = True;self.update_status();self.changed.emit();return
         self.replace_rows(tuple((name,element,indices,tuple(-v for v in direction),reference)
             for name,element,indices,direction,reference in self.rows()), self.current_row())
 
@@ -311,6 +321,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
         if dialog is None:
             dialog = GroupMDFFDialog(row,getattr(self,'mdff_workspace',None) or workspace(),self)
             dialog.commit = lambda cfg,window,d=dialog:self.accept_mdff(d,cfg,window)
+            dialog.draftChanged.connect(self.pendingChanged)
             self.mdff_dialogs[row[0]] = dialog
         self.recheck_mdff_sources()
         if self.mdff_status(row) == 'Invalid / stale':
@@ -340,20 +351,25 @@ class SiteGroupEditor(QtWidgets.QWidget):
         missing = sum(row[4] is None for row in self.rows())
         prefix = 'Unapplied edits. ' if self.dirty else 'Applied in memory. '
         mode = 'Local mode. ' if self.magnetization_mode == 'local' else 'Global mode; local directions inactive. '
+        if self.magnetization_mode == 'local':mode += ('All provider −M states selected. ' if self.reverse_magnetization else 'Declared +M configuration selected. ')
         invalid = sum(self.mdff_status(row) != 'Configured and valid' for row in self.rows())
         self.status.setText(mode + prefix + (f'{missing} unconfigured group(s): MDFF references required; configuration is not executable.'
-            if missing else ((f'{invalid} invalid/unvalidated provider(s); not ready for calculation.' if invalid else 'All group providers configured and valid; GUI calculation integration is not available yet.')
+            if missing else ((f'{invalid} invalid/unvalidated provider(s); not ready for calculation.' if invalid else 'All group providers configured and valid. Apply before Run in the main window.')
                              if self.rows() else ('No local groups configured; local calculation unavailable.'
                                  if self.magnetization_mode == 'local' else 'No groups; ordinary CIF viewing.'))))
 
     def apply(self):
         from .generalized_forward import ImportedSettings
         from .group_mdff import validate_group_reference
+        for name,dialog in self.mdff_dialogs.items():
+            if name in {row[0] for row in self.rows()} and dialog.has_unapplied_edits():
+                raise ValueError('Apply or Cancel pending MDFF edits for '+name+' before applying site groups')
         for row in self.rows():
             if isinstance(row[4],ImportedSettings):validate_group_reference(row,window=self.energy_windows.get(row[0]))
         model = self.check_rows(self.rows())
         self._accepted_rows = self.rows(); self.accepted_site_groups = self.preview_site_groups = model
         self._accepted_mode = self.magnetization_mode
+        self._accepted_reversal = self.reverse_magnetization
         names = {r[0] for r in self.rows()}
         for name in list(self.mdff_dialogs):
             if name not in names:
@@ -376,7 +392,9 @@ class SiteGroupEditor(QtWidgets.QWidget):
             if row is not None:
                 dialog.set_context(row);dialog.reference = row[4]
                 dialog.window = windows.get(name);dialog.setEnabled(True)
+                dialog._applied_snapshot = dialog.snapshot()
         self.preview_site_groups = self.accepted_site_groups
+        self.reverse_magnetization = self._accepted_reversal
         self.restore_rows(self._accepted_rows); self.dirty = False
         self.mode.setCurrentIndex(int(self._accepted_mode == 'local'))
         self.update_status(); self.changed.emit()

@@ -13,6 +13,9 @@ from ..mdff_edges import selected_samples
 
 
 def mdff_label(result):
+    if result['config'].model=='multisite':
+        from .multisite_results import description
+        return description(result)
     if result['config'].model=='imported' or hasattr(result['config'],'provider_schema'):
         if result['metadata'].get('imported_mdff',{}).get('atomic_model'):
             return result['metadata'].get('scientific_status','RESEARCH / APPROXIMATE')+'; approximate atomic '+result['config'].ionizing_element+' 2p-3d model; physically unvalidated parameters'
@@ -31,6 +34,7 @@ def geometry_description(result):
 
 
 def spectral_coverage_label(result):
+    if result['config'].model=='multisite':return 'Modeled partial core-edge spectrum'
     e=result['spectra']['energy_ev']
     if result['config'].energy_scope=='edges':return 'Selected '+ '/'.join(k for k,_ in selected_samples(result['config']))+' samples'
     audit=result['metadata'].get('source_audit') or {}
@@ -298,11 +302,13 @@ class ResultsView(QtWidgets.QWidget):
             self.prb_readout=self.prb_benchmark.summary
             self.prb_benchmark.changed.connect(self.update_prb_metadata)
         export=QtWidgets.QPushButton('Export derived NPZ/CSV + metadata');export.setVisible(kind!='diffraction');layout.addWidget(export);export.clicked.connect(self.export_derived)
+        self.export_button=export
         self.figure=Figure(layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure)
         self.navigation=NavigationToolbar2QT(self.canvas,self)
         self.canvas.setMinimumSize(280,160)
         self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Expanding)
-        layout.addWidget(self.canvas,1)
+        self.multisite_banner=QtWidgets.QLabel();self.multisite_banner.setWordWrap(True);self.multisite_banner.hide()
+        layout.addWidget(self.multisite_banner);layout.addWidget(self.canvas,1)
         self.details_section=CollapsibleSection('Display details / diagnostics / export',expanded=False);self.details_section.setObjectName('results_details_'+kind);self.details_toggle=self.details_section.header;self.details_body=self.details_section.body;details=QtWidgets.QVBoxLayout(self.details_body);details.setContentsMargins(0,0,0,0)
         for widget in (self.label,self.advanced,self.display_note,export):
             layout.removeWidget(widget);details.addWidget(widget)
@@ -321,17 +327,29 @@ class ResultsView(QtWidgets.QWidget):
         w.responsive.show_panel(2);self._focused=not getattr(self,'_focused',False);self.set_compact(w.responsive.compact);w.responsive.focus_plot('results')
     def set_result(self,result):
         self.result=result
+        multisite=result['config'].model=='multisite'
+        self.multisite_banner.setVisible(multisite)
+        if multisite:
+            sites=result['metadata']['multisite']
+            self.multisite_banner.setText('Complete-crystal incoming elastic intensity; per incident electron.' if self.kind=='diffraction' else
+                f'Modeled partial core-edge spectrum · mean per selected ionizing atom (n={sites["selected_atom_count"]}).\n'
+                +result['metadata']['scientific_status']+' · active '+('−M' if sites['global_reversal'] else '+M')+' provider pairs · uncalibrated relative scale.')
+        self.advanced.setVisible(not multisite);self.component_mode.setVisible(not multisite)
+        self.field.setVisible(self.kind=='maps' and not multisite)
+        self.export_button.setEnabled(not multisite)
+        self.export_button.setToolTip('Multi-site data export belongs to Patch 4C' if multisite else '')
+        if self.kind=='eels':self.benchmark_section.setVisible(not multisite)
         if self.kind=='maps':
             with QtCore.QSignalBlocker(self.choice):
                 self.choice.clear();self.choice.addItems(list(result['maps']))
         elif self.kind=='eels':
             with QtCore.QSignalBlocker(self.choice):
                 self.choice.clear();self.choice.addItem(spectral_coverage_label(result))
-                if getattr(result['config'],'core_edge','L2,3')=='L2,3':self.choice.addItems(['L3 zoom','L2 zoom'])
-        self.normalization.set_result(result)
+                if not multisite and getattr(result['config'],'core_edge','L2,3')=='L2,3':self.choice.addItems(['L3 zoom','L2 zoom'])
+        if not multisite:self.normalization.set_result(result)
         from .propagation import METHOD_NAMES
         options=list(result.get('methods',{result.get('method','bloch'):result}))
-        if len(options)==2:options.append('difference' if self.kind in ('maps','diffraction') else 'overlay')
+        if len(options)==2 and not multisite:options.append('difference' if self.kind in ('maps','diffraction') else 'overlay')
         self.method.blockSignals(True);self.method.clear()
         for key in options:self.method.addItem(METHOD_NAMES.get(key,'BW / MS overlay'),key)
         if self.kind=='eels':self.choice.setItemText(0,spectral_coverage_label(result))
@@ -339,6 +357,10 @@ class ResultsView(QtWidgets.QWidget):
     def redraw(self,*_):
         if self.result is None:return
         method=self.method.currentData() or self.result.get('method','bloch')
+        if self.result['config'].model=='multisite':
+            from .multisite_results import draw_totals,description
+            self.proxies=draw_totals(self.figure,self.result,method,self.kind,self.choice.currentText())
+            self.display_note.setText(description(self.result));self.presentation.capture();self.canvas.draw_idle();return
         display=self.normalization.settings()
         advanced=self.advanced.isChecked()
         self.component_mode.setEnabled(not advanced)
@@ -410,6 +432,9 @@ def _single_comparison_text(result,windows=None,reference=None):
 
 
 def comparison_text(result,windows=None):
+    if result['config'].model=='multisite':
+        from .multisite_results import comparison_text as multisite_text
+        return multisite_text(result)
     import json
     methods=result.get('methods',{result.get('method','bloch'):result})
     text='\n\n'.join(name+'\n'+_single_comparison_text(r,windows,methods.get('bloch',next(iter(methods.values())))) for name,r in methods.items())

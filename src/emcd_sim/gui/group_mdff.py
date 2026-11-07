@@ -36,6 +36,7 @@ def validate_group_reference(row, reference=None, window=None):
 class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
     """Each instance owns its GUI drafts; applied references remain immutable."""
     configured = QtCore.Signal(object, object)  # Existing settings, ModeledEdgeWindow.
+    draftChanged = QtCore.Signal()
 
     def __init__(self, row, workspace, parent=None):
         super().__init__(parent)
@@ -96,6 +97,7 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         else:self.model.setCurrentIndex(-1);self.pages.setEnabled(False)
         self._loading = False
         self._entry = self.snapshot()
+        self._applied_snapshot = deepcopy(self._entry) if self.reference is not None else None
 
     def field(self, key, text, form, label):
         widget = QtWidgets.QLineEdit(text); self._inputs[key] = widget
@@ -290,6 +292,7 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         if not self._loading and hasattr(self,'status'):
             self.declaration.setChecked(False)
             self.status.setText('Incomplete / unapplied draft. Validate and Apply before using this configuration.')
+            self.draftChanged.emit()
 
     def set_context(self, row):
         changed = self.row[1:4] != row[1:4]
@@ -392,6 +395,7 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
                 'Relative per-atom units; physical calibration not established.')
             self.detail_text.setPlainText(json.dumps(self.provenance,indent=2,ensure_ascii=False))
             self._entry = self.snapshot()
+            self._applied_snapshot = deepcopy(self._entry)
             return cfg
         except Exception as exc:
             self.status.setText('Invalid / incomplete: '+str(exc));return None
@@ -458,7 +462,9 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         self.declaration.setChecked(cfg.axis_declared)
 
     def snapshot(self):
-        return dict(fields={key:w.text() for key,w in self._inputs.items()},model=self.model.currentIndex(),
+        # Selected edges are stored by their native controls below. The hidden
+        # legacy adapter is derived text, not an independently editable draft.
+        return dict(fields={key:w.text() for key,w in self._inputs.items() if key != 'xmcd_selected'},model=self.model.currentIndex(),
             source_info=deepcopy(self.source_info),validated_path=self.validated_path,reviewed_sha=self._reviewed_sha,
             manual=self.manual_mode.currentIndex(),atomic=deepcopy(self.atomic.draft()),
             atomic_mode=self.atomic_mode.currentIndex(),
@@ -500,9 +506,13 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         self.set_context(row);self._entry = self.snapshot()
         self.show();self.raise_();self.activateWindow()
 
+    def has_unapplied_edits(self):
+        return self._applied_snapshot is not None and self.snapshot() != self._applied_snapshot
+
     def closeEvent(self, event):
         event.accept()  # Keep incomplete drafts; explicit Cancel restores entry state.
 
     def reject(self):
-        self.restore_snapshot(self._entry)
+        self.restore_snapshot(self._applied_snapshot or self._entry)
+        self.draftChanged.emit()
         super().reject()

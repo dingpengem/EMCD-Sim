@@ -16,14 +16,15 @@ from .results import ResultsView,comparison_text
 from .numerical_settings import NumericalSettingsUI
 from .imported_tensor_ui import ImportedTensorUI
 from .generalized_forward import material_reason,energy_grid,tensors
-from .forward_pipeline import calculate
+from .forward_pipeline import calculate,calculate_multisite
 from .provider_ui import ProviderUI
 
 
 class EMCDWorker(QtCore.QThread):
     result=QtCore.Signal(object);failed=QtCore.Signal(str);stage=QtCore.Signal(str)
-    def __init__(self,structure,settings,config):
+    def __init__(self,structure,settings,config,*,sites=None,energy_windows=None,reverse_magnetization=False,input_signature=None):
         super().__init__();self.structure=structure;self.settings=settings;self.config=config
+        self.sites=sites;self.energy_windows=energy_windows;self.reverse_magnetization=reverse_magnetization;self.input_signature=input_signature
         self.cancellation_event=threading.Event();self.cancellation_times={}
     def requestInterruption(self):
         # Called directly from the GUI, never queued into this busy thread.
@@ -45,7 +46,13 @@ class EMCDWorker(QtCore.QThread):
                 logger.info('Calculation stage: %s',message)
                 self.stage.emit(message)
             kwargs={'execution_policy':self.execution_policy} if hasattr(self,'execution_policy') else {}
-            r=calculate(self.structure,self.settings,self.config,progress,self.cancelled,**kwargs)
+            if self.sites is None:
+                if self.config.model=='multisite':raise ValueError('Missing multi-site assignments; legacy fallback is forbidden')
+                r=calculate(self.structure,self.settings,self.config,progress,self.cancelled,**kwargs)
+            else:
+                r=calculate_multisite(self.structure,self.settings,self.sites,self.config,progress,self.cancelled,
+                    energy_windows=self.energy_windows,reverse_magnetization=self.reverse_magnetization)
+                r['gui_multisite_input']=self.input_signature
             if not self.cancelled():self.result.emit(r)
         except Cancelled:pass
         except Exception as exc:
@@ -271,7 +278,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
 
     def forward_settings(self,prepare=True):
         if getattr(self,'magnetization_mode','global')=='local':
-            raise ValueError('Local Site Magnetization Mode is active: multi-site GUI calculation integration is not available yet. No Global M fallback is used.')
+            from .multisite_run import forward_settings
+            return forward_settings(self)
         if prepare and self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:
             self.prepare_manual_tensor()
         if prepare and self.model_box.currentIndex()==1 and self.atomic_editor.active and not self.atomic_editor.validated_path:
@@ -319,14 +327,20 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         reason='';cfg=None;info=None
         try:
             if getattr(self,'_numerical_error',None):raise ValueError(self._numerical_error)
-            cfg=self.forward_settings(prepare=False);s=self.settings();energy_grid(cfg)
-            reason=material_reason(self.structure,cfg)
+            cfg=self.forward_settings(prepare=False);s=self.settings();sites=None;signature=None
+            if cfg.model=='multisite':
+                from .multisite_run import applied_inputs
+                cfg,sites,windows,reverse,signature=applied_inputs(self,cfg)
+                reason=self.structure.elastic_reason_for(s.elastic_provider)
+            else:
+                energy_grid(cfg);reason=material_reason(self.structure,cfg)
             if cfg.model=='xmcd' and not cfg.axis_declared:raise ValueError('Declare XMCD conventions before Run EMCD')
             if cfg.model=='atomic' and not hasattr(cfg,'provider_schema') and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
             from .propagation import numerical_info
-            info=numerical_info(self.structure,s,cfg,enforce_execution=False)
+            info=numerical_info(self.structure,s,cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             from .parallel_resources import preview_text
             self.memory_label.setText(preview_text(s,cfg,info))
+            if sites is not None:self.memory_label.setText(self.memory_label.text()+'\nInitial estimate; production admission includes retained multi-site arrays before propagation.')
             if info.get('numerical_warnings'):self.memory_label.setText(self.memory_label.text()+'\n'+'\n'.join(info['numerical_warnings']))
             if info['execution']['blocked']:reason=reason or info['execution']['risk']+': '+' '.join(info['execution']['messages'])
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
@@ -335,12 +349,13 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 from .project_io import structures_match
                 structure_matches=structures_match(self.emcd_result['structure_snapshot'],self.structure)
             config_matches=self.emcd_result is not None and self.emcd_result['config']==cfg
+            if sites is not None:config_matches=config_matches and self.emcd_result.get('gui_multisite_input')==signature
             if self.emcd_result and cfg.model==self.emcd_result['config'].model=='atomic' and not hasattr(cfg,'provider_schema'):
                 old=asdict(self.emcd_result['config']);new=asdict(cfg)
                 for key in ('source','source_sha256'):old.pop(key);new.pop(key)
                 config_matches=old==new
             fresh=self.emcd_result is not None and self.emcd_result['settings']==s and config_matches and structure_matches
-            reason=reason or self.input_source_reason()
+            if sites is None:reason=reason or self.input_source_reason()
         except Exception as exc:
             reason=reason or str(exc);fresh=False;self.memory_label.setText('Calculation unavailable: '+str(exc))
             self.invalidate_on_source_error(exc)
@@ -404,12 +419,17 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         try:
             self.resolve_numerical_ui()
             if self._numerical_error:raise ValueError(self._numerical_error)
-            cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
-            reason=material_reason(self.structure,cfg)
-            reason=reason or self.input_source_reason()
+            cfg=self.forward_settings();s=self.settings();sites=None;windows=None;reverse=False;signature=None
+            if cfg.model=='multisite':
+                from .multisite_run import applied_inputs
+                cfg,sites,windows,reverse,signature=applied_inputs(self,cfg)
+                reason=self.structure.elastic_reason_for(s.elastic_provider)
+            else:
+                energy_grid(cfg);reason=material_reason(self.structure,cfg)
+                reason=reason or self.input_source_reason()
             if reason:raise ValueError(reason)
             from .propagation import numerical_info
-            assessment=numerical_info(self.structure,s,cfg,enforce_execution=False)
+            assessment=numerical_info(self.structure,s,cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             from .parallel_resources import require_supported
             from .runtime import build_info
             logger=logging.getLogger('emcd_sim.gui')
@@ -420,12 +440,14 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             for handler in logger.handlers:handler.flush()
             require_supported(assessment['execution'])
             structure=Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings)
+            if sites is not None:sites.validate_structure(structure)
         except Exception as exc:
             if self.invalidate_on_source_error(exc):self.emcd_stale()
             self.error(str(exc));return
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.emcd_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0)
         self._run_numerical_selection=self.numerical_selection_snapshot()
-        self.worker=EMCDWorker(structure,s,cfg);self.worker.execution_policy=assessment['execution'];self.worker.stage.connect(self.emcd_stage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.emcd_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
+        local=dict(sites=sites,energy_windows=windows,reverse_magnetization=reverse,input_signature=signature) if sites is not None else {}
+        self.worker=EMCDWorker(structure,s,cfg,**local);self.worker.execution_policy=assessment['execution'];self.worker.stage.connect(self.emcd_stage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.emcd_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
     def emcd_stage(self,message):
         # Queued progress from before Cancel must not hide the pending request.
         if not self.worker.isInterruptionRequested():self.statusBar().showMessage(message)
@@ -438,6 +460,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             result['metadata']['numerical_selection']=selection
             for method in result.get('methods',{}).values():method['metadata']['numerical_selection']=selection
         self.emcd_result=result;self.run_outcome='completed'
+        self.sync_result_capabilities(result)
         self.register_completed(result)
         for i,view in ((1,self.maps_view),(2,self.eels_view)):
             self.tabs.setTabEnabled(i,i!=1 or bool(result['maps']));view.set_result(result)
@@ -452,8 +475,22 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         else:self.statusBar().showMessage('EMCD '+('completed.' if self.run_outcome=='completed' else 'failed; no new result registered.'))
     def save_emcd(self):
         if self.emcd_result is None:self.error('Run EMCD/EELS successfully first.');return
+        if self.emcd_result['config'].model=='multisite':self.error('Multi-site data export belongs to Patch 4C; results are retained in memory.');return
         path=QtWidgets.QFileDialog.getExistingDirectory(self,'Export completed EMCD result (new subfolder)')
         if not path:return
         try:
             root=Path(path)/('emcd_'+datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f'));export_result(self.emcd_result,root,component_mode=self.eels_view.component_mode.currentData(),map_signal_mode=self.maps_view.component_mode.currentData());self.statusBar().showMessage('Exported completed run: '+str(root))
         except Exception as exc:self.error(str(exc))
+
+    def sync_result_capabilities(self,result):
+        # Keep unsupported legacy serializers/restorers out of the live route.
+        # No project format or Save/Open implementation is changed here.
+        from PySide6 import QtGui
+        multisite=result['config'].model=='multisite'
+        self.tabs.setTabText(1,'Total angular intensities' if multisite else 'EMCD Angular Maps')
+        self.tabs.setTabText(3,'Reversal / detector differences' if multisite else 'Magnetic / Nonmagnetic')
+        unsupported={'Save Project','Save Project As...','Use These Settings','Compare Selected','Compare Selected Results','Compare Results','Export Selected NPZ/CSV'}
+        for control in self.findChildren(QtGui.QAction)+self.findChildren(QtWidgets.QPushButton):
+            if control.text() in unsupported:
+                control.setEnabled(not multisite)
+                control.setToolTip('Multi-site runs are session-only; project support and detailed exports are deferred.' if multisite else '')

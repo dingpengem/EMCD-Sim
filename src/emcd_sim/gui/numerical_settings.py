@@ -92,6 +92,7 @@ class NumericalSettingsUI:
         self.shared_resources_group.setVisible(True)
         self.shared_resources_group.presentation_section.setVisible(True)
         for key in NUMERICAL_KEYS:self.spin[key].setEnabled(manual)
+        if getattr(self,'magnetization_mode','global') == 'local':self.spin['energy'].setEnabled(False)
         self.memory_budget.setEnabled(True);self.angular_resolution.setEnabled(manual)
         self.numerical_details.setVisible(not manual)
         self.sync_solver_controls()
@@ -112,6 +113,8 @@ class NumericalSettingsUI:
         before=self.numerical_snapshot()
         try:
             if self.numerical_mode.currentIndex()==0:
+                if getattr(self,'magnetization_mode','global') == 'local':
+                    raise ValueError('Local multi-site calculations require explicit Manual numerical settings; Ni presets are not transferred')
                 if self.model_box.currentIndex()==2:
                     raise ValueError('Imported MDFF requires explicit Manual numerical settings; Ni presets are not transferred')
                 if (set(self.structure.atoms.get_chemical_symbols())!={'Ni'} or
