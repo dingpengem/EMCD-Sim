@@ -44,6 +44,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.section('Material');self.button('Open CIF…',self.load_cif)
         self.structure_label=QtWidgets.QLabel();self.structure_label.setWordWrap(True);self.form.addRow(self.structure_label)
         self.button('Inspect structure…',self.inspect_structure)
+        self.button('3D Structure Viewer…',self.show_structure_viewer)
         from ..elastic_providers import CHOICES
         self.elastic_provider_box=QtWidgets.QComboBox()
         for label,key in CHOICES:self.elastic_provider_box.addItem(label,key)
@@ -117,6 +118,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         configuration_dialog(self)
         self.mdff_dialog.hide()
         self.model_box.setCurrentIndex(1)
+        self.structure_view_action=self.menuBar().addMenu('Model').addAction('View 3D Crystal Structure…')
+        self.structure_view_action.triggered.connect(self.show_structure_viewer)
 
     def section(self,title,expanded=True):
         group=CollapsibleSection(title,expanded=expanded);group.setObjectName('settings_'+''.join(c if c.isalnum() else '_' for c in title));self.form=QtWidgets.QFormLayout(group.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);self.form_layout.addWidget(group)
@@ -175,6 +178,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
     def refresh(self,*_,fit=False):
         if not hasattr(self,'canvas'):return
+        viewer=getattr(self,'structure_viewer',None)
+        if viewer is not None and viewer.isVisible():viewer.set_structure(self.structure)
         self._za_drag=False
         self.resolve_numerical_ui()
         try:
@@ -380,6 +385,13 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
                 self.structure=Structure.from_cif(path)
                 self.last_result=None;self.table.setRowCount(0);self.refresh();self.inspect_structure()
             except Exception as exc:self.error(str(exc))
+    def show_structure_viewer(self,*_):
+        from .structure_viewer import CrystalStructureDialog
+        if getattr(self,'structure_viewer',None) is None:
+            self.structure_viewer=CrystalStructureDialog(self)
+        self.structure_viewer.set_structure(self.structure,force=True)
+        self.structure_viewer.show();self.structure_viewer.raise_();self.structure_viewer.activateWindow()
+
     def inspect_structure(self):
         dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Crystal structure — ASE import');dialog.resize(650,500);layout=QtWidgets.QVBoxLayout(dialog)
         text=QtWidgets.QPlainTextEdit(self.structure.description());text.setReadOnly(True);layout.addWidget(text);dialog.show();self.dialogs.append(dialog)
