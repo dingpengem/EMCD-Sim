@@ -19,6 +19,9 @@ class MultisiteSpectraControls(QtWidgets.QWidget):
         for label,_ in QUANTITIES:self.quantity.addItem(label)
         row.addWidget(self.quantity,1)
         self.groups = QtWidgets.QListWidget();self.groups.setMaximumHeight(78);layout.addWidget(self.groups)
+        self.include_total = QtWidgets.QCheckBox('Include total spectrum');layout.addWidget(self.include_total)
+        self.include_total.setToolTip('Overlay the normalized total. Group means remain nonadditive; weighted groups use the total denominator.')
+        self.include_total.toggled.connect(self.updated)
         self.sources = QtWidgets.QLabel();self.sources.setWordWrap(True)
         self.sources.setTextFormat(QtCore.Qt.TextFormat.PlainText);layout.addWidget(self.sources)
         for box in (self.selection,self.normalization,self.quantity):
@@ -58,16 +61,19 @@ class MultisiteSpectraControls(QtWidgets.QWidget):
         compared = tuple(self.groups.item(i).data(QtCore.Qt.ItemDataRole.UserRole) for i in range(self.groups.count())
                          if self.groups.item(i).checkState() == QtCore.Qt.CheckState.Checked)
         normalization = 'mean' if self.normalization.currentIndex() == 1 and selection[0] in ('group','compare') else 'weighted'
-        return dict(selection=selection,normalization=normalization,compared=compared,quantity=self.quantity.currentIndex())
+        return dict(selection=selection,normalization=normalization,compared=compared,quantity=self.quantity.currentIndex(),
+                    include_total=self.include_total.isChecked() and selection[0]=='compare')
 
     def updated(self, *_):
         mode,value = self.selection.currentData() or ('total',None)
         self.groups.setVisible(mode == 'compare');self.normalization.setVisible(mode in ('group','compare'))
+        self.include_total.setVisible(mode == 'compare')
         self.normalization.setEnabled(mode in ('group','compare'))
         if self.result is not None:
             options = self.options()
             ids = ([value] if mode == 'group' else list(options['compared']) if mode == 'compare' else
                    [gid for gid,g in self.result['groups'].items() if mode == 'total' or g['metadata']['element'] == value])
+            if options['include_total']:ids = list(self.result['groups'])
             descriptions = [];full = []
             for gid in ids:
                 d = self.result['groups'][gid]['metadata'];source = d['source']

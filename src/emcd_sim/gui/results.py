@@ -345,8 +345,9 @@ class ResultsView(QtWidgets.QWidget):
                 +result['metadata']['scientific_status']+' · active '+('−M' if sites['global_reversal'] else '+M')+' provider pairs · uncalibrated relative scale.')
         self.advanced.setVisible(not multisite);self.component_mode.setVisible(not multisite)
         self.field.setVisible(self.kind=='maps' and not multisite)
-        self.export_button.setEnabled(not multisite)
-        self.export_button.setToolTip('Multi-site data export belongs to Patch 4C-2' if multisite else '')
+        self.export_button.setEnabled(not multisite or self.kind=='eels')
+        self.export_button.setText('Export selected spectra CSV + metadata' if multisite else 'Export derived NPZ/CSV + metadata')
+        self.export_button.setToolTip('All spectral components for the selected series; unsupported samples are blank and labeled. Metadata is written automatically.' if multisite else '')
         if self.kind=='eels':self.benchmark_section.setVisible(not multisite)
         if self.kind=='maps':
             with QtCore.QSignalBlocker(self.choice):
@@ -373,7 +374,7 @@ class ResultsView(QtWidgets.QWidget):
             if self.kind=='eels':
                 from .multisite_results import spectral_series,selection_description
                 current=self.result.get('methods',{}).get(method,self.result)
-                series=spectral_series(current,options['selection'],options['normalization'],options['compared'])
+                series=spectral_series(current,options['selection'],options['normalization'],options['compared'],options['include_total'])
                 sites=current['metadata']['multisite']
                 self.multisite_banner.setText(selection_description(current,series)+'\nModeled partial core-edge spectrum · '
                     +current['metadata']['scientific_status']+' · active '+('−M' if sites['global_reversal'] else '+M')+' provider pairs · uncalibrated relative scale.')
@@ -417,9 +418,15 @@ class ResultsView(QtWidgets.QWidget):
         from .normalization_export import export_derived
         from pathlib import Path
         from datetime import datetime
-        parent=QtWidgets.QFileDialog.getExistingDirectory(self,'Derived visualization export parent (new folder)')
+        multisite=self.result is not None and self.result['config'].model=='multisite'
+        parent=QtWidgets.QFileDialog.getExistingDirectory(self,'Spectra export parent (new folder)' if multisite else 'Derived visualization export parent (new folder)')
         if parent and self.result is not None:
             try:
+                if multisite:
+                    from .multisite_export import export_multisite_spectra
+                    export_multisite_spectra(self.result,Path(parent)/datetime.now().strftime('multisite_%Y%m%d_%H%M%S_%f'),
+                        method=self.method.currentData() or self.result.get('method','bloch'),**self.multisite_controls.options())
+                    return
                 if not self.advanced.isChecked() or (self.kind=='eels' and self.component_diagnostic.currentData()=='relative'):
                     from .emcd_forward import export_result
                     export_result(self.result,Path(parent)/datetime.now().strftime('emcd_%Y%m%d_%H%M%S_%f'),component_mode='relative' if self.advanced.isChecked() and self.kind=='eels' else self.owner.eels_view.component_mode.currentData(),map_signal_mode=self.owner.maps_view.component_mode.currentData())
@@ -428,7 +435,7 @@ class ResultsView(QtWidgets.QWidget):
                 entries=[(name,dict(r,prb_data_origin=data_origin(self.result),prb_project_path=self.result.get('project_path')),name) for name,r in self.result.get('methods',{self.result.get('method','bloch'):self.result}).items()]
                 options=self.prb_benchmark.options() if self.kind=='eels' else None
                 export_derived(entries,Path(parent)/datetime.now().strftime('derived_%Y%m%d_%H%M%S_%f'),self.normalization.settings(),self.choice.currentText(),prb_options=options)
-            except ValueError as exc:self.owner.error(str(exc))
+            except (ValueError,OSError) as exc:self.owner.error(str(exc))
     def pick(self,event):
         for proxy,line in self.proxies:
             if event.artist is proxy:line.set_visible(not line.get_visible());proxy.set_alpha(1 if line.get_visible() else .2);self.canvas.draw_idle()

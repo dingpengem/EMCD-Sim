@@ -43,7 +43,7 @@ QUANTITIES = [
     ('Magnetic A−B',PANELS[3][1][1:2]),('Nonmagnetic A−B',PANELS[3][1][2:])]
 
 
-def spectral_series(result, selection=('total',None), normalization='weighted', compared=()):
+def spectral_series(result, selection=('total',None), normalization='weighted', compared=(), include_total=False):
     """Additive components are n_s I_s / N, never independently peak-scaled.
 
     Stored group spectra are means over that group's atoms. Their original
@@ -70,17 +70,21 @@ def spectral_series(result, selection=('total',None), normalization='weighted', 
         spectra['energy_ev'] = result['spectra']['energy_ev']
         series.append(dict(label=gid+' · '+meta['element']+' '+meta['source']['edge'],spectra=spectra,
                            groups=(gid,),normalization='mean' if normalization == 'mean' else 'weighted',scale=scale))
+    if mode == 'compare' and include_total:series.extend(spectral_series(result))
     return series
 
 
 def selection_description(result, series):
     n = result['metadata']['multisite']['selected_atom_count']
     if not series:return 'No comparison groups selected. Choose groups below; no calculation is required.'
-    if series[0]['normalization'] == 'total':return f'Total normalized intensity: mean per selected ionizing atom (N={n}).'
-    names = ', '.join(item['label'] for item in series)
-    if series[0]['normalization'] == 'mean':
-        return names+' · per-atom mean within each group; these curves are not additive components of the total.'
-    return names+f' · additive contribution: Σ n_s I_s / N, fixed N={n}; no peak or area rescaling.'
+    parts = [item for item in series if item['normalization'] != 'total']
+    total = f'Total normalized intensity: mean per selected ionizing atom (N={n}).'
+    if not parts:return total
+    names = ', '.join(item['label'] for item in parts)
+    note = (names+' · per-atom mean within each group; these curves are not additive components of the total.'
+            if parts[0]['normalization']=='mean' else
+            names+f' · additive contribution: Σ n_s I_s / N, fixed N={n}; no peak or area rescaling.')
+    return note+(' '+total if len(parts)<len(series) else '')
 
 
 def comparison_text(result):
@@ -102,22 +106,22 @@ def comparison_text(result):
     return '\n'.join(lines)
 
 
-def draw_totals(figure, result, method, kind, choice, *, selection=('total',None),normalization='weighted',compared=(),quantity=0):
+def draw_totals(figure, result, method, kind, choice, *, selection=('total',None),normalization='weighted',compared=(),quantity=0,include_total=False):
     r = result.get('methods',{}).get(method,result)
     figure.clear();proxies = []
     series = []
     if kind == 'eels':
         from matplotlib import colormaps
-        series = spectral_series(r,selection,normalization,compared)
+        series = spectral_series(r,selection,normalization,compared,include_total)
         panels = PANELS if quantity == 0 else [(QUANTITIES[quantity][0],QUANTITIES[quantity][1])]
         axes = figure.subplots(len(panels),1,sharex=True,squeeze=False).ravel();e = r['spectra']['energy_ev']
         for ax,(title,curves) in zip(axes,panels):
             for item in series:
                 group_index = list(r['groups']).index(item['groups'][0]) if item['groups'] else 0
-                group_color = colormaps['tab10'](group_index%10) if len(series)>1 else None
+                group_color = ('black' if item['normalization']=='total' else colormaps['tab10'](group_index%10)) if len(series)>1 else None
                 for index,(key,label) in enumerate(curves):
                     color = group_color
-                    prefix = '' if item['normalization']=='total' else item['label']+' | '
+                    prefix = '' if item['normalization']=='total' and len(series)==1 else item['label']+' | '
                     drawn = False
                     for mask in covered_segments(r,e,item['groups']):
                         if not np.any(mask):continue
@@ -152,7 +156,7 @@ def draw_totals(figure, result, method, kind, choice, *, selection=('total',None
         figure.suptitle(f'{material(r)} | {method} | {names} | partial core-edge spectrum\n'+selection_description(r,series),fontsize=8)
     figure._emcd_display_metadata = dict(kind='multisite totals',normalization='per_incident_electron' if kind=='diffraction' else 'mean_per_selected_ionizing_atom',
         spectrum_kind='modeled_partial_core_edge_spectrum',method=method)
-    if kind=='eels':figure._emcd_display_metadata.update(selection=selection,quantity=QUANTITIES[quantity][0],
+    if kind=='eels':figure._emcd_display_metadata.update(selection=selection,quantity=QUANTITIES[quantity][0],include_total=include_total,
         group_ids=[item['groups'] for item in series],scales=[item['scale'] for item in series],
         normalization='mean_per_group_atom_nonadditive' if normalization=='mean' and selection[0] in ('group','compare') else 'fixed_total_selected_atom_denominator',
         selected_atom_count=sites['selected_atom_count'])
