@@ -26,6 +26,8 @@ class SiteGroupEditor(QtWidgets.QWidget):
         self._accepted_rows = ()
         self.dirty = False
         self._accepted_mode = 'global'
+        self.mdff_dialogs = {};self.energy_windows = {};self._mdff_status = {}
+        self._accepted_mdff = ({},{},{},{})
         layout = QtWidgets.QVBoxLayout(self)
         self.mode = QtWidgets.QComboBox()
         self.mode.addItems(['Global Magnetization Mode', 'Local Site Magnetization Mode'])
@@ -59,6 +61,11 @@ class SiteGroupEditor(QtWidgets.QWidget):
                 button = QtWidgets.QPushButton(label); row.addWidget(button); self.buttons[label] = button
                 button.clicked.connect(lambda checked=False, fn=action:self.run_action(fn))
         self.status = QtWidgets.QLabel('No site groups. Ordinary CIF viewing remains available.')
+        row = QtWidgets.QHBoxLayout();layout.addLayout(row)
+        configure = QtWidgets.QPushButton('Configure MDFF for Group…');row.addWidget(configure)
+        configure.clicked.connect(lambda:self.run_action(self.configure_mdff))
+        recheck = QtWidgets.QPushButton('Recheck sources');row.addWidget(recheck)
+        recheck.clicked.connect(self.recheck_mdff_sources)
         self.status.setWordWrap(True); layout.addWidget(self.status)
         self.atom_list.itemSelectionChanged.connect(self.emit_selection)
         self.filter.currentIndexChanged.connect(self.refresh_atoms)
@@ -94,8 +101,9 @@ class SiteGroupEditor(QtWidgets.QWidget):
         with QtCore.QSignalBlocker(self.groups):
             self.groups.clear()
             for name, element, indices, direction, reference in rows:
-                item = QtWidgets.QTreeWidgetItem([name, element, ', '.join(map(str,indices)),
-                    'Unconfigured' if reference is None else 'Reference supplied'])
+                row = (name,element,indices,direction,reference)
+                item = QtWidgets.QTreeWidgetItem([name, element, ', '.join(map(str,indices)),self.mdff_status(row)])
+                item.setToolTip(3,self._mdff_status.get(name,('',None,'No validated provider'))[2])
                 item.setData(0, ROLE, tuple(indices)); item.setData(1, ROLE, tuple(direction))
                 # A tuple keeps arbitrary Python references intact; a bare dict
                 # is otherwise converted to a copied QVariantMap by Qt.
@@ -111,6 +119,9 @@ class SiteGroupEditor(QtWidgets.QWidget):
         self.load_groups(groups)
 
     def load_groups(self, groups):
+        for dialog in self.mdff_dialogs.values():dialog.close();dialog.deleteLater()
+        self.mdff_dialogs = {};self.energy_windows = {};self._mdff_status = {}
+        self._accepted_mdff = ({},{},{},{})
         self.accepted_site_groups = groups
         self.preview_site_groups = groups
         self._accepted_rows = tuple((g.group_id,g.element,g.indices,g.magnetization,g.mdff_reference)
@@ -149,6 +160,9 @@ class SiteGroupEditor(QtWidgets.QWidget):
 
     def emit_selection(self):
         indices = self.selected_indices()
+        if indices:
+            assigned = [n for n,row in enumerate(self.rows()) if indices[-1] in row[2]]
+            if assigned:self.groups.setCurrentItem(self.groups.topLevelItem(assigned[0]))
         self.selection_text.setText('Selected: ' + ', '.join(f'{i} {self.atoms[i].symbol}' for i in indices)
                                    if indices else 'No atoms selected')
         self.selectionChanged.emit(indices)
@@ -202,6 +216,10 @@ class SiteGroupEditor(QtWidgets.QWidget):
         if current is not None and current < self.groups.topLevelItemCount():
             self.groups.setCurrentItem(self.groups.topLevelItem(current))
         self.update_status(); self.changed.emit()
+        by_name = {r[0]:r for r in rows}
+        for name,dialog in self.mdff_dialogs.items():
+            if name in by_name:dialog.set_context(by_name[name]);dialog.setEnabled(True)
+            else:dialog.hide();dialog.setEnabled(False)
 
     def create_group(self):
         indices = self.selected_indices()
@@ -229,8 +247,14 @@ class SiteGroupEditor(QtWidgets.QWidget):
 
     def rename_group(self):
         row = self.current_row(); rows = list(self.rows())
+        previous = rows[row][0]
         rows[row] = (self.name.text().strip(),) + rows[row][1:]
         self.replace_rows(rows,row)
+        name = rows[row][0]
+        for mapping in (self.mdff_dialogs,self.energy_windows,self._mdff_status):
+            if previous in mapping:mapping[name] = mapping.pop(previous)
+        if name in self.mdff_dialogs:
+            self.mdff_dialogs[name].set_context(rows[row]);self.mdff_dialogs[name].setEnabled(True)
 
     def update_direction(self):
         if self.magnetization_mode != 'local':raise ValueError('Enable Local Site Magnetization Mode to edit local directions')
@@ -257,23 +281,101 @@ class SiteGroupEditor(QtWidgets.QWidget):
         rows[row] = rows[row][:4] + (reference,)
         self.replace_rows(rows,row)
 
+    def mdff_status(self, row):
+        from .generalized_forward import ImportedSettings
+        if row[4] is None:return 'Incomplete'
+        if not isinstance(row[4],ImportedSettings):return 'Unvalidated reference'
+        context,reference,message = self._mdff_status.get(row[0],(None,None,''))
+        if context != row[1:4] or reference is not row[4]:return 'Needs validation'
+        return 'Configured and valid' if message == 'valid' else 'Invalid / stale'
+
+    def recheck_mdff_sources(self):
+        from .group_mdff import validate_group_reference
+        for row in self.rows():
+            if row[4] is None:continue
+            try:
+                validate_group_reference(row,window=self.energy_windows.get(row[0]));message = 'valid'
+            except Exception as exc:message = str(exc)
+            self._mdff_status[row[0]] = (row[1:4],row[4],message)
+        # Refresh status cells only: never reset atom selection or current group.
+        for i,row in enumerate(self.rows()):
+            item = self.groups.topLevelItem(i);item.setText(3,self.mdff_status(row))
+            item.setToolTip(3,self._mdff_status.get(row[0],('',None,''))[2])
+        self.update_status()
+
+    def configure_mdff(self):
+        from .group_mdff import GroupMDFFDialog
+        from .runtime import workspace
+        row = self.rows()[self.current_row()]
+        dialog = self.mdff_dialogs.get(row[0])
+        if dialog is None:
+            dialog = GroupMDFFDialog(row,getattr(self,'mdff_workspace',None) or workspace(),self)
+            dialog.commit = lambda cfg,window,d=dialog:self.accept_mdff(d,cfg,window)
+            self.mdff_dialogs[row[0]] = dialog
+        self.recheck_mdff_sources()
+        if self.mdff_status(row) == 'Invalid / stale':
+            dialog.status.setText('Invalid / stale source: '+self._mdff_status[row[0]][2])
+        dialog.open_draft(row)
+        return dialog
+
+    def accept_mdff(self, dialog, cfg, window):
+        from .group_mdff import validate_group_reference
+        row = next((r for r in self.rows() if r[0] == dialog.row[0]),None)
+        if row is None:raise ValueError('The site group was removed')
+        validate_group_reference(row,cfg,window)
+        self.energy_windows[row[0]] = window
+        self._mdff_status[row[0]] = (row[1:4],cfg,'valid')
+        self.set_mdff_reference(row[0],cfg)
+
+    @property
+    def validated_site_groups(self):
+        from .generalized_forward import ImportedSettings
+        from .group_mdff import validate_group_reference
+        rows = self.rows()
+        if not rows or any(not isinstance(r[4],ImportedSettings) for r in rows):return None
+        for row in rows:validate_group_reference(row,window=self.energy_windows.get(row[0]))
+        return self.check_rows(rows)
+
     def update_status(self):
         missing = sum(row[4] is None for row in self.rows())
         prefix = 'Unapplied edits. ' if self.dirty else 'Applied in memory. '
         mode = 'Local mode. ' if self.magnetization_mode == 'local' else 'Global mode; local directions inactive. '
+        invalid = sum(self.mdff_status(row) != 'Configured and valid' for row in self.rows())
         self.status.setText(mode + prefix + (f'{missing} unconfigured group(s): MDFF references required; configuration is not executable.'
-            if missing else ('References supplied; source and tensor-frame validation belongs to the MDFF interface.'
+            if missing else ((f'{invalid} invalid/unvalidated provider(s); not ready for calculation.' if invalid else 'All group providers configured and valid; GUI calculation integration is not available yet.')
                              if self.rows() else ('No local groups configured; local calculation unavailable.'
                                  if self.magnetization_mode == 'local' else 'No groups; ordinary CIF viewing.'))))
 
     def apply(self):
+        from .generalized_forward import ImportedSettings
+        from .group_mdff import validate_group_reference
+        for row in self.rows():
+            if isinstance(row[4],ImportedSettings):validate_group_reference(row,window=self.energy_windows.get(row[0]))
         model = self.check_rows(self.rows())
         self._accepted_rows = self.rows(); self.accepted_site_groups = self.preview_site_groups = model
         self._accepted_mode = self.magnetization_mode
+        names = {r[0] for r in self.rows()}
+        for name in list(self.mdff_dialogs):
+            if name not in names:
+                dialog = self.mdff_dialogs.pop(name);dialog.close();dialog.deleteLater()
+                self.energy_windows.pop(name,None);self._mdff_status.pop(name,None)
+        self._accepted_mdff = (dict(self.mdff_dialogs),dict(self.energy_windows),dict(self._mdff_status),
+                              {name:dialog.snapshot() for name,dialog in self.mdff_dialogs.items()})
         self.dirty = False; self.update_status(); self.applied.emit(model)
         return model
 
     def cancel(self):
+        dialogs,windows,status,snapshots = self._accepted_mdff
+        for dialog in self.mdff_dialogs.values():
+            dialog.hide()
+            if dialog not in dialogs.values():dialog.deleteLater()
+        self.mdff_dialogs = dict(dialogs);self.energy_windows = dict(windows);self._mdff_status = dict(status)
+        for name,dialog in self.mdff_dialogs.items():
+            dialog.restore_snapshot(snapshots[name])
+            row = next((r for r in self._accepted_rows if r[0] == name),None)
+            if row is not None:
+                dialog.set_context(row);dialog.reference = row[4]
+                dialog.window = windows.get(name);dialog.setEnabled(True)
         self.preview_site_groups = self.accepted_site_groups
         self.restore_rows(self._accepted_rows); self.dirty = False
         self.mode.setCurrentIndex(int(self._accepted_mode == 'local'))

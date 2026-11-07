@@ -197,6 +197,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         display_scroll = QtWidgets.QScrollArea(); display_scroll.setWidgetResizable(True); display_scroll.setWidget(panel)
         self.tabs.addTab(display_scroll, 'Display / atom info')
         self.editor = SiteGroupEditor()
+        if getattr(parent,'workspace',None) is not None:self.editor.mdff_workspace = parent.workspace
         self.tabs.addTab(self.editor, 'Site groups')
         splitter.setSizes([850, 350])
         self.style = QtWidgets.QComboBox(); self.style.addItems(['Ball and stick', 'Space filling'])
