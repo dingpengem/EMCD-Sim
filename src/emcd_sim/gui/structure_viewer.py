@@ -4,10 +4,11 @@ Scene geometry is independent of the camera and painting, leaving a narrow
 place for future per-site visuals without involving scientific calculations.
 """
 from copy import deepcopy
+from html import escape
 import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from .structure_scene import build_scene, cell_segments
+from .structure_scene import build_scene, cell_segments, site_group_color
 
 
 def rotation(axis, degrees):
@@ -27,6 +28,8 @@ class CrystalCanvas(QtWidgets.QWidget):
         self.scene = None
         self.space_filling = False
         self.show_bonds = self.show_cell = self.show_axes = True
+        self.group_coloring = self.show_magnetization = False
+        self.highlight_group = -1
         self._press = self._last = None
         self._dragged = False
         self.reset_camera()
@@ -71,6 +74,14 @@ class CrystalCanvas(QtWidgets.QWidget):
             if np.sum((xy[i]-point)**2) <= radii[i]**2:return int(i)
         return None
 
+    def magnetic_segments(self):
+        """Equal-length Cartesian directions, never fractional lattice vectors."""
+        scene = self.scene
+        selected = np.flatnonzero(scene.group_indices >= 0)
+        length = 2.2 * float(scene.space_radii.max()) if len(scene.positions) else 1.
+        starts = scene.positions[selected]
+        return selected, np.stack((starts, starts + length * scene.directions[selected]), axis=1)
+
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
         painter.fillRect(self.rect(), QtGui.QColor('#f3f6fa'))
@@ -96,12 +107,30 @@ class CrystalCanvas(QtWidgets.QWidget):
         for i in np.argsort(depth, kind='stable'):
             x, y = xy[i]; radius = radii[i]
             if x+radius<0 or y+radius<0 or x-radius>self.width() or y-radius>self.height():continue
-            color = QtGui.QColor.fromRgbF(*map(float, scene.colors[i]))
+            colors = scene.group_colors if self.group_coloring else scene.colors
+            color = QtGui.QColor.fromRgbF(*map(float, colors[i]))
             gradient = QtGui.QRadialGradient(QtCore.QPointF(x-radius*.3, y-radius*.3), radius*1.4)
             gradient.setColorAt(0, color.lighter(160)); gradient.setColorAt(.55, color)
             gradient.setColorAt(1, color.darker(175))
             painter.setBrush(QtGui.QBrush(gradient)); painter.setPen(QtGui.QPen(color.darker(160), .6))
             painter.drawEllipse(QtCore.QPointF(x, y), radius, radius)
+            if self.highlight_group >= 0 and scene.group_indices[i] == self.highlight_group:
+                painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
+                painter.setPen(QtGui.QPen(QtGui.QColor('#121c30'), 2.5))
+                painter.drawEllipse(QtCore.QPointF(x, y), radius+3, radius+3)
+        if self.show_magnetization:
+            selected, segments = self.magnetic_segments()
+            projected, _, _ = self.project(segments)
+            for i, segment in zip(selected, projected):
+                start, end = segment; delta = end-start; length = np.linalg.norm(delta)
+                if length < 1:continue  # Direction is nearly along the viewing axis.
+                unit = delta/length; side = np.array([-unit[1], unit[0]])
+                color = QtGui.QColor.fromRgbF(*map(float, scene.group_colors[i])).darker(125)
+                painter.setPen(QtGui.QPen(color, 2.5)); painter.setBrush(color)
+                painter.drawLine(QtCore.QPointF(*start), QtCore.QPointF(*end))
+                head = min(11., length*.35)
+                painter.drawPolygon(QtGui.QPolygonF([QtCore.QPointF(*p) for p in
+                    (end, end-head*unit+.45*head*side, end-head*unit-.45*head*side)]))
         if self.show_axes:
             projected, _, _ = self.project(np.vstack((np.zeros(3), scene.cell)))
             for i, (label, color) in enumerate(zip('abc', ('#be3030', '#21824c', '#285ec2')), 1):
@@ -145,6 +174,8 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowType.WindowMinMaxButtonsHint)
         self.resize(1200, 780); self.setMinimumSize(750, 480)
         self._source = None; self._atoms = None
+        self._site_groups = None
+        self._assignment_notice = ''
         layout = QtWidgets.QVBoxLayout(self)
         self.summary = QtWidgets.QLabel(); self.summary.setWordWrap(True); layout.addWidget(self.summary)
         splitter = QtWidgets.QSplitter(); layout.addWidget(splitter, 1)
@@ -154,6 +185,18 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.style = QtWidgets.QComboBox(); self.style.addItems(['Ball and stick', 'Space filling'])
         form = QtWidgets.QFormLayout(); form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapAllRows)
         controls.addLayout(form); form.addRow('Atom style', self.style)
+        self.color_mode = QtWidgets.QComboBox()
+        self.color_mode.addItems(['Element Colors', 'Site Group Colors'])
+        form.addRow('Atom colors', self.color_mode)
+        self.color_mode.currentIndexChanged.connect(self.color_mode_changed)
+        self.magnetic_arrows = QtWidgets.QCheckBox('Magnetic directions (equal-length arrows)')
+        controls.addWidget(self.magnetic_arrows)
+        self.magnetic_arrows.toggled.connect(lambda checked:self.display_option('show_magnetization', checked))
+        direction_note = QtWidgets.QLabel('Declared crystal Cartesian directions only; arrow length is not a magnetic-moment magnitude. Arrows are drawn over atoms for visibility.')
+        direction_note.setWordWrap(True); controls.addWidget(direction_note)
+        self.group_list = QtWidgets.QListWidget(); self.group_list.setMaximumHeight(95)
+        controls.addWidget(self.group_list)
+        self.group_list.currentRowChanged.connect(self.select_group)
         repeats = QtWidgets.QWidget(); row = QtWidgets.QHBoxLayout(repeats); row.setContentsMargins(0, 0, 0, 0)
         self.repeats = []
         for label in 'abc':
@@ -188,8 +231,31 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         if not force and structure is self._source:return
         self._source = structure
         atoms = getattr(structure, 'atoms', structure)
+        self._assignment_notice = ''
+        if self._site_groups is not None:
+            try:self._site_groups.validate_structure(atoms)
+            except ValueError:
+                self._site_groups = None
+                self._assignment_notice = 'Site-group overlay cleared: assignments do not match the current structure.'
         self._atoms = atoms.copy(); self._atoms.info = deepcopy(atoms.info)
         self.atom_info.clear()
+        self.rebuild()
+
+    def set_site_groups(self, site_groups=None):
+        """Read-only optional MultiSiteIonization input; no provider loading.
+
+        Call after set_structure. None restores ordinary structural display.
+        Invalid assignments leave the currently displayed configuration intact.
+        """
+        if self._atoms is None:
+            raise ValueError('Set the displayed structure before site groups')
+        from ..multisite import MultiSiteIonization
+        if site_groups is not None:
+            if not isinstance(site_groups, MultiSiteIonization):
+                raise TypeError('Expected MultiSiteIonization or None')
+            site_groups.validate_structure(self._atoms)
+        self._site_groups = site_groups
+        self._assignment_notice = ''
         self.rebuild()
 
     def set_repetitions(self, repetitions):
@@ -199,13 +265,47 @@ class CrystalStructureDialog(QtWidgets.QDialog):
 
     def rebuild(self, *_):
         if self._atoms is None:return
-        try:scene = build_scene(self._atoms, tuple(box.value() for box in self.repeats))
+        try:scene = build_scene(self._atoms, tuple(box.value() for box in self.repeats), self._site_groups)
         except ValueError as exc:
             self.view.scene = None; self.view.update(); self.notice.setText(str(exc)); return
         self.view.set_scene(scene); self.atom_info.clear()
         self.summary.setText(f'{self._atoms.get_chemical_formula()} · {len(self._atoms)} original ASE atoms · '
                              f'{len(scene.positions)} displayed atoms · repetitions {scene.repetitions}')
-        self.notice.setText('\n'.join(scene.notices) + ('\n'+self._source.import_warnings if getattr(self._source, 'import_warnings', '') else ''))
+        self.notice.setText('\n'.join(scene.notices) + ('\n'+self._source.import_warnings if getattr(self._source, 'import_warnings', '') else '') + '\n' + self._assignment_notice)
+        self.group_list.clear(); self.view.highlight_group = -1
+        if self._site_groups is not None:
+            self.group_list.addItem('All groups / no highlight')
+            for number, group in enumerate(self._site_groups.groups):
+                item = QtWidgets.QListWidgetItem(f'{group.group_id} ({group.element}, {group.multiplicity} atoms)')
+                color = QtGui.QColor.fromRgbF(*site_group_color(number))
+                icon = QtGui.QPixmap(14,14); icon.fill(color); item.setIcon(QtGui.QIcon(icon))
+                self.group_list.addItem(item)
+            self.group_list.setCurrentRow(0)
+        self.group_list.setVisible(self._site_groups is not None)
+        if self._site_groups is None:
+            self.color_mode.setCurrentIndex(0)
+            self.magnetic_arrows.setChecked(False)
+        self.color_mode.setEnabled(self._site_groups is not None)
+        self.magnetic_arrows.setEnabled(self._site_groups is not None)
+        self.update_legend()
+
+    def select_group(self, row):
+        self.view.highlight_group = row-1 if row > 0 else -1
+        self.view.update()
+
+    def color_mode_changed(self, index):
+        self.view.group_coloring = index == 1
+        self.update_legend(); self.view.update()
+
+    def update_legend(self):
+        scene = self.view.scene
+        if scene is None:return
+        if self.color_mode.currentIndex() == 1 and scene.site_groups is not None:
+            entries = [(group.group_id, QtGui.QColor.fromRgbF(*site_group_color(n)).name())
+                       for n, group in enumerate(scene.site_groups.groups)]
+            entries.append(('Unassigned / non-ionizing', '#a6a6a6'))
+            self.legend.setText(' · '.join(f'<span style="color:{color}">●</span> {escape(label)}' for label,color in entries))
+            return
         colors = {symbol:QtGui.QColor.fromRgbF(*map(float, color)).name() for symbol, color in zip(scene.symbols, scene.colors)}
         self.legend.setText(' · '.join(f'<span style="color:{color}">●</span> {symbol}' for symbol, color in sorted(colors.items())))
 
@@ -220,10 +320,16 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         if scene is None or not 0 <= i < len(scene.positions):return
         vector = lambda values:' '.join(f'{value:.8g}' for value in values)
         occupancy = scene.occupancies[i]
+        number = scene.group_indices[i]
+        group = scene.site_groups.groups[number] if number >= 0 else None
+        assignment = (f'\nSelected ionizing group: Yes\nSite-group ID / label: {group.group_id}\n'
+            f'Declared magnetization (crystal Cartesian unit vector): {vector(group.magnetization)}\n'
+            f'MDFF provider reference: {str(group.mdff_reference)[:300]}' if group is not None
+            else '\nSelected ionizing group: No (unassigned)')
         self.atom_info.setPlainText(
             f'Element: {scene.symbols[i]}\nOriginal ASE index (zero-based): {scene.indices[i]}\n'
             f'Unit-cell fractional coordinates: {vector(scene.fractional[i])}\n'
             f'Original Cartesian coordinates (Å): {vector(scene.original_positions[i])}\n'
             f'Replica translation (a,b,c): {tuple(int(n) for n in scene.offsets[i])}\n'
             f'Displayed Cartesian coordinates (Å): {vector(scene.positions[i])}\n'
-            f'Occupancy metadata: {occupancy if occupancy else "Not supplied; none inferred"}')
+            f'Occupancy metadata: {occupancy if occupancy else "Not supplied; none inferred"}' + assignment)

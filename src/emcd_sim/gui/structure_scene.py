@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from itertools import product
 from copy import deepcopy
+import colorsys
 
 import numpy as np
 from ase import Atoms
@@ -53,9 +54,19 @@ class CrystalScene:
     repetitions: tuple
     requested_count: int
     notices: tuple
+    site_groups: object
+    group_indices: np.ndarray
+    group_colors: np.ndarray
+    directions: np.ndarray
 
 
-def build_scene(atoms, repetitions=(1, 1, 1)):
+def build_scene(atoms, repetitions=(1, 1, 1), site_groups=None):
+    """Optionally project an existing MultiSiteIonization onto display replicas."""
+    if site_groups is not None:
+        from ..multisite import MultiSiteIonization
+        if not isinstance(site_groups, MultiSiteIonization):
+            raise TypeError('Expected MultiSiteIonization or None')
+        site_groups.validate_structure(atoms)
     reps = tuple(repetitions)
     if len(reps) != 3 or any(type(n) is not int or not 1 <= n <= 4 for n in reps):
         raise ValueError('Display repetitions must be three integers from 1 to 4')
@@ -97,7 +108,22 @@ def build_scene(atoms, repetitions=(1, 1, 1)):
         notices.append('Spheres show ASE representative elements. Mixed/partial occupancies are metadata, not additional atoms; discarded CIF species cannot be reconstructed.')
     else:
         notices.append('Occupancies were not supplied; no occupancy, magnetic state or oxidation state is inferred.')
+    assignments = np.full(len(atoms), -1, int)
+    group_colors = np.full((len(atoms), 3), .65)
+    directions = np.zeros((len(atoms), 3))
+    if site_groups is not None:
+        for number, group in enumerate(site_groups.groups):
+            selected = list(group.indices)
+            assignments[selected] = number
+            group_colors[selected] = site_group_color(number)
+            directions[selected] = group.magnetization
     return CrystalScene(cell, rendered.copy(), atoms.get_scaled_positions(wrap=False)[indices].copy(),
         positions[indices].copy(), indices.copy(), offsets.copy(), symbols, colors,
         .35 * covalent, space, tuple(occupancy_record(atoms, int(i)) for i in indices),
-        bonds, reps, count, tuple(notices))
+        bonds, reps, count, tuple(notices), site_groups, assignments[indices],
+        group_colors[indices], directions[indices])
+
+
+def site_group_color(number):
+    """Stable contrasting hues in declaration order; gray denotes unassigned."""
+    return colorsys.hsv_to_rgb((.02 + number * .381966) % 1, .72, .82)

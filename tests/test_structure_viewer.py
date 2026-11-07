@@ -17,6 +17,7 @@ from PySide6 import QtCore, QtGui, QtWidgets, QtTest
 from emcd_sim.gui.geometry import Structure
 from emcd_sim.gui.structure_scene import build_scene, cell_segments, MAX_ATOMS
 from emcd_sim.gui.structure_viewer import CrystalStructureDialog
+from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 
 
 @pytest.fixture(scope='module')
@@ -219,5 +220,137 @@ def test_native_windows_interaction(app):
         assert QtTest.QTest.qWaitForWindowExposed(dialog.windowHandle(),3000)
         assert all(box.width()>=box.sizeHint().width() for box in dialog.repeats)
         assert dialog.isVisible()
+        if os.environ.get('EMCD_VIEWER_CHECK_IMAGE'):dialog.grab().save(os.environ['EMCD_VIEWER_CHECK_IMAGE'])
+    finally:dialog.close();app.processEvents()
+
+
+def magnetic_example(kind):
+    if kind == 'Ni':
+        atoms = bulk('Ni', 'fcc', a=3.524, cubic=True)
+        specs = [('Ni', 'Ni', tuple(range(len(atoms))), (0,0,1))]
+    elif kind == 'Cr':
+        atoms = bulk('Cr', 'bcc', a=2.88, cubic=True)
+        specs = [('Cr-up','Cr',(0,),(0,0,1)), ('Cr-down','Cr',(1,),(0,0,-1))]
+    elif kind == 'Fe3O4':
+        atoms = Atoms('Fe3O4', scaled_positions=[(i/7,(i*.23)%1,(i*.37)%1) for i in range(7)], cell=[8]*3,pbc=True)
+        specs = [('Fe(A)','Fe',(0,),(0,0,-1)), ('Fe(B)','Fe',(1,2),(0,0,1))]
+    else:
+        atoms = Atoms('Fe3O', scaled_positions=[[.15,.2,.2],[.55,.25,.3],[.3,.65,.55],[.7,.7,.8]],
+                      cell=Cell.fromcellpar([5,6,7,78,101,112]),pbc=True)
+        specs = [('Fe-x','Fe',(0,),(1,0,0)), ('Fe-y','Fe',(1,),(0,1,0)),
+                 ('Fe-diagonal','Fe',(2,),(1,-2,3))]
+    groups = MultiSiteIonization(atoms, [IonizationSiteGroup(name,symbol,indices,
+        f'declared:{name}',direction,len(indices)) for name,symbol,indices,direction in specs])
+    return atoms, groups
+
+
+@pytest.mark.parametrize('kind',['Ni','Cr','Fe3O4','noncollinear'])
+def test_group_scene_replica_mapping_directions_and_immutability(kind):
+    atoms, groups = magnetic_example(kind)
+    original = atoms.copy(); metadata = deepcopy(atoms.info)
+    scene = build_scene(atoms,(2,2,2),groups)
+    assert scene.site_groups is groups
+    for i, original_index in enumerate(scene.indices):
+        expected = next((n for n,g in enumerate(groups.groups) if original_index in g.indices),-1)
+        assert scene.group_indices[i] == expected
+        if expected >= 0:
+            np.testing.assert_allclose(scene.directions[i],groups.groups[expected].magnetization)
+            np.testing.assert_allclose(scene.group_colors[i],scene.group_colors[original_index])
+        else:
+            np.testing.assert_array_equal(scene.directions[i],0)
+            np.testing.assert_allclose(scene.group_colors[i],.65)
+    assert len({tuple(scene.group_colors[g.indices[0]]) for g in groups.groups}) == len(groups.groups)
+    assert atoms == original and atoms.info == metadata
+    groups.validate_structure(atoms)
+
+
+def exercise_magnetic_dialog(dialog,app):
+    atoms, groups = magnetic_example('noncollinear')
+    original = atoms.copy()
+    dialog.set_structure(atoms); dialog.set_site_groups(groups)
+    dialog.show();app.processEvents()
+    assert dialog.color_mode.currentText() == 'Element Colors'
+    dialog.color_mode.setCurrentIndex(1)
+    assert dialog.view.group_coloring
+    assert 'Unassigned' in dialog.legend.text() and 'Fe-diagonal' in dialog.legend.text()
+    dialog.magnetic_arrows.setChecked(True)
+    assert dialog.view.show_magnetization
+    dialog.set_repetitions((2,2,2));app.processEvents()
+    scene = dialog.view.scene
+    selected,segments = dialog.view.magnetic_segments()
+    directions = segments[:,1]-segments[:,0]
+    lengths = np.linalg.norm(directions,axis=1)
+    np.testing.assert_allclose(lengths,lengths[0])
+    np.testing.assert_allclose(directions/lengths[:,None],scene.directions[selected],atol=1e-15)
+    # Camera transformation acts on Cartesian directions, not skew cell vectors.
+    dialog.view.orientation = np.eye(3)
+    projected,_,_ = dialog.view.project(segments)
+    dx = projected[:,1]-projected[:,0]
+    assert dx[0,0] > 0 and abs(dx[0,1]) < 1e-10  # +Cartesian x -> right
+    assert dx[1,1] < 0 and abs(dx[1,0]) < 1e-10  # +Cartesian y -> up
+    dialog.group_list.setCurrentRow(2)
+    assert dialog.view.highlight_group == 1
+    dialog.inspect_atom(len(atoms)+1)
+    text = dialog.atom_info.toPlainText()
+    assert 'Fe-y' in text and 'declared:Fe-y' in text and 'Selected ionizing group: Yes' in text
+    assert 'Replica translation (a,b,c): (0, 0, 1)' in text
+    dialog.inspect_atom(3)
+    assert 'Selected ionizing group: No' in dialog.atom_info.toPlainText()
+    dialog.color_mode.setCurrentIndex(0)
+    assert not dialog.view.group_coloring and 'O' in dialog.legend.text()
+    dialog.color_mode.setCurrentIndex(1)
+    dialog.magnetic_arrows.setChecked(False);assert not dialog.view.show_magnetization
+    dialog.magnetic_arrows.setChecked(True)
+    dialog.view.reset_camera();app.processEvents()
+    assert atoms == original
+    groups.validate_structure(atoms)
+    return atoms,groups
+
+
+def test_magnetic_dialog_colors_arrows_selection_and_replacement(app):
+    dialog = CrystalStructureDialog()
+    try:
+        atoms,groups = exercise_magnetic_dialog(dialog,app)
+        dialog.close();dialog.show();app.processEvents()
+        assert dialog.view.scene.site_groups is groups
+        # Failed optional input must not corrupt the current scene.
+        incompatible = atoms.copy();incompatible.positions[0,0] += .1
+        wrong = MultiSiteIonization(incompatible,groups.groups)
+        with pytest.raises(ValueError):dialog.set_site_groups(wrong)
+        assert dialog.view.scene.site_groups is groups
+        with pytest.raises(TypeError):dialog.set_site_groups(groups.groups)
+        dialog.set_structure(bulk('Ni','fcc',a=3.52,cubic=True))
+        assert dialog.view.scene.site_groups is None
+        assert not dialog.color_mode.isEnabled() and not dialog.magnetic_arrows.isChecked()
+        assert 'overlay cleared' in dialog.notice.text()
+        assert dialog.color_mode.currentIndex() == 0
+        dialog.set_site_groups(None)
+        assert dialog.view.scene.site_groups is None
+    finally:dialog.close();app.processEvents()
+
+
+def test_antiparallel_arrows_and_general_structure_without_inference(app):
+    atoms,groups = magnetic_example('Cr')
+    dialog = CrystalStructureDialog()
+    try:
+        dialog.set_structure(atoms)
+        assert not np.any(dialog.view.scene.directions)
+        assert not dialog.magnetic_arrows.isEnabled()
+        dialog.set_site_groups(groups)
+        selected,segments = dialog.view.magnetic_segments()
+        np.testing.assert_allclose(segments[0,1]-segments[0,0],-(segments[1,1]-segments[1,0]))
+        dialog.set_site_groups(None)
+        assert not np.any(dialog.view.scene.directions)
+    finally:dialog.close()
+
+
+@pytest.mark.skipif(sys.platform!='win32' or os.environ.get('QT_QPA_PLATFORM')!='windows',reason='Explicit native Windows GUI check')
+def test_native_windows_magnetic_interaction(app):
+    assert app.platformName() == 'windows'
+    dialog = CrystalStructureDialog()
+    try:
+        exercise_magnetic_dialog(dialog,app)
+        assert QtTest.QTest.qWaitForWindowExposed(dialog.windowHandle(),3000)
+        assert dialog.group_list.isVisible() and dialog.magnetic_arrows.isVisible()
         if os.environ.get('EMCD_VIEWER_CHECK_IMAGE'):dialog.grab().save(os.environ['EMCD_VIEWER_CHECK_IMAGE'])
     finally:dialog.close();app.processEvents()
