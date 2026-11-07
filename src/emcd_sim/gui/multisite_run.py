@@ -44,23 +44,28 @@ def applied_inputs(window, cfg):
     sites = MultiSiteIonization(window.structure,[replace(g,mdff_reference=deepcopy(g.mdff_reference)) for g in sites.groups])
     from ..mdff_providers import load_site_group_provider
     windows = {};selections = []
+    requested=getattr(editor,'requested_energy_ev',None)
+    if requested is not None and getattr(editor,'_restored_energy_scope',cfg.energy_scope)!=cfg.energy_scope:requested=None
     for group in sites.groups:
+        if group.group_id in getattr(editor,'omitted_site_groups',set()):continue
         source = load_site_group_provider(group)
         declared = editor.energy_windows.get(group.group_id)
         bounds = declared.bounds_ev if declared is not None else tuple(source.energy_ev[[0,-1]])
         selected = [(key,float(value)) for key,value in source.metadata['selected_ev'].items() if bounds[0]<=value<=bounds[1]]
+        if requested is not None:selected=[(key,value) for key,value in selected if np.any(np.isclose(requested,value,rtol=0,atol=1e-9))]
         if cfg.energy_scope == 'edges':
             if not selected:raise ValueError('No selected core-edge energies in the modeled window for '+group.group_id+'; use Full spectrum or edit its window')
             samples = [value for _,value in selected]
         else:
-            samples = (declared.energy_ev if declared is not None and declared.energy_ev is not None
+            samples = (np.asarray(requested)[(np.asarray(requested)>=bounds[0])&(np.asarray(requested)<=bounds[1])] if requested is not None else
+                       declared.energy_ev if declared is not None and declared.energy_ev is not None
                        else source.energy_ev[(source.energy_ev>=bounds[0]) & (source.energy_ev<=bounds[1])])
             # Exact source selections are needed by the existing angular-map controls.
             samples = np.r_[samples,[value for _,value in selected]]
         samples = tuple(np.unique(samples))
         windows[group.group_id] = ModeledEdgeWindow(bounds,samples)
         selections.extend((group.group_id+':'+key,value) for key,value in selected)
-    plan = prepare_multisite_spectrum(sites,energy_windows=windows)
+    plan = prepare_multisite_spectrum(sites,energy_ev=requested,energy_windows=windows)
     if plan['energy_ev'][-1] >= 1000*window.settings().voltage:raise ValueError('Require energy losses below incident energy')
     if not selections:selections=[(f'E={loss:g}eV',float(loss)) for loss in np.unique(plan['energy_ev'][[0,-1]])]
     cfg = replace(cfg,energy_points=len(plan['energy_ev']),selected_edges=tuple(selections))

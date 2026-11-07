@@ -6,9 +6,9 @@ import json,os,uuid,logging
 import numpy as np
 from PySide6 import QtCore,QtWidgets,QtGui
 from .project_io import load_project,save_project,source_status,sha256,restore_structure,rerun_reason
-from .compare_results import CompareResults
 from .emcd_forward import Cancelled,inspect_source
 from .results import comparison_text
+from .project_session import ProjectSession
 
 
 def default_workspace():
@@ -32,7 +32,7 @@ class Registry:
         if existing:
             existing.update(channeling_model=result['config'].channeling_model,propagation=result['config'].propagation)
             self.persist();return existing
-        s=result['settings'];cfg=result['config'];stamp=(result.get('project_manifest') or {}).get('created_utc',datetime.now(timezone.utc).isoformat())
+        s=result['settings'];cfg=result['config'];stamp=result.get('metadata',{}).get('calculation_utc','')
         element=getattr(cfg,'ionizing_element','Ni')
         if cfg.model=='multisite':
             from .multisite_results import material
@@ -42,7 +42,7 @@ class Registry:
         self.records.append(record);self.persist();return record
     def remove(self,id):self.records=[r for r in self.records if r['id']!=id];self.persist()
     def rename(self,id,name):
-        next(r for r in self.records if r['id']==id)['name']=name;self.persist()
+        record=next(r for r in self.records if r['id']==id);record['name']=name;record['custom_name']=True;self.persist()
 
 
 class IOWorker(QtCore.QThread):
@@ -63,37 +63,39 @@ from .responsive import FlowLayout
 
 class ResultsBrowser(QtWidgets.QWidget):
     def __init__(self,owner,index):
-        super().__init__();self.owner=owner;self.registry=index;self.cache={};layout=QtWidgets.QVBoxLayout(self);row=FlowLayout();layout.addLayout(row)
+        super().__init__();self.owner=owner;self.registry=index;self.cache={};layout=QtWidgets.QVBoxLayout(self);row=QtWidgets.QHBoxLayout();layout.addLayout(row)
         self.filter=QtWidgets.QLineEdit();self.filter.setPlaceholderText('Filter material, zone, MDFF, method or name');row.addWidget(self.filter)
         self.action_buttons=[];self.more=QtWidgets.QToolButton();self.more.setText('More actions');self.more.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.InstantPopup);menu=QtWidgets.QMenu(self.more);self.more.setMenu(menu)
-        for title,callback in [('Import Result',owner.import_result_dialog),('Open Folder',self.open_folder),('View Selected',self.view),('Compare Selected',owner.compare_selected),('Use These Settings',owner.use_result_settings),('Details',self.details),('Rename',self.rename),('Locate Project',self.locate),('Remove From Browser',self.remove)]:
+        for title,callback in [('View Results',self.view),('Restore Settings from Selected Run…',owner.use_result_settings),('Delete Selected Calculation…',owner.delete_selected_calculation)]:
             b=QtWidgets.QPushButton(title);b.clicked.connect(callback);row.addWidget(b);self.action_buttons.append(b)
-            action=menu.addAction(title);action.triggered.connect(callback)
         row.addWidget(self.more);self.more.hide()
+        for title,callback in [('Import Existing Result…',owner.import_result_dialog),('Open Folder',self.open_folder),('Details',self.details),('Rename Run…',self.rename),('Locate Original Source…',owner.locate_source),('Clear Display',owner.clear_selected)]:
+            menu.addAction(title,callback)
         self.table=QtWidgets.QTableWidget(0,11);self.table.setHorizontalHeaderLabels(['Run name','Date (Los Angeles)','Material','Zone','Target','Tilt X (mrad)','Tilt Y (mrad)','Thickness (nm)','MDFF','Method','Status'])
         self.table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows);self.table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection);self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSortingEnabled(True);layout.addWidget(self.table);self.filter.textChanged.connect(self.refresh);self.table.cellDoubleClicked.connect(lambda *_:self.view());self.refresh()
+        self.table.setMinimumHeight(96)
         self.selection_timer=QtCore.QTimer(self);self.selection_timer.setSingleShot(True);self.selection_timer.setInterval(250)
         self.table.itemSelectionChanged.connect(lambda:self.selection_timer.start());self.selection_timer.timeout.connect(self.auto_view)
     def set_compact(self,compact):
-        for button in self.action_buttons:button.setVisible(not compact or button.text() in ('View Selected','Use These Settings'))
-        self.more.setVisible(compact)
+        for button in self.action_buttons:button.setVisible(True)
+        self.more.setVisible(True)
         self.table.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Ignored if compact else QtWidgets.QSizePolicy.Policy.Expanding)
     def auto_view(self):
         rows=self.selected()
         if not self.owner.busy and len(rows)==1 and (not self.owner.selected_record or rows[0]['id']!=self.owner.selected_record['id']):self.view()
     def selected(self):
         ids=[self.table.item(i,0).data(QtCore.Qt.ItemDataRole.UserRole) for i in sorted({x.row() for x in self.table.selectedIndexes()})]
-        return [next(r for r in self.registry.records if r['id']==id) for id in ids]
+        return [r for identity in ids for r in self.registry.records if r['id']==identity]
     def refresh(self,*_):
         selected={r['id'] for r in self.selected()} if self.table.rowCount() else set();self.table.setSortingEnabled(False)
         rows=[r for r in self.registry.records if self.filter.text().lower() in json.dumps(r).lower()];self.table.setRowCount(len(rows))
         for i,r in enumerate(rows):
-            available=bool(r.get('path') and Path(r['path']).is_dir());status='Unsaved session' if not r.get('path') else (('Legacy (read-only)' if r.get('legacy') else 'Available') if available else 'Unavailable - locate folder')
+            available=bool(r.get('path') and Path(r['path']).is_dir());status='Unsaved calculation' if r.get('pending') else 'Unsaved session' if not r.get('path') else (('Legacy (read-only)' if r.get('legacy') else 'Available') if available else 'Unavailable - locate folder')
             stamp=QtCore.QDateTime.fromString(r['created_utc'],QtCore.Qt.DateFormat.ISODateWithMs)
             if not stamp.isValid():stamp=QtCore.QDateTime.fromString(r['created_utc'],QtCore.Qt.DateFormat.ISODate)
             date=stamp.toTimeZone(QtCore.QTimeZone(b'America/Los_Angeles')).toString('yyyy-MM-dd HH:mm:ss')
-            values=(r['name'],date,r['material'],str(r['zone']),str(r['target']),r['tx'],r['ty'],r['thickness'],r['model'],r.get('channeling_model','single').title()+' Channeling / '+r['propagation'],status)
+            values=('['+r['id'][:8]+'] '+r['name'],date,r['material'],str(r['zone']),str(r['target']),r['tx'],r['ty'],r['thickness'],r['model'],r.get('channeling_model','single').title()+' Channeling / '+r['propagation'],status)
             for j,value in enumerate(values):
                 item=QtWidgets.QTableWidgetItem();item.setData(QtCore.Qt.ItemDataRole.DisplayRole,value)
                 if j==0:item.setData(QtCore.Qt.ItemDataRole.UserRole,r['id'])
@@ -106,7 +108,7 @@ class ResultsBrowser(QtWidgets.QWidget):
             if self.table.item(i,0).data(QtCore.Qt.ItemDataRole.UserRole)==id:self.table.selectRow(i);break
     def register(self,result,path=None,name=None):
         record=self.registry.register(result,path,name)
-        self.cache[record['id']]=dict(result,project_path=record.get('path'),source_overrides=dict(record.get('source_overrides',{})))
+        self.cache[record['id']]=dict(result,project_path=record.get('path'),source_overrides=dict(record.get('source_overrides',{}),**result.get('source_overrides',{})))
         self.refresh();self.select_id(record['id']);return record
     def view(self):
         rows=self.selected()
@@ -122,9 +124,9 @@ class ResultsBrowser(QtWidgets.QWidget):
         if not rows:return
         name,ok=QtWidgets.QInputDialog.getText(self,'Rename display name','Display name (scientific metadata unchanged)',text=rows[0]['name'])
         if ok and name.strip():self.registry.rename(rows[0]['id'],name.strip());self.refresh()
+        if ok and name.strip():self.owner.mark_project_dirty()
     def remove(self):
-        for r in self.selected():self.registry.remove(r['id']);self.cache.pop(r['id'],None)
-        self.refresh()
+        self.owner.delete_selected_calculation()
     def locate(self):
         rows=self.selected()
         if not rows:return
@@ -138,7 +140,7 @@ class ResultsBrowser(QtWidgets.QWidget):
         dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Run details - immutable physical provenance');dialog.resize(850,650);layout=QtWidgets.QVBoxLayout(dialog);edit=QtWidgets.QPlainTextEdit(json.dumps(text,indent=2));edit.setReadOnly(True);layout.addWidget(edit);dialog.show();self.owner.dialogs.append(dialog)
 
 
-class ProjectWorkspace:
+class ProjectWorkspace(ProjectSession):
     project_ready=QtCore.Signal()
     def setup_stage_d(self,workspace=None):
         self.workspace=Path(workspace or default_workspace());self.workspace.mkdir(parents=True,exist_ok=True);self.selected_record=None;self._io_success=False;self._restoring=False;self.input_source_requirements=[]
@@ -148,17 +150,15 @@ class ProjectWorkspace:
         self.browser=ResultsBrowser(self,index);self.browser_dock=QtWidgets.QDockWidget('Results Browser',self);self.browser_dock.setObjectName('resultsBrowser');self.browser_dock.setWidget(self.browser);self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea,self.browser_dock);self.resizeDocks([self.browser_dock],[190],QtCore.Qt.Orientation.Vertical)
         from .runtime import LABEL
         self.setWindowTitle(LABEL)
-        file=self.menuBar().addMenu('File');results=self.menuBar().addMenu('Results');view=self.menuBar().addMenu('View')
-        for title,callback,shortcut in [('New',self.new_project,'Ctrl+N'),('Open Project...',self.open_project_dialog,'Ctrl+O'),('Save Project',self.save_project_action,'Ctrl+S'),('Save Project As...',lambda:self.save_project_action(save_as=True),'Ctrl+Shift+S')]:
+        file=self.menuBar().addMenu('File');results=self.menuBar().addMenu('Results')
+        for title,callback,shortcut in [('New Project',self.new_project,'Ctrl+N'),('Open Project…',self.open_project_dialog,'Ctrl+O'),('Save',self.save_project_action,'Ctrl+S'),('Save As…',lambda:self.save_project_action(save_as=True),'Ctrl+Shift+S'),('Close Project',self.close_project,'')]:
             action=file.addAction(title);action.triggered.connect(lambda checked=False,f=callback:f());action.setShortcut(shortcut)
-        file.addAction('Open Elastic Project...',self.open_elastic_project_dialog)
-        file.addAction('Save Elastic Project...',self.save_preview)
-        for title,callback in [('Import Existing Result',self.import_result_dialog),('Compare Selected Results',self.compare_selected),('Use These Settings',self.use_result_settings),('Locate Original Source...',self.locate_source),('Export Current Figure',self.export_current_figure),('Export Selected NPZ/CSV',self.export_selected_data),('Clear Current Selection',self.clear_selected)]:
+        self.toolbar.addAction('Open Elastic Project…',self.open_elastic_project_dialog);self.toolbar.addAction('Save Elastic Project…',self.save_preview)
+        for title,callback in [('Compare Calculations…',self.compare_selected),('Export Results…',self.export_selected_data)]:
             action=results.addAction(title);action.triggered.connect(lambda checked=False,f=callback:f())
-        view.addAction(self.browser_dock.toggleViewAction());view.addAction('Restore Default Layout',self.restore_layout)
-        toolbar=self.addToolBar('Projects');toolbar.setObjectName('projectsToolbar')
-        for title,callback in [('Open Project',self.open_project_dialog),('Save Project',self.save_project_action),('Use These Settings',self.use_result_settings),('Compare Results',self.compare_selected),('Export Figure',self.export_current_figure)]:
-            action=toolbar.addAction(title);action.triggered.connect(lambda checked=False,f=callback:f())
+        self.browser.more.menu().addAction('Restore Default Layout',self.restore_layout)
+        for widget in (self.eels_view,self.maps_view,self.diffraction_view,self.overview_view):
+            widget.navigation.addAction('Export Figure…',lambda checked=False,v=widget:self.export_figure_for(v.figure))
         value=self.ui_settings.value('geometry')
         if isinstance(value,QtCore.QByteArray):self.restoreGeometry(value)
         value=self.ui_settings.value('state')
@@ -174,8 +174,6 @@ class ProjectWorkspace:
         self.browser_dock.show()
         if hasattr(self,'responsive'):self.responsive.reset()
         else:self.splitter.setSizes([340,820,390]);self.result_sizes=None;self.saved_sizes=None;self.resizeDocks([self.browser_dock],[190],QtCore.Qt.Orientation.Vertical)
-    def register_completed(self,result):
-        if hasattr(self,'browser'):self.selected_record=self.browser.register(result)
     def display_saved_result(self,result,record=None):
         self.emcd_result=result;self.selected_record=record
         if hasattr(self,'sync_result_capabilities'):self.sync_result_capabilities(result)
@@ -206,6 +204,11 @@ class ProjectWorkspace:
         previous_result=self.emcd_result;previous_record=self.selected_record
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.emcd_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0);self._io_success=False
         self.browser.setEnabled(False)
+        dialogs=[getattr(self,'mdff_dialog',None),getattr(self,'structure_viewer',None)]
+        viewer=getattr(self,'structure_viewer',None)
+        if viewer is not None:dialogs.extend(viewer.editor.mdff_dialogs.values())
+        self._io_edit_dialogs=[(dialog,dialog.isEnabled()) for dialog in dialogs if dialog is not None]
+        for dialog,_ in self._io_edit_dialogs:dialog.setEnabled(False)
         self.worker=IOWorker(operation);self.worker.stage.connect(self.statusBar().showMessage)
         def success(value):
             if self.worker.isInterruptionRequested():return
@@ -215,9 +218,18 @@ class ProjectWorkspace:
             self._io_success=True;self.run_outcome='completed'
         self.worker.result.connect(success);self.worker.failed.connect(self.preview_failed);self.worker.finished.connect(self.io_finished);self.worker.start()
     def io_finished(self):
+        for dialog,enabled in getattr(self,'_io_edit_dialogs',[]):
+            try:dialog.setEnabled(enabled)
+            except RuntimeError:pass  # A restored editor may replace an old child dialog.
+        self._io_edit_dialogs=[]
         cancelled=self.worker.isInterruptionRequested();self.busy=False;self.inputs.setEnabled(True);self.browser.setEnabled(True);self.progress.setRange(0,1);self.progress.setValue(int(self._io_success and not cancelled));self.cancel_button.setEnabled(False);self.refresh();self.project_ready.emit()
         self.statusBar().showMessage('Project operation '+('cancelled; previous selected result preserved.' if cancelled else ('complete; no forward calculation.' if self._io_success else 'failed; previous result/project preserved.')))
-    def open_project_path(self,path,*,legacy=False,record=None,relocated=False):
+        if getattr(self,'_saving_project',False):
+            self._saving_project=False
+            callback=self._after_project_save;self._after_project_save=None
+            if not self._io_success or cancelled:self.set_project_status('Save Failed')
+            elif callback:QtCore.QTimer.singleShot(0,callback)
+    def _open_single_result_path(self,path,*,legacy=False,record=None,relocated=False):
         def loaded(result):
             # Loader-verified project attachments take precedence over browser
             # locations, which can be empty or stale after project relocation.
@@ -233,43 +245,16 @@ class ProjectWorkspace:
             if not record:
                 overrides=dict(row.get('source_overrides',{}),**overrides)
             self.browser.cache[row['id']]=result;result['source_overrides']=overrides;self.browser.refresh();self.browser.select_id(row['id']);self.display_saved_result(result,row)
+            if record is None:
+                self.project_dirty=True;self.set_project_status('Unsaved Changes' if self.active_project_path else 'Unsaved Project')
         self.io_operation(lambda cancel,progress:load_project(path,legacy=legacy,cancelled=cancel,progress=progress),loaded)
     def open_project_dialog(self):
         path=QtWidgets.QFileDialog.getExistingDirectory(self,'Open complete EMCD project folder')
         if path:self.open_project_path(path)
     def import_result_dialog(self):
         path=QtWidgets.QFileDialog.getExistingDirectory(self,'Import existing Stage B/C result (read only) or project')
-        if path:self.open_project_path(path,legacy=not (Path(path)/'project.json').exists())
-    def save_to_path(self,path,replace_existing=False):
-        if self.emcd_result is None:self.error('Select a completed result first.');return
-        r=self.emcd_result;origin_record=self.selected_record
-        view=self.eels_view;prb=view.prb_benchmark
-        r['display_state']=dict(signal_display_schema=2,component_diagnostic=view.component_diagnostic.currentData(),map_signal_mode=self.maps_view.component_mode.currentData(),component_mode=view.component_mode.currentData(),method=view.method.currentData(),zoom=view.choice.currentText(),
-            selection=prb.selection.currentData(),energy_ev=prb.energy.value(),locked=prb.fixed.isChecked(),advanced=view.advanced.isChecked())
-        def saved(root):
-            # Display registration identity is separate from the hashed data.
-            old=origin_record
-            if old and not old.get('path'):
-                old['path']=str(root);self.browser.registry.persist();row=old;self.browser.cache[row['id']]=r;self.browser.refresh()
-            else:row=self.browser.register(r,root)
-            r['project_path']=str(root);self.selected_record=row;self.browser.select_id(row['id'])
-        self.io_operation(lambda cancel,progress:save_project(r,path,replace_existing=replace_existing,cancelled=cancel,progress=progress),saved)
-    def save_project_action(self,save_as=False):
-        if self.emcd_result is None:self.error('Run or select a completed result first.');return
-        path=None if save_as else ((self.selected_record or {}).get('path') or self.emcd_result.get('project_path'))
-        if path and (Path(path)/'project.json').exists():self.save_to_path(path,True);return
-        parent=QtWidgets.QFileDialog.getExistingDirectory(self,'New project parent folder')
-        if not parent:return
-        cfg=self.emcd_result['config'];element=getattr(cfg,'ionizing_element','Ni')
-        zone=element+'_'+'_'.join(map(str,self.emcd_result['settings'].zone))
-        name,ok=QtWidgets.QInputDialog.getText(self,'Save Project As','New project folder name',text=zone+'_'+datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%SZ'))
-        if not ok:return
-        if not name.strip() or Path(name).name!=name or name in ('.','..'):self.error('Use one folder name.');return
-        target=Path(parent)/name;approved=False
-        if target.exists():approved=QtWidgets.QMessageBox.question(self,'Replace saved project?','Replace this existing EMCD project after a complete verified save?')==QtWidgets.QMessageBox.StandardButton.Yes
-        if target.exists() and not approved:return
-        self.save_to_path(target,approved)
-    def new_project(self):
+        if path:self._open_single_result_path(path,legacy=not (Path(path)/'project.json').exists())
+    def _reset_project_inputs(self):
         if self.busy:return
         with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
         self.set_values(dict(kv=300,beam=3.2,potential=2.5))
@@ -289,17 +274,7 @@ class ProjectWorkspace:
         for i,view in ((1,self.maps_view),(2,self.eels_view),(5,self.diffraction_view),(6,self.overview_view)):
             view.result=None;view.figure.clear();view.canvas.draw_idle();self.tabs.setTabEnabled(i,False)
         self.tabs.setTabEnabled(3,False);self.comparison.clear();self.tabs.setCurrentIndex(0)
-    def compare_selected(self):
-        rows=self.browser.selected()
-        if len(rows)<2:self.error('Select two or more completed Results Browser rows.');return
-        def loaded(values):
-            selected=[]
-            for row,result in zip(rows,values):self.browser.cache[row['id']]=result;selected.append((row['name'],result))
-            widget=CompareResults(self,selected);self.tabs.addTab(widget,'Compare saved runs');self.tabs.setCurrentWidget(widget)
-        def operation(cancel,progress):
-            return [self.browser.cache.get(row['id']) or load_project(row['path'],legacy=not (Path(row['path'])/'project.json').exists(),cancelled=cancel,progress=progress) for row in rows]
-        self.io_operation(operation,loaded)
-    def use_result_settings(self):
+    def _restore_single_settings(self):
         if self.busy or self.emcd_result is None:return
         r=self.emcd_result;s=r['settings'];c=r['config']
         if c.model not in ('xmcd','atomic','imported'):
@@ -371,6 +346,8 @@ class ProjectWorkspace:
         self.restore_numerical_selection(r['metadata'])
         self.refresh();self.statusBar().showMessage('Saved settings restored to Current Inputs. No calculation started. '+rerun_reason(r))
     def input_source_reason(self):
+        reason=self.restored_source_reason()
+        if reason:return reason
         for status in getattr(self,'input_source_requirements',[]):
             if self.structure.sha256==status['sha256'] and (not Path(status['path']).is_file() or sha256(status['path'])!=status['sha256']):return 'Saved CIF source unavailable or changed; locate original source before rerunning.'
         return ''
@@ -389,12 +366,15 @@ class ProjectWorkspace:
         self.statusBar().showMessage('Original source hash verified. Use These Settings to prepare a rerun.')
     def export_current_figure(self):
         widget=self.tabs.currentWidget();figure=getattr(widget,'figure',self.figure)
+        self.export_figure_for(figure)
+    def export_figure_for(self,figure):
         path,_=QtWidgets.QFileDialog.getSaveFileName(self,'Export currently displayed plot','','PNG (*.png);;SVG (*.svg)')
         if path:
             from .normalization_export import save_figure
             save_figure(figure,path)
     def export_selected_data(self):
         if self.emcd_result is None:return
+        if self.emcd_result['config'].model=='multisite':self.eels_view.export_derived();return
         widget=self.tabs.currentWidget()
         if hasattr(widget,'export_derived'):widget.export_derived();return
         if hasattr(widget,'export_data'):widget.export_data();return

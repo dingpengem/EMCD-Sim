@@ -304,6 +304,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         return resolve_fft_configuration(self.structure,self.settings(),cfg)
 
     def emcd_stale(self,*_):
+        if getattr(self,'_session_restoring',False):return
         if not hasattr(self,'ms_settings_group'):return
         if hasattr(self,'manual_spectral'):
             if self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:self.manual_spectral.sync_material()
@@ -417,6 +418,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
     def start_emcd(self):
         if self.busy:return
         try:
+            reason=self.restored_source_reason()
+            if reason:raise ValueError(reason)
             self.resolve_numerical_ui()
             if self._numerical_error:raise ValueError(self._numerical_error)
             cfg=self.forward_settings();s=self.settings();sites=None;windows=None;reverse=False;signature=None
@@ -475,7 +478,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         else:self.statusBar().showMessage('EMCD '+('completed.' if self.run_outcome=='completed' else 'failed; no new result registered.'))
     def save_emcd(self):
         if self.emcd_result is None:self.error('Run EMCD/EELS successfully first.');return
-        if self.emcd_result['config'].model=='multisite':self.error('Multi-site data export belongs to Patch 4C; results are retained in memory.');return
+        if self.emcd_result['config'].model=='multisite':self.eels_view.export_derived();return
         path=QtWidgets.QFileDialog.getExistingDirectory(self,'Export completed EMCD result (new subfolder)')
         if not path:return
         try:
@@ -483,14 +486,6 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         except Exception as exc:self.error(str(exc))
 
     def sync_result_capabilities(self,result):
-        # Keep unsupported legacy serializers/restorers out of the live route.
-        # No project format or Save/Open implementation is changed here.
-        from PySide6 import QtGui
         multisite=result['config'].model=='multisite'
         self.tabs.setTabText(1,'Total angular intensities' if multisite else 'EMCD Angular Maps')
         self.tabs.setTabText(3,'Reversal / detector differences' if multisite else 'Magnetic / Nonmagnetic')
-        unsupported={'Save Project','Save Project As...','Use These Settings','Compare Selected','Compare Selected Results','Compare Results','Export Selected NPZ/CSV'}
-        for control in self.findChildren(QtGui.QAction)+self.findChildren(QtWidgets.QPushButton):
-            if control.text() in unsupported:
-                control.setEnabled(not multisite)
-                control.setToolTip('Multi-site runs are session-only; project support and detailed exports are deferred.' if multisite else '')

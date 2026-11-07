@@ -356,7 +356,7 @@ def source_status(result):
         p=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
         status['mdff']=entry(p,cfg.source_sha256,cfg.source)
     if cfg.model=='multisite':
-        for gid,group in result['groups'].items():
+        for gid,group in result.get('groups',{}).items():
             source=group['metadata']['source'];original=source['path']
             p=Path(result.get('source_overrides',{}).get('group:'+gid,original))
             status['group:'+gid]=entry(p,source.get('sha256',''),original)

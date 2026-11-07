@@ -145,6 +145,8 @@ class SiteGroupEditor(QtWidgets.QWidget):
         self.load_groups(groups)
 
     def load_groups(self, groups):
+        self.requested_energy_ev=None;self.omitted_site_groups=set()
+        self.portable_references={}
         self.reverse_magnetization = self._accepted_reversal = False
         for dialog in self.mdff_dialogs.values():dialog.close();dialog.deleteLater()
         self.mdff_dialogs = {};self.energy_windows = {};self._mdff_status = {}
@@ -308,7 +310,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
         for row in self.rows():
             if row[4] is None:continue
             try:
-                validate_group_reference(row,window=self.energy_windows.get(row[0]));message = 'valid'
+                validate_group_reference(self.effective_row(row),window=self.energy_windows.get(row[0]));message = 'valid'
             except Exception as exc:message = str(exc)
             self._mdff_status[row[0]] = (row[1:4],row[4],message)
         # Refresh status cells only: never reset atom selection or current group.
@@ -320,13 +322,16 @@ class SiteGroupEditor(QtWidgets.QWidget):
     def configure_mdff(self):
         from .group_mdff import GroupMDFFDialog
         from .runtime import workspace
-        row = self.rows()[self.current_row()]
+        row = self.effective_row(self.rows()[self.current_row()])
         dialog = self.mdff_dialogs.get(row[0])
         if dialog is None:
             dialog = GroupMDFFDialog(row,getattr(self,'mdff_workspace',None) or workspace(),self)
             dialog.commit = lambda cfg,window,d=dialog:self.accept_mdff(d,cfg,window)
             dialog.draftChanged.connect(self.pendingChanged)
             self.mdff_dialogs[row[0]] = dialog
+        elif dialog.reference is not None and row[4] is not None and dialog.reference.source!=row[4].source and not dialog.has_unapplied_edits():
+            with QtCore.QSignalBlocker(dialog):dialog.restore_reference(row[4])
+            dialog._applied_snapshot=dialog.snapshot()
         self.recheck_mdff_sources()
         if self.mdff_status(row) == 'Invalid / stale':
             dialog.status.setText('Invalid / stale source: '+self._mdff_status[row[0]][2])
@@ -339,6 +344,8 @@ class SiteGroupEditor(QtWidgets.QWidget):
         if row is None:raise ValueError('The site group was removed')
         validate_group_reference(row,cfg,window)
         self.energy_windows[row[0]] = window
+        self.requested_energy_ev=None
+        if hasattr(self,'omitted_site_groups'):self.omitted_site_groups.discard(row[0])
         self._mdff_status[row[0]] = (row[1:4],cfg,'valid')
         self.set_mdff_reference(row[0],cfg)
 
@@ -346,10 +353,18 @@ class SiteGroupEditor(QtWidgets.QWidget):
     def validated_site_groups(self):
         from .generalized_forward import ImportedSettings
         from .group_mdff import validate_group_reference
-        rows = self.rows()
+        rows = tuple(self.effective_row(row) for row in self.rows())
         if not rows or any(not isinstance(r[4],ImportedSettings) for r in rows):return None
         for row in rows:validate_group_reference(row,window=self.energy_windows.get(row[0]))
         return self.check_rows(rows)
+
+    def effective_row(self,row):
+        """Rebase only a byte-identical project attachment, never a provider/M."""
+        from dataclasses import replace
+        saved=getattr(self,'portable_references',{}).get(row[0]);reference=row[4]
+        if saved and reference is not None and reference.source_sha256==saved[0]:
+            return row[:4]+(replace(reference,source=saved[1]),)
+        return row
 
     def update_status(self):
         missing = sum(row[4] is None for row in self.rows())

@@ -119,8 +119,9 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         configuration_dialog(self)
         self.mdff_dialog.hide()
         self.model_box.setCurrentIndex(1)
-        self.structure_view_action=self.menuBar().addMenu('Model').addAction('View 3D Crystal Structure…')
+        self.structure_view_action=QtGui.QAction('View 3D Crystal Structure…',self)
         self.structure_view_action.triggered.connect(self.show_structure_viewer)
+        self.setup_project_session()
 
     def section(self,title,expanded=True):
         group=CollapsibleSection(title,expanded=expanded);group.setObjectName('settings_'+''.join(c if c.isalnum() else '_' for c in title));self.form=QtWidgets.QFormLayout(group.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);self.form_layout.addWidget(group)
@@ -137,8 +138,10 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             thickness=self.spin['thickness'].value(),beam_cutoff=self.spin['beam'].value(),potential_cutoff=self.spin['potential'].value(),b_factor=self.spin['b'].value(),basis_mode=self.basis_mode.currentData(),elastic_provider=self.elastic_provider_box.currentData())
 
     def set_values(self,values):
+        changed=any(self.spin[key].value()!=float(value) for key,value in values.items())
         for key,value in values.items():
             with QtCore.QSignalBlocker(self.spin[key]):self.spin[key].setValue(float(value))
+        if changed:self.mark_project_dirty()
 
     def sync_za(self):
         q=za_from_tilt((self.spin['tx'].value(),self.spin['ty'].value()),self.spin['kv'].value());self.set_values(dict(qx=q[0],qy=q[1]))
@@ -179,6 +182,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
     def refresh(self,*_,fit=False):
         if not hasattr(self,'canvas'):return
+        if getattr(self,'_project_structure',self.structure) is not self.structure:self.mark_project_dirty()
+        self._project_structure=self.structure
         viewer=getattr(self,'structure_viewer',None)
         if viewer is not None:viewer.set_structure(self.structure)
         self._za_drag=False
@@ -394,6 +399,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.structure_viewer.editor.changed.connect(self.emcd_stale)
             self.structure_viewer.editor.pendingChanged.connect(self.emcd_stale)
             self.structure_viewer.siteGroupsApplied.connect(lambda _:self.emcd_stale())
+            self.structure_viewer.editor.changed.connect(self.mark_project_dirty)
+            self.structure_viewer.editor.pendingChanged.connect(self.mark_project_dirty)
             self.structure_viewer.set_magnetization_mode(self.magnetization_mode)
         self.structure_viewer.set_structure(self.structure,force=True)
         self.structure_viewer.show();self.structure_viewer.raise_();self.structure_viewer.activateWindow()
@@ -401,11 +408,15 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
     def set_magnetization_mode(self,mode):
         if mode not in ('global','local'):raise ValueError('Expected global or local magnetization mode')
         changed=self.magnetization_mode!=mode
+        if changed and mode=='local' and not getattr(self,'_session_restoring',False):
+            try:self._saved_global_config=self.forward_settings(prepare=False)
+            except ValueError:self._saved_global_config=None
         self.magnetization_mode=mode
         viewer=getattr(self,'structure_viewer',None)
         if viewer is not None and viewer.editor.magnetization_mode!=mode:viewer.set_magnetization_mode(mode)
         self.sync_magnetization_mode()
         if changed:self.emcd_stale()
+        if changed:self.mark_project_dirty()
 
     def sync_magnetization_mode(self):
         local=self.magnetization_mode=='local'
@@ -457,6 +468,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.worker.requestInterruption();self.statusBar().showMessage('Cancelling...')
     def closeEvent(self,event):
         if self.busy:self.cancel();event.ignore();return
+        if not self.confirm_project_changes(self.close):event.ignore();return
         self.store_ui_preferences()
         super().closeEvent(event)
     def maximize_view(self):
