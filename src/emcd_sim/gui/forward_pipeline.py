@@ -156,9 +156,9 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     Independent window grids are merged; sources cover their own complete
     modeled windows, without extrapolation. Unlisted groups are explicitly
     omitted from the partial spectrum but remain in its denominator.
-    Double Channeling requires propagation='bloch' or 'fft-multislice' and uses
-    one detector worker; Automatic selects that serial path. Incoming fields
-    are prepared once and shared with all group responses. Combined BW/MS
+    Double Channeling requires propagation='bloch' or 'fft-multislice' and
+    follows the existing detector-worker policy and memory admission. Incoming
+    fields are prepared once and shared with all group responses. Combined BW/MS
     Double Channeling runs remain outside this entry point's current scope.
     Results follow the existing methods/spectra/maps layout. groups contain
     per-group-atom detector means and contribution_weight=n_group/n_selected;
@@ -169,9 +169,8 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     from ..multisite import MultiSiteIonization
     from ..multisite_spectrum import prepare_multisite_spectrum,contract_multisite_spectrum
     from .propagation import resolve_fft_configuration,numerical_info,propagate,compare_methods
-    from .parallel_resources import require_supported
-    from .memory_budget import reserve_memory,assess_memory
-    from .channeling import angular_schedule,bw_executor_guard
+    from .memory_budget import reserve_memory
+    from .channeling import angular_schedule
 
     def stage(message):
         check_cancelled(cancelled)
@@ -185,9 +184,6 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     if double:
         if cfg.propagation not in ('bloch','fft-multislice'):
             raise ValueError('Multi-site Double Channeling requires an individual Bloch-wave or FFT Multislice run')
-        if cfg.worker_mode=='manual' and cfg.parallel_workers!=1:
-            raise ValueError('Multi-site Double Channeling currently uses one detector worker')
-        if cfg.worker_mode=='automatic':cfg=replace(cfg,worker_mode='manual',parallel_workers=1)
     if cfg.correction:raise ValueError('Multi-site post-edge correction is not supported')
     if not isinstance(reverse_magnetization,bool):raise ValueError('Global reversal must be a boolean')
     if not isinstance(sites,MultiSiteIonization):raise ValueError('Explicit multi-site assignments required')
@@ -221,8 +217,6 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
         raise ValueError('Selected map labels must be unique with energies on the common grid')
     cfg=replace(cfg,energy_points=len(energy),selected_edges=tuple(selections))
     cfg=resolve_fft_configuration(structure,settings,cfg)
-    info=numerical_info(structure,settings,cfg,check_memory=False,ionization_sites=sites)
-    require_supported(info['execution'])
     elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row)
     _,rotation,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
     if settings.target==(0,0,0) or settings.target not in hkl:
@@ -238,22 +232,15 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
            +576*len(energy)*len(sites.groups)
            +methods_count*64*len(selections)*qx.size*(len(sites.groups)+2)
            +methods_count*256*len(energy)*(len(sites.groups)+2))/2**20
-    working=info['estimated_working_mib']+extra
-    if double:
-        # The backend reserves its dense work separately, as in the legacy
-        # double route. Include group phase/response storage in full preflight.
-        if cfg.propagation=='bloch':
-            group_work=(144*min(64,int(support.sum()))*(len(sites.groups)-1)
-                        +64*len(hkl)**2*len(sites.species))/2**20
-        else:
-            group_work=288*min(32,int(support.sum()))*(len(sites.groups)-1)/2**20
-        working+=group_work
-        info['multisite_group_response_working_mib']=group_work
-        info.update(assess_memory(working,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']))
-    info.update(multisite_additional_working_mib=extra,estimated_working_mib=working)
+    # Include retained multi-site arrays BEFORE worker admission, so the
+    # existing automatic memory limit sees the complete calculation footprint.
+    info=numerical_info(structure,settings,cfg,hkl=hkl,ionization_sites=sites,
+        additional_retained_working_mib=extra)
+    info['multisite_additional_working_mib']=extra
+    working=info['estimated_working_mib']
     z=np.linspace(0,settings.thickness,cfg.depth)
     methods={};fft_info={}
-    reserved=info['retained_results_working_mib']+extra if double else working
+    reserved=info['retained_results_working_mib'] if double else working
     with reserve_memory(reserved,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
         for method in ('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,):
             stage('Preparing '+method+' complete-crystal propagation')
@@ -274,11 +261,11 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
             stage('Contracting '+method+' multi-site '+cfg.channeling_model.title()+' Channeling')
             if double and method=='bloch':
                 from ..multisite_double_channeling import contract_multisite_bloch_double
-                with bw_executor_guard(method,cancelled):
-                    raw=contract_multisite_bloch_double(model,sites,plan,qx.ravel()[support],qy.ravel()[support],
-                        crystal_to_microscope=rotation,thickness_nm=settings.thickness,depth_steps=cfg.depth,
-                        method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.memory_budget_mib,
-                        prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled)
+                raw=contract_multisite_bloch_double(model,sites,plan,qx.ravel()[support],qy.ravel()[support],
+                    crystal_to_microscope=rotation,thickness_nm=settings.thickness,depth_steps=cfg.depth,
+                    method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.memory_budget_mib,
+                    prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled,
+                    execution_workers=info['execution']['effective_workers'][method])
             elif double:
                 from ..multisite_double_channeling import contract_multisite_ms_double
                 grid,fields=prepared_fft
@@ -286,7 +273,8 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                     crystal_to_microscope=rotation,thickness_nm=settings.thickness,depth_steps=cfg.depth,
                     fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,slice_step_nm=cfg.slice_step,
                     systematic_row=cfg.systematic_row,memory_budget_mib=cfg.memory_budget_mib,
-                    prepared_grid=grid,prepared_incoming=fields,reverse_magnetization=reverse_magnetization,cancelled=cancelled)
+                    prepared_grid=grid,prepared_incoming=fields,reverse_magnetization=reverse_magnetization,cancelled=cancelled,
+                    execution_workers=info['execution']['effective_workers'][method])
             else:
                 raw=contract_multisite_spectrum(model,structure,sites,coherence,plan,qx.ravel()[support],qy.ravel()[support],
                     crystal_to_microscope=rotation,thickness_nm=settings.thickness,

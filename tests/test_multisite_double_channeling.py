@@ -168,11 +168,12 @@ def test_windows_weighting_fixed_denominator_and_shared_solves(tmp_path,monkeypa
     cfg=configuration(channeling_model='double',angular_maps=False,worker_mode='automatic')
     result=calculate_multisite(structure,settings,sites,cfg,energy_windows=windows)
     assert len(incoming_calls)==1 and incoming_calls[0]==sites.species
-    assert guard_calls==[1]
+    assert len(guard_calls)==len(result['spectra']['energy_ev'])
     support=np.logical_or.reduce([w.ravel()>0 for w in result['weights'].values()])
     energy=result['spectra']['energy_ev']
     assert len(solves)==1+int(support.sum())*len(energy)
-    assert result['metadata']['execution']['effective_workers']=={'bloch':1}
+    assert all(d['workers']<=result['metadata']['execution']['effective_workers']['bloch']
+               for d in result['metadata']['angular_evaluation'])
     count=result['metadata']['multisite']['selected_atom_count']
     assert count==3
     for key in RAW_KEYS:
@@ -207,7 +208,7 @@ def test_unsupported_or_uncovered_double_rejected_before_propagation(tmp_path,mo
     cfg=configuration(channeling_model='double',angular_maps=False)
     windows=disjoint_windows()
     if failure in ('unknown','both'):cfg=replace(cfg,propagation='unknown' if failure=='unknown' else 'both')
-    elif failure=='workers':cfg=replace(cfg,parallel_workers=2)
+    elif failure=='workers':cfg=replace(cfg,parallel_workers=5)
     else:windows['A']=ModeledEdgeWindow((703.,730.),(710.,))
     def forbidden(*args,**kwargs):pytest.fail('Invalid multi-site double request started propagation')
     monkeypatch.setattr(bw,'prepare_incoming_bloch',forbidden)

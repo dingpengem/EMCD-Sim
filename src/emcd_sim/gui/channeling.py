@@ -47,6 +47,43 @@ def worker_count(n,method):
     return min(4,max(1,int(1200/(dense+40)))) if method=='bloch' else 4
 
 
+def map_detector_batches(response,batches,workers,method,cancelled):
+    """Ordered legacy thread execution with cooperative failure/cancellation.
+
+    response(batch, task_cancelled) owns its scratch arrays. Stop queued and
+    running work on the first failure, join this executor, and preserve the
+    originating exception even if an earlier batch subsequently cancels.
+    """
+    from ..cancellation import check_cancelled
+    from .parallel_resources import MAX_WORKERS,native_backend_info
+    if type(workers) is not int or not 1<=workers<=MAX_WORKERS:
+        raise ValueError('Unsupported detector worker count')
+    if method=='bloch' and sys.platform=='win32' and workers>1 and native_backend_info()['threads']!=1:
+        raise ValueError('Parallel Windows BW requires verified single-thread native BLAS; no calculation started.')
+    stop=threading.Event();errors=[];error_lock=threading.Lock()
+    def task_cancelled():return stop.is_set() or (cancelled is not None and cancelled())
+    def execute(batch):
+        try:
+            check_cancelled(task_cancelled)
+            return response(batch,task_cancelled)
+        except BaseException as exc:
+            with error_lock:
+                if not errors:errors.append(exc)
+            stop.set()
+            raise
+    with bw_executor_guard(method,task_cancelled):
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures=[]
+            try:
+                for batch in batches:futures.append(pool.submit(execute,batch))
+                return [future.result() for future in futures]
+            except BaseException as exc:
+                stop.set()
+                for future in futures:future.cancel()
+                if errors and isinstance(exc,Exception):raise errors[0]
+                raise
+
+
 EVALUATION_POLICY='full_at_selected_edges_detector_only_elsewhere'
 
 
@@ -84,10 +121,6 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
         points=np.column_stack((qx.ravel()[support],qy.ravel()[support]))
         supports[full]=(support,points,points)
     n=len(elastic.beams.hkl);workers=worker_count(n,method) if execution_workers is None else execution_workers
-    if method=='bloch' and sys.platform=='win32' and workers>1:
-        from .parallel_resources import native_backend_info
-        if native_backend_info()['threads']!=1:
-            raise ValueError('Parallel Windows BW requires verified single-thread native BLAS; no calculation started.')
     start_incoming=perf_counter()
     incoming_bw=prepare_incoming_bloch(elastic,settings.thickness,cfg.depth,cancelled=cancelled) if cfg.channeling_model=='double' and method=='bloch' else None
     incoming_seconds=perf_counter()-start_incoming
@@ -130,12 +163,12 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             if values.min() < -1e-8*max(1.,values.max()):raise ValueError('Negative tensor-derived inelastic intensity: check conventions/phase')
             diagnostic['mdff_contraction_seconds']=perf_counter()-start_contract
         else:
-            def response(batch):
-                if cancelled():raise Cancelled()
+            def response(batch,task_cancelled):
+                if task_cancelled():raise Cancelled()
                 if method=='bloch':
                     r=double_channeling_response(elastic,float(e),batch,settings.thickness,
                         method='analytic' if cfg.systematic_row else 'numerical',depth_steps=cfg.depth,
-                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,cancelled=cancelled,**site_arguments)
+                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,cancelled=task_cancelled,**site_arguments)
                     return r,None
                 grid,incoming=prepared_incoming
                 r,diag=multislice_double_channeling_response(elastic,float(e),batch,settings.thickness,
@@ -143,16 +176,14 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
                     systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
                     projected_geometry=projected_geometry_for(settings,elastic.crystal,cfg.fft_generators),
                     depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,memory_budget_mib=cfg.memory_budget_mib,
-                    prepared_grid=grid,prepared_incoming=incoming,cancelled=cancelled,**site_arguments)
+                    prepared_grid=grid,prepared_incoming=incoming,cancelled=task_cancelled,**site_arguments)
                 return r,diag
             # MS chunks bound cancellation latency without retaining outgoing
             # depth stacks. BW retains its existing per-call dense admission.
             batches=([query[i:i+32] for i in range(0,len(query),32)] if method=='fft-multislice'
                      else [a for a in np.array_split(query,min(workers,len(query))) if len(a)])
             start_response=perf_counter()
-            with bw_executor_guard(method,cancelled):
-                with ThreadPoolExecutor(max_workers=workers) as pool:
-                    responses=list(pool.map(response,batches))
+            responses=map_detector_batches(response,batches,workers,method,cancelled)
             r=np.concatenate([item[0] for item in responses])
             if method=='fft-multislice':
                 for key in ('incoming_norm_error','outgoing_norm_error','incoming_max_excluded_population','outgoing_max_excluded_population'):

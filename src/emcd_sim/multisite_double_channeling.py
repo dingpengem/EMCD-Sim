@@ -19,7 +19,8 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
                                    memory_budget_mib=2048, prepared_incoming=None,
                                    reverse_magnetization=False, cancelled=None,
                                    propagation='bloch',prepared_grid=None,fft_grid=32,
-                                   potential_cutoff=2.2,slice_step_nm=.04,systematic_row=False):
+                                   potential_cutoff=2.2,slice_step_nm=.04,systematic_row=False,
+                                   execution_workers=None):
     """Mean per selected atom; explicit reversal pairs share each group response.
 
     The plan is prepared_multisite_spectrum output from preflight. Window
@@ -68,43 +69,67 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
         batch_size=32
     groups,weighted=_empty_group_intensities(sites,plan,qx.shape)
     queries=np.column_stack((qx.ravel(),qy.ravel()))
+    from .gui.channeling import worker_count,map_detector_batches
+    workers=worker_count(len(model.elastic.beams.hkl),propagation) if execution_workers is None else execution_workers
     diagnostics=[]
     for ie,loss in enumerate(energy):
         active=[group for group in sites.groups if plan['active'][group.group_id][ie]]
         diagnostic=dict(energy_ev=float(loss),active_groups=[group.group_id for group in active],
-            required_pixels=len(queries) if active else 0,evaluated_pixels=0,response_batches=0,workers=1)
+            required_pixels=len(queries) if active else 0,evaluated_pixels=0,response_batches=0,workers=0)
         if not active:
-            if propagation=='fft-multislice':diagnostics.append(diagnostic)
+            diagnostics.append(diagnostic)
             continue
         selected_positions={group.group_id:positions[list(group.indices)] for group in active}
-        for start in range(0,len(queries),batch_size):
-            check_cancelled(cancelled)
-            sl=slice(start,start+batch_size)
+        def batches():
+            # The shared executor validates the worker count before iterating.
+            # Enough tasks to use small pools without exceeding legacy bounds.
+            size=min(batch_size,max(1,int(np.ceil(len(queries)/workers))))
+            for start in range(0,len(queries),size):
+                sl=slice(start,start+size)
+                yield sl,queries[sl]
+        def response(batch,task_cancelled):
+            sl,points=batch
+            check_cancelled(task_cancelled)
+            details=None
             if propagation=='bloch':
-                responses=double_channeling_group_responses(model.elastic,loss,queries[sl],thickness_nm,selected_positions,
+                responses=double_channeling_group_responses(model.elastic,loss,points,thickness_nm,selected_positions,
                     method=method,depth_steps=depth_steps,memory_budget_mib=memory_budget_mib,
-                    prepared_incoming=incoming,cancelled=cancelled)
+                    prepared_incoming=incoming,cancelled=task_cancelled)
             else:
                 from .multislice_double_channeling import multislice_double_channeling_group_responses
-                responses,details=multislice_double_channeling_group_responses(model.elastic,loss,queries[sl],thickness_nm,selected_positions,
+                responses,details=multislice_double_channeling_group_responses(model.elastic,loss,points,thickness_nm,selected_positions,
                     fft_grid=fft_grid,potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=systematic_row,
                     depth_steps=depth_steps,slice_step_nm=slice_step_nm,batch_pixels=batch_size,
-                    memory_budget_mib=memory_budget_mib,prepared_grid=prepared_grid,prepared_incoming=incoming,cancelled=cancelled)
+                    memory_budget_mib=memory_budget_mib,prepared_grid=prepared_grid,prepared_incoming=incoming,cancelled=task_cancelled)
+            # Cartesian responses remain local to the worker. Only compact
+            # group intensities and diagnostics wait for ordered collection.
+            values={}
+            for group in active:
+                check_cancelled(task_cancelled)
+                pair=np.stack([intensities_from_response(responses[group.group_id],tensor)
+                               for tensor in tensors[group.group_id][ie]])
+                if not np.isfinite(pair).all() or pair.min() < -1e-10*max(float(np.max(abs(pair))),1e-30):
+                    raise ValueError('Negative or nonfinite multi-site double-channeling intensity')
+                values[group.group_id]=pair
+            return sl,values,details
+        results=map_detector_batches(response,batches(),workers,propagation,cancelled)
+        diagnostic['workers']=min(workers,len(results))
+        for sl,values,details in results:
+            check_cancelled(cancelled)
+            if details is not None:
                 for key in ('incoming_norm_error','outgoing_norm_error','incoming_max_excluded_population',
                             'outgoing_max_excluded_population','estimated_working_mib','dense_working_mib'):
                     diagnostic[key]=max(diagnostic.get(key,0.),details[key])
                 for key in ('actual_slice_step_nm','substeps_per_depth_interval','depth_steps','fft_samples','row_reduction','memory_admission'):
                     diagnostic[key]=details[key]
-                diagnostic['evaluated_pixels']+=len(queries[sl])
-                diagnostic['response_batches']+=1
+            diagnostic['evaluated_pixels']+=len(queries[sl])
+            diagnostic['response_batches']+=1
             for group in active:
                 for state,label in enumerate(('plus','minus')):
-                    values=intensities_from_response(responses[group.group_id],tensors[group.group_id][ie][state])
-                    if not np.isfinite(values).all() or values.min() < -1e-10*max(float(np.max(abs(values))),1e-30):
-                        raise ValueError('Negative or nonfinite multi-site double-channeling intensity')
-                    groups[group.group_id][label].reshape(len(energy),-1)[ie,sl]=values
-                    weighted.reshape(2,len(energy),-1)[state,ie,sl]+=group.multiplicity*values
-        if propagation=='fft-multislice':diagnostics.append(diagnostic)
+                    value=values[group.group_id][state]
+                    groups[group.group_id][label].reshape(len(energy),-1)[ie,sl]=value
+                    weighted.reshape(2,len(energy),-1)[state,ie,sl]+=group.multiplicity*value
+        diagnostics.append(diagnostic)
     from .gui.generalized_forward import source_for
     for group in sites.groups:
         check_cancelled(cancelled)

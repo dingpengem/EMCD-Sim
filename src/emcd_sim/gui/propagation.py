@@ -26,7 +26,9 @@ def resolve_fft_configuration(structure,settings,cfg):
     return replace(cfg,fft_generators=tuple(tuple(int(v) for v in h) for h in cell))
 
 
-def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True,ionization_sites=None):
+def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True,ionization_sites=None,additional_retained_working_mib=0.):
+    if not np.isfinite(additional_retained_working_mib) or additional_retained_working_mib<0:
+        raise ValueError('Finite nonnegative additional retained memory required')
     if ionization_sites is not None:
         from ..multisite import MultiSiteIonization
         if not isinstance(ionization_sites,MultiSiteIonization):raise ValueError('Explicit multi-site assignments required')
@@ -99,7 +101,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             elastic_basis_mode=settings.basis_mode,
             fft_projection='Explicit exp(i dz PVP) FFT-convolution two-beam Galerkin' if settings.basis_mode=='two-beam' else 'Unrestricted FFT propagation; finite incoming/outgoing MDFF beam support')
     methods=2 if cfg.propagation=='both' else 1
-    info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20
+    info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20+additional_retained_working_mib
     info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+info['retained_results_working_mib']
     if cfg.channeling_model=='double':
         bw_dense=80*n**4/2**20
@@ -107,6 +109,12 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
         samples=cfg.fft_grid if cfg.systematic_row else mesh
         ms_dense=96*32*n*n/2**20
         ms_work=ms_dense+(64*cfg.depth*samples+192*32*samples+32*32*9+64*len(structure.atoms)*n*n)/2**20+8
+        if ionization_sites is not None:
+            count=len(ionization_sites.groups)
+            bw_group=(144*min(64,pixels)*(count-1)+64*n*n*len(structure.atoms))/2**20
+            ms_group=288*min(32,pixels)*(count-1)/2**20
+            bw_work+=bw_group;ms_work+=ms_group
+            info['multisite_group_response_working_mib']=dict(bloch=bw_group,fft_multislice=ms_group)
         engines=[];densities=[]
         if cfg.propagation in ('bloch','both'):engines.append(execution['effective_workers']['bloch']*bw_work);densities.append(bw_dense)
         if cfg.propagation in ('fft-multislice','both'):engines.append(execution['effective_workers']['fft-multislice']*ms_work);densities.append(ms_dense)
