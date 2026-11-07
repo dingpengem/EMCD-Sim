@@ -64,7 +64,7 @@ If `py` is unavailable, use your chosen interpreter's explicit path. Calling the
 
 ## Platform and verification status
 
-Windows x64 is the tested packaged platform. The `aaa69a1` EXE passed native ambiguity handling, Fe 710/723 eV preview/calculation, application-created saving, restart, reopening, and recalculation on the development host. Independent clean-PC/VM installation remains **unverified**. Linux/macOS are not supplied or certified; recorded interpreter-shutdown and Qt-modal CI problems remain limitations.
+Windows x64 is the tested packaged platform. The `aaa69a1` EXE passed native ambiguity handling, Fe 710/723 eV preview/calculation, application-created saving, restart, reopening, and recalculation on the development host. The rebuilt beta.2 EXE (`88dc9ec`, `0.8.1b2`) also passed the affected native workflow: ambiguous/L3-only rejection, explicit Fe 710/723 eV preview and calculation, normal application-created save, process restart/reopen, restored preview and recalculation. Its Microsoft runtime DLLs loaded from System32 with no dependency-environment paths. Independent clean-PC/VM installation remains **unverified**. Linux/macOS are not supplied or certified; recorded interpreter-shutdown and Qt-modal CI problems remain limitations.
 
 The full `7730e38` run remains **FAILED: 1,191 passed, 1 failed, 54 skipped**. The repair passed four focused cases. The user's prerelease-specific exception permits using this evidence without another complete regression; it does not waive scientific, security, redistribution, or formal publishing requirements. See [draft release notes](RELEASE_NOTES_0_8_1_BETA_2.md).
 
