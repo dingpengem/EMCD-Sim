@@ -149,13 +149,16 @@ def _multisite_detector_data(raw,cfg,energy,qx,qy,weights,support):
 
 def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None,
                        cancelled=lambda:False,*,energy_ev=None,energy_windows=None,reverse_magnetization=False):
-    """Single Channeling with one complete-crystal propagation per solver.
+    """Multi-site Single Channeling or Bloch-wave Double Channeling.
 
     Supply a common energy_ev covered by ALL providers, or energy_windows
     mapping group IDs to multisite_spectrum.ModeledEdgeWindow declarations.
     Independent window grids are merged; sources cover their own complete
     modeled windows, without extrapolation. Unlisted groups are explicitly
     omitted from the partial spectrum but remain in its denominator.
+    Double Channeling currently requires propagation='bloch' and uses one
+    detector worker; Automatic selects that serial path. Its incoming fields
+    are prepared once and shared with all outgoing responses.
     Results follow the existing methods/spectra/maps layout. groups contain
     per-group-atom detector means and contribution_weight=n_group/n_selected;
     weighted_sum retains unnormalized selected-atom sums. No cross-source
@@ -166,8 +169,8 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     from ..multisite_spectrum import prepare_multisite_spectrum,contract_multisite_spectrum
     from .propagation import resolve_fft_configuration,numerical_info,propagate,compare_methods
     from .parallel_resources import require_supported
-    from .memory_budget import reserve_memory
-    from .channeling import angular_schedule
+    from .memory_budget import reserve_memory,assess_memory
+    from .channeling import angular_schedule,bw_executor_guard
 
     def stage(message):
         check_cancelled(cancelled)
@@ -175,8 +178,14 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
 
     stage('Validating multi-site assignments and required MDFF coverage')
     cfg=cfg or MultiSiteForwardSettings()
-    if not isinstance(cfg,MultiSiteForwardSettings) or cfg.model!='multisite' or cfg.channeling_model!='single':
-        raise ValueError('MultiSiteForwardSettings with Single Channeling required')
+    if not isinstance(cfg,MultiSiteForwardSettings) or cfg.model!='multisite' or cfg.channeling_model not in ('single','double'):
+        raise ValueError('MultiSiteForwardSettings with Single or Double Channeling required')
+    double=cfg.channeling_model=='double'
+    if double:
+        if cfg.propagation!='bloch':raise ValueError('Multi-site Double Channeling currently supports Bloch-wave propagation only')
+        if cfg.worker_mode=='manual' and cfg.parallel_workers!=1:
+            raise ValueError('Multi-site BW Double Channeling currently uses one detector worker')
+        if cfg.worker_mode=='automatic':cfg=replace(cfg,worker_mode='manual',parallel_workers=1)
     if cfg.correction:raise ValueError('Multi-site post-edge correction is not supported')
     if not isinstance(reverse_magnetization,bool):raise ValueError('Global reversal must be a boolean')
     if not isinstance(sites,MultiSiteIonization):raise ValueError('Explicit multi-site assignments required')
@@ -228,23 +237,46 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
            +methods_count*64*len(selections)*qx.size*(len(sites.groups)+2)
            +methods_count*256*len(energy)*(len(sites.groups)+2))/2**20
     working=info['estimated_working_mib']+extra
+    if double:
+        # The backend reserves its dense work separately, as in the legacy
+        # double route. Include group phase/response storage in full preflight.
+        group_work=(144*min(64,int(support.sum()))*(len(sites.groups)-1)
+                    +64*len(hkl)**2*len(sites.species))/2**20
+        working+=group_work
+        info['multisite_group_response_working_mib']=group_work
+        info.update(assess_memory(working,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']))
     info.update(multisite_additional_working_mib=extra,estimated_working_mib=working)
     z=np.linspace(0,settings.thickness,cfg.depth)
     methods={};fft_info={}
-    with reserve_memory(working,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
+    reserved=info['retained_results_working_mib']+extra if double else working
+    with reserve_memory(reserved,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
         for method in ('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,):
             stage('Preparing '+method+' complete-crystal propagation')
             start=perf_counter()
-            waves,method_fft=propagate(elastic,settings,replace(cfg,propagation=method),z,stage,cancelled=cancelled)
+            incoming=None
+            if double:
+                from ..double_channeling import prepare_incoming_bloch
+                incoming=prepare_incoming_bloch(elastic,settings.thickness,cfg.depth,cancelled=cancelled)
+                waves,method_fft={method:incoming.fields},{}
+            else:
+                waves,method_fft=propagate(elastic,settings,replace(cfg,propagation=method),z,stage,cancelled=cancelled)
             incoming_seconds=perf_counter()-start
             method_fft.pop('_prepared',None)
             if method_fft:fft_info=method_fft
             psi=waves[method]
             coherence=coherence_from_amplitudes(z,psi)
-            stage('Contracting '+method+' multi-site Single Channeling')
-            raw=contract_multisite_spectrum(model,structure,sites,coherence,plan,qx.ravel()[support],qy.ravel()[support],
-                crystal_to_microscope=rotation,thickness_nm=settings.thickness,
-                reverse_magnetization=reverse_magnetization,cancelled=cancelled)
+            stage('Contracting '+method+' multi-site '+cfg.channeling_model.title()+' Channeling')
+            if double:
+                from ..multisite_double_channeling import contract_multisite_bloch_double
+                with bw_executor_guard(method,cancelled):
+                    raw=contract_multisite_bloch_double(model,sites,plan,qx.ravel()[support],qy.ravel()[support],
+                        crystal_to_microscope=rotation,thickness_nm=settings.thickness,depth_steps=cfg.depth,
+                        method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.memory_budget_mib,
+                        prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled)
+            else:
+                raw=contract_multisite_spectrum(model,structure,sites,coherence,plan,qx.ravel()[support],qy.ravel()[support],
+                    crystal_to_microscope=rotation,thickness_nm=settings.thickness,
+                    reverse_magnetization=reverse_magnetization,cancelled=cancelled)
             data=_multisite_detector_data(raw['total'],cfg,energy,qx,qy,weights,support)
             data.update(angular_evaluation_policy='full_grid_all_energies' if cfg.angular_maps else 'fractional_aperture_support',diagnostics=[])
             result=_contract(structure,settings,cfg,model,rotation,hkl,g,info['dense_working_estimate_mib'],z,psi,
@@ -263,14 +295,14 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                 mdff_provider='multisite',
                 scientific_status='SYNTHETIC TEST ONLY' if all(source['status']=='synthetic' for source in plan['sources'].values()) else 'RESEARCH / APPROXIMATE',
                 numerics=info,execution=info['execution'],memory_admission=admission,
-                solver=method+' Single Channeling; independent localized site-group intensities',
+                solver=method+' '+cfg.channeling_model.title()+' Channeling; independent localized site-group intensities',
                 incoming_propagation_seconds=incoming_seconds,
                 intensity_convention=raw['metadata']['intensity_convention'],
                 spectral_coverage=plan['metadata']['coverage_mode'],
                 spectrum_kind='modeled_partial_core_edge_spectrum',
                 reversal='Explicit provider pairs exchanged together; fixed elastic state, detectors and frames',
                 detector_evaluation='Full grid at all energies' if cfg.angular_maps else 'Nonzero fractional-aperture support',
-                limitations='Projected neutral IAM; finite ZOLZ; Single Channeling only; modeled partial core-edge spectrum; omitted channels/tails are not physical zeros; no absolute or cross-element calibration')
+                limitations='Projected neutral IAM; finite ZOLZ; '+('Bloch-wave Double Channeling' if double else 'Single Channeling')+'; modeled partial core-edge spectrum; omitted channels/tails are not physical zeros; no absolute or cross-element calibration')
             result['weighted_sum']['metadata']=dict(normalization='sum_over_selected_atoms',spectrum_kind='modeled_partial_core_edge_spectrum')
             if method=='fft-multislice':meta['fft']=fft_info['summary']
             methods[method]=result

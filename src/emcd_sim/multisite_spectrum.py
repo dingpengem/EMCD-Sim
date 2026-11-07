@@ -104,6 +104,34 @@ def prepare_multisite_spectrum(sites, energy_ev=None, energy_windows=None):
     return dict(energy_ev=energy, sources=sources, active=active, metadata=metadata)
 
 
+def _empty_group_intensities(sites, plan, query_shape):
+    """Shared result storage; excluded channels remain explicitly labelled."""
+    shape = (len(plan['energy_ev']),) + query_shape
+    groups = {}
+    for group in sites.groups:
+        groups[group.group_id] = dict(
+            plus=np.zeros(shape), minus=np.zeros(shape), element=group.element,
+            indices=group.indices, multiplicity=group.multiplicity,
+            magnetization_crystal=group.magnetization, source=plan['sources'][group.group_id],
+            normalization=group.normalization, coverage=plan['metadata']['channels'][group.group_id])
+    return groups, np.zeros((2,) + shape)
+
+
+def _spectrum_result(sites, plan, groups, weighted, rotation, thickness_nm, reverse_magnetization):
+    """Multiplicity is applied by callers; the denominator always uses ALL sites."""
+    count = sum(group.multiplicity for group in sites.groups)
+    plus, minus = weighted / count
+    return dict(
+        groups=groups, total=dict(plus=plus, minus=minus, even=(plus+minus)/2, odd=(plus-minus)/2),
+        weighted_sum=dict(plus=weighted[0], minus=weighted[1]),
+        metadata=dict(normalization='mean_per_selected_ionizing_atom', selected_atom_count=count,
+            weighted_sum_normalization='sum_over_selected_atoms',
+            crystal_to_microscope=np.asarray(rotation).tolist(), thickness_nm=float(thickness_nm),
+            global_reversal=reverse_magnetization, parity='even=(I_plus+I_minus)/2; odd=(I_plus-I_minus)/2',
+            intensity_convention='Declared provider amplitudes; relative, no absolute or cross-element calibration',
+            **plan['metadata']))
+
+
 def contract_multisite_spectrum(model, structure, sites, coherence, plan, qx, qy, *,
                                 crystal_to_microscope, thickness_nm,
                                 reverse_magnetization=False, cancelled=None):
@@ -114,15 +142,7 @@ def contract_multisite_spectrum(model, structure, sites, coherence, plan, qx, qy
         indices = tuple(np.flatnonzero(plan['active'][group.group_id]))
         if indices:
             cohorts.setdefault(indices, []).append(group)
-    shape = (len(energy),) + np.shape(qx)
-    weighted = np.zeros((2,) + shape)
-    groups = {}
-    for group in sites.groups:
-        groups[group.group_id] = dict(
-            plus=np.zeros(shape), minus=np.zeros(shape), element=group.element,
-            indices=group.indices, multiplicity=group.multiplicity,
-            magnetization_crystal=group.magnetization, source=plan['sources'][group.group_id],
-            normalization=group.normalization, coverage=plan['metadata']['channels'][group.group_id])
+    groups, weighted = _empty_group_intensities(sites, plan, np.shape(qx))
     for indices, selected_groups in cohorts.items():
         check_cancelled(cancelled)
         selection = np.asarray(indices)
@@ -137,14 +157,4 @@ def contract_multisite_spectrum(model, structure, sites, coherence, plan, qx, qy
                 weighted[state, selection] += group.multiplicity * value
         del raw
     check_cancelled(cancelled)
-    count = sum(group.multiplicity for group in sites.groups)
-    plus, minus = weighted / count
-    return dict(
-        groups=groups, total=dict(plus=plus, minus=minus, even=(plus+minus)/2, odd=(plus-minus)/2),
-        weighted_sum=dict(plus=weighted[0], minus=weighted[1]),
-        metadata=dict(normalization='mean_per_selected_ionizing_atom', selected_atom_count=count,
-            weighted_sum_normalization='sum_over_selected_atoms',
-            crystal_to_microscope=np.asarray(crystal_to_microscope).tolist(), thickness_nm=float(thickness_nm),
-            global_reversal=reverse_magnetization, parity='even=(I_plus+I_minus)/2; odd=(I_plus-I_minus)/2',
-            intensity_convention='Declared provider amplitudes; relative, no absolute or cross-element calibration',
-            **plan['metadata']))
+    return _spectrum_result(sites,plan,groups,weighted,crystal_to_microscope,thickness_nm,reverse_magnetization)

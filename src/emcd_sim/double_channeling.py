@@ -4,6 +4,7 @@ q = k_out + h - k_in - g, cycles/angstrom; H in radians/nm.
 Independent localized sites/events are intensity sums, never amplitude sums.
 """
 from dataclasses import dataclass
+from collections.abc import Mapping
 import numpy as np
 from .geometry import Microscope, electron_wavelength_angstrom, characteristic_qz_angstrom_inv
 from .physical_elastic import PhysicalElasticModel
@@ -169,15 +170,40 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
     Pixel loop avoids a dense (pixels*Ni*No)^2 MDFF allocation.
     """
     check_cancelled(cancelled)
+    if ionization_sites is None and not all(s == 'Ni' for s in elastic.crystal.species):
+        raise ValueError('Equivalent-site response currently supports Ni only')
+    positions = elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)
+    return double_channeling_group_responses(elastic,energy_ev,q_xy,thickness_nm,{'sites':positions},
+        outgoing_beams=outgoing_beams,method=method,depth_steps=depth_steps,memory_budget_mib=memory_budget_mib,
+        outgoing_potential=outgoing_potential,prepared_incoming=prepared_incoming,cancelled=cancelled)['sites']
+
+
+def double_channeling_group_responses(elastic, energy_ev, q_xy, thickness_nm, positions_by_group, *, outgoing_beams=None,
+        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None,cancelled=None):
+    """Per-group mean Cartesian responses, sharing incoming/outgoing Bloch states.
+
+    positions_by_group supplies fractional positions already validated against
+    the complete elastic crystal by the calling material adapter. Each response
+    averages independent events within its group; no inter-group amplitudes or
+    multiplicity factors are included. Depth integration and contraction use
+    exactly the legacy single-group implementation.
+    """
+    check_cancelled(cancelled)
     q_xy = np.asarray(q_xy, float)
     if q_xy.ndim != 2 or q_xy.shape[1] != 2 or not np.isfinite(q_xy).all():
         raise ValueError('q_xy must be finite (pixels,2)')
     ni = len(elastic.beams.hkl)
     ob = elastic.beams if outgoing_beams is None else outgoing_beams
     no = len(ob.hkl)
+    if not isinstance(positions_by_group,Mapping) or not positions_by_group:
+        raise ValueError('At least one explicit site-position group required')
+    positions_by_group={key:np.asarray(positions,float) for key,positions in positions_by_group.items()}
+    if any(p.ndim!=2 or p.shape[1:]!=(3,) or not len(p) or not np.isfinite(p).all() for p in positions_by_group.values()):
+        raise ValueError('Groups require finite nonempty explicit fractional positions')
     # Mode-pair integral + complex temporaries, numerical propagation and output.
     dense = 80*(ni*no)**2/2**20
-    working = dense+(128*(ni*no+depth_steps*(ni+no+12))+144*len(q_xy))/2**20+8
+    working = dense+(128*(ni*no+depth_steps*(ni+no+12))+144*len(q_xy)*len(positions_by_group)
+                     +64*ni*no*sum(len(p) for p in positions_by_group.values()))/2**20+8
     with reserve_memory(working, memory_budget_mib, dense_mib=dense):
         if prepared_incoming is not None:
             if (not isinstance(prepared_incoming,PreparedBlochIncoming) or prepared_incoming.elastic is not elastic
@@ -185,15 +211,10 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
                 raise ValueError('Prepared incoming Bloch fields do not match elastic object, thickness or depth grid')
             incoming=prepared_incoming
         else:incoming = BlochStates.solve(elastic.hamiltonian_nm_inv(), elastic.beams.hkl.index((0,0,0)))
-        delta = np.asarray(elastic.beams.hkl)[:, None, :]-np.asarray(ob.hkl)[None, :, :]
-        if ionization_sites is None and not all(s == 'Ni' for s in elastic.crystal.species):
-            raise ValueError('Equivalent-site response currently supports Ni only')
-        positions = elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)
-        if len(positions) == 0:
-            raise ValueError('At least one core site required')
-        phases,site_weights = equivalent_site_phases(elastic.beams.hkl,ob.hkl,positions)
+        site_phases={key:equivalent_site_phases(elastic.beams.hkl,ob.hkl,positions)
+                     for key,positions in positions_by_group.items()}
         gi = elastic.reciprocal_vectors_xy
-        result = np.empty((len(q_xy),3,3), complex)
+        result = {key:np.empty((len(q_xy),3,3),complex) for key in positions_by_group}
         qz = -characteristic_qz_angstrom_inv(energy_ev, elastic.microscope.acceleration_kv)
         eo = outgoing_elastic(elastic, (0., 0.), energy_ev, ob)
         reference_h = eo.hamiltonian_nm_inv()
@@ -210,8 +231,10 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
             transfer[..., :2] = q+go[None, :, :]-gi[:, None, :]
             transfer[..., 2] = qz
             kernel = dipole_kernel(transfer)
-            result[p] = sum(weight*depth_response(incoming, outgoing, kernel*phase[..., None], thickness_nm,
-                method=method, depth_steps=depth_steps, cancelled=cancelled) for phase,weight in zip(phases,site_weights))
+            for key,(phases,site_weights) in site_phases.items():
+                check_cancelled(cancelled)
+                result[key][p] = sum(weight*depth_response(incoming, outgoing, kernel*phase[..., None], thickness_nm,
+                    method=method, depth_steps=depth_steps, cancelled=cancelled) for phase,weight in zip(phases,site_weights))
         check_cancelled(cancelled)
         return result
 

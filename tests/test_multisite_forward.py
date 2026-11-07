@@ -145,7 +145,7 @@ def test_detector_only_reduction_matches_full_grid(tmp_path):
 
 
 @pytest.mark.parametrize('failure',['uncovered','nan','unordered','zero','incident','species','axis','frame',
-                                    'identity','assignment','occupancy','double','map_energy'])
+                                    'identity','assignment','occupancy','ms_double','map_energy'])
 def test_invalid_inputs_fail_before_geometry_or_propagation(tmp_path,monkeypatch,failure):
     structure,settings,sites,refs=system(tmp_path)
     cfg=configuration()
@@ -171,7 +171,7 @@ def test_invalid_inputs_fail_before_geometry_or_propagation(tmp_path,monkeypatch
         else:path.write_text(path.read_text()+' ')
     elif failure=='assignment':structure.atoms.positions[0,0]+=.1
     elif failure=='occupancy':structure.atoms.info['occupancy']={'0':{'Ni':.5}}
-    elif failure=='double':cfg=replace(cfg,channeling_model='double')
+    elif failure=='ms_double':cfg=replace(cfg,channeling_model='double',propagation='fft-multislice')
     elif failure=='map_energy':cfg=replace(cfg,selected_edges=(('outside',711.),))
     def forbidden(*args,**kwargs):
         pytest.fail('Invalid input reached expensive calculation/preflight')
