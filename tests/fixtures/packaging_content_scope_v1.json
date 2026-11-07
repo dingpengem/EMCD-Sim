@@ -24,8 +24,8 @@
     },
     "tests/mdff_editor_source_scope.py": {
       "mode": "canonical",
-      "sha256": "1a99976c2f729826b2729ff3bf84631af0e95a1ed08d30b794755a650968f3d9",
-      "canonical_sha256": "1a99976c2f729826b2729ff3bf84631af0e95a1ed08d30b794755a650968f3d9"
+      "sha256": "4086835c5ae60109f1b1fd6ebac38196c7f652bd76cf75d7346e9dffa4090161",
+      "canonical_sha256": "4086835c5ae60109f1b1fd6ebac38196c7f652bd76cf75d7346e9dffa4090161"
     },
     "tests/test_mdff_editor_source_scope.py": {
       "mode": "canonical",

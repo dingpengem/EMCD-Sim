@@ -11,7 +11,7 @@ import zipfile
 
 MANIFEST_PATH = 'tests/fixtures/packaging_content_scope_v1.json'
 ARCHIVE_PATH = 'tests/fixtures/packaging_content_parent_v1.zip'
-MANIFEST_SHA256 = 'c9f5a49b3dee3b2cd710fc158700e048e74c80d833b53c88a416c411e16399d2'
+MANIFEST_SHA256 = 'c0a918029b386fcfb7c22aac75a4cae2e9fc86be10d4b4f12889bfb14dd09178'
 ARCHIVE_SHA256 = '56f8e6512e0a9fd9118f67935d99884dc03b6423edbbba550398969b058ced3f'
 PARENT = '3609dfc762749024a3c6726c3763ef33f3e46482'
 MODIFIED = ('packaging/BETA_README.txt', 'packaging/README.md',
