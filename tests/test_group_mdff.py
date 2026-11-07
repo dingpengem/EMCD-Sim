@@ -42,7 +42,7 @@ def create(editor,name,indices,direction='0 0 1'):
 
 
 def imported(dialog,path):
-    dialog.model.setCurrentIndex(2);dialog.manual_mode.setCurrentIndex(0)
+    dialog.model.setCurrentIndex(2);dialog.manual_mode.setCurrentIndex(3)
     dialog.import_path.setText(str(path));dialog.declaration.setChecked(True)
 
 
@@ -111,9 +111,13 @@ def test_species_axis_coverage_identity_and_explicit_revalidation(viewer,tmp_pat
     for path in [source(tmp_path,'Ni',element='Ni'),source(tmp_path,'wrong-axis',axis=(1,0,0))]:
         imported(dialog,path);assert dialog.apply_configuration() is None
     path = source(tmp_path);imported(dialog,path)
-    dialog.bounds.setText('700 730');dialog.declaration.setChecked(True);assert dialog.apply_configuration() is None
+    dialog.energy_window.source_bounds.setChecked(False)
+    dialog.energy_window.low.setValue(700);dialog.energy_window.high.setValue(730)
+    dialog.declaration.setChecked(True);assert dialog.apply_configuration() is None
     assert 'coverage' in dialog.status.text()
-    dialog.bounds.setText('707 726');dialog.samples.setText('710 723')
+    dialog.energy_window.low.setValue(707);dialog.energy_window.high.setValue(726)
+    dialog.energy_window.kind.setCurrentText('Selected energies')
+    dialog.energy_window.add_energy(710);dialog.energy_window.add_energy(723)
     dialog.declaration.setChecked(True)
     assert dialog.apply_configuration() is not None
     editor.apply();original = editor.rows()[0][4]
@@ -135,10 +139,13 @@ def test_species_axis_coverage_identity_and_explicit_revalidation(viewer,tmp_pat
 
 def test_explicit_manual_pair_has_real_odd_component_and_full_frame(viewer):
     editor = viewer.editor;create(editor,'Fe',[0],'1 0 0');dialog = editor.configure_mdff()
-    dialog.model.setCurrentIndex(2);dialog.manual_mode.setCurrentIndex(1)
-    dialog.manual_energy.setText('704 710 723 730');dialog.manual_selected.setText('{"L3":710,"L2":723}')
+    dialog.model.setCurrentIndex(2);dialog.manual_mode.setCurrentIndex(2)
+    dialog.constant_energy.low.setValue(704);dialog.constant_energy.high.setValue(730)
+    dialog.manual_edges.set_rows([('L3',710),('L2',723)])
     frame = [[0,0,1],[0,1,0],[-1,0,0]]
-    dialog.manual_frame.setText(json.dumps(frame));dialog.manual_source.setText('Explicit synthetic pair')
+    for i in range(3):
+        for j in range(3):dialog.manual_frame.item(i,j).setText(str(frame[i][j]))
+    dialog.manual_source.setText('Explicit synthetic pair')
     dialog.manual_validity.setText('Synthetic software test only')
     for tensor,scale in zip(dialog.pair,(2.,1.)):
         with QtCore.QSignalBlocker(tensor.cells):
@@ -176,7 +183,7 @@ def test_existing_atomic_and_xmcd_editors_bind_independently(viewer,tmp_path):
     path = tmp_path/'Fe.xmcd';np.savetxt(path,np.column_stack((energy,right,left,right-left,right+left)))
     xmcd.source_path.setText(str(path));xmcd.spin['xl3'].setValue(710);xmcd.spin['xl2'].setValue(723)
     xmcd.xmcd_provenance.setText('Explicit synthetic RP/LP source');xmcd.xmcd_validity.setText('Axisymmetric proxy test only')
-    xmcd.xmcd_scale.setText('3');xmcd.eta.setText('1');xmcd.beta.setText('0')
+    xmcd.xmcd_scale.setText('3');xmcd.eta.setValue(1);xmcd.beta.setValue(0)
     xmcd.xmcd_status.setCurrentText('synthetic');xmcd.declaration.setChecked(True)
     assert xmcd.apply_configuration() is not None,xmcd.status.text()
     assert [r[4].model for r in editor.rows()] == ['atomic','xmcd']
@@ -205,18 +212,30 @@ def test_native_group_mdff(tmp_path,app,monkeypatch):
     window = MainWindow(workspace=tmp_path/'workspace')
     monkeypatch.setattr(window,'store_ui_preferences',lambda:None)
     try:
-        original_axis = window.axis.text()
+        window.axis.setText('0 1 0');original_axis = window.axis.text()
         window.structure = Structure(Atoms('Fe2',scaled_positions=[[.1,.1,.1],[.5,.5,.5]],cell=[5]*3,pbc=True))
         window.show_structure_viewer();viewer = window.structure_viewer
         viewer.tabs.setCurrentWidget(viewer.editor);app.processEvents()
         editor = viewer.editor;create(editor,'Fe(A)',[0]);dialog = editor.configure_mdff()
-        imported(dialog,source(tmp_path));app.processEvents()
+        from test_group_mdff_native_controls import matrix,native_xmcd
+        dialog.model.setCurrentIndex(2);matrix(dialog.manual_tensor)
+        assert dialog.manual_mode.currentIndex() == 0
+        dialog.declaration.setChecked(True);app.processEvents()
         assert not window.axis.isEnabled() and window.axis.text() == original_axis
         assert QtTest.QTest.qWaitForWindowExposed(dialog.windowHandle(),3000)
         QtTest.QTest.mouseClick(dialog.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply),QtCore.Qt.MouseButton.LeftButton)
         assert editor.mdff_status(editor.rows()[0]) == 'Configured and valid'
         assert dialog.reference is editor.rows()[0][4]
         if os.environ.get('EMCD_VIEWER_CHECK_IMAGE'):dialog.grab().save(os.environ['EMCD_VIEWER_CHECK_IMAGE'])
+        native_xmcd(dialog,tmp_path/'native-Fe.xmcd');app.processEvents()
+        assert not dialog.xmcd_preview.is_stale,dialog.xmcd_preview.status.text()
+        QtTest.QTest.mouseClick(dialog.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply),QtCore.Qt.MouseButton.LeftButton)
+        assert editor.rows()[0][4].model == 'xmcd'
+        assert not window.axis.isEnabled() and window.axis.text() == original_axis
+        if os.environ.get('EMCD_VIEWER_CHECK_IMAGE'):
+            from pathlib import Path
+            image_path = Path(os.environ['EMCD_VIEWER_CHECK_IMAGE'])
+            dialog.grab().save(str(image_path.with_stem(image_path.stem+'_xmcd')))
         dialog.close();editor.apply();viewer.close();window.show_structure_viewer();app.processEvents()
         assert editor.validated_site_groups is not None
         assert not window.axis.isEnabled() and window.axis.text() == original_axis
