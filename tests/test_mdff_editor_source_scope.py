@@ -24,8 +24,11 @@ def positive_gate():
     positive()  # Failure prevents every mutation case in this module.
 
 
-@pytest.fixture
-def isolated(tmp_path, monkeypatch):
+@pytest.fixture(scope='module')
+def isolation_tree(tmp_path_factory, positive_gate):
+    # Mutation cases restore their bytes in finally blocks; isolated() verifies
+    # that restoration before the next case reuses this disposable copy.
+    tmp_path = tmp_path_factory.mktemp('editor-isolated')
     scope, _ = editor.load_scope()
     paths = set(historical.extension()) | set(units.reviewed_baseline_sources()) | set(editor.MODIFIED+editor.ADDED+editor.PROTECTED+editor.HISTORY) | {editor.MANIFEST_PATH, editor.ARCHIVE_PATH}
     import mdff_usability_source_scope as usability
@@ -33,6 +36,13 @@ def isolated(tmp_path, monkeypatch):
     for path in paths:
         target = tmp_path/path; target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(editor.ROOT/path, target)
+    return tmp_path
+
+
+@pytest.fixture
+def isolated(isolation_tree, monkeypatch):
+    tmp_path = isolation_tree
+    import mdff_usability_source_scope as usability
     monkeypatch.setattr(editor, 'ROOT', tmp_path)
     monkeypatch.setattr(units, 'ROOT', tmp_path)
     monkeypatch.setattr(units, 'FIXTURES', tmp_path/'tests/fixtures')

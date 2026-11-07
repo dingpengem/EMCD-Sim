@@ -139,9 +139,9 @@
       "raw_sha256": "8e41244802658064bb145d959b04c2aac67d81f937da9cc5f4ebb9567f2049bd"
     },
     "tests/test_mdff_editor_source_scope.py": {
-      "canonical_sha256": "345b82385a3c3956b956882eef348bec07a033b24af64320a5504f5f67d43673",
+      "canonical_sha256": "30ea5110d20351e19783361a4202d91bb3b326a5ec204c62a5ec877b1f8f018b",
       "mode": "canonical",
-      "raw_sha256": "252a78ad84358ff9fdfced6e85da738f0410ad99340b9e451578f60280b79d2e"
+      "raw_sha256": "26ffb04a8e1e83d7e947c7d976bf9d0b5848e328d0679bc22645f55e31fccab5"
     },
     "tests/test_mdff_usability_source_scope.py": {
       "canonical_sha256": "fb66bfa4b0e0bd170e49229746b329043641b9f7b3674e6b68bca8f8f7368009",
