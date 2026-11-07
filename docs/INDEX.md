@@ -1,6 +1,6 @@
 # Documentation index
 
-[Home](../README.md) · [Published Windows prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1) · [Next prerelease draft](RELEASE_NOTES_0_8_1_BETA_2.md)
+[Home](../README.md) · [Published Windows prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) · [Beta.2 release notes](RELEASE_NOTES_0_8_1_BETA_2.md)
 
 ## Current user documentation
 
@@ -13,19 +13,20 @@
 |[User Manual](USER_GUIDE.md)|Control-by-control reference, projects, warnings and exports|
 |[Physics and numerical methods](PHYSICS.md)|Current corrected convention, support, approximations and source map|
 |[Physical units](PHYSICAL_UNITS.md)|g=1/d versus Q=2πg; unchanged saved numbers|
-|[GUI technical navigation](EMCD_GUI.md)|Source responsibilities and diagnostic boundaries|
+|[GUI technical navigation (historical baseline)](EMCD_GUI.md)|Original source map and diagnostic boundaries; use the current MDFF guide for the redesigned interface|
 |[Local Part 1B provider consolidation](GENERALIZED_CODE_CONSOLIDATION_0_8_1.md)|Unified MDFF architecture, compatibility inventory, exact source/native acceptance and limits; separate from publication|
 |[Verified figure provenance](images/v070b1/README.md)|Actual EXE captures, case-study figures and source/data hashes|
 |[Recalculated Ni example provenance](images/ni017_flipm_recomputed/README.md)|Fresh 9/30 nm spectra, twelve portraits, conventional versus fixed-detector Flip-M|
 |[Changelog](CHANGELOG.md)|Version/milestone and documentation history|
 
-Current-main guides describe the MDFF update prepared for prerelease v0.8.1-beta.2. Published v0.8.1-beta.1 has an older interface; use its tag-specific documentation for that binary. The development EXE is `0.8.1b1` / `aaa69a1`, not a relabeled beta.2 asset. Older validation and acceptance documents below retain their historical source/artifact identities and do not certify this proposed prerelease.
+Current user guides describe the MDFF interface shipped in **v0.8.1-beta.2**, package version `0.8.1b2`, built from `88dc9ec` (Windows numeric version `0.8.1.2`). Published beta.1 has an older interface; use its tag-specific documentation for that binary. Historical development EXE `aaa69a1` embedded `0.8.1b1` and is distinct from the rebuilt beta.2 package. Older validation and acceptance documents retain their milestone-specific source/artifact identities; current beta.2 checks and historical results are distinguished in the [release notes](RELEASE_NOTES_0_8_1_BETA_2.md).
 
 ## Scientific validation and acceptance
 
 - [Neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md): bundled Apache-2.0 Z=1–118 Adaptive default, named Ni Lobato compatibility, external Z=1–98 table and strict Mott limits, CIF indexing and [local acceptance](acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md).
 
-- [Public release entry](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1): authoritative publication state, assets, hashes and limitations.
+- [Current public release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2): beta.2 assets and publication status; [release validation](RELEASE_NOTES_0_8_1_BETA_2.md#validation-evidence-and-scoped-exception) separates the passed focused/native checks from historical results and the absence of a final full-suite rerun.
+- [Historical v0.8.0-beta.1 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1): that milestone's assets, hashes and limitations.
 - [Original candidate/native acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md): recorded build `41516996056`, exact binary provenance and bounded native outcomes. Its prepublication status is historical.
 - [Physics correction acceptance](PHYSICS_CORRECTION_ACCEPTANCE.md) and [final integration](PHYSICS_CORRECTION_FINAL_INTEGRATION.md): corrected forward-Born conventions and independent controls.
 - [Generalized Multislice merge review](GENERALIZED_MULTISLICE_MERGE_READINESS.md): bounded five-orientation support and unresolved [111] convergence, not unrestricted certification.

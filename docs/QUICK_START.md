@@ -2,13 +2,13 @@
 
 [Home](../README.md) | [Installation](INSTALL_WINDOWS.md) | [MDFF workflows](MDFF_WORKFLOWS.md) | [Tutorial](TUTORIAL.md)
 
-This is a small functional demonstration for current main/the local MDFF development build. It is not a convergence result or timing guarantee. The next beta.2 package remains [prerelease](RELEASE_NOTES_0_8_1_BETA_2.md#publication-status); for the older published binary use the [beta.1 Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.1/docs/QUICK_START.md).
+This is a small functional demonstration for the published [v0.8.1-beta.2 Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2). It is not a convergence result or timing guarantee. Install the [required Microsoft runtime and complete application ZIP](INSTALL_WINDOWS.md) first. For the older beta.1 binary, use its [version-specific Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.1/docs/QUICK_START.md).
 
 ## 1. Start with the existing Ni example
 
 Launch the application and choose **File > New** to restore the Ni structure. No project JSON is needed. Set nominal zone **0 0 1**, target **2 0 0**, then **Apply orientation / target**. Set **200 kV**, **0.2 nm** thickness, and tilt **-5, +7 mrad**. Use **Restore Thales A/B** after setting the geometry. Leave the current elastic provider explicit in your recorded settings; choose Ni Lobato only when reproducing an example that used it.
 
-Under **Model**, open **Configure MDFF...** and choose **XMCD-constrained MDFF**. Select and validate the bundled Ni five-column source. In a development binary it is `_internal/data/wien2k_ni/Ni_fm.xmcd`; in source it is `data/wien2k_ni/Ni_fm.xmcd`. Do not retain a different material's file from an earlier session.
+Under **Model**, open **Configure MDFF...** and choose **XMCD-constrained MDFF**. Select and validate the bundled Ni five-column source. In the beta.2 Windows package it is `_internal/data/wien2k_ni/Ni_fm.xmcd`; in source it is `data/wien2k_ni/Ni_fm.xmcd`. Do not retain a different material's file from an earlier session.
 
 Use the native features actually returned by validation, crystal Cartesian M **0 0 1**, **eta = 1**, and **beta = 1**. Review and acknowledge the documented source magnetic axis, RP/LP convention, and edge assignment. The native calculated energies are not an experimental Ni edge calibration. For ambiguous input, both selections must be explicit; existing numbers are insufficient.
 

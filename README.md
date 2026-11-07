@@ -2,7 +2,7 @@
 
 Research software for **electron magnetic circular dichroism (EMCD)**, core-loss EELS, and dynamical electron diffraction in transmission electron microscopy. EMCD-Sim connects crystal geometry, elastic propagation, a declared mixed dynamic form factor (MDFF), and virtual detectors to examine magnetization reversal and model sensitivity.
 
-[Published Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1) | [Installation](docs/INSTALL_WINDOWS.md) | [First calculation](docs/QUICK_START.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md) | [User manual](docs/USER_GUIDE.md)
+[Published Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) | [Installation](docs/INSTALL_WINDOWS.md) | [First calculation](docs/QUICK_START.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md) | [User manual](docs/USER_GUIDE.md)
 
 **Windows Research Beta v0.8.1-beta.2.** The [release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) includes the MDFF update below. Install the official Microsoft x64 v14 runtime first; see [installation and accompanying Qt sources](docs/INSTALL_WINDOWS.md) and [release notes](docs/RELEASE_NOTES_0_8_1_BETA_2.md). Earlier beta.1 assets remain unchanged.
 
@@ -30,7 +30,7 @@ Per-element drafts, parameter explanations, frame diagrams, component plots, and
 
 ## Installation to a first result
 
-For a published binary, download the complete Windows ZIP and supplied checksum from its [version-specific release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1), verify it, and extract the entire `EMCD-Sim` folder. Keep `_internal` beside `EMCD-Sim.exe`. Binary users need neither Python, Conda, WIEN2k, nor an existing project JSON. Use the documentation for that binary version.
+For a published binary, download the complete Windows ZIP and supplied checksum from the [beta.2 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), verify it, and extract the entire `EMCD-Sim` folder. Keep `_internal` beside `EMCD-Sim.exe`. Binary users need neither Python, Conda, WIEN2k, nor an existing project JSON. Use the documentation for that binary version.
 
 For the new editor, install beta.2 or [install current main from source](docs/INSTALL_WINDOWS.md#source-installation). Then:
 
@@ -50,7 +50,7 @@ XMCD supplies an axisymmetric effective response constrained by intensities, not
 
 There is no general multi-element/inequivalent-site MDFF, noncollinear magnetic texture, AFM/SDW material model, or certified quantitative Fe spectroscopy. Convergence requires separate basis, potential, FFT, depth/slice, and detector studies. BW/MS agreement does not eliminate shared approximations. [Planned work](docs/INDEX.md#experimental-and-planned-work) is separate from implemented functionality.
 
-Windows is the tested packaged platform. The development EXE passed a real application-created Fe fixture project, application restart, and recalculation on the development host; independent clean-machine installation remains unverified. Linux/macOS packages are not supplied or certified. Recorded Linux interpreter-shutdown and macOS Qt-modal CI problems remain limitations.
+Windows x64 is the tested packaged platform. The beta.2 EXE passed an application-created synthetic Fe fixture project, application restart, and recalculation on the development host; independent clean-machine installation remains unverified. Linux/macOS packages are not supplied or certified. Recorded Linux interpreter-shutdown and macOS Qt-modal CI problems remain limitations.
 
 **Validation status — v0.8.1-beta.2:** Release source `88dc9ec` passed **21 focused packaging/safeguard checks**, and the packaged Windows EXE passed native verification of XMCD ambiguity rejection, explicit Fe 710/723 eV preview/calculation, and normal saving, restart, reopening, and recalculation. The XMCD ambiguity issue identified in the earlier full-suite run was fixed in `4f15a4d`; the repair passed **four focused regression cases** with the original failed assertion preserved. **A complete full-suite rerun was not performed on the final release.** Historical test results and the prerelease-specific validation exception are documented in [validation history and release status](docs/RELEASE_NOTES_0_8_1_BETA_2.md).
 

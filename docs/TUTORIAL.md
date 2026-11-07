@@ -1,10 +1,10 @@
 # EMCD-Sim Tutorial: From Crystal Structure to EMCD Spectra
 
-Current-main interface note: use **Model > Configure MDFF...** and the [MDFF workflow guide](MDFF_WORKFLOWS.md) for the new Atomic/manual editors, explicit XMCD selections, and project creation. Historical control names and Ni examples below retain their original context. The next Windows prerelease is [an prerelease draft](RELEASE_NOTES_0_8_1_BETA_2.md), not an existing new download.
+Current-interface note: [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) is published. Use **Model > Configure MDFF...** and the [MDFF workflow guide](MDFF_WORKFLOWS.md) for its Atomic/manual editors, explicit XMCD selections, and project creation. The tutorial below retains its v0.8.0 control descriptions and historical Ni examples; it is not a complete walkthrough of the redesigned editor.
 
 [Home](../README.md) · [Install](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [User Manual](USER_GUIDE.md) · [Physics](PHYSICS.md)
 
-This tutorial describes **v0.8.0-beta.1, a Windows-only Research Beta**, with bundled Adaptive Dirac–Padé neutral Z=1–118 factors as the new GUI default. Historical saved Ni settings retain Lobato; select it explicitly to reproduce the preserved case study. Linux/macOS are not certified packaged platforms. It explains the small [Quick Start](QUICK_START.md), then interprets a completed research case. You do **not** need to rerun the expensive case study to learn the workflow.
+The retained tutorial describes **v0.8.0-beta.1, a historical Windows-only Research Beta**, with bundled Adaptive Dirac–Padé neutral Z=1–118 factors as the new GUI default. Historical saved Ni settings retain Lobato; select it explicitly to reproduce the preserved case study. Linux/macOS are not certified packaged platforms. It explains the small [Quick Start](QUICK_START.md), then interprets a completed research case. You do **not** need to rerun the expensive case study to learn the workflow.
 
 Native Windows acceptance is not universal numerical or experimental validation. Older v0.6.1 signed magnetic results use a superseded convention and need revalidation; opening them does not update their physics.
 

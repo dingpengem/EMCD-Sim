@@ -2,7 +2,7 @@
 
 [Home](../README.md) | [Installation](INSTALL_WINDOWS.md) | [Quick Start](QUICK_START.md) | [User manual](USER_GUIDE.md)
 
-This guide describes current main's redesigned **Configure MDFF...** dialog and the proposed beta.2 update. The published beta.1 interface is older. [Publication status](RELEASE_NOTES_0_8_1_BETA_2.md#publication-status) distinguishes the tested development EXE from a downloadable new release.
+This guide describes the **Configure MDFF...** dialog shipped in [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2). The published beta.1 interface is older; use its tag-specific documentation for that binary. See [release status and validation history](RELEASE_NOTES_0_8_1_BETA_2.md#publication-status) for the beta.2 package and its recorded verification.
 
 ## Choose a construction method
 
@@ -107,7 +107,7 @@ This example exercises software behavior, not scientific Fe accuracy. It require
 
 1. Open the supplied `Fe_BCC_a2.8665.cif` (`_internal/examples` in the development binary; `packaging/assets/examples` in source).
 2. Set nominal zone **0 0 1**, target **1 1 0**, and apply orientation/target. Set **200 kV**, **0.2 nm**, and tilts **-5, +7 mrad**. Restore Thales detectors after setting the geometry.
-3. In **Configure MDFF...**, choose **Atomic Ionization MDFF** and import the complete existing `synthetic_fe_atomic_parameters.json` through the editor's import action. It is under `_internal/examples` in the development binary and [docs/examples](examples/synthetic_fe_atomic_parameters.json) in source. Confirm draft replacement if prompted. Its explicit references are **710/723 eV**; retain its synthetic provenance and remaining complete parameters.
+3. In **Configure MDFF...**, choose **Atomic Ionization MDFF** and import the complete existing `synthetic_fe_atomic_parameters.json` through the editor's import action. It is under `_internal/examples` in the beta.2 Windows package and [docs/examples](examples/synthetic_fe_atomic_parameters.json) in source. Confirm draft replacement if prompted. Its explicit references are **710/723 eV**; retain its synthetic provenance and remaining complete parameters.
 4. Use **Update numerical preview**. Confirm Fe, synthetic status, and current numerical tensor output. A schematic alone does not establish successful generation.
 5. Choose **Single Channeling**, **Bloch-wave**, and **Numerical Settings > Manual (Advanced)**. Use beam cutoff **0.6 inverse Angstrom**, potential cutoff **1.2 inverse Angstrom**, odd angular grid **9**, depth nodes **5**, aperture subpixels **4**, map halfwidth **0.7 inverse Angstrom**, and requested workers **1** in Manual worker mode. Use selected declared edge samples for a short run. These are coarse demonstration settings, not a convergence result or full EELS spectrum.
 6. Run **EMCD / EELS**. Inspect L3/L2 maps and the two selected detector samples. Do not call two points a resolved white-line spectrum.

@@ -1,4 +1,8 @@
-# Windows candidate build
+# Windows packaging and build
+
+Current published package: [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), Python package `0.8.1b2`, Windows version `0.8.1.2`. Use the current release-build instructions and [beta.2 dependency distribution](#beta2-dependency-distribution) below. The internal-candidate inventory in the next section is historical; it does not describe the dependencies shipped in beta.2.
+
+## Historical packaging inventory — internal candidate 3609dfc7
 
 Packaging correction for internal MDFF candidate 3609dfc7: required CIFs are
 `_internal/examples/Fe_BCC_a2.8665.cif` and `Ni_FCC_a3.52.cif` beside their
@@ -7,6 +11,8 @@ notices are accessible at `_internal/licenses/qt/README.txt`; the eight readable
 notice collections have byte-exact upstream ZIPs and per-member provenance.
 These paths are relative to the extracted application folder, not a working
 directory. Existing scientific data and registered XMCD bytes remain unchanged.
+
+## Required packaging checks
 
 `check_package_contents.py --environment` authenticates pinned inputs before
 PyInstaller (also called by the spec). After collection, `--dist <app-folder>`
@@ -17,13 +23,15 @@ boundary; do not regenerate them as part of building or use a different Qt wheel
 without a new license/content review. Direct spec builds collect the same assets;
 run the post-collection check before accepting their distribution.
 
+## Historical dependency and acceptance notes
+
 The audited DLLs are Qt 6.12.0 except Qt PDF 6.140.0 (wheel
 PySide6_Pdf 6.12.0.140). Virtual Keyboard is GPLv3/commercial. The license
 collection is not a complete corresponding-source offer or release approval;
 see the component inventory's explicit redistribution limitations. Keep offline
 isolation and the upstream HDF5 comparison UNVERIFIED until separately tested.
 
-The Windows-only v0.8.1-beta.1 Research Beta uses version 0.8.1b1 and uses a separate build root and local-candidate label. The Adaptive Diracâ€“PadÃ© JSON coefficients, provenance, Apache-2.0 LICENSE and NOTICE are collected from `emcd_sim/data/adaptive_dirac_pade_2026`. Neither h5py nor the upstream HDF5 archives are runtime requirements; the original unlicensed atomic table remains external. CIF support still uses the declared ASE imports and space-group data.
+The Windows-only v0.8.1-beta.1 Research Beta uses version 0.8.1b1 and uses a separate build root and local-candidate label. The Adaptive Dirac–Padé JSON coefficients, provenance, Apache-2.0 LICENSE and NOTICE are collected from `emcd_sim/data/adaptive_dirac_pade_2026`. Neither h5py nor the upstream HDF5 archives are runtime requirements; the original unlicensed atomic table remains external. CIF support still uses the declared ASE imports and space-group data.
 
 After building from a clean committed source, exercise the actual EXE on Windows:
 
@@ -32,6 +40,8 @@ EMCD-Sim.exe --unified-elastic-acceptance C:/new-acceptance-output --unified-his
 ```
 
 This opt-in mode requires a fresh output directory and a genuine checksummed historical Ni project. It runs real GUI workers, saves/reopens projects, imports Fe/CsCl/ZnO/monoclinic CIFs, validates rendered indices/clicks, checks the Ni-only MDFF gate and runs only two selected Ni energies for each of Single and Double Channeling, with magnetization reversal and saved-project checks. Automated file-dialog selections choose the supplied local paths. Saved historical arrays are opened read-only; a copy is saved under the new output directory. Run without a headless Qt override for native acceptance and inspect process exit, `acceptance.json`, screenshots and logs. This command only performs acceptance; publishing is a separate authorized step. See [local main acceptance](../docs/acceptance/unified-elastic-2026-11-03/MAIN_INTEGRATION_ACCEPTANCE.md).
+
+## Current Windows release build
 
 Current release: **v0.8.1-beta.2 / 0.8.1b2**, convention
 `forward_born_dagger_g_minus_h_v1`. Use a fresh Python 3.11 Windows build venv

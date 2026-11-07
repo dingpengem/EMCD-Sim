@@ -1,13 +1,13 @@
-EMCD-Sim v0.8.1-beta.2 - Part 1B LOCAL Windows Research Candidate
-Windows x64 portable research software; unsigned. Python package 0.8.1b1.
-Windows numeric file/product version 0.8.1.1 remains unchanged.
+EMCD-Sim v0.8.1-beta.2 - Windows Research Beta prerelease
+Windows x64 research software; unsigned. Python package 0.8.1b2.
+Windows numeric version 0.8.1.2; ProductVersion v0.8.1-beta.2.
 Physics convention: forward_born_dagger_g_minus_h_v1.
 Exact build source, version and coefficient identity are in About/build_info.json.
-This local build does not push, create a tag, or publish a release.
+Published prerelease: https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2
 
 Extract the complete folder. Run EMCD-Sim.exe; keep _internal beside it.
 Python, Conda and WIEN2k are not required. Use a writable project/export folder.
-SHA256SUMS.txt lists the application files; the ZIP checksum is supplied separately.
+Verify the downloaded ZIP against the matching release's SHA256SUMS.txt.
 Acceptance is on the development Windows host, not an independent clean PC/VM.
 Linux/macOS applications are not certified or packaged by this candidate.
 
@@ -26,7 +26,7 @@ THREE MDFF CHOICES, ONE PROPAGATION FRAMEWORK
 The same choices are visible for every crystal:
 1. XMCD-constrained MDFF
 2. Atomic Ionization MDFF
-3. Imported Complex MDFF Tensor
+3. Manual tensor (including advanced imported tensor exchange)
 Run eligibility depends on valid source/model inputs and supported equivalent
 sites in a fully occupied single-element crystal, not menu visibility.
 Shared BW/MS Single/Double propagation and tensor contraction are independent of
@@ -42,17 +42,21 @@ Ambiguous features require explicit native-energy selections. No separate tensor
 JSON, DFT wavefunctions, or WIEN2k installation is required. The axisymmetric
 effective tensor is approximate, not a complete ab-initio complex MDFF.
 
-Atomic Ionization: select explicit parameter JSON directly in the Atomic panel,
-validate it, and acknowledge the approximate model. The original synthetic Fe
-example is _internal/examples/synthetic_fe_atomic_parameters.json. Its numbers
-are software test inputs, not measured, fitted or quantitatively validated Fe.
-Every material input must be declared. This provider is restricted to the accepted
-Sc-Zn 2p-to-cubic-3d L2,3 model, local +z spin and proper rigid frame rotations.
-It is not an arbitrary crystal-field, core-loss-edge or many-body multiplet model.
-Without explicit JSON, the historical Ni controls retain their original Ni-only
-interpretation; those electronic parameters are not transferred to other elements.
+Atomic Ionization: use Model > Configure MDFF... and the element-aware editor
+for the cubic independent-electron Sc-Zn 2p-to-3d L2,3 model. Inspect reference
+energies, Gaussian width, magnetization/frame, crystal-field and exchange
+splitting, spin-resolved holes, radial input, and per-element drafts. Generic
+electronic defaults are explicitly synthetic, not measured material properties.
+Complete parameter JSON can also be imported/exported. The supplied example is
+_internal/examples/synthetic_fe_atomic_parameters.json; it is a software test,
+not fitted or quantitatively validated Fe spectroscopy. Historical saved Ni
+settings retain their original interpretation. This is not a full multiplet,
+band-structure, or arbitrary-edge model.
 
-Imported Complex MDFF: supply the declared complex 3x3 dipole tensor JSON, units,
+Manual tensor: edit a constant complex Hermitian PSD 3x3 tensor, or independent
+integrated L3/L2 strength tensors broadened by Lorentzian profiles. Finite-window
+tail loss is displayed without automatic renormalization. Advanced imported
+exchange accepts the declared complex 3x3 dipole tensor JSON, units,
 normalization, frame, element/edge, magnetic state, provenance and checksum.
 Nonmagnetic input supplies an explicit even state. Magnetic input supplies both
 states and their shared even tensor. A missing general magnetic state is never
@@ -110,8 +114,8 @@ _internal/examples/Ni_FCC_a3.52.cif. Select these files in the CIF open dialog.
 Their provenance and MIT redistribution terms are in _internal/examples/README.txt
 and LICENSE.txt. The Ni example uses a=3.52 angstrom; built-in Ni uses 3.524.
 Qt component licenses, notices and provenance: _internal/licenses/qt/README.txt.
-Virtual Keyboard has GPLv3/commercial terms; this internal candidate is not a
-release-compliance certification. See the component-specific notice inventory.
+Qt PDF and Virtual Keyboard are excluded from beta.2. Retained components have
+separate license terms; see the component inventory and accompanying source kit.
 
 DISTRIBUTION PREREQUISITES AND SOURCE
 Install Microsoft's official x64 Visual C++ v14 runtime (14.44.35211 or newer)

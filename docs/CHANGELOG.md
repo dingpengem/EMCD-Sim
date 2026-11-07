@@ -8,7 +8,7 @@
 - Require both explicit edge selections for ambiguous XMCD. Preserve Fe 710/723 eV selections after save/reopen and prevent stale JSON overriding later visible controls.
 - Preserve historical saved Atomic settings, reject pending/failed external source validation, restore intended model/frame/inputs, and separate valid Fe elastic preview from MDFF eligibility.
 - Update installation, first-calculation, model-construction, and project-creation documentation. No existing project JSON is required.
-- Validation remains accurate: full candidate run **FAILED** (1,191 passed, 1 failed, 54 skipped); repair **4 focused cases passed**; actual development EXE `aaa69a1` passed native save/reopen/recalculation. The user authorized a prerelease-specific exception to another complete regression.
+- Validation: release source `88dc9ec` passed **21 focused packaging/safeguard checks**, and the beta.2 EXE passed native ambiguity handling, explicit Fe 710/723 eV preview/calculation, and normal save/restart/reopen/recalculation. The earlier full-run XMCD ambiguity issue was fixed in `4f15a4d` and passed **four focused regression cases**. No complete full-suite rerun was performed on the final release; historical results and the authorized prerelease-specific exception remain in the [release notes](RELEASE_NOTES_0_8_1_BETA_2.md#validation-evidence-and-scoped-exception).
 - Explicitly exclude unused Qt PDF/Virtual Keyboard and their dependency chain; provide matching Qt/PySide/Shiboken sources and replacement instructions. Omit Microsoft runtime copies and require the official user-installed x64 runtime. Set consistent beta.2 version metadata. See [release notes](RELEASE_NOTES_0_8_1_BETA_2.md).
 
 ## v0.8.1-beta.1 - Windows-only Research Beta

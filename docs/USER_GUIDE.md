@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [Index](INDEX.md)
 
-This manual combines retained control/physics references with the current-main MDFF update. The new editor is prepared for prerelease v0.8.1-beta.2; the tested development EXE remains 0.8.1b1 / aaa69a1. See [current MDFF workflows](MDFF_WORKFLOWS.md) and [publication/validation status](RELEASE_NOTES_0_8_1_BETA_2.md). For the published beta.1 binary, use its tag-specific documentation. Independent clean-machine installation and Linux/macOS packaged support remain unverified.
+This manual combines retained control/physics references with the MDFF interface shipped in [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), package version `0.8.1b2`, built from `88dc9ec`. See [current MDFF workflows](MDFF_WORKFLOWS.md) and [release/validation status](RELEASE_NOTES_0_8_1_BETA_2.md). For the older beta.1 binary, use its [tag-specific manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.1/docs/USER_GUIDE.md). Independent clean-machine installation and Linux/macOS packaged support remain unverified.
 
 > **Legacy magnetic results:** earlier released v0.6.1 packages used a superseded Born/MDFF convention. Preserve their raw arrays, source and convention; revalidate signed magnetic results before comparison. Loading a project does not update its physics. Missing convention metadata is unknown/legacy-unverified.
 
@@ -311,7 +311,7 @@ PNG/SVG files are visualizations, not full scientific backups. Preserve CSV/NPZ,
 |Angular maps unavailable|Maps were not computed or mirror support is invalid; genuine full-field calculation is required.|
 |Legacy convention warning|Preserve old arrays; opening is not sign/convention revalidation.|
 
-For startup/security/log paths, use [installation troubleshooting](INSTALL_WINDOWS.md#i-troubleshooting). Runtime logs default to `%LOCALAPPDATA%\EMCD-Sim\logs`. Include version, source/convention, requested/effective settings and the exact error when reporting a problem.
+For startup/security/log paths, use [installation troubleshooting](INSTALL_WINDOWS.md#troubleshooting-and-data-locations). Runtime logs default to `%LOCALAPPDATA%\EMCD-Sim\logs`. Include version, source/convention, requested/effective settings and the exact error when reporting a problem.
 
 <a id="scientific-limitations-and-responsible-interpretation"></a>
 ## 22. Scientific limitations and convergence
@@ -332,11 +332,11 @@ Current convention is **forward_born_dagger_g_minus_h_v1**, with `Re Tr(RT)`, co
 
 |Identity|Current public Windows package|
 |---|---|
-|Display / Python / Windows numeric version|v0.8.1-beta.1 / 0.8.1b1 / 0.8.1.1|
-|Release tag target|Exact accepted Windows build-source commit; see release notes/About|
-|Binary source|Same commit as v0.8.1-beta.1 tag target|
-|Windows acceptance|See version-specific release acceptance and source manifest|
-|Portable ZIP SHA256|See v0.8.1-beta.1 SHA256SUMS.txt and release acceptance|
+|Display / Python / Windows numeric version|v0.8.1-beta.2 / 0.8.1b2 / 0.8.1.2|
+|Release tag target|`88dc9ecaed4871043c96a6aa05f0972e23b3b93d`; see [beta.2 release notes](RELEASE_NOTES_0_8_1_BETA_2.md)|
+|Binary source|`88dc9ec`, matching the v0.8.1-beta.2 tag target|
+|Windows verification|21 focused packaging/safeguard checks and native EXE workflow passed; no final full-suite rerun; see [recorded scope](RELEASE_NOTES_0_8_1_BETA_2.md#validation-evidence-and-scoped-exception)|
+|Portable ZIP SHA256|See SHA256SUMS.txt on the [v0.8.1-beta.2 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2)|
 |Physics compatibility|Ni event kernels unchanged; new calculations use Adaptive elastic factors|
 
 Five native orientations, eight exact scientific comparisons, eighteen worker/cancellation scenarios and native overlay/export tests passed within their recorded profiles. These are bounded, partly overlapping inventories, not universal certification. Those earlier inventories refer to v0.7.0. See the [v0.8.0 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1), [release notes](RELEASE_NOTES_0_8_0_BETA_1.md) and [Windows acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_0_BETA_1_ACCEPTANCE.md); the [v0.7.0 acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md) is preserved. Historical acceptance/release notes retain their milestone-specific “not published” statements; the public release entry is authoritative for current publication state.

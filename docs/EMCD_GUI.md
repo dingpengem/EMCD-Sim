@@ -1,8 +1,8 @@
-# Desktop GUI: technical navigation
+# Desktop GUI: historical technical navigation
 
 [User Manual](USER_GUIDE.md) · [Tutorial](TUTORIAL.md) · [Physics](PHYSICS.md) · [Index](INDEX.md)
 
-This page maps the current user workflow to the **released v0.7.0-beta.1** implementation (binary source `97b2220e`). It replaces append-only milestone navigation; the complete [earlier technical/milestone record](https://github.com/dingpengem/EMCD-Sim/blob/08d04fc35fca2071cc7e73af0aaa1de45e49a3f4/docs/EMCD_GUI.md) is preserved at its immutable revision. Acceptance reports and release notes are not rewritten.
+This page records the **v0.7.0-beta.1** implementation map (binary source `97b2220e`), not the complete v0.8.1-beta.2 MDFF interface. For current controls, use the [user manual](USER_GUIDE.md), [MDFF workflows](MDFF_WORKFLOWS.md), and [published beta.2 notes](RELEASE_NOTES_0_8_1_BETA_2.md). The baseline source map is retained for historical context; the complete [earlier technical/milestone record](https://github.com/dingpengem/EMCD-Sim/blob/08d04fc35fca2071cc7e73af0aaa1de45e49a3f4/docs/EMCD_GUI.md) is preserved at its immutable revision. Acceptance reports and release notes are not rewritten.
 
 ## Start with the user workflow
 
@@ -47,6 +47,6 @@ Current opt-in development acceptance routes include `--desktop-acceptance`, `--
 
 ## Current acceptance and unresolved scope
 
-The [native Windows record](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md) identifies the original candidate before public prerelease publication: five orientations, eight exact reference comparisons, eighteen worker/cancellation scenarios and native interaction/export checks passed. Its old publication-status sentences are historical; [the public release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1) records current distribution state.
+The [native Windows record](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md) identifies the original candidate before public prerelease publication: five orientations, eight exact reference comparisons, eighteen worker/cancellation scenarios and native interaction/export checks passed. Its old publication-status sentences are historical; [the v0.7.0 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.7.0-beta.1) records publication of that milestone. For the current package, see the [v0.8.1-beta.2 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2).
 
 Same-host native acceptance is not independent clean-machine acceptance, code signing, experimental validation or global convergence. Linux has outstanding CI issues and macOS is not certified by this Windows release. See [scientific scope](PHYSICS.md) and [manual limitations](USER_GUIDE.md#scientific-limitations-and-responsible-interpretation).
