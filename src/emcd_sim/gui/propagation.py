@@ -26,7 +26,11 @@ def resolve_fft_configuration(structure,settings,cfg):
     return replace(cfg,fft_generators=tuple(tuple(int(v) for v in h) for h in cell))
 
 
-def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True):
+def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True,ionization_sites=None):
+    if ionization_sites is not None:
+        from ..multisite import MultiSiteIonization
+        if not isinstance(ionization_sites,MultiSiteIonization):raise ValueError('Explicit multi-site assignments required')
+        ionization_sites.validate_structure(structure)
     if cfg.propagation not in ('bloch','fft-multislice','both'):raise ValueError('Unknown propagation method')
     if cfg.channeling_model not in ('single','double'):raise ValueError('Unknown channeling model')
     actual_geometry=geometry(structure,settings,systematic_row=cfg.systematic_row)
@@ -59,8 +63,14 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             'Beam/potential support dominates; BW/MS agreement and fine detector sampling do not certify other configurations. '
             'See docs/GENERALIZED_MULTISLICE_MERGE_READINESS.md.')
     if cfg.propagation!='bloch':
-        from .generalized_forward import material_reason
-        reason=material_reason(structure,cfg)
+        if ionization_sites is None:
+            from .generalized_forward import material_reason
+            reason=material_reason(structure,cfg)
+        else:
+            # The multi-site entry point validates every MDFF before preflight.
+            # Retain elastic eligibility; single-element MDFF equivalence is
+            # deliberately replaced by explicit ordered site assignments.
+            reason=structure.elastic_reason_for(settings.elastic_provider)
         if reason:raise ValueError(reason)
         if not isinstance(cfg.fft_grid,int) or not 12<=cfg.fft_grid<=128 or cfg.fft_grid%2:raise ValueError('FFT grid must be even, 12–128')
         if not np.isfinite(cfg.slice_step) or not .001<=cfg.slice_step<=10:raise ValueError('Maximum slice step must be 0.001–10 nm')

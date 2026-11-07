@@ -11,11 +11,12 @@ from .ionization_sites import single_site_phase_matrix
 from .mdff_providers import prepare_site_group_providers
 from .multisite import MultiSiteIonization
 from .single_channeling_tensor import _tensor_angular_maps
+from .cancellation import check_cancelled
 
 
 def run_multisite_with_coherence(model, sites, coherence, energy_ev, qx, qy, *,
                                 crystal_to_microscope, thickness_nm=30.,
-                                reverse_magnetization=False):
+                                reverse_magnetization=False, cancelled=None):
     """Return query-point intensities with energy as the leading array axis.
 
     ``model`` contains the complete oriented elastic crystal and ordered beam
@@ -32,7 +33,9 @@ def run_multisite_with_coherence(model, sites, coherence, energy_ev, qx, qy, *,
     Group arrays are means per group atom. Total arrays are means per selected
     ionizing atom; weighted_sum arrays are the unnormalized multiplicity sums.
     All retain declared source amplitudes and are relative, uncalibrated values.
+    Query points are evaluated in bounded batches, with cancellation checkpoints.
     """
+    check_cancelled(cancelled)
     if not isinstance(sites, MultiSiteIonization):
         raise ValueError('An explicit MultiSiteIonization model is required')
     rotation = proper_frame(crystal_to_microscope)
@@ -74,11 +77,16 @@ def run_multisite_with_coherence(model, sites, coherence, energy_ev, qx, qy, *,
     for group, tensors, source in prepared:
         phase = single_site_phase_matrix(model.elastic.beams.hkl, positions[list(group.indices)])
         raw = np.empty_like(weighted)
+        flat_raw = raw.reshape(2, len(energy), -1)
         for state, tensor in enumerate(tensors[::-1] if reverse_magnetization else tensors):
             for ie, loss in enumerate(energy):
-                real_part, imag_part = _tensor_angular_maps(
-                    model, tensor.tensor_angstrom2_per_ev[ie], loss, coherence, phase, qx, qy)
-                raw[state, ie] = thickness_nm * (real_part + imag_part)
+                for start in range(0, qx.size, 64):
+                    check_cancelled(cancelled)
+                    sl = slice(start, start + 64)
+                    real_part, imag_part = _tensor_angular_maps(
+                        model, tensor.tensor_angstrom2_per_ev[ie], loss, coherence,
+                        phase, qx.ravel()[sl], qy.ravel()[sl])
+                    flat_raw[state, ie, sl] = thickness_nm * (real_part + imag_part)
         if not np.isfinite(raw).all() or raw.min() < -1e-8 * max(1., float(np.max(abs(raw)))):
             raise ValueError('Invalid tensor-derived site intensity: check conventions/phase')
         weighted += group.multiplicity * raw
@@ -91,6 +99,7 @@ def run_multisite_with_coherence(model, sites, coherence, energy_ev, qx, qy, *,
     # Preserve existing source identity safeguards through calculation completion.
     from .gui.generalized_forward import source_for
     for group in sites.groups:
+        check_cancelled(cancelled)
         source_for(group.mdff_reference)
     count = sum(group.multiplicity for group in sites.groups)
     plus, minus = weighted / count
