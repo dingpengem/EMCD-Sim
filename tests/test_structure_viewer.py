@@ -268,6 +268,7 @@ def exercise_magnetic_dialog(dialog,app):
     atoms, groups = magnetic_example('noncollinear')
     original = atoms.copy()
     dialog.set_structure(atoms); dialog.set_site_groups(groups)
+    dialog.set_magnetization_mode('local')
     dialog.show();app.processEvents()
     assert dialog.color_mode.currentText() == 'Element Colors'
     dialog.color_mode.setCurrentIndex(1)

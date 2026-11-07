@@ -1,4 +1,4 @@
-"""Standalone, read-only crystal viewer using Qt software 3D projection.
+"""Standalone crystal viewer and in-memory site editor using Qt projection.
 
 Scene geometry is independent of the camera and painting, leaving a narrow
 place for future per-site visuals without involving scientific calculations.
@@ -9,6 +9,7 @@ import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from .structure_scene import build_scene, cell_segments, site_group_color
+from .site_group_editor import SiteGroupEditor
 
 
 def rotation(axis, degrees):
@@ -19,6 +20,7 @@ def rotation(axis, degrees):
 
 class CrystalCanvas(QtWidgets.QWidget):
     atomSelected = QtCore.Signal(int)  # Rendered index; the scene supplies ASE identity/offset.
+    atomPicked = QtCore.Signal(int, bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -30,6 +32,7 @@ class CrystalCanvas(QtWidgets.QWidget):
         self.show_bonds = self.show_cell = self.show_axes = True
         self.group_coloring = self.show_magnetization = False
         self.highlight_group = -1
+        self.selected_indices = set()
         self._press = self._last = None
         self._dragged = False
         self.reset_camera()
@@ -114,6 +117,10 @@ class CrystalCanvas(QtWidgets.QWidget):
             gradient.setColorAt(1, color.darker(175))
             painter.setBrush(QtGui.QBrush(gradient)); painter.setPen(QtGui.QPen(color.darker(160), .6))
             painter.drawEllipse(QtCore.QPointF(x, y), radius, radius)
+            if int(scene.indices[i]) in self.selected_indices:
+                painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
+                painter.setPen(QtGui.QPen(QtGui.QColor('#086dcc'), 3.))
+                painter.drawEllipse(QtCore.QPointF(x, y), radius+6, radius+6)
             if self.highlight_group >= 0 and scene.group_indices[i] == self.highlight_group:
                 painter.setBrush(QtCore.Qt.BrushStyle.NoBrush)
                 painter.setPen(QtGui.QPen(QtGui.QColor('#121c30'), 2.5))
@@ -157,7 +164,9 @@ class CrystalCanvas(QtWidgets.QWidget):
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.MouseButton.LeftButton and self._press is not None and not self._dragged:
             index = self.pick_atom(np.array([event.position().x(), event.position().y()]))
-            if index is not None:self.atomSelected.emit(index)
+            if index is not None:
+                self.atomSelected.emit(index)
+                self.atomPicked.emit(index, bool(event.modifiers() & QtCore.Qt.KeyboardModifier.ControlModifier))
         self._press = self._last = None
         event.accept()
 
@@ -167,7 +176,9 @@ class CrystalCanvas(QtWidgets.QWidget):
 
 
 class CrystalStructureDialog(QtWidgets.QDialog):
-    """A modeless snapshot viewer: closing never writes into the simulation."""
+    """A modeless snapshot viewer; only Apply retains in-memory group edits."""
+    siteGroupsApplied = QtCore.Signal(object)
+    magnetizationModeChanged = QtCore.Signal(str)
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle('3D Crystal Structure Viewer')
@@ -180,8 +191,14 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.summary = QtWidgets.QLabel(); self.summary.setWordWrap(True); layout.addWidget(self.summary)
         splitter = QtWidgets.QSplitter(); layout.addWidget(splitter, 1)
         self.view = CrystalCanvas(); splitter.addWidget(self.view)
+        self.tabs = QtWidgets.QTabWidget(); self.tabs.setMinimumWidth(330); splitter.addWidget(self.tabs)
         panel = QtWidgets.QWidget(); panel.setMinimumWidth(300)
-        controls = QtWidgets.QVBoxLayout(panel); splitter.addWidget(panel); splitter.setSizes([850, 320])
+        controls = QtWidgets.QVBoxLayout(panel)
+        display_scroll = QtWidgets.QScrollArea(); display_scroll.setWidgetResizable(True); display_scroll.setWidget(panel)
+        self.tabs.addTab(display_scroll, 'Display / atom info')
+        self.editor = SiteGroupEditor()
+        self.tabs.addTab(self.editor, 'Site groups')
+        splitter.setSizes([850, 350])
         self.style = QtWidgets.QComboBox(); self.style.addItems(['Ball and stick', 'Space filling'])
         form = QtWidgets.QFormLayout(); form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapAllRows)
         controls.addLayout(form); form.addRow('Atom style', self.style)
@@ -222,15 +239,24 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.atom_info.setPlaceholderText('Click a rendered atom to inspect its original ASE identity and replica offset.')
         controls.addWidget(self.atom_info, 1)
         self.notice = QtWidgets.QLabel(); self.notice.setWordWrap(True); controls.addWidget(self.notice)
-        close = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Close)
-        close.rejected.connect(self.close); layout.addWidget(close)
+        self.dialog_buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Apply | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        self.dialog_buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).clicked.connect(self.apply_groups)
+        self.dialog_buttons.rejected.connect(self.reject); layout.addWidget(self.dialog_buttons)
         self.style.currentIndexChanged.connect(self.atom_style_changed)
         self.view.atomSelected.connect(self.inspect_atom)
+        self.view.atomPicked.connect(self.pick_rendered_atom)
+        self.editor.selectionChanged.connect(self.highlight_selection)
+        self.editor.changed.connect(self.rebuild)
+        self.editor.applied.connect(self.groups_applied)
+        self.editor.modeChanged.connect(self.magnetization_mode_changed)
 
     def set_structure(self, structure, force=False):
         if not force and structure is self._source:return
+        replacement = self._source is not None and structure is not self._source
         self._source = structure
         atoms = getattr(structure, 'atoms', structure)
+        changed_geometry = self._atoms is not None and not self._atoms == atoms
         self._assignment_notice = ''
         if self._site_groups is not None:
             try:self._site_groups.validate_structure(atoms)
@@ -238,6 +264,16 @@ class CrystalStructureDialog(QtWidgets.QDialog):
                 self._site_groups = None
                 self._assignment_notice = 'Site-group overlay cleared: assignments do not match the current structure.'
         self._atoms = atoms.copy(); self._atoms.info = deepcopy(atoms.info)
+        if (replacement or changed_geometry) and self.editor.rows():
+            # Drafts have no bound Stage 1 model: never carry them to another CIF.
+            if any(row[4] is None for row in self.editor.rows()):
+                self._site_groups = None
+                self._assignment_notice = 'Site-group drafts cleared for the replacement structure.'
+        if (replacement or changed_geometry or self.editor.atoms is None
+                or self.editor.accepted_site_groups is not self._site_groups):
+            self.editor.set_structure(self._atoms,self._site_groups)
+        else:
+            self.editor.atoms = self._atoms
         self.atom_info.clear()
         self.rebuild()
 
@@ -255,6 +291,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
                 raise TypeError('Expected MultiSiteIonization or None')
             site_groups.validate_structure(self._atoms)
         self._site_groups = site_groups
+        self.editor.load_groups(site_groups)
         self._assignment_notice = ''
         self.rebuild()
 
@@ -265,28 +302,43 @@ class CrystalStructureDialog(QtWidgets.QDialog):
 
     def rebuild(self, *_):
         if self._atoms is None:return
-        try:scene = build_scene(self._atoms, tuple(box.value() for box in self.repeats), self._site_groups)
+        model = self.editor.preview_site_groups
+        try:scene = build_scene(self._atoms, tuple(box.value() for box in self.repeats), model)
         except ValueError as exc:
             self.view.scene = None; self.view.update(); self.notice.setText(str(exc)); return
-        self.view.set_scene(scene); self.atom_info.clear()
+        rows = self.editor.rows()
+        if rows and model is None:
+            # Draft visualization only: no placeholder provider or executable model.
+            for number, (_,_,indices,direction,_) in enumerate(rows):
+                mask = np.isin(scene.indices,indices)
+                scene.group_indices[mask] = number
+                scene.group_colors[mask] = site_group_color(number)
+                scene.directions[mask] = direction
+        camera = (self.view.orientation.copy(),self.view.zoom,self.view.pan.copy())
+        had_scene = self.view.scene is not None
+        self.view.set_scene(scene)
+        if had_scene and self.editor.dirty:
+            self.view.orientation,self.view.zoom,self.view.pan = camera
+        self.atom_info.clear()
         self.summary.setText(f'{self._atoms.get_chemical_formula()} · {len(self._atoms)} original ASE atoms · '
                              f'{len(scene.positions)} displayed atoms · repetitions {scene.repetitions}')
         self.notice.setText('\n'.join(scene.notices) + ('\n'+self._source.import_warnings if getattr(self._source, 'import_warnings', '') else '') + '\n' + self._assignment_notice)
         self.group_list.clear(); self.view.highlight_group = -1
-        if self._site_groups is not None:
+        if rows:
             self.group_list.addItem('All groups / no highlight')
-            for number, group in enumerate(self._site_groups.groups):
-                item = QtWidgets.QListWidgetItem(f'{group.group_id} ({group.element}, {group.multiplicity} atoms)')
+            for number, (name,element,indices,_,reference) in enumerate(rows):
+                suffix = ' — unconfigured MDFF' if reference is None else ''
+                item = QtWidgets.QListWidgetItem(f'{name} ({element}, {len(indices)} atoms){suffix}')
                 color = QtGui.QColor.fromRgbF(*site_group_color(number))
                 icon = QtGui.QPixmap(14,14); icon.fill(color); item.setIcon(QtGui.QIcon(icon))
                 self.group_list.addItem(item)
             self.group_list.setCurrentRow(0)
-        self.group_list.setVisible(self._site_groups is not None)
-        if self._site_groups is None:
+        self.group_list.setVisible(bool(rows))
+        if not rows:
             self.color_mode.setCurrentIndex(0)
             self.magnetic_arrows.setChecked(False)
-        self.color_mode.setEnabled(self._site_groups is not None)
-        self.magnetic_arrows.setEnabled(self._site_groups is not None)
+        self.color_mode.setEnabled(bool(rows))
+        self.magnetic_arrows.setEnabled(bool(rows) and self.editor.magnetization_mode == 'local')
         self.update_legend()
 
     def select_group(self, row):
@@ -300,9 +352,9 @@ class CrystalStructureDialog(QtWidgets.QDialog):
     def update_legend(self):
         scene = self.view.scene
         if scene is None:return
-        if self.color_mode.currentIndex() == 1 and scene.site_groups is not None:
-            entries = [(group.group_id, QtGui.QColor.fromRgbF(*site_group_color(n)).name())
-                       for n, group in enumerate(scene.site_groups.groups)]
+        if self.color_mode.currentIndex() == 1 and self.editor.rows():
+            entries = [(row[0], QtGui.QColor.fromRgbF(*site_group_color(n)).name())
+                       for n, row in enumerate(self.editor.rows())]
             entries.append(('Unassigned / non-ionizing', '#a6a6a6'))
             self.legend.setText(' · '.join(f'<span style="color:{color}">●</span> {escape(label)}' for label,color in entries))
             return
@@ -313,7 +365,18 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.view.space_filling = index == 1; self.view.update()
 
     def display_option(self, attribute, checked):
+        if attribute == 'show_magnetization':
+            checked = checked and self.editor.magnetization_mode == 'local'
         setattr(self.view, attribute, checked); self.view.update()
+
+    def set_magnetization_mode(self, mode):
+        if mode not in ('global','local'):raise ValueError('Expected global or local magnetization mode')
+        self.editor.mode.setCurrentIndex(int(mode == 'local'))
+
+    def magnetization_mode_changed(self, mode):
+        self.magnetic_arrows.setEnabled(bool(self.editor.rows()) and mode == 'local')
+        self.view.show_magnetization = self.magnetic_arrows.isChecked() and mode == 'local'
+        self.view.update(); self.magnetizationModeChanged.emit(mode)
 
     def inspect_atom(self, rendered_index):
         scene = self.view.scene; i = rendered_index
@@ -321,10 +384,11 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         vector = lambda values:' '.join(f'{value:.8g}' for value in values)
         occupancy = scene.occupancies[i]
         number = scene.group_indices[i]
-        group = scene.site_groups.groups[number] if number >= 0 else None
-        assignment = (f'\nSelected ionizing group: Yes\nSite-group ID / label: {group.group_id}\n'
-            f'Declared magnetization (crystal Cartesian unit vector): {vector(group.magnetization)}\n'
-            f'MDFF provider reference: {str(group.mdff_reference)[:300]}' if group is not None
+        rows = self.editor.rows()
+        row = rows[number] if 0 <= number < len(rows) else None
+        assignment = (f'\nSelected ionizing group: Yes\nSite-group ID / label: {row[0]}\n'
+            f'Declared magnetization (crystal Cartesian unit vector): {vector(row[3])}\n'
+            f'MDFF provider reference: {str(row[4])[:300] if row[4] is not None else "Unconfigured — not executable"}' if row is not None
             else '\nSelected ionizing group: No (unassigned)')
         self.atom_info.setPlainText(
             f'Element: {scene.symbols[i]}\nOriginal ASE index (zero-based): {scene.indices[i]}\n'
@@ -333,3 +397,33 @@ class CrystalStructureDialog(QtWidgets.QDialog):
             f'Replica translation (a,b,c): {tuple(int(n) for n in scene.offsets[i])}\n'
             f'Displayed Cartesian coordinates (Å): {vector(scene.positions[i])}\n'
             f'Occupancy metadata: {occupancy if occupancy else "Not supplied; none inferred"}' + assignment)
+
+    @property
+    def accepted_site_groups(self):
+        """Stage 1 model only when all applied rows have real MDFF references."""
+        return self.editor.accepted_site_groups
+
+    def highlight_selection(self, indices):
+        self.view.selected_indices = set(indices); self.view.update()
+        if indices and self.view.scene is not None and not getattr(self,'_picking',False):
+            matches = np.flatnonzero(self.view.scene.indices == indices[-1])
+            if len(matches):self.inspect_atom(int(matches[0]))
+
+    def pick_rendered_atom(self, rendered_index, additive):
+        self._picking = True
+        try:self.editor.pick_atom(int(self.view.scene.indices[rendered_index]),additive)
+        finally:self._picking = False
+
+    def groups_applied(self, model):
+        self._site_groups = model
+        self.rebuild(); self.siteGroupsApplied.emit(model)
+
+    def apply_groups(self):
+        self.editor.run_action(self.editor.apply)
+
+    def reject(self):
+        self.close()
+
+    def closeEvent(self, event):
+        self.editor.cancel()
+        event.accept()

@@ -251,6 +251,8 @@ def configuration_dialog(window):
         old=widget.parentWidget().layout()
         if isinstance(old,QtWidgets.QFormLayout):old.takeRow(widget)
         form.addRow(label,widget)
+    w.magnetization_mode_note=QtWidgets.QLabel();w.magnetization_mode_note.setWordWrap(True)
+    form.addRow(w.magnetization_mode_note);w.sync_magnetization_mode()
     outer.addWidget(model)
     old=w.mdff_stack.parentWidget().layout()
     if isinstance(old,QtWidgets.QFormLayout):old.takeRow(w.mdff_stack)

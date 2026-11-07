@@ -270,6 +270,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         return recipe[1] if recipe is not None and recipe[0]==self.fft_cell_key() else None
 
     def forward_settings(self,prepare=True):
+        if getattr(self,'magnetization_mode','global')=='local':
+            raise ValueError('Local Site Magnetization Mode is active: GUI MDFF binding and multi-site calculation integration are not available yet. No Global M fallback is used.')
         if prepare and self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:
             self.prepare_manual_tensor()
         if prepare and self.model_box.currentIndex()==1 and self.atomic_editor.active and not self.atomic_editor.validated_path:

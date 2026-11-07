@@ -37,6 +37,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         from .runtime import LABEL
         self.setWindowTitle(LABEL)
         self.resize(1550,960);self.structure=Structure.nickel();self.last_result=None;self.worker=None;self.busy=False
+        self.magnetization_mode='global'
         self.history=[];self.detectors=np.zeros((2,2));self.spin={};self.dialogs=[];self.run_outcome=None
         self.splitter=QtWidgets.QSplitter();self.setCentralWidget(self.splitter)
         self.inputs=QtWidgets.QWidget();self.form_layout=QtWidgets.QVBoxLayout(self.inputs)
@@ -179,7 +180,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
     def refresh(self,*_,fit=False):
         if not hasattr(self,'canvas'):return
         viewer=getattr(self,'structure_viewer',None)
-        if viewer is not None and viewer.isVisible():viewer.set_structure(self.structure)
+        if viewer is not None:viewer.set_structure(self.structure)
         self._za_drag=False
         self.resolve_numerical_ui()
         try:
@@ -389,8 +390,29 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         from .structure_viewer import CrystalStructureDialog
         if getattr(self,'structure_viewer',None) is None:
             self.structure_viewer=CrystalStructureDialog(self)
+            self.structure_viewer.magnetizationModeChanged.connect(self.set_magnetization_mode)
+            self.structure_viewer.set_magnetization_mode(self.magnetization_mode)
         self.structure_viewer.set_structure(self.structure,force=True)
         self.structure_viewer.show();self.structure_viewer.raise_();self.structure_viewer.activateWindow()
+
+    def set_magnetization_mode(self,mode):
+        if mode not in ('global','local'):raise ValueError('Expected global or local magnetization mode')
+        changed=self.magnetization_mode!=mode
+        self.magnetization_mode=mode
+        viewer=getattr(self,'structure_viewer',None)
+        if viewer is not None and viewer.editor.magnetization_mode!=mode:viewer.set_magnetization_mode(mode)
+        self.sync_magnetization_mode()
+        if changed:self.emcd_stale()
+
+    def sync_magnetization_mode(self):
+        local=self.magnetization_mode=='local'
+        self.axis.setEnabled(not local)
+        for name in ('direction','apply_direction'):
+            control=getattr(getattr(self,'atomic_editor',None),name,None)
+            if control is not None:control.setEnabled(not local)
+        if hasattr(self,'magnetization_mode_note'):
+            self.magnetization_mode_note.setText('Global magnetization is locked while site-specific magnetization is enabled.'
+                if local else 'Global Magnetization Mode (legacy). Local directions are inactive; configure site groups in the 3D viewer.')
 
     def inspect_structure(self):
         dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Crystal structure — ASE import');dialog.resize(650,500);layout=QtWidgets.QVBoxLayout(dialog)
