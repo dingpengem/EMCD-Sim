@@ -66,3 +66,30 @@ def prepare_provider(cfg):
         return DeclaredMDFFProvider(cfg)
     from .historical_ni import HistoricalNiProvider
     return HistoricalNiProvider(cfg)
+
+
+def prepare_site_group_providers(sites, energy_ev, crystal_to_microscope):
+    """Resolve explicit group configurations without the legacy material gate.
+
+    References must be existing ImportedSettings/ProviderSettings declarations,
+    including their acknowledged source identity. Bare paths and arbitrary
+    provider objects cannot supply those declarations. No per-source amplitude
+    normalization or magnetic-axis alignment is inferred.
+    """
+    from .gui.generalized_forward import ImportedSettings, source_for
+    from .imported_mdff import proper_frame
+
+    rotation = proper_frame(crystal_to_microscope)
+    prepared = []
+    for group in sites.groups:
+        cfg = group.mdff_reference
+        if not isinstance(cfg, ImportedSettings):
+            raise ValueError('Site MDFF reference must be a declared provider configuration')
+        source = source_for(cfg)
+        if source.metadata['element'] != group.element:
+            raise ValueError('MDFF source element differs from site-group element')
+        # Existing provider validation checks explicit states, PSD tensors,
+        # source frame and native axis; interpolation never extrapolates.
+        tensors = source.tensors(energy_ev, rotation, group.magnetization)
+        prepared.append((group, tensors, source.provenance()))
+    return tuple(prepared)
