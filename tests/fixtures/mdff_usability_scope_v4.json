@@ -266,9 +266,9 @@
       "raw_sha256": "043df23a1f6de13fe91c2f9ff56dd8067b52477ad751d268454407f8b0aa5f3b"
     },
     "src/emcd_sim/gui/provider_ui.py": {
-      "canonical_sha256": "2ee382d42117f23dd4cf209a6ac31c495cb9afcbec277029294348a1e97f19e7",
+      "canonical_sha256": "f9121d230afa3798193810586e308253ce3070a02b896394d91d2ef80a14c107",
       "kind": "modified",
-      "raw_sha256": "bad87a0320590f2641f79434a22475704f82dd99c97616662182a0c5297fdf25"
+      "raw_sha256": "52fe83fb0dcd08d5aed4cce84c1f6b3209f21774c20a8ad47c8dcf10ada81b68"
     },
     "src/emcd_sim/gui/results_browser.py": {
       "canonical_sha256": "b27a750af22c0d5d19c79382989f7d881216990911da37db8b9c71068c89a911",
@@ -281,9 +281,9 @@
       "raw_sha256": "14a64407ef4fc8388a346de18b76fb4872c90fc33e9c60e9534731426fe3a9d9"
     },
     "src/emcd_sim/gui/stage_b.py": {
-      "canonical_sha256": "73292f71e9092fb100451ade6f106dc3c1fbf3edbd1ba09f89a1f70953e96295",
+      "canonical_sha256": "72c11ff5f30bd9497b021db3cfb74b33312d4d0b8751e67bbdac0d221b009d83",
       "kind": "modified",
-      "raw_sha256": "f6296daeec54fdc6476bbc0877e0fb96f07228735a7834799db5706b2de9d1c1"
+      "raw_sha256": "b99cd79cf2673a6c135e2478f3f749c81d41cc245bc2b22b18f65284bc587448"
     },
     "src/emcd_sim/gui/xmcd_preview.py": {
       "canonical_sha256": "9d6799b7a1ad73c7aad2c9644b61e9e03026934e4b79a8fc19383584f9c90ff5",

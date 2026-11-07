@@ -22,16 +22,35 @@ class ProviderUI:
         self.xmcd_validity=QtWidgets.QLineEdit();self.form.addRow('Physical assumptions / limits',self.xmcd_validity)
         self.xmcd_scale=QtWidgets.QLineEdit();self.form.addRow('Relative tensor reference (A^2/eV)',self.xmcd_scale)
         self.xmcd_status=QtWidgets.QComboBox();self.xmcd_status.addItems(['physical_source_unvalidated','synthetic']);self.form.addRow('Scientific status',self.xmcd_status)
-        for widget in (self.xmcd_element,self.xmcd_edge,self.xmcd_selected,self.xmcd_provenance,self.xmcd_validity,self.xmcd_scale):
+        for widget in (self.xmcd_element,self.xmcd_edge,self.xmcd_provenance,self.xmcd_validity,self.xmcd_scale):
             widget.textChanged.connect(self.xmcd_declaration_changed)
+        self.xmcd_selected.textChanged.connect(self.xmcd_selections_changed)
+        for key,edge in (('xl3','L3'),('xl2','L2')):
+            self.spin[key].valueChanged.connect(lambda value,edge=edge:self.xmcd_energy_selected(edge,value))
         self.explicit_xmcd.toggled.connect(self.xmcd_declaration_changed)
         self.xmcd_status.currentIndexChanged.connect(self.xmcd_declaration_changed)
 
     def xmcd_declaration_changed(self,*_):
         for widget in self.xmcd_l23_controls:widget.setVisible(self.xmcd_edge.text().strip()=='L2,3')
-        self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3')
+        self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3' or not (self.source_info or {}).get('selected'))
         self.declaration.setChecked(False)
         self.emcd_stale()
+
+    def xmcd_energy_selected(self,edge,value):
+        if self.source_info is not None and self.validated_path==self.source_path.text():
+            self.source_info.setdefault('explicit_selected',{})[edge]=value
+            self.emcd_stale()
+
+    def xmcd_selections_changed(self):
+        if self.xmcd_edge.text().strip()=='L2,3' and self.source_info is not None and self.validated_path==self.source_path.text():
+            self.source_info['explicit_selected']={}
+            try:
+                from ..mdff_edges import validate_selected
+                selected=dict(validate_selected(self.xmcd_element.text().strip(),'L2,3',json.loads(self.xmcd_selected.text()),self.source_info['bounds']))
+                self.set_values(dict(xl3=selected['L3'],xl2=selected['L2']))
+                self.source_info['explicit_selected']=selected
+            except (ValueError,TypeError):pass  # Invalid drafts cannot authorize inherited controls.
+        self.xmcd_declaration_changed()
 
     def atomic_parameter_controls(self):
         self.atomic_provider_info=None
@@ -126,6 +145,9 @@ class ProviderUI:
                 raise ValueError('Bundled Ni XMCD cannot be used for another element; select its declared source')
             if self.xmcd_edge.text().strip()=='L2,3':
                 selected=dict(L3=base.l3,L2=base.l2)
+                info=self.source_info or {}
+                if not info.get('selected') and info.get('explicit_selected')!=selected:
+                    raise ValueError('Explicit native edge selections required: select both L3/L2 energies or enter their JSON')
             else:
                 if not self.xmcd_selected.text().strip():
                     raise ValueError('Explicit native edge selections JSON required for this edge')
@@ -163,6 +185,8 @@ class ProviderUI:
             if d['edge']=='L2,3':
                 for key,edge in (('xl3','L3'),('xl2','L2')):
                     with QtCore.QSignalBlocker(self.spin[key]):self.spin[key].setValue(d['selected_ev'][edge])
+                if self.source_info and self.source_info['sha256']==cfg.source_sha256 and self.validated_path==self.source_path.text():
+                    self.source_info['explicit_selected']=dict(d['selected_ev'])
             for widget in self.xmcd_l23_controls:widget.setVisible(cfg.core_edge=='L2,3')
             self.xmcd_selected.setEnabled(cfg.core_edge!='L2,3')
 

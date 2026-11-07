@@ -242,13 +242,17 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             self.correction.setChecked(index==0 and bool(self.source_info and self.source_info['audit']))
         self.emcd_stale()
     def source_changed(self,*_):
-        self.source_info=None;self.validated_path=None;self.declaration.setChecked(False);self.source_status.setText('Source changed; validate and declare conventions.');self.emcd_stale()
+        self.source_info=None;self.validated_path=None;self.xmcd_selected.clear();self.declaration.setChecked(False);self.source_status.setText('Source changed; validate and declare conventions.');self.emcd_stale()
     def browse_xmcd(self):
         path,_=QtWidgets.QFileDialog.getOpenFileName(self,'Import five-column XAS/XMCD','','XMCD / text (*.xmcd *.txt *.dat);;All files (*)')
         if path:self.source_path.setText(path);self.validate_xmcd()
     def validate_xmcd(self,show_error=True):
         try:
-            info=inspect_source(self.source_path.text());self.source_info=info;self.validated_path=self.source_path.text()
+            info=inspect_source(self.source_path.text())
+            if (self.source_info or {}).get('sha256')==info['sha256'] and self.validated_path==self.source_path.text():
+                info['explicit_selected']=self.source_info.get('explicit_selected',{})
+            self.source_info=info;self.validated_path=self.source_path.text()
+            self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3' or not info['selected'])
             if info['selected']:self.set_values({'xl3':info['selected']['L3'],'xl2':info['selected']['L2']})
             self.declaration.setChecked(bool(info['audit']));self.source_status.setText(info['provenance']+'\nNative range: %.3f–%.3f eV; no energy shift.'%tuple(info['bounds']))
             if hasattr(self,'correction'):self.correction.setChecked(bool(info['audit']))
