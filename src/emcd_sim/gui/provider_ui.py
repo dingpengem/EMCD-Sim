@@ -103,6 +103,8 @@ class ProviderUI:
     def declared_provider_settings(self,base,prepare=True):
         symbols=set(self.structure.atoms.get_chemical_symbols())
         if base.model=='atomic':
+            if self.atomic_editor.active and self.atomic_editor.external_source_pending:
+                raise ValueError('Validate the selected external Atomic source before preview or calculation')
             if self.atomic_editor.active and not self.atomic_editor.validated_path:
                 if not prepare:
                     self.atomic_editor.document()

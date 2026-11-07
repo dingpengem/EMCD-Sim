@@ -1,12 +1,13 @@
 # Additive MDFF usability registration
 
-This infrastructure registers the 25 UI/model files of patch
+The original 25-file UI/model patch is
 `a936ec4945073ea2bf81bd59122a7f8b868d41320f69d9ecc2c2587467ad5f04`,
-based on `3b0ce6c386f3c815f85d8b9d64db679ff7622a94`. Its identities come from the
-authenticated revised inventory, never a runtime scan that adopts live hashes.
-Twenty-one identities retain the prior acceptance; the four XMCD chooser,
-test, walkthrough and documentation corrections require the narrow follow-up
-review alongside this registration. No production source is changed here.
+based on `3b0ce6c386f3c815f85d8b9d64db679ff7622a94`. Its accepted four-file
+XMCD correction remains unchanged. V4 explicitly amends only provider_ui.py
+with the failed-source readiness correction described below; 24 original
+UI/model identities remain unchanged. Current fixed pins describe the amended
+UI-only patch and source declaration, while frozen v1-v3 artifacts preserve
+all original identities. No runtime scan adopts working source hashes.
 
 Both `unit_source_snapshots.assert_reviewed_current_sources` and the physics
 gate via `single_element_source_guard.assert_current_extension` use the same
@@ -24,9 +25,9 @@ convention and workflow test bodies remain unchanged. `extension()`,
 `reviewed_baseline_sources()`, `load_snapshots()`, `load_gui_scope()` and the
 original editor `load_scope()` retain their historical meanings.
 
-The v3 manifest names exactly 25 candidate paths, 14 parent files (eight UI
-parents plus the six registration integration parents), protected unchanged
-base files and seventeen explicit registration bootstrap paths. The parent ZIP comes
+The v4 manifest names exactly 25 candidate paths, 29 parent files (eight UI
+parents plus 21 registration, test and acceptance integration parents), 607 protected unchanged
+base files and 34 explicit registration bootstrap paths. The parent ZIP comes
 only from actual base Git blobs, with raw, canonical and Git blob identities.
 Text canonicalization is UTF-8-sig / CRLF to LF; binary evidence remains raw.
 Duplicate, unsafe, extra or missing declarations and malformed digests reject.
@@ -34,7 +35,7 @@ Duplicate, unsafe, extra or missing declarations and malformed digests reject.
 The loader and its manifest pin are review trust roots; they are authenticated
 by the registration-only and combined patches and external delivery inventories,
 not a circular self-hash claim. The parent archive has a pinned hash in the
-pinned manifest. The other fourteen registration support files have fixed hashes
+pinned manifest. The other 31 registration support files have fixed hashes
 in that manifest. No runtime writer or automatic pin update is provided.
 
 The frozen v1 manifest and parent archive retain their original working bytes.
@@ -91,7 +92,32 @@ each target for containment; the resolved root boundary is reused only within a
 validation call, and an explicit escape control verifies rejection.
 
 Review the registration-only diff, its closed infrastructure inventory and
-fixed pins alongside the four-file XMCD correction. Require the passing frozen
-results and unchanged 25 UI identities relative to the revised baseline before
-local integration. Internal EXE building follows that local integration and
-the existing build procedure; this task performs neither operation.
+fixed pins alongside the four-file XMCD correction. Require passing frozen
+results, the 24 unchanged original UI identities, and narrow approval of the
+provider_ui.py amendment before local integration. Internal EXE building follows
+local integration and the existing build procedure.
+
+## Windows integration prerequisites (v4)
+
+V1, v2 and v3 manifests/archives remain frozen and queryable. V4 replaces no
+historical identity. It registers fifteen exact prerequisite paths with genuine
+base parents: the selector sizing correction, the failed regression fixtures,
+the historical audit caller, native acceptance adapters and one CIF checkout
+attribute. No numerical assertion, kernel, reference or five-test mapping is
+weakened. The CIF is restored to its original Git bytes and its single -text
+attribute prevents another CRLF conversion.
+
+One accepted UI identity changes explicitly: provider_ui.py adds a two-line
+active-editor pending-source preflight guard. Failed external Atomic validation
+now blocks the Run button as well as calculation; retained historical Atomic
+restoration remains independent of a pending generalized draft. The other 24
+accepted UI/model identities, including the four-file XMCD correction, remain
+unchanged. The manifest's current UI-only patch and declaration pins describe
+this amended candidate; the original a936 patch and v3 declaration retain the
+prior acceptance evidence. This amendment requires narrow review and final
+Windows regression before integration.
+
+The native acceptance helper preserves its original 14 cases and reports two
+additional manual spectral controls separately. It verifies one actual main
+XMCD chooser invocation, provider preview/source identity and submitted
+calculation identity, plus Atomic/manual computation and project restoration.

@@ -35,7 +35,7 @@ def test_manual_gui_preserves_requested_maximum(tmp_path, step, mode):
     try:
         assert w.spin['slice_step'].value() == ForwardSettings().slice_step == 2.
         assert (w.spin['slice_step'].minimum(), w.spin['slice_step'].maximum()) == (.001,10.)
-        w.model_box.setCurrentIndex(1)
+        w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
         w.numerical_mode.setCurrentIndex(mode)
         w.propagation_box.setCurrentIndex(1)
         before = w.numerical_snapshot()

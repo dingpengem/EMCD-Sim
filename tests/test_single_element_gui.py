@@ -17,7 +17,8 @@ def test_imported_gui_worker_restore_and_missing_source(tmp_path,monkeypatch):
         w.structure=Structure(bulk('Fe','bcc',a=2.866,cubic=True),'Synthetic BCC Fe')
         w.zone.setText('0 0 1');w.target.setText('1 1 0')
         w.set_values(dict(kv=200,tx=-5,ty=7,thickness=.2,beam=.6,potential=1.2,grid=9,depth=9,subpixels=8,halfwidth=.7,radius=.12))
-        w.model_box.setCurrentIndex(2);assert not w.emcd_button.isEnabled()
+        w.model_box.setCurrentIndex(2);w.manual_model.setCurrentIndex(0);w.constant_input_mode.setCurrentIndex(1)
+        assert not w.emcd_button.isEnabled()
         p=write_source(tmp_path/'tensor.json');w.imported_path.setText(str(p));w.validate_imported_mdff()
         assert w.imported_info is not None and not w.emcd_button.isEnabled()
         w.imported_declaration.setChecked(True);w.energy_scope.setCurrentIndex(1);w.angular_maps.setChecked(True)
@@ -35,7 +36,9 @@ def test_imported_gui_worker_restore_and_missing_source(tmp_path,monkeypatch):
         assert not w.emcd_button.isEnabled() and w.imported_info is None
         assert w.emcd_result['spectra']['I_A_plus'].size==2
         # Selecting a Ni provider must reapply its original conservative eligibility gate.
-        w.model_box.setCurrentIndex(1);w.emcd_stale();assert not w.emcd_button.isEnabled()
+        from emcd_sim.gui.emcd_forward import DEFAULT_SOURCE
+        w.model_box.setCurrentIndex(0);w.source_path.setText(str(DEFAULT_SOURCE));w.validate_xmcd(show_error=False)
+        w.emcd_stale();assert not w.emcd_button.isEnabled()
         assert 'Ni' in w.emcd_button.toolTip()
     finally:
         if w.busy:w.cancel();w.worker.wait(15000)

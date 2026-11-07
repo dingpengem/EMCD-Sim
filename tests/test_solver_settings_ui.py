@@ -53,6 +53,11 @@ def test_released_configuration_exactly_preserved(window,tmp_path,app,channeling
     try:
         # Defaults intentionally changed; compare the same explicit legacy inputs.
         legacy=old.settings()
+        # Compare the retained historical provider, not a new generalized draft.
+        from emcd_sim.gui.saved_atomic_ui import restore
+        window.atomic_editor.external_source_pending=True  # Failed new draft must not block a retained saved model.
+        restore(window.atomic_editor,old.forward_settings(),window.structure)
+        assert not window.atomic_editor.active
         window.elastic_provider_box.setCurrentIndex(window.elastic_provider_box.findData('nickel-lobato-2014'))
         window.set_values(dict(kv=legacy.voltage,tx=legacy.tilt[0],ty=legacy.tilt[1],beam=legacy.beam_cutoff,potential=legacy.potential_cutoff));window.refresh()
         # Compare matched explicit inputs; the approved new-project default is 2 nm.

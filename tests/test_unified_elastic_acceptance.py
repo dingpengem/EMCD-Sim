@@ -109,6 +109,8 @@ def test_qt_actual_signed_spot_click_bragg_and_stale(name,tmp_path):
     structure,s=cases()[name];w=MainWindow(workspace=tmp_path/name)
     try:
         w.numerical_mode.setCurrentIndex(1)
+        # An unacknowledged XMCD model must not block the independent elastic workflow.
+        w.model_box.setCurrentIndex(0);w.declaration.setChecked(False)
         w.structure=structure;w.zone.setText(' '.join(map(str,s.zone)));w.target.setText(' '.join(map(str,s.target)))
         w.set_values(dict(beam=s.beam_cutoff,potential=s.potential_cutoff,thickness=1,kv=200,tx=0,ty=0))
         w.refresh();w.show();app.processEvents();w.canvas.draw()

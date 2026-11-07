@@ -11,18 +11,18 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 BASE='3b0ce6c386f3c815f85d8b9d64db679ff7622a94'
-ACCEPTED_PATCH='a936ec4945073ea2bf81bd59122a7f8b868d41320f69d9ecc2c2587467ad5f04'
-MANIFEST_PATH='tests/fixtures/mdff_usability_scope_v3.json'
-ARCHIVE_PATH='tests/fixtures/mdff_usability_parent_v3.zip'
-MANIFEST_SHA256='c4119bca75fec148f8dfabe3eda072840005c967e86a6cd1dd73ce9ec66d9b6e'
-ACCEPTED_DECLARATION_SHA256='3dfa6cb29d098c033b6cae450ba6a844d1c75ec8d9f7ac2753ffb069970c1c15'
+ACCEPTED_PATCH='6e496aff8152903d8bca45bd1d6f1704139647324fd7399920e1ed03e82b7fe2'
+MANIFEST_PATH='tests/fixtures/mdff_usability_scope_v4.json'
+ARCHIVE_PATH='tests/fixtures/mdff_usability_parent_v4.zip'
+MANIFEST_SHA256='93c54f9fae482d3b6d23ea2c3f51c453a076cbc7a31dfb2cb657beae062d67a0'
+ACCEPTED_DECLARATION_SHA256='20fef12d278544b30a96ad3b224d1a37db9c9353987f18dfcc67898dc8e52be5'
 # Closed reviewed paths are literals, not inferred from working files/manifests.
 ACCEPTED_PATHS=('docs/MANUAL_L23_TENSOR_MODEL.md','docs/MDFF_USABILITY_REDESIGN.md','docs/MDFF_USABILITY_SCOPE_PROPOSAL.md',
  'scripts/manual_l23_native_walkthrough.py','scripts/mdff_corrective_walkthrough.py','scripts/mdff_native_walkthrough.py','scripts/verify_mdff_corrective.py','scripts/xmcd_native_walkthrough.py',
  'src/emcd_sim/gui/app.py','src/emcd_sim/gui/atomic_editor.py','src/emcd_sim/gui/imported_tensor_ui.py','src/emcd_sim/gui/manual_l23_editor.py','src/emcd_sim/gui/mdff_usability.py','src/emcd_sim/gui/project_io.py','src/emcd_sim/gui/provider_ui.py','src/emcd_sim/gui/results_browser.py','src/emcd_sim/gui/saved_atomic_ui.py','src/emcd_sim/gui/stage_b.py','src/emcd_sim/gui/xmcd_preview.py','src/emcd_sim/imported_mdff.py','src/emcd_sim/manual_l23.py','tests/test_manual_l23.py','tests/test_mdff_corrective.py','tests/test_mdff_usability.py','tests/test_xmcd_usability_preview.py')
 MODIFIED=('src/emcd_sim/gui/app.py','src/emcd_sim/gui/atomic_editor.py','src/emcd_sim/gui/imported_tensor_ui.py','src/emcd_sim/gui/project_io.py','src/emcd_sim/gui/provider_ui.py','src/emcd_sim/gui/results_browser.py','src/emcd_sim/gui/stage_b.py','src/emcd_sim/imported_mdff.py')
-INTEGRATIONS=('tests/unit_source_snapshots.py','tests/single_element_source_guard.py','tests/conftest.py','tests/test_mdff_editor_source_scope.py','tests/test_packaging_content_source_scope.py','tests/test_automatic_numerical_settings.py')
-BOOTSTRAP=INTEGRATIONS+('tests/mdff_usability_source_scope.py','tests/mdff_workflow_registration.py','tests/test_mdff_usability_source_scope.py','tests/fixtures/mdff_usability_scope_v1.json','tests/fixtures/mdff_usability_parent_v1.zip','tests/fixtures/mdff_usability_scope_v2.json','tests/fixtures/mdff_usability_parent_v2.zip',MANIFEST_PATH,ARCHIVE_PATH,'scripts/verify_mdff_registration.py','docs/MDFF_USABILITY_REGISTRATION.md')
+INTEGRATIONS=('tests/unit_source_snapshots.py','tests/single_element_source_guard.py','tests/conftest.py','tests/test_mdff_editor_source_scope.py','tests/test_packaging_content_source_scope.py','tests/test_automatic_numerical_settings.py','.gitattributes','src/emcd_sim/gui/responsive.py','src/emcd_sim/gui/desktop_acceptance.py','packaging/native_acceptance.py','tests/test_bcc_fe_cif_gui.py','tests/test_generalized_emcd_gui.py','tests/test_gui_stage_b.py','tests/test_gui_stage_c.py','tests/test_multislice_slice_step_range.py','tests/test_ni_117.py','tests/test_parallel_resources.py','tests/test_single_element_gui.py','tests/test_solver_settings_ui.py','tests/test_unified_elastic_acceptance.py','tests/test_unified_provider_gui.py')
+BOOTSTRAP=INTEGRATIONS+('tests/mdff_usability_source_scope.py','tests/mdff_workflow_registration.py','tests/test_mdff_usability_source_scope.py','tests/fixtures/mdff_usability_scope_v1.json','tests/fixtures/mdff_usability_parent_v1.zip','tests/fixtures/mdff_usability_scope_v2.json','tests/fixtures/mdff_usability_parent_v2.zip','tests/fixtures/mdff_usability_scope_v3.json','tests/fixtures/mdff_usability_parent_v3.zip',MANIFEST_PATH,ARCHIVE_PATH,'scripts/verify_mdff_registration.py','docs/MDFF_USABILITY_REGISTRATION.md')
 TRUST_ROOTS=('tests/mdff_usability_source_scope.py',MANIFEST_PATH,ARCHIVE_PATH)
 WORKFLOWS={
  'test_unified_starting_choices_have_no_material_electronic_defaults':'test_replacement_defaults_preserve_provenance_grid_and_help',
@@ -70,7 +70,7 @@ def load_scope(root=None,overrides=None):
     assert digest(raw)==MANIFEST_SHA256,'Unreviewed usability scope manifest: '+MANIFEST_PATH
     scope=json.loads(raw,object_pairs_hook=unique)
     assert set(scope)=={'schema','scope_id','base_commit','accepted_patch_sha256','canonicalization','candidate','parent_files','parent_archive_sha256','protected','bootstrap','bootstrap_hashes','workflows'},'Unsupported usability scope schema'
-    assert type(scope['schema']) is int and scope['schema']==1 and scope['scope_id']=='mdff-usability-v3','Unsupported usability scope identity'
+    assert type(scope['schema']) is int and scope['schema']==1 and scope['scope_id']=='mdff-usability-v4','Unsupported usability scope identity'
     assert scope['base_commit']==BASE and scope['accepted_patch_sha256']==ACCEPTED_PATCH,'Usability base/accepted patch mismatch'
     assert scope['canonicalization']=='UTF-8-sig; CRLF to LF; UTF-8; binary raw','Unsupported usability canonicalization'
     assert set(scope['candidate'])==set(ACCEPTED_PATHS),'Unauthorized/missing usability candidate paths'
