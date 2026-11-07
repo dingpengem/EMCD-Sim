@@ -17,6 +17,7 @@ class ProviderUI:
         self.xmcd_l23_controls=tuple(widget for key in ('xl3','xl2') for widget in (self.spin[key],self.form.labelForField(self.spin[key])))
         self.xmcd_selected=QtWidgets.QLineEdit();self.xmcd_selected.setPlaceholderText('Optional JSON, e.g. {"K": 530}; L2,3 uses fields above')
         self.form.addRow('Explicit native selections',self.xmcd_selected)
+        self.xmcd_selected.setEnabled(False)  # L2,3 uses the visible energy controls.
         self.xmcd_provenance=QtWidgets.QLineEdit();self.form.addRow('Source / provenance',self.xmcd_provenance)
         self.xmcd_validity=QtWidgets.QLineEdit();self.form.addRow('Physical assumptions / limits',self.xmcd_validity)
         self.xmcd_scale=QtWidgets.QLineEdit();self.form.addRow('Relative tensor reference (A^2/eV)',self.xmcd_scale)
@@ -28,6 +29,7 @@ class ProviderUI:
 
     def xmcd_declaration_changed(self,*_):
         for widget in self.xmcd_l23_controls:widget.setVisible(self.xmcd_edge.text().strip()=='L2,3')
+        self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3')
         self.declaration.setChecked(False)
         self.emcd_stale()
 
@@ -122,11 +124,12 @@ class ProviderUI:
             if not self.explicit_xmcd.isChecked() and symbols=={'Ni'}:return base
             if Path(base.source).resolve()==DEFAULT_SOURCE.resolve() and symbols!={'Ni'}:
                 raise ValueError('Bundled Ni XMCD cannot be used for another element; select its declared source')
-            if self.xmcd_selected.text().strip():selected=json.loads(self.xmcd_selected.text())
-            else:
-                if self.xmcd_edge.text().strip()!='L2,3' or not (self.source_info or {}).get('selected'):
-                    raise ValueError('Explicit native edge selections JSON required: no reliable automatic L3/L2 assignment; Ni energies are not transferred')
+            if self.xmcd_edge.text().strip()=='L2,3':
                 selected=dict(L3=base.l3,L2=base.l2)
+            else:
+                if not self.xmcd_selected.text().strip():
+                    raise ValueError('Explicit native edge selections JSON required for this edge')
+                selected=json.loads(self.xmcd_selected.text())
             declaration=dict(element=self.xmcd_element.text().strip(),edge=self.xmcd_edge.text().strip(),selected_ev=selected,
                 magnetization_crystal=list(base.magnetization),handedness='RP_minus_LP_in_declared_axis',eta=base.eta,beta=base.beta,
                 normalization='source_max_nonmagnetic',convention=CONVENTION,source=self.xmcd_provenance.text().strip(),
@@ -151,13 +154,17 @@ class ProviderUI:
         elif cfg.model=='xmcd':
             d=cfg.provider_declaration
             values=((self.xmcd_element,d['element']),(self.xmcd_edge,d['edge']),
-                (self.xmcd_selected,json.dumps(d['selected_ev'])),(self.xmcd_provenance,d['source']),
+                (self.xmcd_selected,'' if d['edge']=='L2,3' else json.dumps(d['selected_ev'])),(self.xmcd_provenance,d['source']),
                 (self.xmcd_validity,d['validity']),(self.xmcd_scale,str(d['reference_tensor_scale_angstrom2_per_ev'])))
             for widget,value in values:
                 with QtCore.QSignalBlocker(widget):widget.setText(value)
             with QtCore.QSignalBlocker(self.xmcd_status):self.xmcd_status.setCurrentText(d['status'])
             with QtCore.QSignalBlocker(self.explicit_xmcd):self.explicit_xmcd.setChecked(True)
+            if d['edge']=='L2,3':
+                for key,edge in (('xl3','L3'),('xl2','L2')):
+                    with QtCore.QSignalBlocker(self.spin[key]):self.spin[key].setValue(d['selected_ev'][edge])
             for widget in self.xmcd_l23_controls:widget.setVisible(cfg.core_edge=='L2,3')
+            self.xmcd_selected.setEnabled(cfg.core_edge!='L2,3')
 
     def invalidate_provider_acknowledgement(self):
         index=self.model_box.currentIndex()

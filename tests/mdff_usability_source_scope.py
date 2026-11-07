@@ -14,8 +14,8 @@ BASE='3b0ce6c386f3c815f85d8b9d64db679ff7622a94'
 ACCEPTED_PATCH='6e496aff8152903d8bca45bd1d6f1704139647324fd7399920e1ed03e82b7fe2'
 MANIFEST_PATH='tests/fixtures/mdff_usability_scope_v4.json'
 ARCHIVE_PATH='tests/fixtures/mdff_usability_parent_v4.zip'
-MANIFEST_SHA256='84b54aa7f420aab8ccb881af0a80ea487e3b9378e0625f3d2c53411da78caf71'
-ACCEPTED_DECLARATION_SHA256='20fef12d278544b30a96ad3b224d1a37db9c9353987f18dfcc67898dc8e52be5'
+MANIFEST_SHA256='a0530e54d7543d4cbfd8b7ee160d17c2565b39296bf1b62282e6f3dc52716ff5'
+ACCEPTED_DECLARATION_SHA256='84a6d18e4d6e03c5eb236794789201db67d78fec9d7f5530b91420c6c55f2fe7'
 # Closed reviewed paths are literals, not inferred from working files/manifests.
 ACCEPTED_PATHS=('docs/MANUAL_L23_TENSOR_MODEL.md','docs/MDFF_USABILITY_REDESIGN.md','docs/MDFF_USABILITY_SCOPE_PROPOSAL.md',
  'scripts/manual_l23_native_walkthrough.py','scripts/mdff_corrective_walkthrough.py','scripts/mdff_native_walkthrough.py','scripts/verify_mdff_corrective.py','scripts/xmcd_native_walkthrough.py',
