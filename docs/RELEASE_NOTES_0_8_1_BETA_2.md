@@ -1,6 +1,6 @@
 # v0.8.1-beta.2 - Windows Research Beta prerelease draft
 
-**Status: prepared, not published.** This document is the release-body draft, not acceptance of a new binary. The next unused prerelease name is `v0.8.1-beta.2`; planned package/Windows versions are `0.8.1b2` / `0.8.1.2`. Those versions are not assigned to the existing `0.8.1b1` development EXE. No beta.2 tag or downloadable asset is claimed.
+**Research Beta prerelease: v0.8.1-beta.2.** Package version `0.8.1b2`, Windows version `0.8.1.2`. This is a development/research candidate, not formal scientific release acceptance. The previous beta.1 assets remain unchanged.
 
 ## MDFF feature additions
 
@@ -36,9 +36,9 @@ Windows x64 is the tested packaged platform. Linux/macOS packaged support and in
 
 ## Installation and first calculation
 
-Once a cleared beta.2 asset exists, download its complete Windows ZIP and release checksum, verify and fully extract it into a new directory, and run `EMCD-Sim/EMCD-Sim.exe` with `_internal` and all support files intact. Do not upload or distribute a lone EXE. Binary users do not need Python, Conda, WIEN2k, or a project JSON.
+Download its complete Windows ZIP and release checksum, verify and fully extract it into a new directory, and run `EMCD-Sim/EMCD-Sim.exe` with `_internal` and all support files intact. Do not upload or distribute a lone EXE. Binary users do not need Python, Conda, WIEN2k, or a project JSON.
 
-The current development EXE embeds `0.8.1b1` / `aaa69a1`; it cannot be renamed as beta.2. A new embedded version will require one build in the established dependency environment and short affected native verification. Documentation changes alone do not require a rebuild. See [installation](INSTALL_WINDOWS.md), [first calculation](QUICK_START.md), and [MDFF examples](MDFF_WORKFLOWS.md#worked-example-synthetic-fe-from-existing-inputs).
+The beta.2 package is rebuilt with its own embedded version, rather than relabeling the earlier development EXE. Install the official Microsoft x64 v14 runtime (14.44.35211 or newer) directly from Microsoft before launch. No runtime installer or Microsoft runtime DLL copies are bundled. See [installation](INSTALL_WINDOWS.md), [first calculation](QUICK_START.md), and [MDFF examples](MDFF_WORKFLOWS.md#worked-example-synthetic-fe-from-existing-inputs).
 
 Only the cleared complete distribution and its existing required release inventory/checksum artifacts may become release assets. Exclude temporary projects, private WIEN2k companions/research data, credentials, investigation logs, and unrelated working changes.
 
@@ -56,8 +56,12 @@ The user explicitly extended the earlier local-development exception to **this R
 
 ## Publication status
 
-**Publication is blocked by an existing redistribution requirement, not by a new test gate.** The development bundle contains Qt Virtual Keyboard (GPL-3.0-only or commercial), other Qt/PySide components, Qt PDF, and Microsoft runtime copies. The existing [Qt distribution notes](../packaging/assets/qt-licenses/README.txt) require explicit review of applicable GPL/LGPL obligations, corresponding source/build material, relinking/replacement conditions, and applicable Microsoft redistribution rights. They expressly state that the notice collection does not itself supply corresponding source, grant a commercial Qt license, or establish release compliance.
+The former binary redistribution blockers are addressed by explicit packaging changes:
 
-The recorded materials do not resolve that review: in particular, the exact corresponding-source/build kit for the bundled Qt/PDF wheels is not established, commercial coverage is not recorded, and Microsoft runtime entitlement remains unconfirmed. The regression exception does not waive these requirements. No dependency has been silently removed, upgraded, or declared LGPL-only to bypass them.
+- Unused Qt PDF and Virtual Keyboard bindings/plugins are excluded, along with the QML/Quick/OpenGL module dependency chain. Retained Qt modules are Core, Gui, Widgets, Network and Svg. Historical notices remain; GPL components have not been relabeled LGPL.
+- Matching official Qt/PySide/Shiboken 6.12.0 source archives are supplied in **EMCD-Sim-v0.8.1-beta.2-Qt-sources.zip**, alongside the exact application source, build/replacement instructions and upstream provenance. Retained Qt/PySide/Shiboken use their LGPL v3 alternatives, with separate third-party terms. The application remains MIT licensed; no commercial license is claimed.
+- Microsoft runtime redistribution rights were not established for inherited wheel copies, so **none are shipped**, including the renamed NumPy copy and UCRT/API-set copies. Users install Microsoft's official x64 v14 runtime directly. Two staged NumPy PE import strings are normalized to the standard system DLL name; executable code and installed wheels are unchanged.
 
-The release draft and documentation can be prepared now. A public version tag, beta.2 binary build/public asset, and publication remain pending the concrete redistribution resolution. Previous releases and their assets are unchanged. Until then, use the [existing published beta.1 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1) with its matching documentation, or current source for development.
+See [installation prerequisites](INSTALL_WINDOWS.md) and [source/build/replacement instructions](../packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md). No dependency versions, scientific kernels or numerical tolerances changed for dependency trimming. Package inventories and directly affected existing pins are updated; earlier releases remain untouched.
+
+Final package/native verification is recorded below before publication.

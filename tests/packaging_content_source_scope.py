@@ -11,13 +11,15 @@ import zipfile
 
 MANIFEST_PATH = 'tests/fixtures/packaging_content_scope_v1.json'
 ARCHIVE_PATH = 'tests/fixtures/packaging_content_parent_v1.zip'
-MANIFEST_SHA256 = 'c9f5a49b3dee3b2cd710fc158700e048e74c80d833b53c88a416c411e16399d2'
-ARCHIVE_SHA256 = '56f8e6512e0a9fd9118f67935d99884dc03b6423edbbba550398969b058ced3f'
+MANIFEST_SHA256 = 'cc6978fa0fe3b39ec58b386b42b56d5335d286e12641cbc71188802689119d07'
+ARCHIVE_SHA256 = '017093f5788b1f83d34091679a7802e253220213a056cb05b35d2a6e2164e54b'
 PARENT = '3609dfc762749024a3c6726c3763ef33f3e46482'
 MODIFIED = ('packaging/BETA_README.txt', 'packaging/README.md',
             'packaging/build_windows.ps1', 'packaging/emcd_gui.spec',
+            'pyproject.toml', 'src/emcd_sim/__init__.py', 'packaging/windows_version_info.txt',
             'tests/mdff_editor_source_scope.py', 'tests/test_mdff_editor_source_scope.py')
 ADDED_INFRASTRUCTURE = ('packaging/check_package_contents.py',
+                        'packaging/windows_dependencies.py',
                         'tests/test_packaging_contents.py',
                         'tests/test_packaging_content_source_scope.py',
                         'docs/PACKAGING_CONTENT_SCOPE.md')

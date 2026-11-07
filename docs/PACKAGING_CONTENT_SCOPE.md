@@ -37,3 +37,14 @@ the new artifact. Full numerical regression need not be repeated for this asset
 change absent a concrete failure or review requirement. Offline isolation and
 upstream HDF5 comparison remain UNVERIFIED. GPL/LGPL redistribution obligations,
 including corresponding source, remain a separate release review requirement.
+
+## v0.8.1-beta.2 authorized packaging update
+
+The existing scope now also permits only the three version metadata files
+(pyproject.toml, src/emcd_sim/__init__.py, packaging/windows_version_info.txt).
+Their genuine Git parent bytes from the same accepted parent are appended to
+the existing archive, retaining its original members. The new ordinary packaging
+helper trims unused Qt modules and Microsoft runtime copies. Existing asset
+inventories, package checks and current identities are updated for that concrete
+distribution change. Historical editor/scientific evidence is not regenerated.
+The prior failed regression and prerelease-specific exception remain recorded.

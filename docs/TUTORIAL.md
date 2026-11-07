@@ -1,6 +1,6 @@
 # EMCD-Sim Tutorial: From Crystal Structure to EMCD Spectra
 
-Current-main interface note: use **Model > Configure MDFF...** and the [MDFF workflow guide](MDFF_WORKFLOWS.md) for the new Atomic/manual editors, explicit XMCD selections, and project creation. Historical control names and Ni examples below retain their original context. The next Windows prerelease is [an unpublished draft](RELEASE_NOTES_0_8_1_BETA_2.md), not an existing new download.
+Current-main interface note: use **Model > Configure MDFF...** and the [MDFF workflow guide](MDFF_WORKFLOWS.md) for the new Atomic/manual editors, explicit XMCD selections, and project creation. Historical control names and Ni examples below retain their original context. The next Windows prerelease is [an prerelease draft](RELEASE_NOTES_0_8_1_BETA_2.md), not an existing new download.
 
 [Home](../README.md) · [Install](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [User Manual](USER_GUIDE.md) · [Physics](PHYSICS.md)
 

@@ -10,7 +10,7 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = 'packaging/assets/required-content.json'
-MANIFEST_SHA256 = '3a8c3bcd9123cb74454a8f7567548b50863a976c9ae16d0c5d05864396a2e8cd'
+MANIFEST_SHA256 = 'c8e183f56d4675ea110df11aff9f5c27f31ee55951f2906148df8e2d47e6634a'
 QT_VERSIONS = {name: '6.12.0' for name in
                ('PySide6', 'PySide6_Essentials', 'PySide6_Addons', 'shiboken6')}
 QT_VERSIONS.update(PySide6_Pdf='6.12.0.140', PySide6_WebEngine='6.12.0.140')
@@ -56,6 +56,11 @@ def datas(root=ROOT):
 
 
 def validate_distribution(dist, root=ROOT):
+    from windows_dependencies import system_runtime
+    runtime_copies = sorted(p.relative_to(dist).as_posix() for p in dist.rglob('*.dll')
+                            if system_runtime(p.name))
+    if runtime_copies:
+        raise ValueError('App-local Microsoft runtimes must not be distributed: '+str(runtime_copies))
     entries = inputs(root)
     checked_file(dist, '_internal/licenses/qt/required-content.json', MANIFEST_SHA256)
     for path, entry in entries.items():
@@ -76,14 +81,26 @@ def validate_distribution(dist, root=ROOT):
             'qt_translation_catalogs': len(baseline['translations'])}
 
 
+def source_packages(source_root, root=ROOT):
+    inputs(root)
+    provenance = json.loads((root/'packaging/assets/qt-licenses/upstream-provenance.json').read_bytes())
+    packages = provenance['source_packages']
+    for entry in packages:
+        checked_file(source_root, entry['filename'], entry['sha256'])
+    return packages
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dist', type=Path)
     parser.add_argument('--environment', action='store_true')
+    parser.add_argument('--source-root', type=Path)
     args = parser.parse_args()
     try:
         if args.environment:
             check_environment()
+        if args.source_root:
+            source_packages(args.source_root)
         result = validate_distribution(args.dist) if args.dist else {'required_assets': len(inputs())}
     except (OSError, ValueError) as error:
         parser.exit(1, str(error)+'\n')

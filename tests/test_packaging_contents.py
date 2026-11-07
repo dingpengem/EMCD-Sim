@@ -32,7 +32,7 @@ def test_positive_content_and_upstream_provenance():
         seen.add((record['archive'], record['member']))
     assert len(seen) == 302
     components = json.loads((ROOT/'packaging/assets/bundled-qt-components.json').read_bytes())
-    assert len(components['components']) == 52 and len(components['wheel_provenance']) == 6
+    assert len(components['components']) == 34 and len(components['wheel_provenance']) == 6
     for component in components['components']:
         assert component['notice_assets'] and component['license_options']
         assert all(path in entries for path in component['notice_assets'])
@@ -45,6 +45,36 @@ def test_positive_content_and_upstream_provenance():
         assert set(archive.namelist()) == {r['member'] for r in translations['records']}
         for record in translations['records']:
             assert content.sha(archive.read(record['member'])) == record['sha256']
+
+
+@pytest.mark.skipif(__import__('sys').platform != 'win32', reason='Windows PE packaging')
+def test_staged_numpy_imports_use_system_runtime_without_code_changes(tmp_path):
+    import pefile
+    import numpy
+    spec = importlib.util.spec_from_file_location('windows_dependencies', ROOT/'packaging/windows_dependencies.py')
+    deps = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(deps)
+    numpy_root = Path(numpy.__file__).parent
+    extensions = [next((numpy_root/subdir).glob(stem+'*.pyd')) for subdir, stem in
+                  [('_core', '_multiarray_umath'), ('fft', '_pocketfft_umath')]]
+    for original in extensions:
+        before = original.read_bytes()
+        target, changes = deps.normalize_runtime_imports(original, tmp_path/original.name)
+        assert changes and all(new == 'msvcp140.dll' for old, new in changes)
+        assert original.read_bytes() == before
+        with pefile.PE(target) as revised, pefile.PE(data=before) as previous:
+            assert b'msvcp140.dll' in [e.dll for e in revised.DIRECTORY_ENTRY_IMPORT]
+            assert not any(b'msvcp140-' in e.dll for e in revised.DIRECTORY_ENTRY_IMPORT)
+            for section in previous.sections:
+                if section.Characteristics & 0x20000000:
+                    start, size = section.PointerToRawData, section.SizeOfRawData
+                    assert Path(target).read_bytes()[start:start+size] == before[start:start+size]
+    entries = [(name, str(tmp_path/name), 'BINARY') for name in
+               ['VCRUNTIME140.dll', 'numpy.libs/msvcp140-abc.dll', 'PySide6/Qt6Pdf.dll',
+                'PySide6/plugins/imageformats/qpdf.dll', 'PySide6/Qt6Core.dll']]
+    kept, deployment = deps.prepare_binaries(entries, tmp_path)
+    assert [entry[0] for entry in kept] == ['PySide6/Qt6Core.dll']
+    assert len(deployment['omitted']) == 4
 
 
 @pytest.mark.parametrize('path', sorted(content.inputs()))

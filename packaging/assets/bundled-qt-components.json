@@ -9,66 +9,6 @@
   },
   "components": [
     {
-      "path": "_internal/PySide6/MSVCP140.dll",
-      "sha256": "f6f1d55bfd64027820ddce48f9cd8cf46d53bfa34047e6acf4ef348d492a05cb",
-      "bytes": 549176,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/MSVCP140.dll",
-        "file_version": "14.44.35211.0",
-        "product_version": "14.44.35211.0",
-        "original_filename": "msvcp140.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/Microsoft-VC-Runtime-2015-2022-License.txt",
-        "packaging/assets/qt-licenses/Microsoft-VS2022-redistribution.html",
-        "packaging/assets/qt-licenses/Microsoft-provenance.json"
-      ],
-      "license_options": "Microsoft Visual C++ 2015-2022 runtime; redistribution rights subject to applicable Microsoft terms"
-    },
-    {
-      "path": "_internal/PySide6/MSVCP140_1.dll",
-      "sha256": "2be87527c41e1ba8aff48e326e0adcd4743516e0bbcc9304986c726e27de6aca",
-      "bytes": 27448,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/MSVCP140_1.dll",
-        "file_version": "14.44.35211.0",
-        "product_version": "14.44.35211.0",
-        "original_filename": "msvcp140_1.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/Microsoft-VC-Runtime-2015-2022-License.txt",
-        "packaging/assets/qt-licenses/Microsoft-VS2022-redistribution.html",
-        "packaging/assets/qt-licenses/Microsoft-provenance.json"
-      ],
-      "license_options": "Microsoft Visual C++ 2015-2022 runtime; redistribution rights subject to applicable Microsoft terms"
-    },
-    {
-      "path": "_internal/PySide6/MSVCP140_2.dll",
-      "sha256": "6a72ed8a87eae1671640bd1ca98eccb989f1772ae46ab84594e385bf6d4ac4fb",
-      "bytes": 271672,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/MSVCP140_2.dll",
-        "file_version": "14.44.35211.0",
-        "product_version": "14.44.35211.0",
-        "original_filename": "msvcp140_2.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/Microsoft-VC-Runtime-2015-2022-License.txt",
-        "packaging/assets/qt-licenses/Microsoft-VS2022-redistribution.html",
-        "packaging/assets/qt-licenses/Microsoft-provenance.json"
-      ],
-      "license_options": "Microsoft Visual C++ 2015-2022 runtime; redistribution rights subject to applicable Microsoft terms"
-    },
-    {
       "path": "_internal/PySide6/opengl32sw.dll",
       "sha256": "18aedc7a4b610f53bcc7b7a5c5ed9293c7e86f030e3273ad54ed3bb1ebd36702",
       "bytes": 20639544,
@@ -208,26 +148,6 @@
       "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
     },
     {
-      "path": "_internal/PySide6/plugins/imageformats/qpdf.dll",
-      "sha256": "0625e11f7ed136d4556cdc248527f26ac23eca93fa77764e9b64535557613efc",
-      "bytes": 42296,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/plugins/imageformats/qpdf.dll",
-        "file_version": "6.140.0.0",
-        "product_version": "6.140.0.0",
-        "original_filename": "qpdf.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtpdf-6.140.0-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtpdf-6.140.0-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "LGPLv3 OR GPLv2 OR commercial (published Qt PDF terms)"
-    },
-    {
       "path": "_internal/PySide6/plugins/imageformats/qsvg.dll",
       "sha256": "b63f97ed0ae60aa5bc332c37e429c1f31154e1eee358352b2c49598c5269843b",
       "bytes": 40248,
@@ -346,26 +266,6 @@
         "packaging/assets/qt-licenses/upstream-provenance.json"
       ],
       "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
-    },
-    {
-      "path": "_internal/PySide6/plugins/platforminputcontexts/qtvirtualkeyboardplugin.dll",
-      "sha256": "bbf479e6380061699e734a32f4fe0b6fc8bc2de007ae53b0206e6e36abf1e3e2",
-      "bytes": 36664,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/plugins/platforminputcontexts/qtvirtualkeyboardplugin.dll",
-        "file_version": "6.12.0.0",
-        "product_version": "6.12.0.0",
-        "original_filename": "qtvirtualkeyboardplugin.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtvirtualkeyboard-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtvirtualkeyboard-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "GPL-3.0-only OR commercial"
     },
     {
       "path": "_internal/PySide6/plugins/platforms/qdirect2d.dll",
@@ -608,146 +508,6 @@
       "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
     },
     {
-      "path": "_internal/PySide6/Qt6OpenGL.dll",
-      "sha256": "788b743bfaca141ca83e28c161646d51de92a71adf7a86c653c36fdea5a9bf5b",
-      "bytes": 1989944,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/Qt6OpenGL.dll",
-        "file_version": "6.12.0.0",
-        "product_version": "6.12.0.0",
-        "original_filename": "Qt6OpenGL.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtbase-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtbase-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
-    },
-    {
-      "path": "_internal/PySide6/Qt6Pdf.dll",
-      "sha256": "5caf5744e017df85455c5c7e11028c5ec2765633a7ca64a11d7b64d127f6c4cc",
-      "bytes": 4623672,
-      "distributions": [
-        "PySide6_Pdf"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/Qt6Pdf.dll",
-        "file_version": "6.140.0.0",
-        "product_version": "6.140.0.0",
-        "original_filename": "Qt6Pdf.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtpdf-6.140.0-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtpdf-6.140.0-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "LGPLv3 OR GPLv2 OR commercial (published Qt PDF terms)"
-    },
-    {
-      "path": "_internal/PySide6/Qt6Qml.dll",
-      "sha256": "0be9fc8ad3b7d2d19d0ed49a9026f02b78c4498ab2f53ca574d34a0740d7888a",
-      "bytes": 5390136,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/Qt6Qml.dll",
-        "file_version": "6.12.0.0",
-        "product_version": "6.12.0.0",
-        "original_filename": "Qt6Qml.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtdeclarative-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtdeclarative-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
-    },
-    {
-      "path": "_internal/PySide6/Qt6QmlMeta.dll",
-      "sha256": "6edac38b27868e69c8ae15b08145688b02358426d5d652a0d2865ca4476fde0a",
-      "bytes": 158520,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/Qt6QmlMeta.dll",
-        "file_version": "6.12.0.0",
-        "product_version": "6.12.0.0",
-        "original_filename": "Qt6QmlMeta.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtdeclarative-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtdeclarative-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
-    },
-    {
-      "path": "_internal/PySide6/Qt6QmlModels.dll",
-      "sha256": "78e79eee241326da0754e29f4b372dee9ff7b75f3484099504c4750ac1f519e6",
-      "bytes": 1021752,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/Qt6QmlModels.dll",
-        "file_version": "6.12.0.0",
-        "product_version": "6.12.0.0",
-        "original_filename": "Qt6QmlModels.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtdeclarative-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtdeclarative-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
-    },
-    {
-      "path": "_internal/PySide6/Qt6QmlWorkerScript.dll",
-      "sha256": "475456ab8f1e9570f5f5f496b0941445a34fca4bbac0dd07ea84ee5ea15e7194",
-      "bytes": 80184,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/Qt6QmlWorkerScript.dll",
-        "file_version": "6.12.0.0",
-        "product_version": "6.12.0.0",
-        "original_filename": "Qt6QmlWorkerScript.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtdeclarative-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtdeclarative-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
-    },
-    {
-      "path": "_internal/PySide6/Qt6Quick.dll",
-      "sha256": "3c93688f36ad4e5c5c2fd73587f50ee94e1dfa4891805bbe5d6d0c031450faa2",
-      "bytes": 6752568,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/Qt6Quick.dll",
-        "file_version": "6.12.0.0",
-        "product_version": "6.12.0.0",
-        "original_filename": "Qt6Quick.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtdeclarative-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtdeclarative-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
-    },
-    {
       "path": "_internal/PySide6/Qt6Svg.dll",
       "sha256": "8f1de5b28aab1eedb415c751c81f9cfaa2804242868c0ceea5f3fdb4b2babca4",
       "bytes": 608056,
@@ -766,26 +526,6 @@
         "packaging/assets/qt-licenses/upstream-provenance.json"
       ],
       "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
-    },
-    {
-      "path": "_internal/PySide6/Qt6VirtualKeyboard.dll",
-      "sha256": "973369caa6d13fa08f6b1cd57004dcf4f137f8ef98ec6876ad07ba690ee0b9a3",
-      "bytes": 424248,
-      "distributions": [
-        "PySide6_Addons"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/Qt6VirtualKeyboard.dll",
-        "file_version": "6.12.0.0",
-        "product_version": "6.12.0.0",
-        "original_filename": "Qt6VirtualKeyboard.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/qtvirtualkeyboard-NOTICES.txt",
-        "packaging/assets/qt-licenses/qtvirtualkeyboard-upstream.zip",
-        "packaging/assets/qt-licenses/upstream-provenance.json"
-      ],
-      "license_options": "GPL-3.0-only OR commercial"
     },
     {
       "path": "_internal/PySide6/Qt6Widgets.dll",
@@ -908,66 +648,6 @@
       "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
     },
     {
-      "path": "_internal/PySide6/VCRUNTIME140.dll",
-      "sha256": "a36e0cb185eb89533ed96d4568138f86a1315756a8b2644c5963a8ce23e32101",
-      "bytes": 116024,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/VCRUNTIME140.dll",
-        "file_version": "14.44.35211.0",
-        "product_version": "14.44.35211.0",
-        "original_filename": "vcruntime140.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/Microsoft-VC-Runtime-2015-2022-License.txt",
-        "packaging/assets/qt-licenses/Microsoft-VS2022-redistribution.html",
-        "packaging/assets/qt-licenses/Microsoft-provenance.json"
-      ],
-      "license_options": "Microsoft Visual C++ 2015-2022 runtime; redistribution rights subject to applicable Microsoft terms"
-    },
-    {
-      "path": "_internal/PySide6/VCRUNTIME140_1.dll",
-      "sha256": "302b1e160e858602490a55e32ae2e29ddfc0bec2a188e19550cb655cdaa58f9c",
-      "bytes": 41272,
-      "distributions": [
-        "PySide6_Essentials"
-      ],
-      "pe_version": {
-        "path": "_internal/PySide6/VCRUNTIME140_1.dll",
-        "file_version": "14.44.35211.0",
-        "product_version": "14.44.35211.0",
-        "original_filename": "vcruntime140_1.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/Microsoft-VC-Runtime-2015-2022-License.txt",
-        "packaging/assets/qt-licenses/Microsoft-VS2022-redistribution.html",
-        "packaging/assets/qt-licenses/Microsoft-provenance.json"
-      ],
-      "license_options": "Microsoft Visual C++ 2015-2022 runtime; redistribution rights subject to applicable Microsoft terms"
-    },
-    {
-      "path": "_internal/shiboken6/MSVCP140.dll",
-      "sha256": "1ba4d7c0a95d375da138a057a57593b33510ad5bda6c5e2686afd68faa5b4231",
-      "bytes": 549176,
-      "distributions": [
-        "shiboken6"
-      ],
-      "pe_version": {
-        "path": "_internal/shiboken6/MSVCP140.dll",
-        "file_version": "14.44.35211.0",
-        "product_version": "14.44.35211.0",
-        "original_filename": "msvcp140.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/Microsoft-VC-Runtime-2015-2022-License.txt",
-        "packaging/assets/qt-licenses/Microsoft-VS2022-redistribution.html",
-        "packaging/assets/qt-licenses/Microsoft-provenance.json"
-      ],
-      "license_options": "Microsoft Visual C++ 2015-2022 runtime; redistribution rights subject to applicable Microsoft terms"
-    },
-    {
       "path": "_internal/shiboken6/Shiboken.pyd",
       "sha256": "8ccf415b2cefb5b6462504581ab1993fb41afe04e415931d8a72049f1c79b267",
       "bytes": 33080,
@@ -1006,46 +686,6 @@
         "packaging/assets/qt-licenses/upstream-provenance.json"
       ],
       "license_options": "LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only OR commercial; see exact source headers and third-party notices"
-    },
-    {
-      "path": "_internal/shiboken6/VCRUNTIME140.dll",
-      "sha256": "e7be9112ee9a5b9f44b44bff24cb761cca9b1ed7550b612f77b70edfcf5fdabf",
-      "bytes": 116024,
-      "distributions": [
-        "shiboken6"
-      ],
-      "pe_version": {
-        "path": "_internal/shiboken6/VCRUNTIME140.dll",
-        "file_version": "14.44.35211.0",
-        "product_version": "14.44.35211.0",
-        "original_filename": "vcruntime140.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/Microsoft-VC-Runtime-2015-2022-License.txt",
-        "packaging/assets/qt-licenses/Microsoft-VS2022-redistribution.html",
-        "packaging/assets/qt-licenses/Microsoft-provenance.json"
-      ],
-      "license_options": "Microsoft Visual C++ 2015-2022 runtime; redistribution rights subject to applicable Microsoft terms"
-    },
-    {
-      "path": "_internal/shiboken6/VCRUNTIME140_1.dll",
-      "sha256": "f02cd4a862b85a9a3153d27e15e5a213f5df8e3d77004ed2e87b8a7e8873d97c",
-      "bytes": 41272,
-      "distributions": [
-        "shiboken6"
-      ],
-      "pe_version": {
-        "path": "_internal/shiboken6/VCRUNTIME140_1.dll",
-        "file_version": "14.44.35211.0",
-        "product_version": "14.44.35211.0",
-        "original_filename": "vcruntime140_1.dll"
-      },
-      "notice_assets": [
-        "packaging/assets/qt-licenses/Microsoft-VC-Runtime-2015-2022-License.txt",
-        "packaging/assets/qt-licenses/Microsoft-VS2022-redistribution.html",
-        "packaging/assets/qt-licenses/Microsoft-provenance.json"
-      ],
-      "license_options": "Microsoft Visual C++ 2015-2022 runtime; redistribution rights subject to applicable Microsoft terms"
     }
   ],
   "metadata": {
@@ -1137,10 +777,10 @@
     }
   },
   "classification_counts": {
-    "qt_module_dlls": 13,
-    "qt_plugins": 22,
+    "qt_module_dlls": 5,
+    "qt_plugins": 20,
     "binding_binaries": 8,
-    "microsoft_runtime_copies": 8,
+    "microsoft_runtime_copies": 0,
     "mesa_renderer": 1,
     "qt_translation_catalogs": 99
   },
@@ -2729,5 +2369,28 @@
         "packaging/assets/qt-licenses/GPL-3.0-only.txt"
       ]
     }
-  ]
+  ],
+  "packaging_exclusions": {
+    "paths_removed_from_previous_inventory": [
+      "_internal/PySide6/MSVCP140.dll",
+      "_internal/PySide6/MSVCP140_1.dll",
+      "_internal/PySide6/MSVCP140_2.dll",
+      "_internal/PySide6/plugins/imageformats/qpdf.dll",
+      "_internal/PySide6/plugins/platforminputcontexts/qtvirtualkeyboardplugin.dll",
+      "_internal/PySide6/Qt6OpenGL.dll",
+      "_internal/PySide6/Qt6Pdf.dll",
+      "_internal/PySide6/Qt6Qml.dll",
+      "_internal/PySide6/Qt6QmlMeta.dll",
+      "_internal/PySide6/Qt6QmlModels.dll",
+      "_internal/PySide6/Qt6QmlWorkerScript.dll",
+      "_internal/PySide6/Qt6Quick.dll",
+      "_internal/PySide6/Qt6VirtualKeyboard.dll",
+      "_internal/PySide6/VCRUNTIME140.dll",
+      "_internal/PySide6/VCRUNTIME140_1.dll",
+      "_internal/shiboken6/MSVCP140.dll",
+      "_internal/shiboken6/VCRUNTIME140.dll",
+      "_internal/shiboken6/VCRUNTIME140_1.dll"
+    ],
+    "reason": "Unused Qt PDF/VirtualKeyboard and their QML/Quick/OpenGL dependency chain; Microsoft runtimes supplied by user-installed official runtime, not redistributed."
+  }
 }

@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [Index](INDEX.md)
 
-This manual combines retained control/physics references with the current-main MDFF update. The new editor is prepared for unpublished v0.8.1-beta.2; the tested development EXE remains 0.8.1b1 / aaa69a1. See [current MDFF workflows](MDFF_WORKFLOWS.md) and [publication/validation status](RELEASE_NOTES_0_8_1_BETA_2.md). For the published beta.1 binary, use its tag-specific documentation. Independent clean-machine installation and Linux/macOS packaged support remain unverified.
+This manual combines retained control/physics references with the current-main MDFF update. The new editor is prepared for prerelease v0.8.1-beta.2; the tested development EXE remains 0.8.1b1 / aaa69a1. See [current MDFF workflows](MDFF_WORKFLOWS.md) and [publication/validation status](RELEASE_NOTES_0_8_1_BETA_2.md). For the published beta.1 binary, use its tag-specific documentation. Independent clean-machine installation and Linux/macOS packaged support remain unverified.
 
 > **Legacy magnetic results:** earlier released v0.6.1 packages used a superseded Born/MDFF convention. Preserve their raw arrays, source and convention; revalidate signed magnetic results before comparison. Loading a project does not update its physics. Missing convention metadata is unknown/legacy-unverified.
 

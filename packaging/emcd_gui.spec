@@ -8,7 +8,9 @@ sys.path.insert(0, str(root / 'packaging'))
 from check_windows_metadata import LICENSE_DISTRIBUTIONS, require_metadata
 checked_distributions = require_metadata()
 from check_package_contents import check_environment, datas as required_datas
+from windows_dependencies import EXCLUDED_MODULES, install_qt_plugin_filter, prepare_binaries
 check_environment()
+install_qt_plugin_filter()
 required_assets = required_datas(root)
 sys.path.insert(0, str(root / 'src'))
 stage = root / os.environ.get('EMCD_GUI_BUILD_ROOT','build/windows-rc') / 'resources'
@@ -54,7 +56,10 @@ a = Analysis([str(root/'packaging/launcher.py')], pathex=[str(root/'src')],
            (str(root/'src/emcd_sim/data/edge_references_v1'),'emcd_sim/data/edge_references_v1')]+licenses+required_assets,
     hiddenimports=['matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg','ase.io.cif','ase.io.jsonio','ase.io.extxyz'],
     hooksconfig={'matplotlib': {'backends': ['Agg', 'QtAgg', 'svg']}},
-    excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow'], noarchive=False)
+    excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow']+EXCLUDED_MODULES, noarchive=False)
+a.binaries, runtime_deployment = prepare_binaries(a.binaries, stage)
+info['windows_runtime_deployment'] = runtime_deployment
+(stage / 'build_info.json').write_text(json.dumps(info, indent=2), encoding='utf-8')
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='EMCD-Sim', console=False,
           version=str(root/'packaging/windows_version_info.txt'))
