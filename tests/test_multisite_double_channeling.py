@@ -201,12 +201,12 @@ def test_equivalent_site_split_merge_pipeline(tmp_path):
         np.testing.assert_allclose(merged['spectra'][key],separate['spectra'][key],rtol=3e-13,atol=1e-17)
 
 
-@pytest.mark.parametrize('failure',['ms','both','workers','coverage'])
+@pytest.mark.parametrize('failure',['unknown','both','workers','coverage'])
 def test_unsupported_or_uncovered_double_rejected_before_propagation(tmp_path,monkeypatch,failure):
     structure,settings,sites=spectral_system(tmp_path)
     cfg=configuration(channeling_model='double',angular_maps=False)
     windows=disjoint_windows()
-    if failure in ('ms','both'):cfg=replace(cfg,propagation='fft-multislice' if failure=='ms' else 'both')
+    if failure in ('unknown','both'):cfg=replace(cfg,propagation='unknown' if failure=='unknown' else 'both')
     elif failure=='workers':cfg=replace(cfg,parallel_workers=2)
     else:windows['A']=ModeledEdgeWindow((703.,730.),(710.,))
     def forbidden(*args,**kwargs):pytest.fail('Invalid multi-site double request started propagation')

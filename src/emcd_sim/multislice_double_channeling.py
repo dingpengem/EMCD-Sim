@@ -277,6 +277,28 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
     propagated waves. Return response and norm/leakage/memory diagnostics.
     """
     check_cancelled(cancelled)
+    positions=elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)
+    responses,diagnostics=multislice_double_channeling_group_responses(elastic,energy_ev,q_xy,thickness_nm,{'sites':positions},
+        fft_grid=fft_grid,potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction,
+        depth_steps=depth_steps,slice_step_nm=slice_step_nm,outgoing_beams=outgoing_beams,outgoing_potential=outgoing_potential,
+        batch_pixels=batch_pixels,memory_budget_mib=memory_budget_mib,prepared_grid=prepared_grid,
+        prepared_incoming=prepared_incoming,projected_geometry=projected_geometry,cancelled=cancelled)
+    return responses['sites'],diagnostics
+
+
+def multislice_double_channeling_group_responses(elastic,energy_ev,q_xy,thickness_nm,positions_by_group,*,
+        fft_grid=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,
+        depth_steps=257,slice_step_nm=.04,outgoing_beams=None,outgoing_potential=True,
+        batch_pixels=32,memory_budget_mib=2048,prepared_grid=None,prepared_incoming=None,projected_geometry=None,cancelled=None):
+    """Group-mean responses sharing complete-crystal incoming/outgoing fields.
+
+    The caller validates actual fractional site assignments against the elastic
+    crystal. Groups sum independent events internally; multiplicity belongs to
+    the intensity accumulator, never to this response. FFT propagation, site
+    phases, buffer arithmetic and depth quadrature are the legacy operations.
+    """
+    from collections.abc import Mapping
+    check_cancelled(cancelled)
     q=np.asarray(q_xy,float)
     if q.ndim!=2 or q.shape[1]!=2 or not len(q) or not np.isfinite(q).all():raise ValueError('Finite nonempty (pixels,2) array required')
     if not isinstance(batch_pixels,int) or batch_pixels<1:raise ValueError('Positive integer batch required')
@@ -286,9 +308,14 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
     no=len(ob.hkl)
     samples=(prepared_grid.potential.size if prepared_grid is not None else
         fft_shape(fft_grid)[0] if row_reduction else int(np.prod(fft_shape(fft_grid))))
-    b=min(batch_pixels,len(q));sites=len(elastic.crystal.species)
+    if not isinstance(positions_by_group,Mapping) or not positions_by_group:
+        raise ValueError('At least one explicit site-position group required')
+    positions_by_group={key:np.asarray(p,float) for key,p in positions_by_group.items()}
+    if any(p.ndim!=2 or p.shape[1:]!=(3,) or not len(p) or not np.isfinite(p).all() for p in positions_by_group.values()):
+        raise ValueError('Groups require finite nonempty explicit fractional positions')
+    b=min(batch_pixels,len(q));sites=max(len(elastic.crystal.species),sum(len(p) for p in positions_by_group.values()))
     dense=96*b*ni*no/2**20
-    working=(dense+(64*depth_steps*samples+192*b*samples+32*len(q)*9+64*sites*ni*no)/2**20+8)
+    working=(dense+(64*depth_steps*samples+192*b*samples+32*len(q)*9*len(positions_by_group)+64*sites*ni*no)/2**20+8)
     with reserve_memory(working,memory_budget_mib,dense_mib=dense) as admission:
         grid=prepared_grid if prepared_grid is not None else ProjectedFFT.build(elastic,grid_points=fft_grid,
             potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction,projected_geometry=projected_geometry,
@@ -307,10 +334,10 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
         ii,oi=grid.indices(elastic.beams.hkl),grid.indices(ob.hkl)
         keep_i=np.zeros(grid.potential.size,bool);keep_i[ii]=True
         keep_o=np.zeros(grid.potential.size,bool);keep_o[oi]=True
-        phases,site_weights=equivalent_site_phases(elastic.beams.hkl,ob.hkl,elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal))
-        if not len(phases):raise ValueError('At least one localized Ni site required')
+        site_phases={key:equivalent_site_phases(elastic.beams.hkl,ob.hkl,positions)
+                     for key,positions in positions_by_group.items()}
         qz=-characteristic_qz_angstrom_inv(energy_ev,elastic.microscope.acceleration_kv)
-        response=np.zeros((len(q),3,3),complex)
+        responses={key:np.zeros((len(q),3,3),complex) for key in positions_by_group}
         incoming_power=abs(fields)**2
         norm_error=float(np.max(abs(np.sum(incoming_power,axis=-1)-1)))
         incoming_leak=float(np.max(np.sum(incoming_power[:,~keep_i],axis=-1)))
@@ -333,14 +360,15 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
             for iz in range(depth_steps-1,-1,-1):
                 check_cancelled(cancelled)
                 retained_outgoing=reciprocal[:,oi].conj()
-                for phase,site_weight in zip(phases,site_weights):
-                    check_cancelled(cancelled)
-                    v=np.einsum('g,bh,bgha,gh->ba',retained_incoming[iz],retained_outgoing,kernel,phase,optimize=True)
-                    # Preserve scalar multiplication and independent-event
-                    # accumulation order; buffers belong to this batch only.
-                    np.multiply(w[iz]*site_weight,v,out=weighted_v)
-                    np.multiply(weighted_v[:,:,None],v[:,None,:].conj(),out=event)
-                    response[sl]+=event
+                for key,(phases,site_weights) in site_phases.items():
+                    for phase,site_weight in zip(phases,site_weights):
+                        check_cancelled(cancelled)
+                        v=np.einsum('g,bh,bgha,gh->ba',retained_incoming[iz],retained_outgoing,kernel,phase,optimize=True)
+                        # Preserve scalar multiplication and independent-event
+                        # accumulation order; buffers belong to this batch only.
+                        np.multiply(w[iz]*site_weight,v,out=weighted_v)
+                        np.multiply(weighted_v[:,:,None],v[:,None,:].conj(),out=event)
+                        responses[key][sl]+=event
                 np.absolute(reciprocal,out=magnitude)
                 np.power(magnitude,2,out=magnitude)
                 out_norm=max(out_norm,float(np.max(abs(np.sum(magnitude,axis=-1)-1))))
@@ -352,7 +380,7 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
             actual_slice_step_nm=dz,substeps_per_depth_interval=n,depth_steps=depth_steps,
             fft_samples=grid.potential.size,row_reduction=row_reduction,
             estimated_working_mib=working,dense_working_mib=dense,memory_admission=admission)
-        return response,diagnostics
+        return responses,diagnostics
 
 
 def run_tensor_multislice_double_channeling(model,tensor,*,thickness_nm=30.,grid_size=65,

@@ -1,8 +1,8 @@
-"""Multi-site BW Double Channeling using the established Cartesian response.
+"""Multi-site BW/MS Double Channeling using established Cartesian responses.
 
 Only local preparation and result accumulation live here. Complete-crystal
 incoming/outgoing propagation, Coulomb factors, site phases, depth integration
-and tensor contraction are supplied by double_channeling.py.
+and tensor contraction are supplied by the existing BW/MS backends.
 """
 import numpy as np
 
@@ -14,10 +14,12 @@ from .mdff_providers import load_site_group_provider
 from .multisite_spectrum import _empty_group_intensities, _spectrum_result
 
 
-def contract_multisite_bloch_double(model, sites, plan, qx, qy, *, crystal_to_microscope,
+def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microscope,
                                    thickness_nm, depth_steps=257, method='numerical',
                                    memory_budget_mib=2048, prepared_incoming=None,
-                                   reverse_magnetization=False, cancelled=None):
+                                   reverse_magnetization=False, cancelled=None,
+                                   propagation='bloch',prepared_grid=None,fft_grid=32,
+                                   potential_cutoff=2.2,slice_step_nm=.04,systematic_row=False):
     """Mean per selected atom; explicit reversal pairs share each group response.
 
     The plan is prepared_multisite_spectrum output from preflight. Window
@@ -55,20 +57,46 @@ def contract_multisite_bloch_double(model, sites, plan, qx, qy, *, crystal_to_mi
             if reverse_magnetization:pair=pair[::-1]
             tensors[group.group_id]={ie:tuple(t.tensor_angstrom2_per_ev[j] for t in pair)
                                      for j,ie in enumerate(np.flatnonzero(mask))}
-    incoming=prepared_incoming if prepared_incoming is not None else prepare_incoming_bloch(
-        model.elastic,thickness_nm,depth_steps,cancelled=cancelled)
+    if propagation=='bloch':
+        incoming=prepared_incoming if prepared_incoming is not None else prepare_incoming_bloch(
+            model.elastic,thickness_nm,depth_steps,cancelled=cancelled)
+        batch_size=64
+    else:
+        if prepared_grid is None or prepared_incoming is None:
+            raise ValueError('Prepared complete-crystal FFT grid and incoming fields required')
+        incoming=prepared_incoming
+        batch_size=32
     groups,weighted=_empty_group_intensities(sites,plan,qx.shape)
     queries=np.column_stack((qx.ravel(),qy.ravel()))
+    diagnostics=[]
     for ie,loss in enumerate(energy):
         active=[group for group in sites.groups if plan['active'][group.group_id][ie]]
-        if not active:continue
+        diagnostic=dict(energy_ev=float(loss),active_groups=[group.group_id for group in active],
+            required_pixels=len(queries) if active else 0,evaluated_pixels=0,response_batches=0,workers=1)
+        if not active:
+            if propagation=='fft-multislice':diagnostics.append(diagnostic)
+            continue
         selected_positions={group.group_id:positions[list(group.indices)] for group in active}
-        for start in range(0,len(queries),64):
+        for start in range(0,len(queries),batch_size):
             check_cancelled(cancelled)
-            sl=slice(start,start+64)
-            responses=double_channeling_group_responses(model.elastic,loss,queries[sl],thickness_nm,selected_positions,
-                method=method,depth_steps=depth_steps,memory_budget_mib=memory_budget_mib,
-                prepared_incoming=incoming,cancelled=cancelled)
+            sl=slice(start,start+batch_size)
+            if propagation=='bloch':
+                responses=double_channeling_group_responses(model.elastic,loss,queries[sl],thickness_nm,selected_positions,
+                    method=method,depth_steps=depth_steps,memory_budget_mib=memory_budget_mib,
+                    prepared_incoming=incoming,cancelled=cancelled)
+            else:
+                from .multislice_double_channeling import multislice_double_channeling_group_responses
+                responses,details=multislice_double_channeling_group_responses(model.elastic,loss,queries[sl],thickness_nm,selected_positions,
+                    fft_grid=fft_grid,potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=systematic_row,
+                    depth_steps=depth_steps,slice_step_nm=slice_step_nm,batch_pixels=batch_size,
+                    memory_budget_mib=memory_budget_mib,prepared_grid=prepared_grid,prepared_incoming=incoming,cancelled=cancelled)
+                for key in ('incoming_norm_error','outgoing_norm_error','incoming_max_excluded_population',
+                            'outgoing_max_excluded_population','estimated_working_mib','dense_working_mib'):
+                    diagnostic[key]=max(diagnostic.get(key,0.),details[key])
+                for key in ('actual_slice_step_nm','substeps_per_depth_interval','depth_steps','fft_samples','row_reduction','memory_admission'):
+                    diagnostic[key]=details[key]
+                diagnostic['evaluated_pixels']+=len(queries[sl])
+                diagnostic['response_batches']+=1
             for group in active:
                 for state,label in enumerate(('plus','minus')):
                     values=intensities_from_response(responses[group.group_id],tensors[group.group_id][ie][state])
@@ -76,12 +104,25 @@ def contract_multisite_bloch_double(model, sites, plan, qx, qy, *, crystal_to_mi
                         raise ValueError('Negative or nonfinite multi-site double-channeling intensity')
                     groups[group.group_id][label].reshape(len(energy),-1)[ie,sl]=values
                     weighted.reshape(2,len(energy),-1)[state,ie,sl]+=group.multiplicity*values
+        if propagation=='fft-multislice':diagnostics.append(diagnostic)
     from .gui.generalized_forward import source_for
     for group in sites.groups:
         check_cancelled(cancelled)
         source_for(group.mdff_reference)
     result=_spectrum_result(sites,plan,groups,weighted,rotation,thickness_nm,reverse_magnetization)
-    result['metadata'].update(depth_integration=method,depth_steps=depth_steps,
+    result['metadata'].update(depth_integration=method if propagation=='bloch' else 'trapezoidal',depth_steps=depth_steps,
         outgoing_energy_ev=(1000*model.elastic.microscope.acceleration_kv-energy).tolist(),
         response_normalization='Per-group site mean with depth integral; multiplicity applied once; no extra thickness factor')
+    result['diagnostics']=diagnostics
     return result
+
+
+def contract_multisite_bloch_double(model, sites, plan, qx, qy, **kwargs):
+    """BW Double Channeling with the existing analytic/numerical depth methods."""
+    return _contract_multisite_double(model,sites,plan,qx,qy,propagation='bloch',**kwargs)
+
+
+def contract_multisite_ms_double(model, sites, plan, qx, qy, *, prepared_grid, prepared_incoming, **kwargs):
+    """MS Double Channeling reusing one prepared complete-crystal FFT context."""
+    return _contract_multisite_double(model,sites,plan,qx,qy,propagation='fft-multislice',
+        prepared_grid=prepared_grid,prepared_incoming=prepared_incoming,**kwargs)
