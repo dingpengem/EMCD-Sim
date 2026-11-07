@@ -1,5 +1,7 @@
 # EMCD-Sim Tutorial: From Crystal Structure to EMCD Spectra
 
+Current-main interface note: use **Model > Configure MDFF...** and the [MDFF workflow guide](MDFF_WORKFLOWS.md) for the new Atomic/manual editors, explicit XMCD selections, and project creation. Historical control names and Ni examples below retain their original context. The next Windows prerelease is [an unpublished draft](RELEASE_NOTES_0_8_1_BETA_2.md), not an existing new download.
+
 [Home](../README.md) · [Install](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [User Manual](USER_GUIDE.md) · [Physics](PHYSICS.md)
 
 This tutorial describes **v0.8.0-beta.1, a Windows-only Research Beta**, with bundled Adaptive Dirac–Padé neutral Z=1–118 factors as the new GUI default. Historical saved Ni settings retain Lobato; select it explicitly to reproduce the preserved case study. Linux/macOS are not certified packaged platforms. It explains the small [Quick Start](QUICK_START.md), then interprets a completed research case. You do **not** need to rerun the expensive case study to learn the workflow.

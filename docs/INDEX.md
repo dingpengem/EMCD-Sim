@@ -1,6 +1,6 @@
 # Documentation index
 
-[Home](../README.md) · [Public Windows prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1)
+[Home](../README.md) · [Published Windows prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.1) · [Next prerelease draft](RELEASE_NOTES_0_8_1_BETA_2.md)
 
 ## Current user documentation
 
@@ -8,6 +8,7 @@
 |---|---|
 |[Windows Installation](INSTALL_WINDOWS.md)|Correct ZIP, verification, extraction, launch, logs and updates|
 |[Quick Start](QUICK_START.md)|Small first Ni simulation, explicitly not converged research settings|
+|[MDFF construction and workflows](MDFF_WORKFLOWS.md)|Current XMCD, Atomic, constant/manual spectral and imported methods; explicit selections, units/defaults, existing-input example, and normal project creation|
 |[Complete Tutorial](TUTORIAL.md)|From crystal/diffraction through MDFF, channeling and measurement definitions|
 |[User Manual](USER_GUIDE.md)|Control-by-control reference, projects, warnings and exports|
 |[Physics and numerical methods](PHYSICS.md)|Current corrected convention, support, approximations and source map|
@@ -18,7 +19,7 @@
 |[Recalculated Ni example provenance](images/ni017_flipm_recomputed/README.md)|Fresh 9/30 nm spectra, twelve portraits, conventional versus fixed-detector Flip-M|
 |[Changelog](CHANGELOG.md)|Version/milestone and documentation history|
 
-These guides describe v0.8.0-beta.1 Windows-only Research Beta. The previous v0.7.0 binary (source `97b2220e`) and its acceptance remain historical. The v0.8.0 tag identifies its exact accepted Windows build source; later acceptance documentation does not change the embedded source identity.
+Current-main guides describe the MDFF update prepared for unpublished v0.8.1-beta.2. Published v0.8.1-beta.1 has an older interface; use its tag-specific documentation for that binary. The development EXE is `0.8.1b1` / `aaa69a1`, not a relabeled beta.2 asset. Older validation and acceptance documents below retain their historical source/artifact identities and do not certify this proposed prerelease.
 
 ## Scientific validation and acceptance
 

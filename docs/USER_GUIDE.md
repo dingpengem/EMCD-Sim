@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [Index](INDEX.md)
 
-This is the control/reference manual for **v0.8.1-beta.1, a Windows-only Research Beta**. The tag targets the exact accepted build source, recorded in About/build information and the release manifest. Separate clean-machine installation remains untested. Linux/macOS are not certified packaged platforms. These pages do not certify arbitrary scientific configurations.
+This manual combines retained control/physics references with the current-main MDFF update. The new editor is prepared for unpublished v0.8.1-beta.2; the tested development EXE remains 0.8.1b1 / aaa69a1. See [current MDFF workflows](MDFF_WORKFLOWS.md) and [publication/validation status](RELEASE_NOTES_0_8_1_BETA_2.md). For the published beta.1 binary, use its tag-specific documentation. Independent clean-machine installation and Linux/macOS packaged support remain unverified.
 
 > **Legacy magnetic results:** earlier released v0.6.1 packages used a superseded Born/MDFF convention. Preserve their raw arrays, source and convention; revalidate signed magnetic results before comparison. Loading a project does not update its physics. Missing convention metadata is unknown/legacy-unverified.
 
@@ -104,6 +104,18 @@ The XMCD model reverses eta in the crystal frame before `R T Rᵀ`. Atomic rever
 
 <a id="xmcd-constrained-effective-mdff"></a>
 ## 8. MDFF models
+
+Current main uses **Model > Configure MDFF...** with **XMCD-constrained MDFF**, **Atomic Ionization MDFF**, and **Manual tensor**. The [MDFF workflow guide](MDFF_WORKFLOWS.md) describes each implemented construction method, inputs, units/defaults, assumptions, previews, and completed-project persistence, with an existing-input synthetic Fe example.
+
+The Atomic editor implements the declared cubic Sc-Zn 2p-to-3d L2,3 model with element-specific drafts and explicitly synthetic electronic defaults. Manual tensor includes constant density, an L2,3 Lorentzian spectrum from integrated strength matrices, and advanced imported source exchange. General single-element/equivalent-site eligibility remains separate from menu visibility or CIF import. None supplies arbitrary multi-element or complex magnetic structures.
+
+For ambiguous XMCD, select both native L3/L2 energies explicitly; default or inherited numbers do not count. A validated JSON selection initializes the visible fields, whose later edits remain authoritative. Source changes clear previous selection state; verified saved declarations restore the intended energies. Update preview after relevant edits. The provider shown by XMCD preview is the calculation provider, not a separate source.
+
+Use **File > Save Project** after a successful calculation to create a new complete project folder; an existing project JSON is not required. Open the whole folder and choose **Use These Settings** before rerunning. Preserve external sources and all project files; saved arrays can remain viewable when rerunning is blocked by a missing source.
+
+### Historical Ni controls (compatibility reference)
+
+The following descriptions concern the retained historical Ni route, not the full current Atomic editor or Manual models. They do not restrict the generalized editor to Ni or imply that historical implementation-era acceptance applies to every new workflow.
 
 **XMCD-constrained (WIEN2k):** select a **Five-column XMCD** file, then **Validate source / native features**. This reports source SHA256, range/features and available audit information. Check **I declare M axis, RP/LP convention and edge assignments** only for a verified source. `eta` controls dichroic sign/scale; `beta` controls the unmeasured longitudinal response. Invalid/non-positive tensor configurations are rejected.
 

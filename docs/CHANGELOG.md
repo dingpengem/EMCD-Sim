@@ -1,4 +1,17 @@
-# v0.8.1-beta.1 - Windows-only Research Beta
+# Changelog
+
+## v0.8.1-beta.2 - Windows Research Beta (unpublished draft)
+
+- Add the dedicated MDFF configuration interface and element-aware cubic Sc-Zn Atomic parameter editor, including explicit electronic/radial/frame inputs, reference starts, synthetic defaults, per-element drafts, and numerical previews.
+- Add editable constant complex tensors and L2,3 Lorentzian spectra from independent integrated-strength tensors, with simple/full matrix views, heatmaps, and advanced imported exchange.
+- Show actual XMCD source columns beside the provider tensor. One source selection supplies preview and calculation; stale snapshots remain identifiable.
+- Require both explicit edge selections for ambiguous XMCD. Preserve Fe 710/723 eV selections after save/reopen and prevent stale JSON overriding later visible controls.
+- Preserve historical saved Atomic settings, reject pending/failed external source validation, restore intended model/frame/inputs, and separate valid Fe elastic preview from MDFF eligibility.
+- Update installation, first-calculation, model-construction, and project-creation documentation. No existing project JSON is required.
+- Validation remains accurate: full candidate run **FAILED** (1,191 passed, 1 failed, 54 skipped); repair **4 focused cases passed**; actual development EXE `aaa69a1` passed native save/reopen/recalculation. The user authorized a prerelease-specific exception to another complete regression.
+- Publication is blocked on the existing dependency redistribution review. No beta.2 tag/asset is claimed; embedded versioning and its necessary build remain pending that resolution. See [draft notes](RELEASE_NOTES_0_8_1_BETA_2.md).
+
+## v0.8.1-beta.1 - Windows-only Research Beta
 
 - Generalized single-element imported MDFF and explicit atomic 2p-to-3d research
   workflows, GUI generation, source provenance and unchanged Ni compatibility.
@@ -8,8 +21,6 @@
   acceptance. Publication is gated by the separate versioned acceptance record.
 - Synthetic Fe remains physically unvalidated; no multiplet/DFT, AFM/SDW or
   multi-element site-resolved MDFF is supplied. See [release notes](RELEASE_NOTES_0_8_1_BETA_1.md).
-
-# Changelog
 
 ## v0.8.0-beta.1 — Windows-only Research Beta (2026-11-03)
 
