@@ -118,7 +118,7 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
     with patch('numpy.linalg.eigh',side_effect=AssertionError('Preflight must not solve')),patch('emcd_sim.gui.stage_b.EMCDWorker') as factory:
         w=MainWindow(workspace=tmp_path/'workspace')
         try:
-            w.model_box.setCurrentIndex(1);w.channeling_box.setCurrentIndex(1)
+            w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True);w.channeling_box.setCurrentIndex(1)
             assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,3.2,2.5)
             assert w.settings()==Settings()
             assert w.spin['grid'].value()==97 and w.memory_budget.currentData()==2048

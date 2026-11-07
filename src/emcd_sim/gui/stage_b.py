@@ -1,5 +1,5 @@
 """MDFF, propagation controls and worker lifecycle; calculations enter forward_pipeline."""
-from dataclasses import asdict
+from dataclasses import asdict,replace
 from pathlib import Path
 import datetime,json,logging
 import threading,time
@@ -61,6 +61,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.emcd_result=None;self.source_info=None;self.validated_path=None
         self.model_box=QtWidgets.QComboBox();self.model_box.addItems(['XMCD-constrained MDFF','Atomic Ionization MDFF']);self.form.addRow(self.model_box)
         self.axis=QtWidgets.QLineEdit('0 0 1');self.form.addRow('Crystal Cartesian M axis',self.axis)
+        self._mdff_axes={i:self.axis.text() for i in range(3)}
         self.mdff_stack=QtWidgets.QStackedWidget();self.form.addRow(self.mdff_stack)
         xm=QtWidgets.QWidget();xf=QtWidgets.QFormLayout(xm);self.mdff_stack.addWidget(xm);saved=self.form;self.form=xf
         self.source_path=QtWidgets.QLineEdit(str(DEFAULT_SOURCE) if DEFAULT_SOURCE.exists() else '');self.form.addRow('Five-column XMCD',self.source_path)
@@ -70,6 +71,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.declaration=QtWidgets.QCheckBox('I declare M axis, RP/LP convention\nand edge assignments');self.declaration.setToolTip('Tensor Txy=+i eta (RP-LP)/2; source convention must be checked.');self.form.addRow(self.declaration)
         self.xmcd_declaration_controls()
         self.source_status=QtWidgets.QLabel('Validate source before calculation.');self.source_status.setWordWrap(True);self.form.addRow(self.source_status)
+        from .xmcd_preview import install_xmcd_preview
+        install_xmcd_preview(self,xm,xf)
         at=QtWidgets.QWidget();self.form=QtWidgets.QFormLayout(at);self.mdff_stack.addWidget(at)
         self.atomic_parameter_controls()
         legacy=CollapsibleSection('Legacy Ni Parameters - Historical Compatibility Only',expanded=False)
@@ -83,8 +86,12 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.number('atomic_zeff_2p','Zeff 2p',25,1,40,self.emcd_stale);self.number('atomic_zeff_3d','Zeff 3d',9,1,40,self.emcd_stale)
         self.radial_override=QtWidgets.QCheckBox('Use explicit radial dipole (Å)');self.form.addRow(self.radial_override);self.number('radial','Radial dipole (Å)',.05,.00001,10,self.emcd_stale)
         self.imported_mdff_controls()
-        self.model_box.addItem('Imported Complex MDFF Tensor')
-        self.form=saved;self.button('Preview source / tensor spectrum...',self.preview_mdff)
+        self.model_box.addItem('Manual tensor')
+        legacy.hide()
+        self.form=saved
+        from .mdff_usability import configuration_dialog
+        self.button('Configure MDFF...',lambda:configuration_dialog(self))
+        self.model_description=QtWidgets.QLabel();self.model_description.setWordWrap(True);self.form.addRow(self.model_description)
         self.model_box.currentIndexChanged.connect(self.model_changed)
         self.axis.textChanged.connect(self.emcd_stale);self.declaration.toggled.connect(self.emcd_stale);self.source_path.textChanged.connect(self.source_changed);self.radial_override.toggled.connect(self.emcd_stale)
 
@@ -104,7 +111,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         box=QtWidgets.QSpinBox();box.setRange(12,128);box.setSingleStep(2);box.setValue(32);self.spin['fft_grid']=box;self.form.addRow('FFT grid (even)',box);box.valueChanged.connect(self.emcd_stale)
         box.setToolTip('Controls the FFT representation of Multislice propagation. It must support the selected beam basis and potential Fourier bandwidth. Not the angular/detector q grid.')
         self.spin['slice_step'].setToolTip('MS-only maximum split-step distance (0.001–10 nm) between requested depth planes, not a fixed slice thickness. Depth integration nodes and angular sampling remain separate controls. Large steps require convergence checks against smaller steps.')
-        label=QtWidgets.QLabel('FFT: structure-derived projected ZOLZ, with a target-aligned crystal frame and bounded sampling. Full finite, explicit row, or ideal two-beam support. Legacy XMCD/atomic providers remain Ni-specific; imported tensors require validated sites and source declarations. Agreement is not convergence.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
+        label=QtWidgets.QLabel('FFT: structure-derived projected ZOLZ, with a target-aligned crystal frame and bounded sampling. Full finite, explicit row, or ideal two-beam support. Source-backed providers require validated equivalent sites and declarations. Agreement is not convergence.');label.setWordWrap(True);self.form.addRow(label);self.form=saved
         self.solver_note=QtWidgets.QLabel();self.solver_note.setWordWrap(True);self.form.addRow(self.solver_note)
         self.sync_solver_controls()
 
@@ -221,18 +228,31 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.emcd_stale()
 
     def model_changed(self,index):
+        previous=self.mdff_stack.currentIndex()
+        if previous==2 and hasattr(self,'_remember_manual_state'):self._remember_manual_state()
+        if previous!=index:
+            self._mdff_axes[previous]=self.axis.text()
+            with QtCore.QSignalBlocker(self.axis):self.axis.setText(self._mdff_axes[index])
         self.mdff_stack.setCurrentIndex(index)
+        if hasattr(self,'model_description'):self.model_description.setText((
+            'XMCD-constrained tensor: requires a declared XAS/XMCD spectrum and its conventions.',
+            'Atomic ionization: approximate cubic 2p to 3d transitions from editable electronic parameters.',
+            'Manual tensor: constant coefficients or phenomenological L2,3 spectral strengths.')[index])
         if hasattr(self,'correction'):
             self.correction.setChecked(index==0 and bool(self.source_info and self.source_info['audit']))
         self.emcd_stale()
     def source_changed(self,*_):
-        self.source_info=None;self.validated_path=None;self.declaration.setChecked(False);self.source_status.setText('Source changed; validate and declare conventions.');self.emcd_stale()
+        self.source_info=None;self.validated_path=None;self.xmcd_selected.clear();self.declaration.setChecked(False);self.source_status.setText('Source changed; validate and declare conventions.');self.emcd_stale()
     def browse_xmcd(self):
         path,_=QtWidgets.QFileDialog.getOpenFileName(self,'Import five-column XAS/XMCD','','XMCD / text (*.xmcd *.txt *.dat);;All files (*)')
         if path:self.source_path.setText(path);self.validate_xmcd()
     def validate_xmcd(self,show_error=True):
         try:
-            info=inspect_source(self.source_path.text());self.source_info=info;self.validated_path=self.source_path.text()
+            info=inspect_source(self.source_path.text())
+            if (self.source_info or {}).get('sha256')==info['sha256'] and self.validated_path==self.source_path.text():
+                info['explicit_selected']=self.source_info.get('explicit_selected',{})
+            self.source_info=info;self.validated_path=self.source_path.text()
+            self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3' or not info['selected'])
             if info['selected']:self.set_values({'xl3':info['selected']['L3'],'xl2':info['selected']['L2']})
             self.declaration.setChecked(bool(info['audit']));self.source_status.setText(info['provenance']+'\nNative range: %.3f–%.3f eV; no energy shift.'%tuple(info['bounds']))
             if hasattr(self,'correction'):self.correction.setChecked(bool(info['audit']))
@@ -249,7 +269,11 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         recipe=getattr(self,'_loaded_fft_recipe',None)
         return recipe[1] if recipe is not None and recipe[0]==self.fft_cell_key() else None
 
-    def forward_settings(self):
+    def forward_settings(self,prepare=True):
+        if prepare and self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:
+            self.prepare_manual_tensor()
+        if prepare and self.model_box.currentIndex()==1 and self.atomic_editor.active and not self.atomic_editor.validated_path:
+            self.atomic_editor.generate()
         if self.spin['grid'].value()%2==0:raise ValueError('Choose an odd angular / detector grid size so qy=0 is sampled exactly.')
         atomic=NiLocalConfig(**{k:self.spin['atomic_'+k].value() for k in asdict(NiLocalConfig())})
         mode=('xmcd','atomic','imported')[self.model_box.currentIndex()];axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
@@ -260,13 +284,32 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
-        if mode=='imported':cfg=self.imported_forward_settings(cfg)
-        else:cfg=self.declared_provider_settings(cfg)
+        if mode=='atomic' and self.atomic_editor.historical_config is not None:
+            saved=self.atomic_editor.historical_config
+            cfg=replace(cfg,atomic=saved.atomic,l3=saved.l3,l2=saved.l2,sigma=saved.sigma,radial=saved.radial,
+                magnetization=saved.magnetization,axis_declared=saved.axis_declared)
+        if mode=='imported':cfg=self.imported_forward_settings(cfg,prepare=prepare)
+        else:cfg=self.declared_provider_settings(cfg,prepare=prepare)
         from .propagation import resolve_fft_configuration
         return resolve_fft_configuration(self.structure,self.settings(),cfg)
 
     def emcd_stale(self,*_):
+        if not hasattr(self,'ms_settings_group'):return
+        if hasattr(self,'manual_spectral'):
+            if self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:self.manual_spectral.sync_material()
+            self.manual_spectral.frame_diagram.update()
+        if hasattr(self,'xmcd_preview'):self.xmcd_preview.invalidate_if_changed()
+        if hasattr(self,'atomic_editor') and hasattr(self.atomic_editor,'schematic') and 'kv' in self.spin:
+            try:
+                from .geometry import orientation
+                r=orientation(self.structure.atoms.cell.array,self.settings().zone,self.settings().target)
+                self.atomic_editor.beam_crystal=r.T@np.array([self.spin['tx'].value()*.001,self.spin['ty'].value()*.001,1.])
+                self.atomic_editor.schematic.draw()
+            except (ValueError,KeyError):pass
+        if hasattr(self,'manual_preview_state'):
+            self.manual_preview_state.setText('STALE numerical preview - update for current inputs.')
         self.sync_atomic_editor_structure()
+        if hasattr(self,'mdff_material'):self.mdff_material.setText(self.structure_label.text())
         if self.resolve_numerical_ui():
             self.refresh();return
         self.sync_solver_controls()
@@ -274,7 +317,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         reason='';cfg=None;info=None
         try:
             if getattr(self,'_numerical_error',None):raise ValueError(self._numerical_error)
-            cfg=self.forward_settings();s=self.settings();energy_grid(cfg)
+            cfg=self.forward_settings(prepare=False);s=self.settings();energy_grid(cfg)
             reason=material_reason(self.structure,cfg)
             if cfg.model=='xmcd' and not cfg.axis_declared:raise ValueError('Declare XMCD conventions before Run EMCD')
             if cfg.model=='atomic' and not hasattr(cfg,'provider_schema') and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
@@ -299,6 +342,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         except Exception as exc:
             reason=reason or str(exc);fresh=False;self.memory_label.setText('Calculation unavailable: '+str(exc))
             self.invalidate_on_source_error(exc)
+            if str(exc) in ('Atomic draft ready for explicit preview or calculation','Manual draft ready for explicit preview or calculation'):
+                reason='';self.memory_label.setText(str(exc)+'; resources checked when calculation starts.')
         self.emcd_button.setEnabled(not reason and not self.busy);self.emcd_button.setToolTip(reason or 'Run the selected incoming-wave propagation and shared EMCD/EELS contraction')
         if self.emcd_result:
             text=self.emcd_result['config'].channeling_model.title()+' Channeling | '+('Completed-run geometry and spectra; inputs match.' if fresh else 'STALE RESULT — current inputs differ; showing saved geometry and spectra.')
@@ -313,17 +358,26 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.info.setPlainText(base)
 
     def preview_mdff(self):
+        if self.model_box.currentIndex()==0:
+            self.xmcd_preview.update_preview();return
         if self.model_box.currentIndex()==1 and self.atomic_editor.active:
             self.atomic_editor.preview();return
         try:
             cfg=self.forward_settings();e=energy_grid(cfg)
+            if cfg.model=="imported":self.draw_manual_preview(cfg)
+            if cfg.model=='imported' and self.manual_model.currentIndex()==1:return
             from .generalized_forward import is_declared,source_for
+            if cfg.model=='atomic' and not is_declared(cfg):
+                e=np.unique(np.r_[np.linspace(max(.001,cfg.atomic.l3_ev-10),cfg.atomic.l2_ev+10,201),cfg.l3,cfg.l2])
+                plus,minus=tensors(cfg,e,np.eye(3))
+                from .saved_atomic_ui import preview
+                preview(self.atomic_editor,cfg,e,plus,minus)
             from ..mdff_edges import selected_samples
             if is_declared(cfg):e=source_for(cfg).energy_ev
             if cfg.model=='xmcd':
                 source=load_wien2k_xmcd(cfg.source);e=source.energy_ev;curves=[(source.right+source.left,'XAS = RP + LP'),(source.right-source.left,'XMCD = RP - LP')]
             else:
-                t=tensors(cfg,e,np.eye(3))[0].tensor_angstrom2_per_ev;curves=[(np.trace(t,axis1=-2,axis2=-1).real/3,'Re Tr(T)/3'),(t[:,0,1].imag,'Im Txy (magnetic)'),(t[:,2,2].real,'Re Tzz')]
+                t=tensors(cfg,e,np.eye(3))[0].tensor_angstrom2_per_ev;curves=[(np.trace(t,axis1=-2,axis2=-1).real/3,'Re Tr(T)/3'),(t[:,0,1].imag,'Im Txy'),(t[:,2,2].real,'Re Tzz')]
             dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Imported tensor: '+self.imported_info.metadata['status'] if cfg.model=='imported' else ('Native XMCD source' if cfg.model=='xmcd' else 'Approximate atomic 2p-to-3d tensor; material parameters physically unvalidated'));dialog.resize(900,600);layout=QtWidgets.QVBoxLayout(dialog)
             fig=Figure(layout='constrained');canvas=FigureCanvasQTAgg(fig);layout.addWidget(NavigationToolbar2QT(canvas,dialog));choice=QtWidgets.QComboBox();choice.addItem('Full spectrum')
             if getattr(cfg,'core_edge','L2,3')=='L2,3':choice.addItems(['L3 zoom','L2 zoom'])
@@ -337,7 +391,11 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             choice.currentTextChanged.connect(draw);draw();dialog.show();self.dialogs.append(dialog)
         except Exception as exc:
             if self.invalidate_on_source_error(exc):self.emcd_stale()
-            self.error(str(exc))
+            if self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:
+                self.manual_spectral.is_stale=True;self.manual_spectral.error.setText(str(exc))
+                self.manual_spectral.status.setText('Preview blocked: '+str(exc)+'; previous numerical tensor remains stale.')
+                self.manual_spectral.draw()
+            else:self.error(str(exc))
 
     def start_emcd(self):
         if self.busy:return

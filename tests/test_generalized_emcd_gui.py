@@ -27,6 +27,7 @@ def test_normal_gui_end_to_end(case,channel):
     w=MainWindow(workspace=root/'workspace');errors=[];w.error=errors.append
     try:
         w.numerical_mode.setCurrentIndex(1)
+        w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False)
         w.zone.setText(' '.join(map(str,zone)));w.target.setText(' '.join(map(str,target)))
         w.set_values(dict(kv=200,thickness=.5,tx=0,ty=0,beam=beam,potential=potential,
             grid=9,depth=9,subpixels=16,fft_grid=24,slice_step=.02,energy=9,

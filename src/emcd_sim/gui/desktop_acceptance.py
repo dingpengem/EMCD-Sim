@@ -29,6 +29,7 @@ def run(output, orientation='017'):
         font = QtGui.QFontDatabase.addApplicationFont(str(Path(get_data_path())/'fonts/ttf/DejaVuSans.ttf'))
         app.setFont(QtGui.QFont(QtGui.QFontDatabase.applicationFontFamilies(font)[0], 9))
     w = MainWindow(output/'workspace')
+    w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False)
     info = build_info()
     assert info['physics_convention'] == 'forward_born_dagger_g_minus_h_v1'
     w.setWindowTitle(info['label'])

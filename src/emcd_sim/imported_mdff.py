@@ -96,7 +96,13 @@ class ImportedMDFF:
         if atomic_fields:
             from .atomic_ionization import validate_embedded_atomic
             validate_embedded_atomic(d,plus,minus)
-        return cls(e,plus,minus,even,d,digest,str(p.resolve()))
+        source=cls(e,plus,minus,even,d,digest,str(p.resolve()))
+        spectral_fields={key for key in d if key.startswith('manual_l23_')}
+        if spectral_fields:
+            if spectral_fields!={'manual_l23_model','manual_l23_editor'}:raise ValueError('Incomplete manual L2,3 model provenance')
+            from .manual_l23 import analytical_source
+            return analytical_source(source)
+        return source
 
     def tensors(self,energy,crystal_to_microscope,magnetization):
         e=np.asarray(energy,float)

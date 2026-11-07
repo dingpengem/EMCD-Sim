@@ -219,6 +219,7 @@ def test_gui_target_basis_and_crystal_axis_restore_without_solver(tmp_path):
         app.setFont(QtGui.QFont(QtGui.QFontDatabase.applicationFontFamilies(font)[0],9))
     with patch('emcd_sim.gui.stage_b.EMCDWorker.start',side_effect=AssertionError('GUI must not solve')),patch('emcd_sim.gui.app.PreviewWorker.start',side_effect=AssertionError('GUI must not solve')):
         w=MainWindow(tmp_path/'workspace')
+        w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
         try:
             w.zone.setText('1 1 7');w.target.setText('2 -2 0');w.apply_orientation()
             w.lock.setCurrentText('Y');w.align()

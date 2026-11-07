@@ -93,6 +93,10 @@ def load_elastic_project(path):
 
 def config_from_dict(value):
     d=dict(value);d['atomic']=NiLocalConfig(**d.get('atomic',{}))
+    if d.get('model')=='atomic' and 'provider_schema' not in d:
+        # Old Atomic schemas may omit redundant selected-energy fields. Only
+        # absent keys inherit their saved atomic peaks; explicit values survive.
+        d.setdefault('l3',d['atomic'].l3_ev);d.setdefault('l2',d['atomic'].l2_ev)
     for k in ('magnetization','centers','window','fft_generators'):
         if k in d and d[k] is not None:d[k]=tuple(tuple(v) if isinstance(v,list) else v for v in d[k])
     if d.get('model')=='imported' or 'provider_schema' in d:
@@ -243,6 +247,19 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
                         raise ValueError('Project attachment name conflicts with an existing user file; use Save As')
                 (temp/filename).write_bytes(raw);managed.add(filename)
                 atomic_attachment=dict(path=filename,sha256=cfg.source_sha256)
+        manual_attachment=None
+        if cfg.model=='imported':
+            source_path=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
+            from ..imported_mdff import ImportedMDFF
+            source=ImportedMDFF.load(source_path,cfg.source_sha256)
+            if source.metadata.get('manual_constant_editor')==1 or 'manual_l23_model' in source.metadata:
+                filename='manual_tensor.json'
+                if (root/filename).exists():
+                    previous=json.loads((root/'project.json').read_text(encoding='utf-8'))
+                    if previous.get('manual_tensor_source',{}).get('path')!=filename:
+                        raise ValueError('Project attachment name conflicts with an existing user file; use Save As')
+                (temp/filename).write_bytes(source_path.read_bytes());managed.add(filename)
+                manual_attachment=dict(path=filename,sha256=cfg.source_sha256)
         if root.exists():
             for child in root.iterdir():
                 if child.name in managed:continue
@@ -264,6 +281,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
                 crystal_path=snapshot.get('source') if snapshot else None,crystal_sha256=snapshot.get('sha256') if snapshot else None),
             limitations=result.get('project_warnings',[]),array_convention='method__edge__field maps(qy,qx); method__field spectra(energy); method__amplitudes(depth,beam); explicit labels; no pickle')
         if atomic_attachment:manifest['atomic_parameter_source']=atomic_attachment
+        if manual_attachment:manifest['manual_tensor_source']=manual_attachment
         _json(temp/'project.json',manifest);check('Validating saved project');load_project(temp,progress=lambda s:None)
         check('Finalizing complete project')
         if root.exists():_rename_folder(root,backup,cancelled)
@@ -466,6 +484,14 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
                 or manifest['files'].get(attachment['path'])!=cfg.source_sha256
                 or sha256(source)!=cfg.source_sha256):
             raise ValueError('Atomic project source identity mismatch')
+        result['source_overrides']=dict(mdff=str(source))
+    if manifest and manifest.get('manual_tensor_source'):
+        attachment=manifest['manual_tensor_source'];source=safe_path(root,attachment['path']);cfg=result['config']
+        if (cfg.model!='imported' or attachment['sha256']!=cfg.source_sha256
+                or manifest['files'].get(attachment['path'])!=cfg.source_sha256 or sha256(source)!=cfg.source_sha256):
+            raise ValueError('Manual tensor project source identity mismatch')
+        from ..imported_mdff import ImportedMDFF
+        ImportedMDFF.load(source,cfg.source_sha256)
         result['source_overrides']=dict(mdff=str(source))
     check('Saved results ready; no physical recalculation')
     return result

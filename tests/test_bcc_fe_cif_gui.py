@@ -193,7 +193,13 @@ def test_candidate_review_attests_only_two_gui_methods_without_relabeling_baseli
     assert review['authorized_methods']==['refresh','start_preview']
     from unit_source_snapshots import load_gui_scope
     _,baseline=load_gui_scope()
-    candidate=(root/'src/emcd_sim/gui/app.py').read_bytes()
+    # Authenticate current composed sources before querying the retained BCC candidate.
+    from unit_source_snapshots import assert_reviewed_current_sources
+    from physics_source_guard import assert_registered_sources
+    from mdff_usability_source_scope import load_scope
+    assert_reviewed_current_sources();assert_registered_sources()
+    _,parents=load_scope()
+    candidate=parents['src/emcd_sim/gui/app.py']
     canonical=lambda b:b.decode('utf-8-sig').replace('\r\n','\n').encode()
     assert hashlib.sha256(canonical(baseline)).hexdigest()==review['baseline_canonical_sha256']
     assert hashlib.sha256(canonical(candidate)).hexdigest()==review['candidate_canonical_sha256']

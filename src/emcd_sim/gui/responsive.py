@@ -214,6 +214,8 @@ class ResponsiveLayout(QtCore.QObject):
     def __init__(self, window):
         super().__init__(window)
         self.window = window
+        # Long provider labels must not force a horizontal settings scrollbar.
+        window.elastic_provider_box.setSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Fixed)
         self.compact = None
         self.screen = None
         self._applying = False

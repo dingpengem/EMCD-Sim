@@ -13,7 +13,7 @@ from emcd_sim.gui.emcd_forward import export_result
 from test_unified_mdff_providers import oxygen_source,xmcd_source
 from test_atomic_ionization import parameter_file
 
-MODELS=['XMCD-constrained MDFF','Atomic Ionization MDFF','Imported Complex MDFF Tensor']
+MODELS=['XMCD-constrained MDFF','Atomic Ionization MDFF','Manual tensor']
 
 
 def app():return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -61,8 +61,13 @@ def test_non_3d_k_edge_actual_gui_export_reopen(tmp_path,monkeypatch,model,chann
         assert [w.maps_view.choice.itemText(i) for i in range(w.maps_view.choice.count())]==['K']
         assert w.eels_view.choice.count()==1
         w.preview_mdff();assert not errors,errors
-        combos=w.dialogs[-1].findChildren(QtWidgets.QComboBox)
-        assert any([box.itemText(i) for i in range(box.count())]==['Full spectrum'] for box in combos)
+        if model=='xmcd':
+            preview=w.xmcd_preview
+            assert preview.snapshot is not None and not preview.is_stale
+            assert preview.snapshot['config'].core_edge=='K'
+        else:
+            combos=w.dialogs[-1].findChildren(QtWidgets.QComboBox)
+            assert any([box.itemText(i) for i in range(box.count())]==['Full spectrum'] for box in combos)
         for view in (w.eels_view,w.maps_view,w.overview_view):
             view.redraw()
             assert view.figure._suptitle is not None,[(t.get_text()) for ax in view.figure.axes for t in ax.texts]
@@ -94,10 +99,15 @@ def test_same_three_choices_and_no_default_transfer(tmp_path,monkeypatch):
         for element,lattice in (('Ni','fcc'),('Fe','bcc'),('Co','hcp'),('Cr','bcc')):
             w.structure=Structure(bulk(element,lattice),'Provider menu test')
             assert [w.model_box.itemText(i) for i in range(w.model_box.count())]==MODELS
-            if element!='Ni':
-                for index in range(3):
-                    w.model_box.setCurrentIndex(index);w.emcd_stale()
-                    assert not w.emcd_button.isEnabled()
+            w.refresh()
+            assert w.atomic_editor.element.currentData()==element
+            # Source-backed modes remain unconfigured until explicitly selected;
+            # generalized Atomic drafts intentionally support these elements.
+            w.model_box.setCurrentIndex(0);w.declaration.setChecked(False);w.emcd_stale()
+            assert not w.emcd_button.isEnabled()
+            w.model_box.setCurrentIndex(2);w.manual_model.setCurrentIndex(0);w.constant_input_mode.setCurrentIndex(1)
+            w.emcd_stale();assert not w.emcd_button.isEnabled()
+            assert w.imported_info is None
     finally:w.close();application.processEvents()
 
 
@@ -182,6 +192,7 @@ def test_historical_ni_missing_xmcd_clears_acknowledgement(tmp_path,monkeypatch)
     application=app();w=MainWindow();errors=[];w.error=errors.append
     try:
         w.numerical_mode.setCurrentIndex(1)
+        w.model_box.setCurrentIndex(0)
         p=tmp_path/'ni.xmcd';p.write_bytes(DEFAULT_SOURCE.read_bytes())
         w.source_path.setText(str(p));w.validate_xmcd();w.declaration.setChecked(True)
         p.unlink();w.start_emcd()

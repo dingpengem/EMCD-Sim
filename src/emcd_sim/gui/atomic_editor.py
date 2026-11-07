@@ -59,6 +59,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
     def __init__(self, workspace, parent=None):
         super().__init__(parent)
         self.workspace = workspace
+        self.owner=parent;self.historical_config=None
         self._loading = True
         self._states = {}
         self._element = ''
@@ -145,10 +146,18 @@ class AtomicParameterEditor(QtWidgets.QWidget):
         self.scientific_status.currentIndexChanged.connect(self.edited)
         self.use_editor.toggled.connect(lambda _: self.edited(activate=False))
         self._loading = False
+        from .mdff_usability import compact_atomic
+        compact_atomic(self)
 
     @property
     def active(self):
-        return self.use_editor.isChecked()
+        return self.historical_config is None and self.use_editor.isChecked()
+
+    def clear_historical(self):
+        if self.historical_config is None:return
+        self.historical_config=None
+        from .saved_atomic_ui import set_read_only
+        set_read_only(self,False)
 
     def section(self, title, keys, expanded=False):
         s = CollapsibleSection(title, expanded=expanded); self.sections[title[0]] = s; self.layout.addWidget(s)
@@ -219,8 +228,22 @@ class AtomicParameterEditor(QtWidgets.QWidget):
 
     @staticmethod
     def initial_draft():
-        return dict(fields=dict(sigma='1.0'),frame=np.eye(3,dtype=int).tolist(),frame_mode=1,
-            parameter_origins=dict(sigma=dict(origin='numerical_starting',citation='Generic numerical sigma=1 eV, not experimental resolution'),frame=dict(origin='coordinate_starting',citation='Identity coordinate choice; verify crystal magnetization separately'),element=dict(origin='user_entered'),local_axis=dict(origin='model_constraint',citation='Existing atomic generator requires local +z')))
+        fields=dict(sigma='1.0',cf='0',exchange='0.5',radial='1',
+            source='Generic synthetic electronic starting choices; elemental tabulated edge references where available',
+            radial_source='Synthetic unit radial integral, 1 Angstrom; not a calculated material radial function',
+            assumptions='Cubic independent-electron example; uniform ferromagnetic spin weights, not inferred from CIF',
+            validity='Synthetic example; no material calibration, bands, multiplets or quantitative spectroscopy')
+        origins={key:dict(origin='synthetic_demonstration',citation='Generic editor default; not measured or material-specific') for key in FIELDS}
+        origins['sigma']=dict(origin='numerical_starting',citation='Generic numerical sigma=1 eV; not experimental resolution')
+        origins['frame']=dict(origin='coordinate_starting',citation='Identity frame; crystal Cartesian coordinates')
+        return dict(fields=fields,holes=[[.2,.4] for _ in range(5)],frame=np.eye(3,dtype=int).tolist(),frame_mode=1,status='synthetic',parameter_origins=origins)
+
+    def reset_defaults(self):
+        self.clear_historical()
+        with QtCore.QSignalBlocker(self.use_editor):self.use_editor.setChecked(True)
+        self.restore_draft(self.initial_draft())
+        if self._element and not capability_reason(self._element):self.apply_references(confirm=False)
+        self.edited()
 
     def initialize_grid_if_empty(self):
         if any(self.fields[k].text() for k in ('emin','emax','samples')):return
@@ -248,6 +271,10 @@ class AtomicParameterEditor(QtWidgets.QWidget):
             key='holes' if 'hole' in text.lower() else 'frame' if 'frame' in text.lower() else 'energy_grid' if 'grid' in text.lower() else 'radial' if 'radial' in text.lower() else 'source'
         group='A' if key in ('element','edge') else 'B' if key in ('l3','l2') else 'C' if key in ('cf','exchange') else 'D' if key=='holes' else 'E' if key in ('radial','radial_source') else 'F' if key=='frame' else 'G' if key in ('emin','emax','samples','sigma','energy_grid') else 'H'
         self.sections[group].setChecked(True);self.error_labels[group].setText(text);self.status.setText(prefix+': '+text)
+        if hasattr(self,'main_error'):
+            self.main_error.setText(prefix+': '+text)
+            self.preview_state.setText(prefix+': '+text+'; numerical spectrum remains stale.')
+            if group in ('C','D','E','F','G','H'):self.advanced_parameters.setChecked(True)
         if key in self.fields:self.fields[key].setFocus()
 
     def field_changed(self, key):
@@ -261,15 +288,22 @@ class AtomicParameterEditor(QtWidgets.QWidget):
 
     def edited(self, *_, activate=True):
         if self._loading: return
+        if self.historical_config is not None:return
         if activate and not self._context_sync:
             with QtCore.QSignalBlocker(self.use_editor): self.use_editor.setChecked(True)
         self.validated_path = self.validated_sha256 = None
         for label in self.error_labels.values():label.clear()
         self.invalidate_preview('Physical inputs, source or crystal changed')
+        if hasattr(self,"preview_state"):self.preview_state.setText("STALE numerical spectrum - update preview for current draft.")
         self.status.setText('UNVALIDATED EDITS - previous tensor/acknowledgement invalidated. Approximate atomic model; no physical calibration.')
         self.invalidated.emit(); self.update_derived()
 
     def update_derived(self):
+        if hasattr(self,"schematic"):
+            self.schematic.draw()
+            try:self.direction.setText(" ".join(self.frame.cellWidget(i,2).text() for i in range(3)))
+            except ValueError:pass
+        if hasattr(self,'main_error'):self.main_error.setText(capability_reason(self.element.currentData()) or self.reference_problem)
         scientific_status=self.scientific_status.currentText()
         banner=('SYNTHETIC SOFTWARE TEST - NOT PHYSICALLY VALIDATED '+str(self.element.currentData())+' SPECTROSCOPY'
             if scientific_status=='synthetic' else 'APPROXIMATE ATOMIC MODEL - PHYSICALLY UNVALIDATED MATERIAL PARAMETERS')
@@ -287,6 +321,12 @@ class AtomicParameterEditor(QtWidgets.QWidget):
         except ValueError: self.derived_edges.setText('Delta_SO requires both explicit edge references.')
         try:
             h = np.array(self.table_values(self.holes), float)
+            if hasattr(self,'hole_figure') and self.table_values(self.holes)!=getattr(self,'_hole_fingerprint',None):
+                self._hole_fingerprint=self.table_values(self.holes)
+                self.hole_figure.clear();ax=self.hole_figure.subplots()
+                ax.imshow(h.T,vmin=0,vmax=1,cmap='Blues',aspect='auto')
+                ax.set(xticks=range(5),xticklabels=['z^2','x^2-y^2','xy','xz','yz'],yticks=[0,1],yticklabels=['up holes','down holes'],title='Schematic hole weights (0-1)',xlabel='Orbital weights; not electron density')
+                self.hole_canvas.draw_idle()
             self.hole_totals.setText(f'Up holes: {h[:,0].sum():g}; down holes: {h[:,1].sum():g}; total d holes: {h.sum():g}. Not normalized.')
         except ValueError: self.hole_totals.setText('Enter all five orbital/spin hole pairs explicitly.')
         try:
@@ -339,6 +379,9 @@ class AtomicParameterEditor(QtWidgets.QWidget):
         key = (tuple(atoms.get_chemical_symbols()), atoms.cell.array.tobytes(), atoms.get_scaled_positions().tobytes(),
             repr(atoms.info.get('occupancy', {})), structure.source, structure.sha256)
         if key == self._context: return
+        if self.historical_config is not None and not preserve_validation:
+            self.clear_historical();self.restore_draft(self._states.get(self._element,self.initial_draft()))
+            with QtCore.QSignalBlocker(self.use_editor):self.use_editor.setChecked(True)
         self._context = key
         self._context_sync = True
         while self.crystal_layout.count():
@@ -368,9 +411,9 @@ class AtomicParameterEditor(QtWidgets.QWidget):
     def apply_references(self, confirm=True):
         try: refs = edge_references(self._element)
         except (OSError, ValueError) as exc:
-            self.reference_problem=str(exc)+'; enter explicitly sourced values.'; self.update_derived(); return
+            self.estimated_edges(str(exc)); return
         if not refs:
-            self.reference_problem='No bundled trustworthy reference for this element. Enter explicitly sourced energies.'; self.update_derived(); return
+            self.estimated_edges('No bundled trustworthy elemental edge reference.'); return
         if confirm and any(self.fields[k].text() for k in ('l3', 'l2')):
             if QtWidgets.QMessageBox.question(self, 'Replace edited edge references?', 'Replace current L3/L2 values with tabulated elemental references? Existing validation will be invalidated.') != QtWidgets.QMessageBox.StandardButton.Yes: return
         self._loading = True
@@ -380,6 +423,17 @@ class AtomicParameterEditor(QtWidgets.QWidget):
             self.parameter_origins[key]=dict(origin='tabulated_reference',citation=refs[edge]['url'],library=refs[edge]['library'])
         self.initialize_grid_if_empty()
         self._loading = False; self.edited(activate=confirm)
+
+    def estimated_edges(self, reason):
+        # Explicitly synthetic scale for a usable draft, never a substituted element reference.
+        z=atomic_numbers.get(self._element,0)
+        lo=max(1.,.4*13.6*(z-10)**2);hi=lo+max(1.,.02*lo)
+        self._loading=True
+        self.fields['l3'].setText(str(lo));self.fields['l2'].setText(str(hi))
+        for key in ('l3','l2'):
+            self.parameter_origins[key]=dict(origin='synthetic_demonstration',citation='Synthetic hydrogenic energy scale only; not a reference or material prediction')
+        self.reference_problem=reason+' Synthetic estimated energies supplied for demonstration only; replace with sourced values.'
+        self.initialize_grid_if_empty();self._loading=False;self.edited()
 
     def change_frame(self, index):
         if self._loading: return
@@ -406,6 +460,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
         except ValueError as exc: self.status.setText(str(exc))
 
     def document(self):
+        if self.historical_config is not None:raise ValueError('Saved model is retained read-only; Reset defaults starts a new editable source')
         reason = capability_reason(self.element.currentData(), self.edge.currentData())
         if reason: raise InputProblem('element',reason)
         for key, field in self.fields.items():
@@ -422,7 +477,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
             if f(key)<0:raise InputProblem(key,FIELDS[key][0]+' must be nonnegative')
         if not 0<f('l3')<f('l2'):raise InputProblem('l3','Require 0 < E_L3 < E_L2')
         source = self.fields['source'].text().strip()
-        trace = dict(edge_origins=self.origins, assumptions=self.fields['assumptions'].text().strip(),parameter_origins=self.parameter_origins,initialization_policy='numerical-coordinate-starting-v1; no material electronic defaults')
+        trace = dict(edge_origins=self.origins, assumptions=self.fields['assumptions'].text().strip(),parameter_origins=self.parameter_origins,initialization_policy='synthetic-electronic-starting-v2; tabulated elemental edges where available; no material calibration')
         source += EDITOR_TAG + json.dumps(trace, sort_keys=True, allow_nan=False)
         try:hole_values=np.array(self.table_values(self.holes),float).tolist()
         except ValueError as exc:raise InputProblem('holes','Enter all ten real orbital/spin hole weights') from exc
@@ -441,6 +496,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
         validate_document(doc); return doc
 
     def load_document(self, path, *, validated=False):
+        self.clear_historical()
         doc, digest = read_document(path); p = doc['parameters']; symbol = p['element']
         source, _, encoded = p['source'].partition(EDITOR_TAG)
         trace = json.loads(encoded) if encoded else {}
@@ -484,6 +540,8 @@ class AtomicParameterEditor(QtWidgets.QWidget):
         self.status.setText('SYNTHETIC SOFTWARE TEST - NOT PHYSICALLY VALIDATED Fe SPECTROSCOPY. Fields are editable; validate a new managed source.')
 
     def generate(self):
+        if self.historical_config is not None:
+            self.status.setText('Retained saved model; use its preview or Reset defaults for a new source.');return
         self.invalidated.emit(); self.validated_path = self.validated_sha256 = None
         try:
             if self.external_source_pending:raise InputProblem('source','Import or validate the newly selected external JSON first; no old editor tensor will be substituted')
@@ -498,6 +556,8 @@ class AtomicParameterEditor(QtWidgets.QWidget):
         except Exception as exc:self.show_problem(exc,'Generation blocked')
 
     def preview(self):
+        if self.historical_config is not None:
+            self.owner.preview_mdff();return
         try:
             if not self.validated_path:
                 self.generate()  # Explicit Preview action; never regenerate per keystroke.
@@ -510,7 +570,14 @@ class AtomicParameterEditor(QtWidgets.QWidget):
             source=load_provider(settings_for_provider(self.validated_path,'atomic'))
             old=getattr(self,'preview_dialog',None)
             if old is not None:old.close()
-            self.preview_dialog=TensorSpectrumPreview(source,self);self.preview_dialog.show()
+            self.preview_dialog=TensorSpectrumPreview(source,self)
+            if hasattr(self,'spectrum_figure'):
+                self.spectrum_figure.clear();ax=self.spectrum_figure.subplots()
+                for label,tensor in (('+M',source.plus),('-M',source.minus),('Even',source.even)):
+                    ax.plot(source.energy_ev,np.trace(tensor.tensor_angstrom2_per_ev,axis1=-2,axis2=-1).real/3,label=label)
+                ax.set(xlabel='Energy loss (eV)',ylabel='Tr(T)/3');ax.legend(fontsize=8);self.spectrum_canvas.draw_idle()
+                self.preview_state.setText('CURRENT numerical tensor spectrum; relative Angstrom^2/eV. Detailed components / odd response available below.')
+            self.preview_dialog.show()
         except Exception as exc:
             self.edited();self.show_problem(exc,'Preview blocked')
 

@@ -70,7 +70,7 @@ def legacy_kernel_source(path,content):
 
 
 def assert_current_extension(overrides=None):
-    from mdff_editor_source_scope import current_sources
+    from mdff_usability_source_scope import current_sources
     expected=current_sources(extension(),overrides,prefix='Unregistered physics change: ')
     for path,digest in expected.items():
         raw=(overrides or {}).get(path)

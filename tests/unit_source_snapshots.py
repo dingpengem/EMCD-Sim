@@ -89,7 +89,7 @@ def assert_reviewed_current_sources(overrides=None,*,scope_bytes=None,gui_scope_
     assert baseline[GUI_PATH]==gui['baseline_canonical_sha256'],'GUI scope parent identity mismatch'
     expected=dict(baseline)
     expected[GUI_PATH]=gui['candidate_canonical_sha256']
-    from mdff_editor_source_scope import current_sources
+    from mdff_usability_source_scope import current_sources
     expected=current_sources(expected,overrides)
     for path,digest in expected.items():
         content=(overrides or {}).get(path)

@@ -28,10 +28,22 @@ def test_manual_fe_selections_preview_calculation_and_reopen(window, tmp_path):
                           (w.xmcd_validity, 'Not measured Fe spectroscopy'), (w.xmcd_scale, '.3')):
         widget.setText(value)
     w.xmcd_status.setCurrentText('synthetic')
+    # set_values blocks signals: populated controls alone are not a user selection.
     w.set_values({'xl3': 710, 'xl2': 723})
+    w.declaration.setChecked(True)
+    with pytest.raises(ValueError,match='Explicit native edge selections'):
+        w.forward_settings()
+    w.spin['xl3'].setValue(711)
+    w.declaration.setChecked(True)
+    with pytest.raises(ValueError,match='Explicit native edge selections'):
+        w.forward_settings()
+    w.spin['xl3'].setValue(710)
+    w.spin['xl2'].setValue(724);w.spin['xl2'].setValue(723)
     w.declaration.setChecked(True)
     cfg = w.forward_settings()
     assert source_for(cfg).metadata['selected_ev'] == {'L3': 710, 'L2': 723}
+    w.validate_xmcd();w.declaration.setChecked(True)
+    assert w.forward_settings().provider_declaration['selected_ev'] == {'L3': 710, 'L2': 723}
     w.preview_mdff()
     assert not w.errors
     cfg = replace(cfg, energy_scope='edges', grid=9, depth=5, subpixels=4,
@@ -54,7 +66,7 @@ def test_manual_fe_selections_preview_calculation_and_reopen(window, tmp_path):
     assert w.forward_settings().provider_declaration['selected_ev'] == {'L3': 710, 'L2': 723}
     # Even leftover text from another edge cannot override visible L2,3 controls.
     w.xmcd_selected.setText('{"L3": 710, "L2": 723}')
-    w.set_values({'xl3': 711, 'xl2': 724})
+    w.spin['xl3'].setValue(711);w.spin['xl2'].setValue(724)
     w.declaration.setChecked(True)
     assert w.forward_settings().provider_declaration['selected_ev'] == {'L3': 711, 'L2': 724}
     w.set_values({'xl3': 831})
@@ -71,3 +83,9 @@ def test_manual_fe_selections_preview_calculation_and_reopen(window, tmp_path):
     assert w.xmcd_selected.isEnabled()
     w.declaration.setChecked(True)
     assert w.forward_settings().provider_declaration['selected_ev'] == {'K': 715}
+    other = tmp_path/'other_fe.xmcd';other.write_bytes(path.read_bytes())
+    w.source_path.setText(str(other));w.validate_xmcd()
+    w.xmcd_edge.setText('L2,3');w.set_values({'xl3': 710, 'xl2': 723})
+    w.declaration.setChecked(True)
+    with pytest.raises(ValueError,match='Explicit native edge selections'):
+        w.forward_settings()

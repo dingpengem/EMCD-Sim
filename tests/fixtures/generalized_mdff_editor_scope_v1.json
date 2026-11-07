@@ -67,10 +67,10 @@
       "raw_sha256": "9d6b3b4295e1de39c26afe80f778f92ce489833446f80b77f5857f4ffb9fbf00"
     },
     "src/emcd_sim/gui/provider_ui.py": {
-      "canonical_sha256": "c7b57028b4be2e78bd5359b2ba44e0b2c5907546bec2125208daf3ff26b494e4",
+      "canonical_sha256": "29d42d0bd95906ec6b90b520494e0623f882dbcd5eec5eb32edddfc6c9a519bc",
       "kind": "modified",
       "mode": "canonical",
-      "raw_sha256": "e81cb9b1cf7ace5ed4a8c4bf68bc7b78b68482f85dc52cfc0f0920bae3696ccf"
+      "raw_sha256": "281c562834fb2ab6b237539c3ff5f751db622d01b5112624b4fc3800a6c3eaa1"
     },
     "src/emcd_sim/gui/results_browser.py": {
       "canonical_sha256": "9367353907b4b25055a64638f0d93aee6588e5fdf63c26911c50f31da00c236a",

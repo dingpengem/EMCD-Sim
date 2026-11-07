@@ -1,6 +1,8 @@
 # Scientific input identities are byte-exact, including their recorded EOLs.
 data/wien2k_ni/Ni_fm.xmcd -text
 tests/fixtures/Ni_fm_historical_full_benchmark.xmcd -text
+# The BCC CIF acceptance test authenticates the exact Git blob bytes.
+tests/fixtures/alpha_Fe_bcc_Im-3m.cif -text
 # Pinned third-party coefficient bytes and notices must survive Windows checkout.
 src/emcd_sim/data/adaptive_dirac_pade_2026/* -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 # Preserve the upstream license's final blank line as supplied.
