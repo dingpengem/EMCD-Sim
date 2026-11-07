@@ -12,6 +12,29 @@ from ..multisite import IonizationSiteGroup, MultiSiteIonization, _ordered_atoms
 ROLE = QtCore.Qt.ItemDataRole.UserRole
 
 
+def validate_site_rows(atoms, rows):
+    """Shared validation of editor drafts; only complete rows form a Stage 1 model."""
+    if not rows:return None
+    _ordered_atoms(atoms)
+    names = set();assigned = set();complete = []
+    for name,element,indices,direction,reference in rows:
+        if not name.strip() or name in names:raise ValueError('Group IDs must be nonempty and unique')
+        names.add(name)
+        if not indices:raise ValueError('Groups need at least one atom; delete an empty group instead')
+        if len(set(indices))!=len(indices) or assigned.intersection(indices):
+            raise ValueError('Duplicate assignments: remove atoms from their current group first')
+        if any(isinstance(i,bool) or not isinstance(i,(int,np.integer)) or i<0 or i>=len(atoms) or atoms[i].symbol!=element for i in indices):
+            raise ValueError('Each group must contain valid original indices of one element')
+        assigned.update(indices)
+        vector = np.asarray(direction)
+        if vector.shape!=(3,) or not np.isfinite(vector).all() or not np.any(vector):
+            raise ValueError('A finite nonzero magnetization direction is required')
+        if reference is not None:
+            complete.append(IonizationSiteGroup(name,element,indices,reference,direction,len(indices)))
+    model = MultiSiteIonization(atoms,complete) if complete else None
+    return model if len(complete)==len(rows) else None
+
+
 class SiteGroupEditor(QtWidgets.QWidget):
     changed = QtCore.Signal()
     selectionChanged = QtCore.Signal(object)
@@ -193,26 +216,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
         return tuple(map(float,direction))
 
     def check_rows(self, rows):
-        if not rows:return None
-        _ordered_atoms(self.atoms)  # Same ordered/full-occupancy rules as Stage 1.
-        names = set(); assigned = set(); complete = []
-        for name, element, indices, direction, reference in rows:
-            if not name.strip() or name in names:raise ValueError('Group IDs must be nonempty and unique')
-            names.add(name)
-            if not indices:raise ValueError('Groups need at least one atom; delete an empty group instead')
-            if len(set(indices)) != len(indices) or assigned.intersection(indices):
-                raise ValueError('Duplicate assignments: remove atoms from their current group first')
-            if any(i < 0 or i >= len(self.atoms) or self.atoms[i].symbol != element for i in indices):
-                raise ValueError('Each group must contain valid original indices of one element')
-            assigned.update(indices)
-            vector = np.asarray(direction)
-            if vector.shape != (3,) or not np.isfinite(vector).all() or not np.any(vector):
-                raise ValueError('A finite nonzero magnetization direction is required')
-            if reference is not None:
-                complete.append(IonizationSiteGroup(name,element,indices,reference,direction,len(indices)))
-        # Complete rows are always checked by the actual model, even alongside drafts.
-        model = MultiSiteIonization(self.atoms,complete) if complete else None
-        return model if len(complete) == len(rows) else None
+        return validate_site_rows(self.atoms,rows)
 
     def replace_rows(self, rows, current=None):
         self.preview_site_groups = self.check_rows(rows)

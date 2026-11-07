@@ -1,7 +1,9 @@
 """Versioned, checksummed project folders and read-only Stage B/C import.
 
-Loading constructs saved plotting context only. No potential, tensor or
+Result loading constructs saved plotting context only. No potential, tensor or
 propagation routines are called, and external sources are never read to plot.
+Configuration-only IO separately validates saved MDFF declarations, without
+elastic propagation or result-array restoration.
 """
 from dataclasses import asdict
 from pathlib import Path
@@ -37,6 +39,10 @@ def restore_structure(snapshot):
     if not snapshot:raise ValueError('Legacy export has no complete numeric crystal snapshot; inspect results read-only, or prepare a verified structure explicitly.')
     atoms=Atoms(snapshot['species'],cell=snapshot['lattice_angstrom'],scaled_positions=snapshot['fractional_positions'],pbc=snapshot['pbc'])
     atoms.info['occupancy']=snapshot.get('occupancies',{})
+    if 'cartesian_positions' in snapshot:atoms.set_positions(snapshot['cartesian_positions'])
+    for name,array in snapshot.get('atom_arrays',{}).items():
+        if name in ('numbers','positions'):raise ValueError('Reserved ASE array in structure snapshot')
+        atoms.new_array(name,np.asarray(array['values'],dtype=array['dtype']))
     return Structure(atoms,snapshot['source'],snapshot.get('sha256',''),snapshot.get('import_warnings',''))
 
 
@@ -99,6 +105,10 @@ def config_from_dict(value):
         d.setdefault('l3',d['atomic'].l3_ev);d.setdefault('l2',d['atomic'].l2_ev)
     for k in ('magnetization','centers','window','fft_generators'):
         if k in d and d[k] is not None:d[k]=tuple(tuple(v) if isinstance(v,list) else v for v in d[k])
+    if d.get('model')=='multisite':
+        from .forward_pipeline import MultiSiteForwardSettings
+        d['selected_edges']=tuple(tuple(v) for v in d.get('selected_edges',()))
+        return MultiSiteForwardSettings(**d)
     if d.get('model')=='imported' or 'provider_schema' in d:
         from .generalized_forward import ImportedSettings,ProviderSettings
         if d.get('site_indices') is not None:d['site_indices']=tuple(d['site_indices'])
@@ -171,6 +181,37 @@ def _read_npz(path):
 def _json(path,value):path.write_text(json.dumps(value,indent=2,allow_nan=False)+'\n',encoding='utf-8')
 
 
+def portable_mdff_bytes(cfg,source_path,embedded=None):
+    """Existing editor-source opt-in; external spectroscopy is not auto-embedded."""
+    if cfg.model=='atomic' and getattr(cfg,'provider_schema',None)==1:
+        try:raw=Path(source_path).read_bytes()
+        except OSError:raw=None
+        if raw is None or hashlib.sha256(raw).hexdigest()!=cfg.source_sha256:
+            raw=embedded.encode('utf-8') if isinstance(embedded,str) else None
+        if raw is not None and hashlib.sha256(raw).hexdigest()==cfg.source_sha256:
+            try:managed='\nEMCD_EDITOR_REFERENCE_V1=' in json.loads(raw)['parameters']['source']
+            except (ValueError,KeyError,TypeError):managed=False
+            if managed:return raw
+    elif cfg.model=='imported':
+        from ..imported_mdff import ImportedMDFF
+        source=ImportedMDFF.load(source_path,cfg.source_sha256)
+        if (source.metadata.get('manual_constant_editor')==1 or source.metadata.get('manual_constant_pair_editor')==1
+                or 'manual_l23_model' in source.metadata):return Path(source_path).read_bytes()
+    return None
+
+
+def save_configuration(configuration,path,*,cancelled=lambda:False,progress=lambda s:None):
+    """Save configuration only; see project_configuration for the state interface."""
+    from .project_configuration import save_configuration as save
+    return save(configuration,path,cancelled=cancelled,progress=progress)
+
+
+def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
+    """Restore configuration without loading result arrays or running propagation."""
+    from .project_configuration import load_configuration as load
+    return load(path,cancelled=cancelled,progress=progress)
+
+
 def _rename_folder(source,target,cancelled=lambda:False):
     # Windows indexers/virus scanners can briefly hold a just-closed NPZ or
     # directory. Retry only sharing/access errors, without bypassing access
@@ -224,20 +265,11 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             source_path=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
             # Only editor-managed documents opt into portable persistence.
             # Existing external JSON projects retain their original-source rules.
-            try:raw=source_path.read_bytes() if source_path.is_file() else None
-            except OSError:raw=None
             # A completed declared result already embeds its original input
             # bytes. A matching checksum permits preserving that exact evidence,
             # never reconstructing parameters from current editor controls.
-            if raw is None or hashlib.sha256(raw).hexdigest()!=cfg.source_sha256:
-                embedded=meta.get('imported_mdff',{}).get('atomic_parameter_source_utf8')
-                raw=embedded.encode('utf-8') if isinstance(embedded,str) else None
-            editor_managed=False
-            if raw is not None and hashlib.sha256(raw).hexdigest()==cfg.source_sha256:
-                try:
-                    editor_managed='\nEMCD_EDITOR_REFERENCE_V1=' in json.loads(raw)['parameters']['source']
-                except (ValueError,KeyError,TypeError):pass
-            if editor_managed:
+            raw=portable_mdff_bytes(cfg,source_path,meta.get('imported_mdff',{}).get('atomic_parameter_source_utf8'))
+            if raw is not None:
                 # Keep the portable filename short for Windows project paths.
                 # The full identity is pinned in the existing file manifest.
                 filename='atomic_input.json'
@@ -250,15 +282,14 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
         manual_attachment=None
         if cfg.model=='imported':
             source_path=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
-            from ..imported_mdff import ImportedMDFF
-            source=ImportedMDFF.load(source_path,cfg.source_sha256)
-            if source.metadata.get('manual_constant_editor')==1 or 'manual_l23_model' in source.metadata:
+            raw=portable_mdff_bytes(cfg,source_path)
+            if raw is not None:
                 filename='manual_tensor.json'
                 if (root/filename).exists():
                     previous=json.loads((root/'project.json').read_text(encoding='utf-8'))
                     if previous.get('manual_tensor_source',{}).get('path')!=filename:
                         raise ValueError('Project attachment name conflicts with an existing user file; use Save As')
-                (temp/filename).write_bytes(source_path.read_bytes());managed.add(filename)
+                (temp/filename).write_bytes(raw);managed.add(filename)
                 manual_attachment=dict(path=filename,sha256=cfg.source_sha256)
         if root.exists():
             for child in root.iterdir():
@@ -394,6 +425,7 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     if manifest_path.exists():
         manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
         if manifest.get('schema_version')!=SCHEMA or manifest.get('complete') is not True:raise ValueError('Unsupported or incomplete project manifest')
+        if manifest.get('kind')=='configuration':raise ValueError('Configuration-only project: use load_configuration; calculated results are not saved')
         required=set(ARRAY_FILES)|{'metadata.json','comparison_metadata.json','input_parameters.json','structure.json','validity.json'}
         if not required<=set(manifest.get('files',{})):raise ValueError('Incomplete project required-file manifest')
         for name,digest in manifest['files'].items():
