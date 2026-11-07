@@ -225,7 +225,7 @@ def test_native_windows_complete_multisite_calculation(window,tmp_path,app):
     actual = finish(window,app)
     assert actual['config'].model == 'multisite' and len(actual['groups']) == 2
     assert window.tabs.currentIndex() == 2 and window.eels_view.result is actual
-    assert 'mean per selected ionizing atom (n=2)' in window.eels_view.multisite_banner.text()
+    assert 'mean per selected ionizing atom (N=2)' in window.eels_view.multisite_banner.text()
     assert 'per incident electron' in window.diffraction_view.multisite_banner.text()
     assert editor.accepted_site_groups is not None and not window.axis.isEnabled()
     QtTest.QTest.qWait(200);app.processEvents();window.eels_view.canvas.draw()

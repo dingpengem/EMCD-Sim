@@ -289,6 +289,10 @@ class ResultsView(QtWidgets.QWidget):
         self.signal_label=QtWidgets.QLabel('Signal Display');self.signal_label.setVisible(kind in ('eels','maps'));row.addWidget(self.signal_label)
         self.component_mode.setVisible(kind in ('eels','maps'));row.addWidget(self.component_mode);self.component_mode.currentIndexChanged.connect(self.redraw)
         maximize=QtWidgets.QPushButton('Maximize / restore results');row.addWidget(maximize);maximize.clicked.connect(self.maximize)
+        if kind=='eels':
+            from .multisite_results_controls import MultisiteSpectraControls
+            self.multisite_controls=MultisiteSpectraControls();self.multisite_controls.hide()
+            layout.addWidget(self.multisite_controls);self.multisite_controls.changed.connect(self.redraw)
         self.advanced=QtWidgets.QGroupBox('Advanced Diagnostics — legacy displays');self.advanced.setCheckable(True);self.advanced.setChecked(False);layout.addWidget(self.advanced)
         self.advanced_body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(self.advanced);outer.addWidget(self.advanced_body);self.advanced_body.hide();advanced_layout=QtWidgets.QVBoxLayout(self.advanced_body)
         self.advanced.toggled.connect(self.advanced_body.setVisible);self.advanced.toggled.connect(self.redraw);self.advanced.setVisible(kind!='diffraction')
@@ -321,13 +325,18 @@ class ResultsView(QtWidgets.QWidget):
         focused=getattr(self,'_focused',False)
         self.details_section.setVisible(not focused)
         if hasattr(self,'prb_benchmark'):
-            self.prb_benchmark.set_compact(compact);self.benchmark_section.setVisible(not focused)
+            self.prb_benchmark.set_compact(compact)
+            self.benchmark_section.setVisible(not focused and (self.result is None or self.result['config'].model!='multisite'))
     def maximize(self):
         w=self.owner
         w.responsive.show_panel(2);self._focused=not getattr(self,'_focused',False);self.set_compact(w.responsive.compact);w.responsive.focus_plot('results')
     def set_result(self,result):
         self.result=result
         multisite=result['config'].model=='multisite'
+        if self.kind=='eels':
+            self.multisite_controls.setVisible(multisite);self.choice.setVisible(not multisite)
+            self.signal_label.setVisible(not multisite)
+            if multisite:self.multisite_controls.set_result(result)
         self.multisite_banner.setVisible(multisite)
         if multisite:
             sites=result['metadata']['multisite']
@@ -337,7 +346,7 @@ class ResultsView(QtWidgets.QWidget):
         self.advanced.setVisible(not multisite);self.component_mode.setVisible(not multisite)
         self.field.setVisible(self.kind=='maps' and not multisite)
         self.export_button.setEnabled(not multisite)
-        self.export_button.setToolTip('Multi-site data export belongs to Patch 4C' if multisite else '')
+        self.export_button.setToolTip('Multi-site data export belongs to Patch 4C-2' if multisite else '')
         if self.kind=='eels':self.benchmark_section.setVisible(not multisite)
         if self.kind=='maps':
             with QtCore.QSignalBlocker(self.choice):
@@ -359,7 +368,15 @@ class ResultsView(QtWidgets.QWidget):
         method=self.method.currentData() or self.result.get('method','bloch')
         if self.result['config'].model=='multisite':
             from .multisite_results import draw_totals,description
-            self.proxies=draw_totals(self.figure,self.result,method,self.kind,self.choice.currentText())
+            options=self.multisite_controls.options() if self.kind=='eels' else {}
+            self.proxies=draw_totals(self.figure,self.result,method,self.kind,self.choice.currentText(),**options)
+            if self.kind=='eels':
+                from .multisite_results import spectral_series,selection_description
+                current=self.result.get('methods',{}).get(method,self.result)
+                series=spectral_series(current,options['selection'],options['normalization'],options['compared'])
+                sites=current['metadata']['multisite']
+                self.multisite_banner.setText(selection_description(current,series)+'\nModeled partial core-edge spectrum · '
+                    +current['metadata']['scientific_status']+' · active '+('−M' if sites['global_reversal'] else '+M')+' provider pairs · uncalibrated relative scale.')
             self.display_note.setText(description(self.result));self.presentation.capture();self.canvas.draw_idle();return
         display=self.normalization.settings()
         advanced=self.advanced.isChecked()
