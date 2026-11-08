@@ -137,14 +137,14 @@ def test_exports_keep_legacy_arrays_and_explicit_signal_sidecars(result):
 def test_saved_display_migration_and_new_state_roundtrip(result):
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.project_io import load_project
+    from emcd_sim.gui.project_collection import load_collection
     import time
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     root=Path('outputs')/('v060_state_'+uuid4().hex);w=MainWindow(workspace=root/'workspace')
     try:
         legacy=dict(result,display_state=dict(component_mode='relative',advanced=False,locked=True,energy_ev=result['config'].l2,selection='selected'))
         with patch('emcd_sim.gui.stage_b.calculate',side_effect=AssertionError('Display must not calculate')):
-            w.display_saved_result(legacy)
+            w.register_completed(legacy);w.display_saved_result(legacy,w.selected_record)
             view=w.eels_view
             assert view.component_mode.currentData()=='raw' and view.advanced.isChecked()
             assert view.component_diagnostic.currentData()=='relative' and 'Legacy Relative' in view.display_note.text()
@@ -153,7 +153,7 @@ def test_saved_display_migration_and_new_state_roundtrip(result):
             w.save_to_path(root/'project');deadline=time.monotonic()+20
             while w.busy and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
             assert not w.busy
-            loaded=load_project(root/'project');assert loaded['display_state']['signal_display_schema']==2
+            loaded=load_collection(root/'project')['runs'][0][1];assert loaded['display_state']['signal_display_schema']==2
             view.component_mode.setCurrentIndex(0);w.maps_view.component_mode.setCurrentIndex(0)
             w.display_saved_result(loaded)
             assert view.component_mode.currentData()==w.maps_view.component_mode.currentData()=='asymmetry'

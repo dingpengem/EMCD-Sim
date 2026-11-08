@@ -20,10 +20,31 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(autouse=True)
-def release_test_owned_gui_resources(request):
+def release_test_owned_gui_resources(request, monkeypatch):
     qt = sys.modules.get('PySide6.QtWidgets')
     app = qt.QApplication.instance() if qt else None
-    before = {id(w) for w in app.topLevelWidgets()} if app else set()
+    # Keep wrappers alive: otherwise Python can reuse an ID for a new test
+    # window and incorrectly classify it as a pre-existing/shared window.
+    before_windows = tuple(app.topLevelWidgets()) if app else ()
+    before = {id(w) for w in before_windows}
+    if qt:
+        warning, execute = qt.QMessageBox.warning, qt.QMessageBox.exec
+        def owned(window):
+            return type(window).__name__ == 'MainWindow' and id(window) not in before
+        def project_warning(parent, title, *args, **kwargs):
+            # Stage 4D added confirmations to legacy New/Close workflows.
+            # Explicitly discard temporary test inputs by default. Tests of
+            # Save/Cancel install their own responses after this fixture.
+            if owned(parent) and title == 'Unsaved Changes':
+                return qt.QMessageBox.StandardButton.Discard
+            return warning(parent, title, *args, **kwargs)
+        def retain_calculation(dialog, *args, **kwargs):
+            if owned(dialog.parent()) and dialog.windowTitle() == 'Retain Calculation':
+                dialog.defaultButton().click()  # keep as a new test calculation
+                return qt.QDialog.DialogCode.Accepted
+            return execute(dialog, *args, **kwargs)
+        monkeypatch.setattr(qt.QMessageBox, 'warning', project_warning)
+        monkeypatch.setattr(qt.QMessageBox, 'exec', retain_calculation)
     pyplot = sys.modules.get('matplotlib.pyplot')
     figures = set(pyplot.get_fignums()) if pyplot else set()
     yield

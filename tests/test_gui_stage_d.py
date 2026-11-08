@@ -14,6 +14,7 @@ from matplotlib.figure import Figure
 from emcd_sim.gui.emcd_forward import calculate,ForwardSettings,DEFAULT_SOURCE
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.gui.project_io import *
+from emcd_sim.gui.project_collection import load_collection
 from emcd_sim.gui.results_browser import Registry
 from emcd_sim.gui.compare_results import map_compatibility,draw_saved_comparison,scalar_rows,export_comparison_data
 from emcd_sim.gui.app import MainWindow
@@ -94,21 +95,23 @@ class ProjectTests(unittest.TestCase):
         with self.assertRaises(Cancelled):save_project(self.result,self.folder,replace_existing=True,cancelled=lambda:True)
         self.assertEqual(before,sha256(self.folder/'project.json'))
         with self.assertRaises(FileExistsError):save_project(self.result,self.folder)
-        self.assertEqual([],list(ROOT.glob('.complete.saving_*')))
+        self.assertEqual([],list(ROOT.glob('.r_*'))+list(ROOT.glob('.rb_*')))
         (self.folder/'notes.txt').write_text('User notes must survive Save')
         figures=self.folder/'figures';figures.mkdir();(figures/'README.txt').write_text('User figure attachments')
         save_project(self.result,self.folder,replace_existing=True)
         self.assertEqual((self.folder/'notes.txt').read_text(),'User notes must survive Save')
         self.assertTrue((self.folder/'figures/README.txt').exists());self.assert_equal(self.result,load_project(self.folder))
         (self.folder/'notes.txt').write_text('Notes are not physical-data integrity inputs');load_project(self.folder)
+        self.assertEqual([],list(ROOT.glob('.r_*'))+list(ROOT.glob('.rb_*')))
     def test_replacement_failure_rolls_back(self):
         path=ROOT/'rollback';save_project(self.result,path);before=sha256(path/'project.json');rename=Path.rename
         def fail_final(p,target):
-            if '.saving_' in p.name and Path(target)==path.resolve():raise OSError('Final rename blocked')
+            if p.name.startswith('.r_') and Path(target)==path.resolve():raise OSError('Final rename blocked')
             return rename(p,target)
         with patch.object(Path,'rename',fail_final):
             with self.assertRaises(OSError):save_project(self.second,path,replace_existing=True)
         self.assertEqual(before,sha256(path/'project.json'));load_project(path)
+        self.assertEqual([],list(ROOT.glob('.r_*'))+list(ROOT.glob('.rb_*')))
     def test_legacy_readonly_without_fabricated_snapshot(self):
         for source in ('outputs/gui_stage_b/xmcd_20261015_234528','outputs/gui_stage_c/windows_20261016_000116/xmcd_both'):
             source=Path(source)
@@ -152,9 +155,12 @@ class ZWorkspaceTests(unittest.TestCase):
         self.assertEqual(s,w.settings());self.assertIn('current inputs differ',w.maps_view.label.text())
         with no_solvers():w.use_result_settings()
         np.testing.assert_allclose(w.settings().tilt,ProjectTests.second['settings'].tilt,atol=1e-9);self.assertFalse(w.busy)
+        project=self.workspace/'Project';w.save_to_path(project);self.wait_io();self.assertTrue(w._io_success)
         before=w.settings();w.close();w=MainWindow(workspace=self.workspace);self.w=w;w.error=lambda message:None
-        self.assertEqual(len(w.browser.registry.records),1)
+        self.assertEqual(len(w.browser.registry.records),0)  # history belongs to the explicitly opened project
         self.assertEqual(w.settings().zone,Settings().zone)
+        with no_solvers():w.open_project_path(project);self.wait_io()
+        self.assertEqual(len(w.browser.registry.records),1);self.assertEqual(w.settings(),before)
     def test_threaded_open_failed_load_preserves_previous(self):
         w=self.w;w.emcd_result=ProjectTests.second
         with no_solvers():w.open_project_path(ProjectTests.folder);self.wait_io()
@@ -163,17 +169,19 @@ class ZWorkspaceTests(unittest.TestCase):
     def assert_equal_selected(self,result):
         for key,value in result['spectra'].items():np.testing.assert_array_equal(value,self.w.emcd_result['spectra'][key])
     def test_background_save_register_compare_no_physics(self):
-        w=self.w;w.emcd_result=ProjectTests.result;w.register_completed(ProjectTests.result);w.save_to_path(ROOT/('ui_save_'+uuid.uuid4().hex));self.wait_io()
-        self.assertEqual(len(Registry(self.workspace/'results_index.json').records),1)
+        w=self.w;w.emcd_result=ProjectTests.result;w.register_completed(ProjectTests.result);project=ROOT/('ui_save_'+uuid.uuid4().hex);w.save_to_path(project);self.wait_io()
+        self.assertEqual(len(load_collection(project)['runs']),1)
         first=w.selected_record;second=w.browser.register(ProjectTests.second,ROOT/'second_complete',name='Mistilt')
         for i in range(w.browser.table.rowCount()):
             idx=w.browser.table.model().index(i,0);w.browser.table.selectionModel().select(idx,QtCore.QItemSelectionModel.SelectionFlag.Select|QtCore.QItemSelectionModel.SelectionFlag.Rows)
-        with no_solvers():w.compare_selected();self.wait_io()
-        self.assertEqual(w.tabs.tabText(w.tabs.currentIndex()),'Compare saved runs');self.assertEqual(w.tabs.currentWidget().entries()[0][1]['config'].model,'xmcd')
+        with no_solvers():w.compare_selected();self.app.processEvents()
+        dialog=w.dialogs[-1];self.assertEqual(dialog.windowTitle(),'Compare Calculations')
+        self.assertNotEqual(dialog.first.currentData(),dialog.second.currentData());self.assertEqual(dialog.runs[0][1]['config'].model,'xmcd')
+        dialog.close()
     def test_cancel_load_keeps_completed_result(self):
         w=self.w;w.emcd_result=ProjectTests.result;entered=threading.Event();release=threading.Event()
         def blocked(*a,**k):entered.set();release.wait(5);return ProjectTests.second
-        with patch('emcd_sim.gui.results_browser.load_project',blocked):
+        with patch('emcd_sim.gui.project_session.load_collection',blocked):
             w.open_project_path(ProjectTests.folder);self.assertTrue(entered.wait(5));w.cancel();release.set();self.wait_io()
         self.assertIs(w.emcd_result,ProjectTests.result);self.assertEqual(w.progress.value(),0)
     def test_atomic_settings_do_not_require_unused_xmcd(self):

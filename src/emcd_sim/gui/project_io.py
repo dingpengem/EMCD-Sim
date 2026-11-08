@@ -239,7 +239,9 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
     root=Path(path).resolve();root.parent.mkdir(parents=True,exist_ok=True)
     if root.exists() and not replace_existing:raise FileExistsError('Save As requires a new folder or explicit replacement approval')
     if root.exists() and not (root/'project.json').exists():raise ValueError('Only an existing EMCD project can be replaced; choose a new project folder')
-    temp=root.parent/('.'+root.name+'.saving_'+uuid.uuid4().hex);backup=root.parent/('.'+root.name+'.previous_'+uuid.uuid4().hex);temp.mkdir()
+    # History records already have long UUID names and sit inside the outer
+    # project transaction. Do not repeat that name in each staging path.
+    temp=root.parent/('.r_'+uuid.uuid4().hex[:12]);backup=root.parent/('.rb_'+uuid.uuid4().hex[:12]);temp.mkdir()
     def check(stage):
         if cancelled():raise Cancelled()
         progress(stage)
@@ -336,10 +338,10 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
         except BaseException:
             if backup.exists():_rename_folder(backup,root)
             raise
-        if backup.exists() and backup.resolve().parent==root.parent and backup.name.startswith('.'+root.name+'.previous_'):shutil.rmtree(backup)
+        if backup.exists() and backup.resolve().parent==root.parent and backup.name.startswith('.rb_'):shutil.rmtree(backup)
         return root
     finally:
-        if temp.exists() and temp.resolve().parent==root.parent and temp.name.startswith('.'+root.name+'.saving_'):shutil.rmtree(temp)
+        if temp.exists() and temp.resolve().parent==root.parent and temp.name.startswith('.r_'):shutil.rmtree(temp)
 
 
 def source_status(result):

@@ -103,7 +103,7 @@ def test_gui_rejects_conflicting_loader_source_identity(window, tmp_path):
         source_sha256=hashlib.sha256(accepted.read_bytes()).hexdigest())
     conflicting = dict(config=cfg,source_overrides=dict(mdff=str(changed)),structure_snapshot=None)
     with patch('emcd_sim.gui.results_browser.load_project',return_value=conflicting):
-        w.open_project_path(tmp_path/'project'); wait_gui(w, app)
+        w.open_project_path(tmp_path/'project',legacy=True); wait_gui(w, app)
     assert w.run_outcome == 'failed' and w.emcd_result is None
     assert any('Conflicting verified project source identity: mdff' in error for error in w.errors)
 

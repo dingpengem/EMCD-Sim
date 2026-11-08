@@ -8,13 +8,16 @@ from emcd_sim import __version__
 
 
 def test_version_matches_source_metadata():
-    import tomllib
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # supported Python 3.10
+        import tomli as tomllib
     from emcd_sim.gui.runtime import build_info, LABEL
     project = Path(__file__).resolve().parents[1]/'pyproject.toml'
-    assert __version__ == '0.8.1b1' == tomllib.loads(project.read_text(encoding='utf-8'))['project']['version']
+    assert __version__ == '0.8.1b2' == tomllib.loads(project.read_text(encoding='utf-8'))['project']['version']
     assert build_info()['application_version'] == __version__
     from emcd_sim import __display_version__
-    assert __display_version__ == 'v0.8.1-beta.1'
+    assert __display_version__ == 'v0.8.1-beta.2'
     assert __display_version__ in LABEL and build_info()['display_version'] == __display_version__
 
 
