@@ -4,6 +4,22 @@
 
 This guide describes the **Configure MDFF...** dialog shipped in [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2). The published beta.1 interface is older; use its tag-specific documentation for that binary. See [release status and validation history](RELEASE_NOTES_0_8_1_BETA_2.md#publication-status) for the beta.2 package and its recorded verification.
 
+<a id="development-group-direction-workflow"></a>
+## Development source: grouped directions and MDFF
+
+The following applies only to `feat/v0.9.0-crystal-grouping`. It is not in the previously accepted v0.9.0-beta.1 EXE/source kit (`6b917ed`) or a published release. Remaining versioned single-element examples below are retained for compatibility.
+
+**CIF import → automatic structural groups → explicit Local M and MDFF → supported direction change → Apply → Save/Open → Recalculate.**
+
+- Open the **3D Structure Viewer** from Settings, then **Site groups**. Symmetry groups retain original ASE indices and provenance; ordinary CIF import supplies neither magnetic order nor MDFF. Select a whole group in the table. The selected-group summary shows its count, Accepted M, any unapplied draft/input, and existing MDFF status. Atom picking is needed only to edit membership.
+- Enable Local mode and explicitly configure the requested ionizing groups through **Configure MDFF for Group…**. Global M stays locked. Keep element/edge, source identity, relative amplitudes, tensor frame, magnetic states and modeled energy windows consistent. Declare requested samples/windows explicitly; coverage is checked without extrapolation. Non-ionizing draft rows can be removed without changing the crystal used for elastic scattering.
+- Enter a direction and choose **Update direction**, then **Apply**. The first action stages a draft; the second accepts a consistent configuration. With an explicitly supplied, validated reversal pair, an antiparallel direction selects the complete opposite physical tensor state. Real tensor components may also be reversal-odd; complex conjugation is not a general reversal rule. Source bytes, full frames and amplitudes are preserved. Unsupported Z→X changes remain rejected for fixed-frame sources; use the group's editor or a compatible validated source. No missing pair or arbitrary rotation is inferred.
+- Failed Apply leaves accepted state intact and retains the draft. Cancel discards unaccepted changes. The MDFF Editor refreshes its selected physical pair when required; group direction changes are distinct from editing tensor entries. Save requires pending configured-group edits to be applied or cancelled. Save/Open retains accepted group direction, provider pair selection, frames and provenance; recalculation uses that restored configuration, not disabled Global M.
+
+Use **File → Save / Save As / Close Project / Open** in development source; configuration can be saved before calculating. Preserve external inputs that are not portable attachments. Saved arrays can remain viewable when missing/changed sources block a rerun. No manually authored project JSON is required.
+
+See the [step-by-step user guide](USER_GUIDE.md#development-site-groups). magCIF and general tensor rotation remain future work. Prior broad source-guard verification is **incomplete**; no full regression or new candidate build is claimed here.
+
 ## Choose a construction method
 
 The normal choices are **XMCD-constrained MDFF**, **Atomic Ionization MDFF**, and **Manual tensor**. They construct a spectral complex 3x3 dipole tensor; propagation and detector contraction remain shared. Elastic Bloch-wave or FFT Multislice, and Single or Double Channeling, are separate choices.
@@ -20,7 +36,7 @@ All physical tensors must be finite, Hermitian, and positive semidefinite (PSD).
 
 ## Structure, element, edge, and frame
 
-Open your CIF before choosing material-specific input. Structure identity, eligibility of an ionizing element, and availability of a model are separate questions. Calculations support the implemented fully occupied single-element/equivalent-site case; a mixed-material preparation selector is not a multi-element sum. Inequivalent-site, AFM/SDW, noncollinear texture, and general complex magnetic structures are not supplied by this editor.
+Open your CIF before choosing material-specific input. Structure identity, eligibility of an ionizing element, and availability of a model are separate questions. The retained **legacy single-element route** supports the fully occupied equivalent-site case; its mixed-material preparation selector alone is not a multi-element sum. The separate development Site Group route above supports explicitly configured groups and directions; it does not predict magnetic order or bulk Cr SDW.
 
 Atomic generation is Sc-Zn **L2,3 only**. Declared/imported dipole providers also implement the supported **K** edge route with native selections and data appropriate to the declared element. Other edge names require implementation, not merely typing a label. Do not transfer Ni spectra, energies, radial values, or electronic parameters to a different material.
 

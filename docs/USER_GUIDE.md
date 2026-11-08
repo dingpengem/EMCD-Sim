@@ -4,6 +4,8 @@
 
 This manual combines retained control/physics references with the MDFF interface shipped in [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), package version `0.8.1b2`, built from `88dc9ec`. See [current MDFF workflows](MDFF_WORKFLOWS.md) and [release/validation status](RELEASE_NOTES_0_8_1_BETA_2.md). For the older beta.1 binary, use its [tag-specific manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.1/docs/USER_GUIDE.md). Independent clean-machine installation and Linux/macOS packaged support remain unverified.
 
+**Development-source addition:** the [Site Group workflow below](#development-site-groups) describes `feat/v0.9.0-crystal-grouping`, not a published binary. The accepted v0.9.0-beta.1 candidate at `6b917ed` does not contain these later grouping/direction/usability changes. Versioned v0.8 controls and project instructions elsewhere in this manual remain compatibility references; use the development workflow for current source controls.
+
 > **Legacy magnetic results:** earlier released v0.6.1 packages used a superseded Born/MDFF convention. Preserve their raw arrays, source and convention; revalidate signed magnetic results before comparison. Loading a project does not update its physics. Missing convention metadata is unknown/legacy-unverified.
 
 Use the [Quick Start](QUICK_START.md) for a small first run and the [Tutorial](TUTORIAL.md) for the physical workflow and equations. This manual is a reference, not a request to run a large study.
@@ -34,7 +36,20 @@ Results include **Diffraction**, **EMCD Angular Maps**, **Virtual Detector EELS*
 
 **FCC Ni default** creates the conventional cubic Ni reference, a = 3.524 Å. **Load CIF…** reads a CIF through ASE; **Inspect structure…** reports source hash, cell, sites and warnings. The GUI file-import route is CIF, not a general browser for every ASE-supported format.
 
-Reciprocal geometry can be inspected more broadly than inelastic scattering. The bundled Adaptive provider supports neutral Z=1–118; unsupported provider/species combinations produce explicit geometry-only messages. Disordered/partial occupancies and unsupported cells are not silently replaced. The original Ni providers require the verified conventional FCC Ni structure. Opt-in imported tensors and declared approximate atomic sources additionally support eligible single-element, full-occupancy, translation-equivalent ionization sites. Importing an arbitrary CIF does not construct a material-specific MDFF or validate its magnetic response.
+Reciprocal geometry can be inspected more broadly than inelastic scattering. The bundled Adaptive provider supports neutral Z=1–118; unsupported provider/species combinations produce explicit geometry-only messages. Disordered/partial occupancies and unsupported cells are not silently replaced. The original Ni providers require the verified conventional FCC Ni structure. In the retained legacy single-element route, opt-in imported tensors and declared approximate atomic sources additionally support eligible full-occupancy, translation-equivalent ionization sites. The development group route is described below. Importing an arbitrary CIF does not construct a material-specific MDFF or validate its magnetic response.
+
+<a id="development-site-groups"></a>
+### Development source: Site Groups and local magnetization
+
+These controls are in the separate, resizable **3D Structure Viewer**, opened from the existing **Settings** panel. The main Settings / Diffraction Preview / Results / Calculation History layout is unchanged.
+
+1. Use **Open CIF…**. The importer proposes crystallographic groups using symmetry orbits while retaining original ASE indices. The inverse-spinel Fe3O4 example has Fe(A) 8a/8 atoms, Fe(B) 16d/16 atoms and O 32e/32 atoms. Read the recorded tolerance, labels and provenance. Partial/disordered or ambiguous inputs retain warnings/manual fallback; no magnetic order, moment magnitude or MDFF is inferred from ordinary CIF.
+2. Open **Site groups**. Select a group once in its table; individual atom picking is only for assigning/removing members. Counts, Wyckoff labels and existing MDFF status appear in the table. Resize columns or use its horizontal scrollbar; full ASE indices are also in the cell tooltip. The panel itself scrolls so the direction and MDFF controls remain reachable. Existing user groups are not silently replaced by suggestions.
+3. Enable **Local Site Magnetization Mode** to edit directions explicitly in crystal Cartesian coordinates. Global M is locked in Local mode; Global mode retains the legacy interpretation and local drafts. Arrows show normalized directions, not calibrated moments. For each requested ionizing group, use **Configure MDFF for Group…** and the existing native XMCD, Atomic or Manual controls. Supply valid sources, full tensor frames, explicit physical states and energy coverage. A direction alone does not define an anisotropic frame. Structural rows may stay unconfigured; they cannot execute as ionizing groups. Remove unneeded draft ionizing rows deliberately (for example O in an Fe-only loss calculation); this does not remove oxygen from the complete elastic crystal.
+4. To change an existing group, inspect **Accepted M** first. Typing in the direction field is only input. **Update direction** stages the group-wide draft and updates its arrows; the summary then shows **Draft M (unapplied)** separately from Accepted M. The MDFF line reuses the existing validation status. **Apply** accepts all compatible group direction/provider bindings together. Same-axis inputs and explicitly validated physical reversal pairs are supported. A reversal selects the supplied opposite state without changing source tensors, amplitudes, axis/frame declarations or another group. Unsupported Z→X changes with fixed-frame data remain rejected; use that group's MDFF Editor or a compatible validated source. The draft remains available, and accepted settings are unchanged on failure. **Cancel** discards unaccepted edits.
+5. After Apply, use **File → Save / Save As**. Development projects can preserve configuration before a calculation; they are not restricted to completed results. Unapplied changes on configured local groups must be applied or cancelled before saving. Keep the complete project and required external sources; not all spectroscopy data are automatically embedded. **Close Project → Open** restores accepted directions, pair selections, frames and provenance. Reopening alone performs no simulation. Inspect the restored configuration, then **Run EMCD / EELS** to recalculate. Saved result browsing is separate from **Restore Settings from Selected Run…** in the lower calculation-history panel.
+
+magCIF and general tensor rotation remain future work. These development changes have focused and native source-GUI evidence, not full regression or new candidate/release acceptance. The earlier source-guard verification remains **incomplete**. See [grouping logic and limitations](CRYSTALLOGRAPHIC_GROUPING.md), [MDFF workflow details](MDFF_WORKFLOWS.md#development-group-direction-workflow) and [direction/provider conventions](PHASE2_GROUP_MAGNETIZATION_MDFF.md).
 
 ## 3. Diffraction settings
 
@@ -97,6 +112,8 @@ Numeric A/B qx/qy and **Radius (Å⁻¹)** define physical circular apertures. *
 Integration is `sum(weights * intensity) * dq²` using fixed fractional circle/pixel weights. All reversal states share the same physical apertures. Boundary subpixels improve circle area weighting but not the resolution of a varying intensity field. Fully contain both apertures inside **Map halfwidth**. A manually moved non-mirrored pair is valid for detector spectra but can disable symmetry-dependent diagnostics.
 
 ## 7. Magnetization settings
+
+For development Local Site Magnetization, use the [Site Group workflow](#development-site-groups). The legacy Global M below is inactive/locked in that mode and does not override local directions or full tensor frames.
 
 **Crystal Cartesian M axis** is a finite nonzero direction, normalized internally. For cubic Ni, `0 0 1` specifies crystal [001]. Its local components change with the proper orientation transform; it is not implicitly beam-aligned. This prescription does not establish the specimen surface normal, magnetic domain structure or equilibrium orientation.
 
@@ -254,6 +271,8 @@ Reversal-even and reversal-odd are defined by the four raw spectra; preserve the
 
 <a id="project-management"></a>
 ## 18. Project management
+
+**Published v0.8 compatibility reference:** the completed-result workflow below is retained for that binary. Development source additionally saves uncalculated configuration through **File → Save / Save As**, as described in the [Site Group workflow](#development-site-groups).
 
 **File → New** clears the selected result and restores released starting controls; explicitly review physical/MDFF values for the next job. **Save Project / Save Project As...** acts on a **completed selected result**, not arbitrary uncalculated Current Inputs. Choose a parent directory and new folder name. Replacing an existing project requires explicit confirmation and verified save logic; make independent backups.
 

@@ -191,7 +191,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.summary = QtWidgets.QLabel(); self.summary.setWordWrap(True); layout.addWidget(self.summary)
         splitter = QtWidgets.QSplitter(); layout.addWidget(splitter, 1)
         self.view = CrystalCanvas(); splitter.addWidget(self.view)
-        self.tabs = QtWidgets.QTabWidget(); self.tabs.setMinimumWidth(330); splitter.addWidget(self.tabs)
+        self.tabs = QtWidgets.QTabWidget(); self.tabs.setMinimumWidth(430); splitter.addWidget(self.tabs)
         panel = QtWidgets.QWidget(); panel.setMinimumWidth(300)
         controls = QtWidgets.QVBoxLayout(panel)
         display_scroll = QtWidgets.QScrollArea(); display_scroll.setWidgetResizable(True); display_scroll.setWidget(panel)
@@ -199,7 +199,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.editor = SiteGroupEditor()
         if getattr(parent,'workspace',None) is not None:self.editor.mdff_workspace = parent.workspace
         self.tabs.addTab(self.editor, 'Site groups')
-        splitter.setSizes([850, 350])
+        splitter.setSizes([700, 500])
         self.style = QtWidgets.QComboBox(); self.style.addItems(['Ball and stick', 'Space filling'])
         form = QtWidgets.QFormLayout(); form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapAllRows)
         controls.addLayout(form); form.addRow('Atom style', self.style)

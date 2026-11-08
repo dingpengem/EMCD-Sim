@@ -2,6 +2,8 @@
 
 Research software for **electron magnetic circular dichroism (EMCD)**, core-loss EELS, and dynamical electron diffraction in transmission electron microscopy. EMCD-Sim connects crystal geometry, elastic propagation, a declared mixed dynamic form factor (MDFF), and virtual detectors to examine magnetization reversal and model sensitivity.
 
+**Development source only:** `feat/v0.9.0-crystal-grouping` adds automatic crystallographic groups and compatible group-direction Apply/Save/Open/recalculation. See the [development workflow](docs/USER_GUIDE.md#development-site-groups). These additions are absent from the previously accepted v0.9.0-beta.1 EXE/source kit at `6b917ed` and are not a published release. Candidate integration/building is a separate step; broad source-guard verification remains incomplete. The release links below retain their original version-specific meaning.
+
 [Published Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) | [Installation](docs/INSTALL_WINDOWS.md) | [First calculation](docs/QUICK_START.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md) | [User manual](docs/USER_GUIDE.md)
 
 **Windows Research Beta v0.8.1-beta.2.** The [release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) includes the MDFF update below. Install the official Microsoft x64 v14 runtime first; see [installation and accompanying Qt sources](docs/INSTALL_WINDOWS.md) and [release notes](docs/RELEASE_NOTES_0_8_1_BETA_2.md). Earlier beta.1 assets remain unchanged.

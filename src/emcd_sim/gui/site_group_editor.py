@@ -38,7 +38,7 @@ def validate_site_rows(atoms, rows):
     return model if len(complete)==len(rows) else None
 
 
-class SiteGroupEditor(QtWidgets.QWidget):
+class SiteGroupEditor(QtWidgets.QScrollArea):
     changed = QtCore.Signal()
     selectionChanged = QtCore.Signal(object)
     applied = QtCore.Signal(object)  # None means no executable configuration.
@@ -57,7 +57,9 @@ class SiteGroupEditor(QtWidgets.QWidget):
         self.mdff_dialogs = {};self.energy_windows = {};self._mdff_status = {}
         self._accepted_mdff = ({},{},{},{})
         self.crystallographic_provenance = {}
-        layout = QtWidgets.QVBoxLayout(self)
+        self.setWidgetResizable(True);self.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        body=QtWidgets.QWidget();self.setWidget(body)
+        layout = QtWidgets.QVBoxLayout(body)
         self.mode = QtWidgets.QComboBox()
         self.mode.addItems(['Global Magnetization Mode', 'Local Site Magnetization Mode'])
         layout.addWidget(self.mode)
@@ -69,21 +71,29 @@ class SiteGroupEditor(QtWidgets.QWidget):
         layout.addWidget(self.filter)
         self.atom_list = QtWidgets.QListWidget()
         self.atom_list.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
-        layout.addWidget(self.atom_list, 2)
-        self.selection_text = QtWidgets.QLabel('No atoms selected'); self.selection_text.setWordWrap(True)
+        self.atom_list.setMinimumHeight(72);self.atom_list.setMaximumHeight(110)
+        layout.addWidget(self.atom_list)
+        self.selection_text = QtWidgets.QLabel('Individual atoms for assignment/removal: none. Use the group table to edit a whole group.'); self.selection_text.setWordWrap(True)
         layout.addWidget(self.selection_text)
         self.groups = QtWidgets.QTreeWidget(); self.groups.setHeaderLabels(['Group ID', 'Element', 'ASE indices', 'MDFF'])
         self.groups.setColumnCount(6)
         self.groups.setHeaderLabels(['Group ID', 'Element', 'ASE indices', 'MDFF', 'Atoms', 'Wyckoff'])
         self.groups.header().moveSection(4,2);self.groups.header().moveSection(5,3)
-        self.groups.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        self.groups.header().moveSection(self.groups.header().visualIndex(3),4)
+        self.groups.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Interactive)
+        self.groups.header().setStretchLastSection(False)
+        for column,width in enumerate((125,60,220,155,50,70)):self.groups.setColumnWidth(column,width)
+        self.groups.setMinimumHeight(155)
+        self.groups.setAlternatingRowColors(True)
         self.groups.setRootIsDecorated(False); layout.addWidget(self.groups, 2)
         self.symmetry_note = QtWidgets.QLabel();self.symmetry_note.setWordWrap(True);layout.addWidget(self.symmetry_note)
         form = QtWidgets.QFormLayout(); layout.addLayout(form)
         self.name = QtWidgets.QLineEdit(); form.addRow('Group ID / name', self.name)
         self.group_summary = QtWidgets.QLabel('Select a group to edit its direction.');self.group_summary.setWordWrap(True)
+        self.group_summary.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,QtWidgets.QSizePolicy.Policy.Minimum)
         form.addRow(self.group_summary)
         self.direction = QtWidgets.QLineEdit('0 0 1'); form.addRow('Direction (Cartesian x y z)', self.direction)
+        self.direction.textChanged.connect(self.refresh_group_summary)
         direction_note = QtWidgets.QLabel('Direction only, normalized on update. This does not define a complete anisotropic MDFF tensor frame.')
         direction_note.setWordWrap(True); layout.addWidget(direction_note)
         self.buttons = {}
@@ -102,6 +112,8 @@ class SiteGroupEditor(QtWidgets.QWidget):
         recheck = QtWidgets.QPushButton('Recheck sources');row.addWidget(recheck)
         recheck.clicked.connect(self.recheck_mdff_sources)
         self.status.setWordWrap(True); layout.addWidget(self.status)
+        self.status.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,QtWidgets.QSizePolicy.Policy.Minimum)
+        self.status.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
         self.atom_list.itemSelectionChanged.connect(self.emit_selection)
         self.filter.currentIndexChanged.connect(self.refresh_atoms)
         self.groups.currentItemChanged.connect(self.load_fields)
@@ -143,6 +155,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
             for name, element, indices, direction, reference in rows:
                 row = (name,element,indices,direction,reference)
                 item = QtWidgets.QTreeWidgetItem([name, element, ', '.join(map(str,indices)),self.mdff_status(row)])
+                item.setToolTip(2,', '.join(map(str,indices)))
                 provenance = self.crystallographic_provenance.get('groups',[])
                 match = next((g for g in provenance if g['indices'] == list(indices) and g['element'] == element),None)
                 item.setText(4,str(len(indices)));item.setText(5,match['wyckoff'] if match else 'Manual / edited')
@@ -189,8 +202,27 @@ class SiteGroupEditor(QtWidgets.QWidget):
             self.name.setText(current.text(0))
             direction = current.data(1, ROLE)
             self.direction.setText('' if direction is None else ' '.join(f'{v:.8g}' for v in direction))
-            self.group_summary.setText(f'Selected group: {current.text(0)} — {len(current.data(0, ROLE))} atoms. '
-                + ('Magnetization unconfigured.' if direction is None else 'Direction applies to the whole group.'))
+        self.refresh_group_summary()
+
+    def refresh_group_summary(self, *_):
+        """Present existing row/snapshot/status values without validating or editing them."""
+        current=self.groups.currentItem()
+        if current is None:
+            self.group_summary.setText('Select a group to edit its direction.');return
+        name=current.text(0);indices=current.data(0,ROLE);direction=current.data(1,ROLE)
+        reference=current.data(2,ROLE)[0]
+        accepted=next((r for r in self._accepted_rows if r[0]==name),None)
+        vector=lambda m:'Unconfigured' if m is None else ' '.join(f'{v:.8g}' for v in m)
+        lines=[f'Selected group: {name} — {len(indices)} '+('atom' if len(indices)==1 else 'atoms'),
+               'Accepted M: '+(vector(accepted[3]) if accepted is not None else 'Not yet applied')]
+        if accepted is None or direction!=accepted[3]:lines.append('Draft M (unapplied): '+vector(direction))
+        text=self.direction.text().strip();staged='' if direction is None else vector(direction)
+        if text!=staged:lines.append('Input M (not staged): '+(text or '(empty)')+'; use Update direction.')
+        row=(name,current.text(1),indices,direction,reference)
+        label='MDFF draft' if accepted is not None and reference!=accepted[4] else 'MDFF'
+        lines.append(label+': '+self.mdff_status(row))
+        if reference is not None:lines.append('Source pair member: '+('−M' if getattr(reference,'pair_reversed',False) else '+M'))
+        self.group_summary.setText('\n'.join(lines))
 
     def suggest_crystallographic_groups(self, provenance):
         """Initialize structural drafts only; never overwrite a user's rows or M."""
@@ -226,8 +258,8 @@ class SiteGroupEditor(QtWidgets.QWidget):
         if indices:
             assigned = [n for n,row in enumerate(self.rows()) if indices[-1] in row[2]]
             if assigned:self.groups.setCurrentItem(self.groups.topLevelItem(assigned[0]))
-        self.selection_text.setText('Selected: ' + ', '.join(f'{i} {self.atoms[i].symbol}' for i in indices)
-                                   if indices else 'No atoms selected')
+        self.selection_text.setText('Individual atoms for assignment/removal: ' + ', '.join(f'{i} {self.atoms[i].symbol}' for i in indices)
+                                   if indices else 'Individual atoms for assignment/removal: none. Use the group table to edit a whole group.')
         self.selectionChanged.emit(indices)
 
     def refresh_atoms(self, *_):
@@ -405,14 +437,15 @@ class SiteGroupEditor(QtWidgets.QWidget):
     def update_status(self):
         missing = sum(row[4] is None for row in self.rows())
         undeclared = sum(row[3] is None for row in self.rows())
-        prefix = 'Unapplied edits. ' if self.dirty else 'Applied in memory. '
+        prefix = 'Unapplied edits. Apply to accept; Cancel to discard. ' if self.dirty else 'Applied in memory. '
         mode = 'Local mode. ' if self.magnetization_mode == 'local' else 'Global mode; local directions inactive. '
         if self.magnetization_mode == 'local':mode += ('All provider −M states selected. ' if self.reverse_magnetization else 'Declared +M configuration selected. ')
         invalid = sum(self.mdff_status(row) != 'Configured and valid' for row in self.rows())
-        self.status.setText(mode + prefix + (f'{undeclared} group direction(s) undeclared. ' if undeclared else '') + (f'{missing} unconfigured group(s): MDFF references required; configuration is not executable.'
-            if missing else ((f'{invalid} invalid/unvalidated provider(s); not ready for calculation.' if invalid else 'All group providers configured and valid. Apply before Run in the main window.')
+        self.status.setText(mode + prefix + (f'{undeclared} group direction(s) undeclared. ' if undeclared else '') + (f'{missing} unconfigured group(s): MDFF references required; local configuration is not executable.'
+            if missing else ((f'{invalid} invalid/unvalidated provider(s); not ready for calculation.' if invalid else 'All group providers configured and valid.')
                              if self.rows() else ('No local groups configured; local calculation unavailable.'
                                  if self.magnetization_mode == 'local' else 'No groups; ordinary CIF viewing.'))))
+        self.refresh_group_summary()
 
     def apply(self):
         from .generalized_forward import ImportedSettings

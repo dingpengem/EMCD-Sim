@@ -6,6 +6,8 @@ This is a small functional demonstration for the published [v0.8.1-beta.2 Window
 
 ## 1. Start with the existing Ni example
 
+**Development source:** for automatic CIF groups, Local M/MDFF configuration and supported direction changes, follow the [Site Group workflow](USER_GUIDE.md#development-site-groups). Those additions are not contained in the previously accepted `6b917ed` EXE/source kit or a published release. This retained Ni example uses the versioned binary workflow identified above.
+
 Launch the application and choose **File > New** to restore the Ni structure. No project JSON is needed. Set nominal zone **0 0 1**, target **2 0 0**, then **Apply orientation / target**. Set **200 kV**, **0.2 nm** thickness, and tilt **-5, +7 mrad**. Use **Restore Thales A/B** after setting the geometry. Leave the current elastic provider explicit in your recorded settings; choose Ni Lobato only when reproducing an example that used it.
 
 Under **Model**, open **Configure MDFF...** and choose **XMCD-constrained MDFF**. Select and validate the bundled Ni five-column source. In the beta.2 Windows package it is `_internal/data/wien2k_ni/Ni_fm.xmcd`; in source it is `data/wien2k_ni/Ni_fm.xmcd`. Do not retain a different material's file from an earlier session.

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased development source — crystallographic groups and direction workflow
+
+- On `feat/v0.9.0-crystal-grouping`, add symmetry-orbit grouping with original ASE indices, Wyckoff/CIF provenance, explicit unconfigured structural drafts and project persistence (`f2a6e93`). Ordinary CIF import does not assign magnetic order or MDFF.
+- Accept compatible group directions and explicitly validated physical reversal pairs through Apply, Save/Open and recalculation (`8b0c8e3`). Preserve source/frame identity and amplitudes; failed Apply retains accepted settings and drafts. Reject unsupported fixed-frame Z→X changes. magCIF and general tensor rotation remain future work.
+- Improve the existing Site Group Editor with a scrollable panel, a readable/resizable group table, count and MDFF status columns, and explicit accepted/draft/input M summaries. Clarify individual atom picking versus whole-group editing and Apply/Cancel status.
+- Document the development workflow and its limits. These additions are not in the accepted v0.9.0-beta.1 candidate at `6b917ed` or a published release. Scientific kernels, references and tensor validation are unchanged. Previous broad source-guard verification remains **incomplete**; this UI/documentation step does not run calculations, full regression, guard suites or builds.
+
 ## v0.8.1-beta.2 - Windows Research Beta (prerelease)
 
 - Add the dedicated MDFF configuration interface and element-aware cubic Sc-Zn Atomic parameter editor, including explicit electronic/radial/frame inputs, reference starts, synthetic defaults, per-element drafts, and numerical previews.
