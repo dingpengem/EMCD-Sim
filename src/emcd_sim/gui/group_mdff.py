@@ -33,6 +33,30 @@ def validate_group_reference(row, reference=None, window=None):
     return source
 
 
+def bind_group_direction(row, window=None):
+    """Prepare an acknowledged provider binding without changing any live row."""
+    from dataclasses import replace
+    name,element,indices,direction,current = row
+    if current is None:return current
+    if not isinstance(current,ImportedSettings):
+        raise ValueError(f'Group {name}: configure an acknowledged MDFF provider first')
+    for reversed_pair in (False,True):
+        candidate=replace(current,magnetization=direction,pair_reversed=reversed_pair)
+        try:
+            validate_group_reference(row,candidate,window)
+            return current if candidate==current else candidate
+        except (ValueError,OSError) as exc:
+            if not reversed_pair:first_error=exc
+    try:
+        from ..mdff_providers import load_provider
+        d=load_provider(current).metadata
+        detail=f"source axis {d['magnetization_crystal']}, frame_to_crystal={d['frame_to_crystal']}"
+    except (ValueError,OSError):detail='source axis/frame unavailable because source validation failed'
+    raise ValueError(f'Group {name}: requested crystal Cartesian direction {direction} is incompatible with '
+        f'{detail} or its physical reversal pair. {first_error}. '
+        'Open this group\'s MDFF Editor or supply a compatible validated source; accepted settings are unchanged.')
+
+
 class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
     """Each instance owns its GUI drafts; applied references remain immutable."""
     configured = QtCore.Signal(object, object)  # Existing settings, ModeledEdgeWindow.
@@ -295,13 +319,14 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
             self.draftChanged.emit()
 
     def set_context(self, row):
-        changed = self.row[1:4] != row[1:4]
+        changed = self.row[1:3] != row[1:3]
         self.row = row
         if hasattr(self,'axis'):
             self.axis.setText(' '.join(map(str,row[3])));self._mdff_axes[0] = self.axis.text()
         if changed:self.emcd_stale()
         self.context.setText(f'Group {row[0]} · {row[1]} · ASE indices {row[2]}\n'
-            f'Declared local M (crystal Cartesian): {row[3]}. Legacy Global M is not used.')
+            f'Declared local M (crystal Cartesian): {row[3]}. Legacy Global M is not used. '
+            + ('Physical source −M pair member selected.' if getattr(row[4],'pair_reversed',False) else 'Physical source +M pair member selected.'))
 
     def load_atomic(self):
         try:
@@ -330,6 +355,9 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
                 status=self.xmcd_status.currentText(),source_sha256=source.source_sha256,
                 reference_tensor_scale_angstrom2_per_ev=float(self.xmcd_scale.text()),
                 magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
+            if (self.reference is not None and self.reference.model=='xmcd' and self.reference.pair_reversed
+                    and str(path)==self.reference.source):
+                declaration['magnetization_crystal']=self.reference.provider_declaration['magnetization_crystal']
             return settings_for_provider(path,'xmcd',declaration)
         if self.model.currentIndex() == 1:
             if self.atomic_mode.currentIndex() == 0:
@@ -372,11 +400,17 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
 
     def validate_configuration(self):
         if not self.declaration.isChecked():raise ValueError('Acknowledge source, tensor frame, reversal and units first')
-        cfg = self.candidate()
+        unchanged = False
+        if self.reference is not None and not self.has_unapplied_edits():
+            from ..mdff_providers import load_provider
+            try:load_provider(self.reference);unchanged=True
+            except (ValueError,OSError):pass  # Retain the existing explicit source-change review workflow.
+        cfg = self.reference if unchanged else self.candidate()
         if (self.reference is not None and cfg.source == self.reference.source
                 and cfg.source_sha256 != self.reference.source_sha256 and self._reviewed_sha != cfg.source_sha256):
             self._reviewed_sha = cfg.source_sha256;self.declaration.setChecked(False)
             raise ValueError('Source identity changed; review, acknowledge and validate the new source again')
+        cfg = bind_group_direction(self.row[:4]+(cfg,))
         source = validate_group_reference(self.row,cfg)
         bounds,samples = self.energy_window.values(source.energy_ev)
         window = ModeledEdgeWindow(bounds,samples)
@@ -386,8 +420,14 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
     def apply_configuration(self):
         try:
             cfg,window,source = self.validate_configuration()
+            selection_changed = (self.reference is not None and cfg.source==self.reference.source
+                                 and cfg.pair_reversed!=self.reference.pair_reversed)
             if self.commit is not None:self.commit(cfg,window)
             self.configured.emit(cfg,window)
+            if selection_changed:
+                loading=self._loading;self._loading=True
+                try:self.restore_reference(cfg)
+                finally:self._loading=loading
             self.reference = cfg;self.window = window
             self.provenance = source.provenance()
             d = source.metadata
@@ -435,9 +475,9 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
             self.model.setCurrentIndex(2);self.manual_mode.setCurrentIndex(3)
             self.import_path.setText(cfg.source);self.manual_edge.setText(cfg.core_edge)
             try:
-                from ..mdff_providers import load_provider
-                source = load_provider(cfg);d = source.metadata
-                if 'manual_l23_model' in d:
+                from .generalized_forward import source_for
+                source = source_for(cfg);d = source.metadata
+                if 'manual_l23_model' in d and not cfg.pair_reversed:
                     self.manual_spectral.load_source(source);self.manual_spectral.frame_mode.setCurrentIndex(1)
                     self.manual_mode.setCurrentIndex(1)
                 elif d.get('manual_constant_editor') or d.get('manual_constant_pair_editor'):

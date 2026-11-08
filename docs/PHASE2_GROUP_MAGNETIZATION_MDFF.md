@@ -1,8 +1,45 @@
-# Phase 2 proposal — Group magnetization and MDFF consistency
+# Group magnetization and MDFF consistency
 
-**Proposal only. Not implemented or approved by Phase 1.**
+**Bounded compatible-direction binding is implemented. General tensor rotation
+and the broader follow-on proposals below remain unimplemented.**
 
-## Why Apply currently rejects a changed direction
+## Implemented bounded workflow
+
+Group Apply prepares every prospective direction/provider binding before
+accepting any of them. Existing provider tensor interfaces are tried unchanged.
+An opposite source axis can select the minus member only when the source has
+already supplied a validated `explicit_pair_shared_even` physical pair.
+`ImportedSettings.pair_reversed` defaults to false for old configurations and
+is saved through the existing project configuration. It records this selection
+independently of the global reversal flag.
+
+The preparation adapter calls the original provider at its native axis and
+exchanges the complete physical pair. Source bytes, identity, declared axis,
+`frame_to_crystal`, energy support and amplitudes remain unchanged. Reversed
+binding provenance separately identifies the original and effective directions.
+`ImportedMDFF.tensors()` and its axis/frame/PSD checks are unchanged.
+
+Failed Apply retains the accepted model and leaves the requested draft visible.
+Its error identifies the group, requested direction and source axis/frame and
+points to that group's MDFF Editor. Cancel recovers accepted state. Save rejects
+unapplied direction/provider or reversal changes on a configured local model;
+it cannot silently promote a failed draft to accepted state. Unconfigured
+structural drafts remain saveable and do not become calculation-ready.
+
+Successful changes recreate the affected cached MDFF editor from its accepted
+source when needed. If reversal is accepted in that editor, its displayed pair
+is refreshed too. Other groups retain their own binding. Save/Open preserves
+the selection and recalculation uses it. An unchanged XMCD source retains its
+original axis declaration. A reversed analytical Manual source can remain in
+the existing imported-source view to avoid reconstructing a different model.
+
+Focused checks cover full-pair selection (including real reversal-odd entries),
+rollback, Cancel, editor refresh, XMCD declarations, and one small restored GUI
+calculation. Native Windows source-GUI Apply/Save/Open/recalculation is checked
+separately. Broad source-guard verification remains incomplete; no new pin
+maintenance, full regression or release acceptance is claimed.
+
+## Original rejection and retained validation boundary
 
 `SiteGroupEditor.update_direction()` changes the selected Qt draft row and its
 arrows. It deliberately does not change the provider. `apply()` calls
@@ -27,9 +64,8 @@ to accept arbitrary axes would hide a real scientific mismatch.
    define the reversal. Even/odd tensors may be expressed as
    `(T_plus+T_minus)/2` and `(T_plus-T_minus)/2`; the odd part need not be purely
    imaginary. Reusing this validated pair is appropriate for a pure reversal.
-   A future **individual** group reversal should explicitly select/swap that
-   group's physical pair and persist its selection; changing its axis text to
-   the opposite sign is not currently an equivalent API operation.
+   The bounded individual-group binding now persists that explicit physical-pair
+   selection. It does not rewrite or conjugate the source tensors.
 2. **Arbitrary direction change:** a direction supplies two degrees of freedom,
    not a full anisotropic frame. The user must provide the full proper rotation
    or a newly calculated/measured MDFF consistent with the new direction. A
@@ -46,7 +82,7 @@ transformed numerical tensors and a new declaration, or an explicitly declared
 local source with the new full frame. This is a proposed input operation, not
 new scattering physics or material calibration.
 
-## Small proposed GUI/data changes
+## Broader follow-on proposal (not implemented)
 
 - Keep the selected-group/count summary and group-level direction controls.
   Label pending directions clearly. On a mismatch, link the existing

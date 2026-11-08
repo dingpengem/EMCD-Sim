@@ -416,13 +416,21 @@ class SiteGroupEditor(QtWidgets.QWidget):
 
     def apply(self):
         from .generalized_forward import ImportedSettings
-        from .group_mdff import validate_group_reference
+        from .group_mdff import bind_group_direction
         for name,dialog in self.mdff_dialogs.items():
             if name in {row[0] for row in self.rows()} and dialog.has_unapplied_edits():
                 raise ValueError('Apply or Cancel pending MDFF edits for '+name+' before applying site groups')
-        for row in self.rows():
-            if isinstance(row[4],ImportedSettings):validate_group_reference(row,window=self.energy_windows.get(row[0]))
-        model = self.check_rows(self.rows())
+        rows = tuple(self.effective_row(row) for row in self.rows())
+        prospective = tuple(row[:4]+(bind_group_direction(row,self.energy_windows.get(row[0])),) for row in rows)
+        model = self.check_rows(prospective)
+        # Commit only after every group has validated. Recreate a changed group's
+        # cached editor from its accepted source next time, avoiding stale +M fields.
+        for old,row in zip(rows,prospective):
+            if isinstance(row[4],ImportedSettings):
+                self._mdff_status[row[0]]=(row[1:4],row[4],'valid')
+            if old[4] != row[4] and row[0] in self.mdff_dialogs:
+                dialog=self.mdff_dialogs.pop(row[0]);dialog.close();dialog.deleteLater()
+        self.restore_rows(prospective)
         self._accepted_rows = self.rows(); self.accepted_site_groups = self.preview_site_groups = model
         self._accepted_mode = self.magnetization_mode
         self._accepted_reversal = self.reverse_magnetization

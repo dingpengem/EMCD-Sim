@@ -12,6 +12,13 @@ from .project_collection import save_collection, load_collection
 
 
 def capture_configuration(w):
+    viewer=getattr(w,'structure_viewer',None)
+    if (w.magnetization_mode=='local' and viewer is not None
+            and viewer.editor.accepted_site_groups is not None
+            and (viewer.editor.rows()!=viewer.editor._accepted_rows
+                 or viewer.editor.reverse_magnetization!=viewer.editor._accepted_reversal
+                 or viewer.editor.magnetization_mode!=viewer.editor._accepted_mode)):
+        raise ValueError('Apply or Cancel pending Site Group direction/provider edits before saving or recalculating; accepted settings are unchanged')
     from .emcd_forward import ForwardSettings
     from .forward_pipeline import MultiSiteForwardSettings
     common=dict(propagation=('bloch','fft-multislice','both')[w.propagation_box.currentIndex()],

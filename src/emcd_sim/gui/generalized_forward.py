@@ -16,6 +16,7 @@ class ImportedSettings(compatibility.ForwardSettings):
     magnetic_state: str=''
     site_indices: tuple|None=None
     selected_edges: tuple=()
+    pair_reversed: bool=False
     l3: float=float('nan')
     l2: float=float('nan')
     correction: bool=False
@@ -72,6 +73,10 @@ def source_for(cfg):
     if ([k for k,_ in actual]!=[k for k,_ in selections] or
         not np.allclose([v for _,v in actual],[v for _,v in selections],rtol=0,atol=1e-9)):
         raise ValueError('Imported selections must match declared source; no inherited Ni edge calibration')
+    if not isinstance(cfg.pair_reversed,bool):raise ValueError('Physical pair selection must be a boolean')
+    if cfg.pair_reversed:
+        from .provider_direction import ReversedProviderPair
+        source=ReversedProviderPair(source)
     source.tensors(np.array([v for _,v in selections]),np.eye(3),cfg.magnetization)
     return source
 
