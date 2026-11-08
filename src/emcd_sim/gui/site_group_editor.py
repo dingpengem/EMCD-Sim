@@ -26,6 +26,9 @@ def validate_site_rows(atoms, rows):
         if any(isinstance(i,bool) or not isinstance(i,(int,np.integer)) or i<0 or i>=len(atoms) or atoms[i].symbol!=element for i in indices):
             raise ValueError('Each group must contain valid original indices of one element')
         assigned.update(indices)
+        if direction is None:
+            if reference is not None:raise ValueError('Declare a magnetic direction before binding an MDFF provider')
+            continue  # Structural draft only: no magnetic direction is inferred.
         vector = np.asarray(direction)
         if vector.shape!=(3,) or not np.isfinite(vector).all() or not np.any(vector):
             raise ValueError('A finite nonzero magnetization direction is required')
@@ -53,6 +56,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
         self.reverse_magnetization = self._accepted_reversal = False
         self.mdff_dialogs = {};self.energy_windows = {};self._mdff_status = {}
         self._accepted_mdff = ({},{},{},{})
+        self.crystallographic_provenance = {}
         layout = QtWidgets.QVBoxLayout(self)
         self.mode = QtWidgets.QComboBox()
         self.mode.addItems(['Global Magnetization Mode', 'Local Site Magnetization Mode'])
@@ -69,10 +73,16 @@ class SiteGroupEditor(QtWidgets.QWidget):
         self.selection_text = QtWidgets.QLabel('No atoms selected'); self.selection_text.setWordWrap(True)
         layout.addWidget(self.selection_text)
         self.groups = QtWidgets.QTreeWidget(); self.groups.setHeaderLabels(['Group ID', 'Element', 'ASE indices', 'MDFF'])
+        self.groups.setColumnCount(6)
+        self.groups.setHeaderLabels(['Group ID', 'Element', 'ASE indices', 'MDFF', 'Atoms', 'Wyckoff'])
+        self.groups.header().moveSection(4,2);self.groups.header().moveSection(5,3)
         self.groups.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.groups.setRootIsDecorated(False); layout.addWidget(self.groups, 2)
+        self.symmetry_note = QtWidgets.QLabel();self.symmetry_note.setWordWrap(True);layout.addWidget(self.symmetry_note)
         form = QtWidgets.QFormLayout(); layout.addLayout(form)
         self.name = QtWidgets.QLineEdit(); form.addRow('Group ID / name', self.name)
+        self.group_summary = QtWidgets.QLabel('Select a group to edit its direction.');self.group_summary.setWordWrap(True)
+        form.addRow(self.group_summary)
         self.direction = QtWidgets.QLineEdit('0 0 1'); form.addRow('Direction (Cartesian x y z)', self.direction)
         direction_note = QtWidgets.QLabel('Direction only, normalized on update. This does not define a complete anisotropic MDFF tensor frame.')
         direction_note.setWordWrap(True); layout.addWidget(direction_note)
@@ -124,13 +134,21 @@ class SiteGroupEditor(QtWidgets.QWidget):
                      (self.groups.topLevelItem(i) for i in range(self.groups.topLevelItemCount())))
 
     def restore_rows(self, rows):
+        provenance = self.crystallographic_provenance
+        self.symmetry_note.setText((f"Crystallographic grouping only: {provenance.get('international','undetermined')}; "
+            f"symprec={provenance.get('symprec_angstrom')} Å. No magnetic order inferred. "
+            +' '.join(provenance.get('warnings',[]))) if provenance else '')
         with QtCore.QSignalBlocker(self.groups):
             self.groups.clear()
             for name, element, indices, direction, reference in rows:
                 row = (name,element,indices,direction,reference)
                 item = QtWidgets.QTreeWidgetItem([name, element, ', '.join(map(str,indices)),self.mdff_status(row)])
+                provenance = self.crystallographic_provenance.get('groups',[])
+                match = next((g for g in provenance if g['indices'] == list(indices) and g['element'] == element),None)
+                item.setText(4,str(len(indices)));item.setText(5,match['wyckoff'] if match else 'Manual / edited')
+                item.setToolTip(0,('Crystallographic orbit; CIF labels: '+', '.join(match['cif_labels'])) if match else 'Manual assignment')
                 item.setToolTip(3,self._mdff_status.get(name,('',None,'No validated provider'))[2])
-                item.setData(0, ROLE, tuple(indices)); item.setData(1, ROLE, tuple(direction))
+                item.setData(0, ROLE, tuple(indices)); item.setData(1, ROLE, None if direction is None else tuple(direction))
                 # A tuple keeps arbitrary Python references intact; a bare dict
                 # is otherwise converted to a copied QVariantMap by Qt.
                 item.setData(2, ROLE, (reference,)); self.groups.addTopLevelItem(item)
@@ -139,12 +157,14 @@ class SiteGroupEditor(QtWidgets.QWidget):
             self.groups.setCurrentItem(self.groups.topLevelItem(0))
         else:
             self.name.clear(); self.direction.setText('0 0 1')
+            self.group_summary.setText('Select a group to edit its direction.')
 
     def set_structure(self, atoms, groups=None):
         self.atoms = atoms
         self.load_groups(groups)
 
     def load_groups(self, groups):
+        self.crystallographic_provenance = {}
         self.requested_energy_ev=None;self.omitted_site_groups=set()
         self.portable_references={}
         self.reverse_magnetization = self._accepted_reversal = False
@@ -167,7 +187,21 @@ class SiteGroupEditor(QtWidgets.QWidget):
     def load_fields(self, current, previous=None):
         if current is not None:
             self.name.setText(current.text(0))
-            self.direction.setText(' '.join(f'{v:.8g}' for v in current.data(1, ROLE)))
+            direction = current.data(1, ROLE)
+            self.direction.setText('' if direction is None else ' '.join(f'{v:.8g}' for v in direction))
+            self.group_summary.setText(f'Selected group: {current.text(0)} — {len(current.data(0, ROLE))} atoms. '
+                + ('Magnetization unconfigured.' if direction is None else 'Direction applies to the whole group.'))
+
+    def suggest_crystallographic_groups(self, provenance):
+        """Initialize structural drafts only; never overwrite a user's rows or M."""
+        if self.rows():return
+        self.crystallographic_provenance = provenance
+        if provenance.get('status') != 'ready':
+            self.status.setText('Automatic grouping unavailable; use manual assignment. '+' '.join(provenance.get('warnings',[])))
+            return
+        rows = tuple((g['group_id'],g['element'],tuple(g['indices']),None,None) for g in provenance['groups'])
+        self.check_rows(rows);self._accepted_rows = rows;self.restore_rows(rows)
+        self.dirty = False;self.update_status()
 
     def selected_indices(self):
         return tuple(sorted(item.data(ROLE) for item in self.atom_list.selectedItems()))
@@ -280,6 +314,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
         """
         if self.magnetization_mode != 'local':raise ValueError('Enable Local Site Magnetization Mode first')
         if not self.rows():raise ValueError('Declare local site groups before reversing M')
+        if any(row[3] is None for row in self.rows()):raise ValueError('Declare all local directions explicitly before reversing M')
         from .generalized_forward import ImportedSettings
         declared = [isinstance(row[4],ImportedSettings) for row in self.rows()]
         if any(declared):
@@ -323,6 +358,7 @@ class SiteGroupEditor(QtWidgets.QWidget):
         from .group_mdff import GroupMDFFDialog
         from .runtime import workspace
         row = self.effective_row(self.rows()[self.current_row()])
+        if row[3] is None:raise ValueError('Declare this group\'s magnetic direction explicitly before configuring its MDFF')
         dialog = self.mdff_dialogs.get(row[0])
         if dialog is None:
             dialog = GroupMDFFDialog(row,getattr(self,'mdff_workspace',None) or workspace(),self)
@@ -368,11 +404,12 @@ class SiteGroupEditor(QtWidgets.QWidget):
 
     def update_status(self):
         missing = sum(row[4] is None for row in self.rows())
+        undeclared = sum(row[3] is None for row in self.rows())
         prefix = 'Unapplied edits. ' if self.dirty else 'Applied in memory. '
         mode = 'Local mode. ' if self.magnetization_mode == 'local' else 'Global mode; local directions inactive. '
         if self.magnetization_mode == 'local':mode += ('All provider −M states selected. ' if self.reverse_magnetization else 'Declared +M configuration selected. ')
         invalid = sum(self.mdff_status(row) != 'Configured and valid' for row in self.rows())
-        self.status.setText(mode + prefix + (f'{missing} unconfigured group(s): MDFF references required; configuration is not executable.'
+        self.status.setText(mode + prefix + (f'{undeclared} group direction(s) undeclared. ' if undeclared else '') + (f'{missing} unconfigured group(s): MDFF references required; configuration is not executable.'
             if missing else ((f'{invalid} invalid/unvalidated provider(s); not ready for calculation.' if invalid else 'All group providers configured and valid. Apply before Run in the main window.')
                              if self.rows() else ('No local groups configured; local calculation unavailable.'
                                  if self.magnetization_mode == 'local' else 'No groups; ordinary CIF viewing.'))))

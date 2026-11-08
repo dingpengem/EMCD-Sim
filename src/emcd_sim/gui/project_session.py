@@ -57,6 +57,7 @@ def capture_configuration(w):
         state['editor_drafts']={name:d.snapshot() for name,d in editor.mdff_dialogs.items()}
         state['metadata']['group_applied_snapshots']={name:d._applied_snapshot for name,d in editor.mdff_dialogs.items() if d.has_unapplied_edits()}
         state['metadata']['viewer_display']=dict(colors=viewer.color_mode.currentIndex(),arrows=viewer.magnetic_arrows.isChecked())
+        state['metadata']['crystallographic_sites']=deepcopy(editor.crystallographic_provenance)
     raw=w._capture_manual_state();raw['source']=None
     state['metadata']['gui_drafts']=dict(manual=raw,manual_key=w._manual_key,
         spectral=w.manual_spectral.draft(),atomic=w.atomic_editor.draft(),global_axis=w.axis.text())
@@ -123,10 +124,12 @@ def restore_configuration(w,state):
         for r in state.get('group_records',[]):
             ref=r['mdff_reference'];path=state.get('source_overrides',{}).get('group:'+r['group_id'])
             if ref is not None and path:ref=replace(ref,source=path)
-            rows.append((r['group_id'],r['element'],tuple(r['indices']),tuple(r['magnetization']),ref))
+            rows.append((r['group_id'],r['element'],tuple(r['indices']),None if r['magnetization'] is None else tuple(r['magnetization']),ref))
         if not rows and state.get('site_groups') is not None:
             rows=[(g.group_id,g.element,g.indices,g.magnetization,g.mdff_reference) for g in state['site_groups'].groups]
-        model=validate_site_rows(w.structure.atoms,rows);editor.restore_rows(rows)
+        model=validate_site_rows(w.structure.atoms,rows)
+        editor.crystallographic_provenance=deepcopy(state.get('metadata',{}).get('crystallographic_sites',{}))
+        editor.restore_rows(rows)
         editor.energy_windows=dict(state.get('energy_windows') or {})
         editor.omitted_site_groups=({r[0] for r in rows}-set(editor.energy_windows)) if state.get('energy_windows') is not None else set()
         editor.requested_energy_ev=state.get('energy_ev');editor._restored_energy_scope=c.energy_scope

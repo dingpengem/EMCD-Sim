@@ -18,8 +18,8 @@ BASE='3b0ce6c386f3c815f85d8b9d64db679ff7622a94'
 ACCEPTED_PATCH='6e496aff8152903d8bca45bd1d6f1704139647324fd7399920e1ed03e82b7fe2'
 MANIFEST_PATH='tests/fixtures/mdff_usability_scope_v4.json'
 ARCHIVE_PATH='tests/fixtures/mdff_usability_parent_v4.zip'
-MANIFEST_SHA256='46d249c0e40932cd85322752ccc7b9ed36efb64ebc0fbc5e645db2a205586dd6'
-ACCEPTED_DECLARATION_SHA256='a81be784cbdbbdcc705967b45b897d42d06367077aacadc614e5e2449200349f'
+MANIFEST_SHA256='1162d75b0ef7f9d0446a1ebf8f6d44b3237837a5269a68969e19966fedff44f8'
+ACCEPTED_DECLARATION_SHA256='c83cae2f981927f7fab8cb07430f5e9a36b757f6982abd1dfa90d7bfc611572d'
 # Closed reviewed paths are literals, not inferred from working files/manifests.
 ACCEPTED_PATHS=('docs/MANUAL_L23_TENSOR_MODEL.md','docs/MDFF_USABILITY_REDESIGN.md','docs/MDFF_USABILITY_SCOPE_PROPOSAL.md',
  'scripts/manual_l23_native_walkthrough.py','scripts/mdff_corrective_walkthrough.py','scripts/mdff_native_walkthrough.py','scripts/verify_mdff_corrective.py','scripts/xmcd_native_walkthrough.py',
@@ -35,6 +35,7 @@ CURRENT_REVISIONS=('packaging/BETA_README.txt','packaging/README.md',
  'src/emcd_sim/double_channeling.py','src/emcd_sim/gui/channeling.py',
  'src/emcd_sim/gui/forward_pipeline.py','src/emcd_sim/gui/numerical_settings.py',
  'src/emcd_sim/gui/propagation.py','src/emcd_sim/gui/results.py',
+ 'src/emcd_sim/gui/geometry.py','packaging/requirements-windows.txt',
  'src/emcd_sim/mdff_providers.py','src/emcd_sim/multislice_double_channeling.py',
  'tests/test_atomic_parameter_editor.py')
 WORKFLOWS={

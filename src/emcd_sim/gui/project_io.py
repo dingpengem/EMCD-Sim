@@ -30,15 +30,21 @@ def sha256(path):
 
 def structure_snapshot(structure):
     a=structure.atoms
-    return dict(species=a.get_chemical_symbols(),lattice_angstrom=a.cell.array.tolist(),fractional_positions=a.get_scaled_positions().tolist(),
+    snapshot = dict(species=a.get_chemical_symbols(),lattice_angstrom=a.cell.array.tolist(),fractional_positions=a.get_scaled_positions().tolist(),
         pbc=a.pbc.tolist(),occupancies=a.info.get('occupancy',{}),source=structure.source,sha256=structure.sha256,import_warnings=structure.import_warnings,
         description=structure.description())
+    if 'crystallographic_sites' in a.info:snapshot['crystallographic_sites'] = a.info['crystallographic_sites']
+    if 'spacegroup_kinds' in a.arrays:
+        kinds=a.arrays['spacegroup_kinds']
+        snapshot['atom_arrays']={'spacegroup_kinds':dict(dtype=str(kinds.dtype),values=kinds.tolist())}
+    return snapshot
 
 
 def restore_structure(snapshot):
     if not snapshot:raise ValueError('Legacy export has no complete numeric crystal snapshot; inspect results read-only, or prepare a verified structure explicitly.')
     atoms=Atoms(snapshot['species'],cell=snapshot['lattice_angstrom'],scaled_positions=snapshot['fractional_positions'],pbc=snapshot['pbc'])
     atoms.info['occupancy']=snapshot.get('occupancies',{})
+    if 'crystallographic_sites' in snapshot:atoms.info['crystallographic_sites'] = snapshot['crystallographic_sites']
     if 'cartesian_positions' in snapshot:atoms.set_positions(snapshot['cartesian_positions'])
     for name,array in snapshot.get('atom_arrays',{}).items():
         if name in ('numbers','positions'):raise ValueError('Reserved ASE array in structure snapshot')

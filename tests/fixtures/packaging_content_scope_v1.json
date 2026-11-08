@@ -34,8 +34,8 @@
     },
     "pyproject.toml": {
       "mode": "canonical",
-      "sha256": "50eeb915821c213ecfbdf95b697f589864d7ec97fd9e9883f04733a4c7447952",
-      "canonical_sha256": "50eeb915821c213ecfbdf95b697f589864d7ec97fd9e9883f04733a4c7447952"
+      "sha256": "4a5d213a44b4532dc244b512cc5879d7aaf09f07d0f3aef9971d583b8bf07209",
+      "canonical_sha256": "4a5d213a44b4532dc244b512cc5879d7aaf09f07d0f3aef9971d583b8bf07209"
     },
     "src/emcd_sim/__init__.py": {
       "mode": "canonical",

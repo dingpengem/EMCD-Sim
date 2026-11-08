@@ -51,8 +51,10 @@ class Structure:
     def from_cif(cls,path):
         path=Path(path)
         with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter('always');atoms=read(path,format='cif')
+            warnings.simplefilter('always');atoms=read(path,format='cif',store_tags=True)
         if atoms.cell.rank!=3 or abs(atoms.cell.volume)<1e-8:raise ValueError('A nonsingular 3D periodic cell is required')
+        from ..crystallographic_sites import crystallographic_sites
+        atoms.info['crystallographic_sites'] = crystallographic_sites(atoms)
         return cls(atoms,str(path.resolve()),hashlib.sha256(path.read_bytes()).hexdigest(),'\n'.join(str(w.message) for w in caught))
 
     @property

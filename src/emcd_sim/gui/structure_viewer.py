@@ -80,7 +80,7 @@ class CrystalCanvas(QtWidgets.QWidget):
     def magnetic_segments(self):
         """Equal-length Cartesian directions, never fractional lattice vectors."""
         scene = self.scene
-        selected = np.flatnonzero(scene.group_indices >= 0)
+        selected = np.flatnonzero((scene.group_indices >= 0) & (np.linalg.norm(scene.directions,axis=1)>0))
         length = 2.2 * float(scene.space_radii.max()) if len(scene.positions) else 1.
         starts = scene.positions[selected]
         return selected, np.stack((starts, starts + length * scene.directions[selected]), axis=1)
@@ -275,6 +275,9 @@ class CrystalStructureDialog(QtWidgets.QDialog):
             self.editor.set_structure(self._atoms,self._site_groups)
         else:
             self.editor.atoms = self._atoms
+        if (not self.editor.rows() and not self.editor.crystallographic_provenance
+                and 'crystallographic_sites' in self._atoms.info):
+            self.editor.suggest_crystallographic_groups(self._atoms.info['crystallographic_sites'])
         self.atom_info.clear()
         self.rebuild()
 
@@ -314,7 +317,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
                 mask = np.isin(scene.indices,indices)
                 scene.group_indices[mask] = number
                 scene.group_colors[mask] = site_group_color(number)
-                scene.directions[mask] = direction
+                if direction is not None:scene.directions[mask] = direction
         if self.editor.reverse_magnetization:scene.directions[:] *= -1
         camera = (self.view.orientation.copy(),self.view.zoom,self.view.pan.copy())
         had_scene = self.view.scene is not None
@@ -388,8 +391,8 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         number = scene.group_indices[i]
         rows = self.editor.rows()
         row = rows[number] if 0 <= number < len(rows) else None
-        assignment = (f'\nSelected ionizing group: Yes\nSite-group ID / label: {row[0]}\n'
-            f'Declared magnetization (crystal Cartesian unit vector): {vector(row[3])}\n'
+        assignment = (f'\nSelected ionizing group: {"Unconfigured crystallographic draft" if row[3] is None else "Yes"}\nSite-group ID / label: {row[0]}\n'
+            f'Declared magnetization (crystal Cartesian unit vector): {vector(row[3]) if row[3] is not None else "Unconfigured; structural group only"}\n'
             f'MDFF provider reference: {str(row[4])[:300] if row[4] is not None else "Unconfigured — not executable"}' if row is not None
             else '\nSelected ionizing group: No (unassigned)')
         self.atom_info.setPlainText(

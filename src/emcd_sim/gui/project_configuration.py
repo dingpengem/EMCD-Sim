@@ -175,7 +175,7 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
     mode = extension['magnetization_mode']
     if mode not in ('global','local') or not isinstance(extension['reverse_magnetization'],bool):
         raise ValueError('Invalid saved magnetization mode or reversal state')
-    records = [dict(r,indices=tuple(r['indices']),magnetization=tuple(r['magnetization']),
+    records = [dict(r,indices=tuple(r['indices']),magnetization=None if r['magnetization'] is None else tuple(r['magnetization']),
                     mdff_reference=None if r['mdff_reference'] is None else _decode_config(r['mdff_reference'])) for r in extension['groups']]
     state = dict(structure=structure,structure_snapshot=snapshot,settings=io.settings_from_dict(parameters['settings']),
         config=_decode_config(parameters['mdff']),metadata=saved_metadata,magnetization_mode=mode,reverse_magnetization=extension['reverse_magnetization'],

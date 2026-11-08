@@ -389,9 +389,10 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         if path:
             try:
                 self.structure=Structure.from_cif(path)
+                self.show_structure_viewer(show=False)
                 self.last_result=None;self.table.setRowCount(0);self.refresh();self.inspect_structure()
             except Exception as exc:self.error(str(exc))
-    def show_structure_viewer(self,*_):
+    def show_structure_viewer(self,*_,show=True):
         from .structure_viewer import CrystalStructureDialog
         if getattr(self,'structure_viewer',None) is None:
             self.structure_viewer=CrystalStructureDialog(self)
@@ -403,7 +404,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.structure_viewer.editor.pendingChanged.connect(self.mark_project_dirty)
             self.structure_viewer.set_magnetization_mode(self.magnetization_mode)
         self.structure_viewer.set_structure(self.structure,force=True)
-        self.structure_viewer.show();self.structure_viewer.raise_();self.structure_viewer.activateWindow()
+        if show:
+            self.structure_viewer.show();self.structure_viewer.raise_();self.structure_viewer.activateWindow()
 
     def set_magnetization_mode(self,mode):
         if mode not in ('global','local'):raise ValueError('Expected global or local magnetization mode')
