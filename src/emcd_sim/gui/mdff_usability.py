@@ -159,7 +159,9 @@ class AtomicSchematic(QtWidgets.QWidget):
             for v,label in ((lo,'2p3/2 → 3d'),(hi,'2p1/2 → 3d')):
                 energy.annotate(label,xy=(v,.9),xytext=(v,.35),rotation=90,ha='center',fontsize=8,arrowprops=dict(arrowstyle='->',color='#d95f02' if self.key in ('l3','l2','sigma') else '#555'))
             energy.set(xlabel='Energy loss (eV)',yticks=[],title=f'Schematic • σ={sigma:g} eV');energy.legend(fontsize=7)
-            r=np.array(e.table_values(e.frame),float);m=r[:,2]*(1 if self.reversal.currentIndex()==0 else -1)
+            r=np.array(e.table_values(e.frame),float)
+            m=np.array(e.owner.material_direction() if hasattr(e.owner,'material_direction') else r[:,2],float)
+            m=m/np.linalg.norm(m)*(1 if self.reversal.currentIndex()==0 else -1)
             # Beam supplied in crystal Cartesian coordinates by the main window.
             beam=getattr(e,'beam_crystal',np.array([0.,0.,1.])); beam=beam/np.linalg.norm(beam)
             project=lambda v:(v[0]+.4*v[2],v[1]+.3*v[2])
@@ -168,7 +170,7 @@ class AtomicSchematic(QtWidgets.QWidget):
                 offset=.25 if label=='beam' else -.2 if label in ('+M','−M') else 0
                 frame.text(u*1.25,v*1.25+offset,label,color=color,fontsize=8)
             angle=np.degrees(np.arccos(np.clip(m@beam/np.linalg.norm(m),-1,1)))
-            frame.set(xlim=(-1.4,1.4),ylim=(-1.4,1.4),title=f'Crystal frame • M/beam {angle:.1f}°');frame.set_aspect('equal');frame.axis('off')
+            frame.set(xlim=(-1.4,1.4),ylim=(-1.4,1.4),title=f'Crystal target • M/beam {angle:.1f}°');frame.set_aspect('equal');frame.axis('off')
         except (ValueError,TypeError):energy.text(.1,.5,'Complete valid energies / frame');frame.axis('off')
         self.canvas.draw_idle()
 
@@ -188,21 +190,9 @@ def compact_atomic(editor):
     move(e.element,'Element');move(e.fields['l3'],'L3 reference (eV)');move(e.fields['l2'],'L2 reference (eV)');move(e.fields['sigma'],'Gaussian σ (eV)')
     e.saved_model_notice=QtWidgets.QLabel();e.saved_model_notice.setWordWrap(True);e.saved_model_notice.hide();form.addRow(e.saved_model_notice)
     e.main_error=QtWidgets.QLabel();e.main_error.setWordWrap(True);e.main_error.setStyleSheet('color:#a12622');form.addRow(e.main_error)
-    direction=QtWidgets.QWidget();row=QtWidgets.QHBoxLayout(direction);row.setContentsMargins(0,0,0,0)
-    e.direction=QtWidgets.QLineEdit('0 0 1');row.addWidget(e.direction)
-    apply=QtWidgets.QPushButton('Apply direction');row.addWidget(apply)
-    e.apply_direction=apply
-    def set_direction():
-        try:
-            z=np.array([float(v) for v in e.direction.text().replace(',',' ').split()])
-            if z.shape!=(3,) or not np.isfinite(z).all() or np.linalg.norm(z)<1e-12:raise ValueError('Enter three finite nonzero crystal Cartesian components')
-            z=z/np.linalg.norm(z);seed=np.eye(3)[np.argmin(abs(z))];x=np.cross(seed,z);x/=np.linalg.norm(x);r=np.column_stack((x,np.cross(z,x),z))
-            e._loading=True;e.frame_mode.setCurrentIndex(2)
-            for i in range(3):
-                for j in range(3):e.frame.cellWidget(i,j).setText(str(r[i,j]))
-            e._loading=False;e.edited()
-        except ValueError as exc:e.status.setText(str(exc))
-    apply.clicked.connect(set_direction);form.addRow('Crystal M direction',direction)
+    e.direction=QtWidgets.QLineEdit('0 0 1');e.direction.setReadOnly(True)
+    e.direction.setToolTip('Target M is set through Material → 3D Structure Viewer → Site Groups. The complete Atomic orbital/spin frame remains explicit.')
+    form.addRow('Material target M (read-only)',e.direction)
     reset=QtWidgets.QPushButton('Reset defaults');reset.clicked.connect(e.reset_defaults);form.addRow(reset)
     notice=QtWidgets.QLabel('Cubic independent-electron 2p → 3d L2,3 model. Elemental edge references + generic synthetic electronic defaults; editable, not a material fit.');notice.setWordWrap(True);form.addRow(notice)
     e.layout.insertWidget(0,main)
@@ -247,10 +237,15 @@ def configuration_dialog(window):
     button=QtWidgets.QPushButton('Open CIF…');button.clicked.connect(w.load_cif);row.addWidget(button)
     w.mdff_material=QtWidgets.QLabel(w.structure_label.text());w.mdff_material.setWordWrap(True);row.addWidget(w.mdff_material,1);outer.addWidget(material)
     model=QtWidgets.QGroupBox('Model');form=QtWidgets.QFormLayout(model)
-    for widget,label in ((w.model_box,'MDFF model'),(w.model_description,''),(w.axis,'Crystal Cartesian reference M')):
+    for widget,label in ((w.model_box,'MDFF model'),(w.model_description,'')):
         old=widget.parentWidget().layout()
         if isinstance(old,QtWidgets.QFormLayout):old.takeRow(widget)
         form.addRow(label,widget)
+    old=w.axis.parentWidget().layout()
+    if isinstance(old,QtWidgets.QFormLayout):old.takeRow(w.axis)
+    w.axis.hide()  # Compatibility/restoration mirror, never a second editor.
+    w.mdff_material_direction=QtWidgets.QLabel();w.mdff_material_direction.setWordWrap(True)
+    form.addRow(w.mdff_material_direction)
     w.magnetization_mode_note=QtWidgets.QLabel();w.magnetization_mode_note.setWordWrap(True)
     form.addRow(w.magnetization_mode_note);w.sync_magnetization_mode()
     outer.addWidget(model)
@@ -262,8 +257,7 @@ def configuration_dialog(window):
     run=QtWidgets.QPushButton('Calculate EMCD / EELS');run.clicked.connect(w.start_emcd);bar.addWidget(run)
     close=QtWidgets.QPushButton('Done');close.clicked.connect(dialog.hide);bar.addWidget(close)
     def model_visibility(index):
-        visible=index!=1 and not (index==2 and w.manual_model.currentIndex()==1)
-        w.axis.setVisible(visible);form.labelForField(w.axis).setVisible(visible)
+        w.refresh_material_direction()
         w.model_description.setText((
             'XMCD-constrained tensor: requires a declared XAS/XMCD spectrum and its conventions.',
             'Atomic ionization: approximate cubic 2p to 3d transitions from editable electronic parameters.',

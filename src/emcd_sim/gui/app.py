@@ -38,6 +38,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.setWindowTitle(LABEL)
         self.resize(1550,960);self.structure=Structure.nickel();self.last_result=None;self.worker=None;self.busy=False
         self.magnetization_mode='global'
+        self.material_site_groups=None
         self.history=[];self.detectors=np.zeros((2,2));self.spin={};self.dialogs=[];self.run_outcome=None
         self.splitter=QtWidgets.QSplitter();self.setCentralWidget(self.splitter)
         self.inputs=QtWidgets.QWidget();self.form_layout=QtWidgets.QVBoxLayout(self.inputs)
@@ -51,7 +52,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         for label,key in CHOICES:self.elastic_provider_box.addItem(label,key)
         self.form.addRow('Elastic scattering provider',self.elastic_provider_box)
         self.elastic_provider_box.currentIndexChanged.connect(self.refresh)
-        self.section('B. Zone Axis & Diffraction')
+        self.section('Zone Axis & Diffraction',key='B. Zone Axis & Diffraction')
         geometry_form=self.form;self.geometry_options=CollapsibleSection('Orientation / ZA options',expanded=False);self.geometry_options.setObjectName('geometry_options');self.geometry_options.header.setToolTip('Crystal orientation, target hkl, projected ZA coordinates and Bragg alignment lock');geometry_form.addRow(self.geometry_options);self.form=QtWidgets.QFormLayout(self.geometry_options.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         self.zone=QtWidgets.QLineEdit('0 1 7');self.zone.setToolTip('Direct-lattice [u v w]; changes the actual oriented cell.');self.form.addRow('Nominal zone [uvw]',self.zone)
         self.target=QtWidgets.QLineEdit('2 0 0');self.target.setToolTip('Target Miller indices; must belong to the oriented finite basis.');self.form.addRow('Target (hkl)',self.target)
@@ -71,22 +72,22 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.align_button=self.button('Align to selected Bragg',self.align)
         self.button('Reset to zone axis',lambda:self.set_tilt((0,0)))
         self.button('Reset to reference geometry',self.reset_reference)
-        self.section('C. Microscope & Sample')
+        self.section('Microscope & Sample',key='C. Microscope & Sample')
         self.number('kv','Voltage (kV)',300,20,1000,self.tilt_changed)
         self.number('thickness','Thickness (nm)',30,.1,1000,self.refresh)
-        self.section('Model',True)
+        self.section('MDFF Configuration',True,key='Model')
         self.mdff_controls()
-        self.section('E. Propagation Method')
+        self.section('Propagation Method',key='E. Propagation Method')
         self.propagation_controls()
-        self.section('F. Shared Calculation Settings')
+        self.section('Shared Calculation Settings',key='F. Shared Calculation Settings')
         self.numerical_controls()
-        self.section('Virtual detectors')
+        self.section('Virtual Detectors',key='Virtual detectors')
         self.show_detectors=QtWidgets.QCheckBox('Show physical A/B apertures');self.show_detectors.setChecked(True);self.show_detectors.toggled.connect(self.refresh);self.form.addRow(self.show_detectors)
         for key,label,val in [('ax','A qx',0),('ay','A qy',0),('bx','B qx',0),('by','B qy',0)]:self.number(key,label+' (Å⁻¹)',val,-20,20,self.detectors_changed)
         self.number('radius','Radius (Å⁻¹)',.0908059024,.001,2,self.refresh)
         self.button('Restore Thales A/B',self.restore_detectors)
         self.pair_label=QtWidgets.QLabel();self.pair_label.setWordWrap(True);self.form.addRow(self.pair_label)
-        self.section('G. Output Settings',False)
+        self.section('Output Settings',False,key='G. Output Settings')
         self.button('Export current plot PNG / SVG…',self.export_plot)
         self.button('Save elastic preview…',self.save_preview)
         self.button('Export completed EMCD / EELS...',self.save_emcd)
@@ -123,8 +124,11 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.structure_view_action.triggered.connect(self.show_structure_viewer)
         self.setup_project_session()
 
-    def section(self,title,expanded=True):
-        group=CollapsibleSection(title,expanded=expanded);group.setObjectName('settings_'+''.join(c if c.isalnum() else '_' for c in title));self.form=QtWidgets.QFormLayout(group.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);self.form_layout.addWidget(group)
+    def section(self,title,expanded=True,*,key=None):
+        group=CollapsibleSection(title.replace('&','&&'),expanded=expanded)
+        group.setObjectName('settings_'+''.join(c if c.isalnum() else '_' for c in (key or title)))
+        group.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,QtWidgets.QSizePolicy.Policy.Maximum)
+        self.form=QtWidgets.QFormLayout(group.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);self.form_layout.addWidget(group)
 
     def number(self,key,label,value,lo,hi,callback):
         box=QtWidgets.QDoubleSpinBox();box.setRange(lo,hi);box.setDecimals(10);box.setValue(value);box.setSingleStep(.1);box.setKeyboardTracking(False)
@@ -396,14 +400,18 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         from .structure_viewer import CrystalStructureDialog
         if getattr(self,'structure_viewer',None) is None:
             self.structure_viewer=CrystalStructureDialog(self)
+            self.structure_viewer.globalDirectionApplied.connect(self.set_material_magnetization)
             self.structure_viewer.magnetizationModeChanged.connect(self.set_magnetization_mode)
             self.structure_viewer.editor.changed.connect(self.emcd_stale)
             self.structure_viewer.editor.pendingChanged.connect(self.emcd_stale)
             self.structure_viewer.siteGroupsApplied.connect(lambda _:self.emcd_stale())
+            self.structure_viewer.siteGroupsApplied.connect(lambda model:setattr(self,'material_site_groups',model))
             self.structure_viewer.editor.changed.connect(self.mark_project_dirty)
             self.structure_viewer.editor.pendingChanged.connect(self.mark_project_dirty)
             self.structure_viewer.set_magnetization_mode(self.magnetization_mode)
         self.structure_viewer.set_structure(self.structure,force=True)
+        self.structure_viewer.set_global_direction(self.material_magnetization)
+        self.material_site_groups=self.structure_viewer.accepted_site_groups
         if show:
             self.structure_viewer.show();self.structure_viewer.raise_();self.structure_viewer.activateWindow()
 
@@ -425,12 +433,36 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.axis.setEnabled(not local)
         if hasattr(self,'numerical_mode'):
             self.spin['energy'].setEnabled(not local and self.numerical_mode.currentIndex()==1)
-        for name in ('direction','apply_direction'):
-            control=getattr(getattr(self,'atomic_editor',None),name,None)
-            if control is not None:control.setEnabled(not local)
+        self.refresh_material_direction()
         if hasattr(self,'magnetization_mode_note'):
             self.magnetization_mode_note.setText('Global magnetization is locked while site-specific magnetization is enabled.'
                 + ' Run uses applied group MDFFs and their energy grids.' if local else 'Global Magnetization Mode (legacy). Local directions are inactive; configure site groups in the 3D viewer.')
+
+    def set_material_magnetization(self,direction):
+        vector=np.asarray(direction,float)
+        if vector.shape!=(3,) or not np.isfinite(vector).all() or np.linalg.norm(vector)<1e-12:
+            raise ValueError('Material M requires three finite nonzero crystal Cartesian components')
+        changed=getattr(self,'material_magnetization',None)!=tuple(vector)
+        self.material_magnetization=tuple(map(float,vector))
+        with QtCore.QSignalBlocker(self.axis):self.axis.setText(' '.join(f'{v:.17g}' for v in vector))
+        self.refresh_material_direction()
+        if changed:
+            viewer=getattr(self,'structure_viewer',None)
+            if viewer is not None:viewer.set_global_direction(self.material_magnetization)
+            if hasattr(self,'atomic_editor'):
+                self.atomic_editor.invalidate_preview('Material magnetization changed')
+                self.atomic_editor.preview_state.setText('STALE — Material magnetization changed; update preview.')
+            self.emcd_stale();self.mark_project_dirty()
+
+    def refresh_material_direction(self):
+        text=' '.join(f'{v:.12g}' for v in self.material_magnetization)
+        for editor in (getattr(self,'atomic_editor',None),getattr(self,'manual_spectral',None)):
+            if editor is not None and hasattr(editor,'direction'):
+                with QtCore.QSignalBlocker(editor.direction):editor.direction.setText(text)
+        if hasattr(self,'mdff_material_direction'):
+            self.mdff_material_direction.setText('Local mode: each group uses its Material draft/accepted M; Global M is inactive.'
+                if self.magnetization_mode=='local' else 'Global target M (crystal Cartesian): '+text+
+                '. Set through Material → 3D Structure Viewer → Site Groups, then Apply.')
 
     def inspect_structure(self):
         dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Crystal structure — ASE import');dialog.resize(650,500);layout=QtWidgets.QVBoxLayout(dialog)

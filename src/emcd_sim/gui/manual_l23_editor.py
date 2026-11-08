@@ -27,7 +27,9 @@ class FrameDiagram(QtWidgets.QWidget):
         p=QtGui.QPainter(self);p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
         origin=QtCore.QPointF(self.width()*.4,self.height()*.65)
         try:
-            frame=self.editor.frame_value();m=frame[:,2]
+            self.editor.frame_value()  # Validate the separate source-frame declaration.
+            m=np.asarray(self.editor.window.material_direction(),float)
+            m=m/np.linalg.norm(m)
             if self.editor.state.currentIndex()==1:m=-m
             beam=getattr(self.editor.window.atomic_editor,'beam_crystal',np.array([0.,0.,1.]))
             beam=beam/np.linalg.norm(beam)
@@ -72,7 +74,9 @@ class ManualL23Editor(QtWidgets.QWidget):
         form.addRow(self.parameters)
         self.view=QtWidgets.QComboBox();self.view.addItems(['Simple parameters','Full matrices (advanced)']);form.addRow('Strength view',self.view)
         self.representation=QtWidgets.QLabel();self.representation.setWordWrap(True);form.addRow(self.representation)
-        self.direction=QtWidgets.QLineEdit('0 0 1');form.addRow('Crystal M direction',self.direction)
+        self.direction=QtWidgets.QLineEdit('0 0 1');self.direction.setReadOnly(True)
+        self.direction.setToolTip('Set target M through Material → 3D Structure Viewer → Site Groups. Explicit full frames remain independent source declarations.')
+        form.addRow('Material target M (read-only)',self.direction)
         self.frame_mode=QtWidgets.QComboBox();self.frame_mode.addItems(['Verified axis rotation','Explicit proper frame (advanced)']);form.addRow('Model → crystal frame',self.frame_mode)
         self.frame_diagram=FrameDiagram(self);form.addRow(self.frame_diagram)
         reset=QtWidgets.QPushButton('Reset defaults for this element');reset.clicked.connect(self.reset_defaults);form.addRow(reset)
@@ -239,7 +243,7 @@ class ManualL23Editor(QtWidgets.QWidget):
 
     def frame_value(self):
         if self.frame_mode.currentIndex()==0:
-            return axis_rotation([float(v) for v in self.direction.text().replace(',',' ').split()])
+            return axis_rotation(self.window.material_direction())
         return proper_frame([[float(self.frame_table.item(i,j).text()) for j in range(3)] for i in range(3)])
 
     def inputs(self):
@@ -297,12 +301,12 @@ class ManualL23Editor(QtWidgets.QWidget):
 
     def edited(self,*_):
         if self.loading:return
-        explicit=self.frame_mode.currentIndex()==1;self.direction.setReadOnly(explicit)
-        self.direction.setToolTip('Derived from the explicit proper frame. Switch to verified axis rotation in Advanced to edit the direction.' if explicit else 'Three crystal Cartesian components; the verified axis rotation sets a rigid model frame.')
+        explicit=self.frame_mode.currentIndex()==1;self.direction.setReadOnly(True)
+        self.direction.setToolTip('Material target M is read-only. The explicit full source frame is a separate declaration; no automatic rotation is applied in that mode.')
         if explicit:
             try:
                 frame=self.frame_value()
-                with QtCore.QSignalBlocker(self.direction):self.direction.setText(' '.join(map(str,frame[:,2])))
+                with QtCore.QSignalBlocker(self.direction):self.direction.setText(' '.join(map(str,self.window.material_direction())))
             except ValueError:pass
         self.is_stale=True;self.status.setText('STALE numerical tensor — update preview for current draft.')
         try:self.inputs();self.error.clear()
@@ -323,7 +327,7 @@ class ManualL23Editor(QtWidgets.QWidget):
             self.is_stale=True;self.status.setText('STALE — authenticated model source is missing or changed; numerical preview cannot be current.');self.draw()
 
     def states(self,source,energy):
-        a,b=[value.tensor_angstrom2_per_ev for value in source.tensors(energy,np.eye(3),source.metadata['magnetization_crystal'])]
+        a,b=[value.tensor_angstrom2_per_ev for value in source.tensors(energy,np.eye(3),self.window.material_direction())]
         return {'+M':a,'−M':b,'Even':(a+b)/2,'Odd':(a-b)/2}
 
     def draw(self,*_):

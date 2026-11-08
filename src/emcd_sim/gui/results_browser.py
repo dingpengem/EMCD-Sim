@@ -297,6 +297,7 @@ class ProjectWorkspace(ProjectSession):
             controls={self.zone:' '.join(map(str,s.zone)),self.target:' '.join(map(str,s.target)),self.axis:' '.join(map(str,c.magnetization)),self.source_path:r.get('source_overrides',{}).get('xmcd',c.source)}
             for widget,value in controls.items():
                 with QtCore.QSignalBlocker(widget):widget.setText(value)
+            self.set_material_magnetization(c.magnetization)
             for widget,index in ((self.model_box,('xmcd','atomic','imported').index(c.model)),(self.propagation_box,['bloch','fft-multislice','both'].index(c.propagation))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
             for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),(self.energy_scope,('full','edges').index(c.energy_scope))):

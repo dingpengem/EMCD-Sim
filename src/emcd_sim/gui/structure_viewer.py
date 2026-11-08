@@ -179,6 +179,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
     """A modeless snapshot viewer; only Apply retains in-memory group edits."""
     siteGroupsApplied = QtCore.Signal(object)
     magnetizationModeChanged = QtCore.Signal(str)
+    globalDirectionApplied = QtCore.Signal(object)
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle('3D Crystal Structure Viewer')
@@ -251,6 +252,27 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.editor.changed.connect(self.rebuild)
         self.editor.applied.connect(self.groups_applied)
         self.editor.modeChanged.connect(self.magnetization_mode_changed)
+        self._global_direction=(0.,0.,1.)
+        self.global_direction=QtWidgets.QLineEdit('0 0 1')
+        self.global_direction.setToolTip('Legacy Global M in crystal Cartesian coordinates. Apply accepts; Cancel discards this input. Inactive in Local mode.')
+        self.global_direction_box=QtWidgets.QWidget()
+        form=QtWidgets.QFormLayout(self.global_direction_box);form.setContentsMargins(0,0,0,0)
+        form.addRow('Global Material M (x y z)',self.global_direction)
+        self.editor.widget().layout().insertWidget(2,self.global_direction_box)
+        self.global_direction.textChanged.connect(lambda _:self.editor.pendingChanged.emit())
+
+    @property
+    def pending_global_direction(self):
+        if self.editor.magnetization_mode!='global':return False
+        try:return tuple(float(v) for v in self.global_direction.text().replace(',',' ').split())!=self._global_direction
+        except ValueError:return True
+
+    def set_global_direction(self,direction):
+        direction=tuple(direction)
+        if direction!=self._global_direction:
+            self._global_direction=direction
+            with QtCore.QSignalBlocker(self.global_direction):self.global_direction.setText(' '.join(f'{v:.17g}' for v in direction))
+        self.global_direction.setEnabled(self.editor.magnetization_mode=='global')
 
     def set_structure(self, structure, force=False):
         if not force and structure is self._source:return
@@ -379,6 +401,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.editor.mode.setCurrentIndex(int(mode == 'local'))
 
     def magnetization_mode_changed(self, mode):
+        if hasattr(self,'global_direction'):self.global_direction.setEnabled(mode=='global')
         self.magnetic_arrows.setEnabled(bool(self.editor.rows()) and mode == 'local')
         self.view.show_magnetization = self.magnetic_arrows.isChecked() and mode == 'local'
         self.view.update(); self.magnetizationModeChanged.emit(mode)
@@ -424,11 +447,22 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.rebuild(); self.siteGroupsApplied.emit(model)
 
     def apply_groups(self):
-        self.editor.run_action(self.editor.apply)
+        def apply():
+            direction=None
+            if self.editor.magnetization_mode=='global':
+                direction=tuple(float(v) for v in self.global_direction.text().replace(',',' ').split())
+                a=np.asarray(direction)
+                if a.shape!=(3,) or not np.isfinite(a).all() or np.linalg.norm(a)<1e-12:
+                    raise ValueError('Global Material M requires three finite nonzero crystal Cartesian components')
+            self.editor.apply()
+            if direction is not None:
+                self._global_direction=direction;self.globalDirectionApplied.emit(direction)
+        self.editor.run_action(apply)
 
     def reject(self):
         self.close()
 
     def closeEvent(self, event):
         self.editor.cancel()
+        self.global_direction.setText(' '.join(f'{v:.17g}' for v in self._global_direction))
         event.accept()

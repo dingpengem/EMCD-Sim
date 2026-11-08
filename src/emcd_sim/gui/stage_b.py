@@ -67,8 +67,10 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
     def mdff_controls(self):
         self.emcd_result=None;self.source_info=None;self.validated_path=None
         self.model_box=QtWidgets.QComboBox();self.model_box.addItems(['XMCD-constrained MDFF','Atomic Ionization MDFF']);self.form.addRow(self.model_box)
-        self.axis=QtWidgets.QLineEdit('0 0 1');self.form.addRow('Crystal Cartesian M axis',self.axis)
-        self._mdff_axes={i:self.axis.text() for i in range(3)}
+        self.material_magnetization=(0.,0.,1.)
+        self.axis=QtWidgets.QLineEdit('0 0 1');self.axis.setReadOnly(True)
+        self.axis.setToolTip('Material target M; edit in Material → 3D Structure Viewer → Site Groups.')
+        self.form.addRow('Material target M (read-only)',self.axis)
         self.mdff_stack=QtWidgets.QStackedWidget();self.form.addRow(self.mdff_stack)
         xm=QtWidgets.QWidget();xf=QtWidgets.QFormLayout(xm);self.mdff_stack.addWidget(xm);saved=self.form;self.form=xf
         self.source_path=QtWidgets.QLineEdit(str(DEFAULT_SOURCE) if DEFAULT_SOURCE.exists() else '');self.form.addRow('Five-column XMCD',self.source_path)
@@ -100,7 +102,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.button('Configure MDFF...',lambda:configuration_dialog(self))
         self.model_description=QtWidgets.QLabel();self.model_description.setWordWrap(True);self.form.addRow(self.model_description)
         self.model_box.currentIndexChanged.connect(self.model_changed)
-        self.axis.textChanged.connect(self.emcd_stale);self.declaration.toggled.connect(self.emcd_stale);self.source_path.textChanged.connect(self.source_changed);self.radial_override.toggled.connect(self.emcd_stale)
+        self.axis.textChanged.connect(lambda text:self.set_material_magnetization(tuple(float(v) for v in text.replace(',',' ').split())))
+        self.declaration.toggled.connect(self.emcd_stale);self.source_path.textChanged.connect(self.source_changed);self.radial_override.toggled.connect(self.emcd_stale)
 
     def propagation_controls(self):
         self.channeling_box=QtWidgets.QComboBox();self.channeling_box.addItems(['Single Channeling','Double Channeling']);self.form.addRow('Channeling Model',self.channeling_box)
@@ -237,10 +240,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
     def model_changed(self,index):
         previous=self.mdff_stack.currentIndex()
         if previous==2 and hasattr(self,'_remember_manual_state'):self._remember_manual_state()
-        if previous!=index:
-            self._mdff_axes[previous]=self.axis.text()
-            with QtCore.QSignalBlocker(self.axis):self.axis.setText(self._mdff_axes[index])
         self.mdff_stack.setCurrentIndex(index)
+        self.refresh_material_direction()
         if hasattr(self,'model_description'):self.model_description.setText((
             'XMCD-constrained tensor: requires a declared XAS/XMCD spectrum and its conventions.',
             'Atomic ionization: approximate cubic 2p to 3d transitions from editable electronic parameters.',
@@ -280,13 +281,16 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if getattr(self,'magnetization_mode','global')=='local':
             from .multisite_run import forward_settings
             return forward_settings(self)
+        viewer=getattr(self,'structure_viewer',None)
+        if viewer is not None and viewer.pending_global_direction:
+            raise ValueError('Apply or Cancel pending Global Material M edits in the 3D viewer before preview or calculation')
         if prepare and self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:
             self.prepare_manual_tensor()
         if prepare and self.model_box.currentIndex()==1 and self.atomic_editor.active and not self.atomic_editor.validated_path:
             self.atomic_editor.generate()
         if self.spin['grid'].value()%2==0:raise ValueError('Choose an odd angular / detector grid size so qy=0 is sampled exactly.')
         atomic=NiLocalConfig(**{k:self.spin['atomic_'+k].value() for k in asdict(NiLocalConfig())})
-        mode=('xmcd','atomic','imported')[self.model_box.currentIndex()];axis=tuple(float(v) for v in self.axis.text().replace(',',' ').split())
+        mode=('xmcd','atomic','imported')[self.model_box.currentIndex()];axis=self.material_magnetization
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')
         if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):raise ValueError('Validate the current XMCD source first')
         cfg=ForwardSettings(fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
@@ -296,8 +300,10 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
         if mode=='atomic' and self.atomic_editor.historical_config is not None:
             saved=self.atomic_editor.historical_config
+            if not np.allclose(np.asarray(axis)/np.linalg.norm(axis),np.asarray(saved.magnetization)/np.linalg.norm(saved.magnetization)):
+                raise ValueError('Retained historical Atomic source requires its saved axis; Material M is incompatible. Reset defaults to configure a new source.')
             cfg=replace(cfg,atomic=saved.atomic,l3=saved.l3,l2=saved.l2,sigma=saved.sigma,radial=saved.radial,
-                magnetization=saved.magnetization,axis_declared=saved.axis_declared)
+                axis_declared=saved.axis_declared)
         if mode=='imported':cfg=self.imported_forward_settings(cfg,prepare=prepare)
         else:cfg=self.declared_provider_settings(cfg,prepare=prepare)
         from .propagation import resolve_fft_configuration
@@ -308,6 +314,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if not hasattr(self,'ms_settings_group'):return
         if hasattr(self,'manual_spectral'):
             if self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:self.manual_spectral.sync_material()
+            self.refresh_material_direction()
             self.manual_spectral.frame_diagram.update()
         if hasattr(self,'xmcd_preview'):self.xmcd_preview.invalidate_if_changed()
         if hasattr(self,'atomic_editor') and hasattr(self.atomic_editor,'schematic') and 'kv' in self.spin:

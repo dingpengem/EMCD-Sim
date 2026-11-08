@@ -82,7 +82,7 @@ class ImportedTensorUI:
         return 'constant' if source.metadata.get('manual_constant_editor')==1 else 'imported'
 
     def _capture_manual_state(self):
-        fields={name:getattr(self,name).text() for name in ('imported_path','ionizing_element','imported_edge','ionization_selection','axis','manual_l3','manual_l2')}
+        fields={name:getattr(self,name).text() for name in ('imported_path','ionizing_element','imported_edge','ionization_selection','manual_l3','manual_l2')}
         return dict(fields=fields,source=self.imported_info,declared=self.imported_declaration.isChecked(),state=self.imported_state.currentIndex(),
             cells=[[self.manual_tensor.cells.item(i,j).text() for j in range(3)] for i in range(3)],bounds=self.manual_bounds.text(),status=self.imported_status.text())
 
@@ -99,6 +99,7 @@ class ImportedTensorUI:
             with QtCore.QSignalBlocker(self.constant_input_mode):self.constant_input_mode.setCurrentIndex(1 if key=='imported' else 0)
         self.manual_models.setCurrentIndex(self.manual_model.currentIndex())
         for name,text in state['fields'].items():
+            if name=='axis':continue  # Old per-model drafts never override Material M.
             widget=getattr(self,name)
             with QtCore.QSignalBlocker(widget):widget.setText(text)
         with QtCore.QSignalBlocker(self.imported_state):self.imported_state.setCurrentIndex(state['state'])
@@ -129,7 +130,7 @@ class ImportedTensorUI:
     def imported_source_summary(self):
         if self.imported_info is None:return 'Select and validate the original imported tensor source. Its frame, energy dependence and reversal declarations are retained; it is not a constant-matrix draft.'
         source=self.imported_info;d=source.metadata
-        return f"Authenticated imported tensor: {d['element']} {d['edge']}\n{d['basis']}; frame to crystal = {d['frame_to_crystal']}\nM = {d['magnetization_crystal']}\n{d['normalization']}; {d['units']}\nSelections (eV): {d['selected_ev']}\nEnergy samples: {len(source.energy_ev)}; no extrapolation.\n{d['source']}\nSHA256 {source.sha256}"
+        return f"Authenticated imported tensor: {d['element']} {d['edge']}\n{d['basis']}; source frame to crystal = {d['frame_to_crystal']}\nDeclared source magnetic axis (not target M) = {d['magnetization_crystal']}\n{d['normalization']}; {d['units']}\nSelections (eV): {d['selected_ev']}\nEnergy samples: {len(source.energy_ev)}; no extrapolation.\n{d['source']}\nSHA256 {source.sha256}"
 
     def manual_tensor_changed(self,*_):
         if not hasattr(self,'manual_preview_state') or getattr(self,'_manual_loading',False):return
@@ -143,7 +144,6 @@ class ImportedTensorUI:
             doc=self.manual_spectral.document()
             source=self.manual_tensor.persist(getattr(self,'workspace',None) or workspace(),doc)
             with QtCore.QSignalBlocker(self.imported_path):self.imported_path.setText(source.path)
-            with QtCore.QSignalBlocker(self.axis):self.axis.setText(' '.join(map(str,source.metadata['magnetization_crystal'])))
             with QtCore.QSignalBlocker(self.imported_declaration):self.imported_declaration.setChecked(True)
             self.imported_info=source
             self._remember_manual_state()
@@ -163,7 +163,9 @@ class ImportedTensorUI:
             self.manual_tensor.error.setText(str(exc));raise
 
     def draw_manual_preview(self,cfg=None):
-        source=self.imported_info
+        from .generalized_forward import source_for
+        if cfg is None:cfg=self.forward_settings()
+        source=source_for(cfg)
         if self.manual_model.currentIndex()==1:
             self.manual_spectral.update_preview(source);return
         plus,minus=[t.tensor_angstrom2_per_ev for t in source.tensors(source.energy_ev,np.eye(3),cfg.magnetization if cfg else source.metadata['magnetization_crystal'])]
@@ -215,7 +217,6 @@ class ImportedTensorUI:
             with QtCore.QSignalBlocker(self.imported_path):self.imported_path.setText(source.path)
             if key=='spectral':
                 self.manual_spectral.load_source(source)
-                with QtCore.QSignalBlocker(self.axis):self.axis.setText(' '.join(map(str,d['magnetization_crystal'])))
                 self.imported_status.setText('Authenticated phenomenological L2,3 source SHA256 '+source.sha256)
             if key=='constant':
                 with QtCore.QSignalBlocker(self.manual_tensor.cells):
@@ -230,7 +231,6 @@ class ImportedTensorUI:
             for widget,text in ((self.ionizing_element,d['element']),(self.imported_edge,d['edge'])):
                 with QtCore.QSignalBlocker(widget):widget.setText(text)
             with QtCore.QSignalBlocker(self.imported_state):self.imported_state.setCurrentText(d['magnetic_state'])
-            with QtCore.QSignalBlocker(self.axis):self.axis.setText(' '.join(map(str,d['magnetization_crystal'])))
             with QtCore.QSignalBlocker(self.imported_declaration):self.imported_declaration.setChecked(False)
             if key=='imported':
                 self.manual_bounds.setText(f"Original source density over {source.energy_ev[0]:g} to {source.energy_ev[-1]:g} eV; {len(source.energy_ev)} samples. No constant substitution or extrapolation.")
@@ -266,16 +266,16 @@ class ImportedTensorUI:
             magnetic_state=source.metadata['magnetic_state'] if self.manual_model.currentIndex()==1 else self.imported_state.currentText(),site_indices=selected,axis_declared=self.imported_declaration.isChecked(),
             selected_edges=() if source.metadata['edge']=='L2,3' else selections,
             l3=selections[0][1],l2=selections[-1][1])
-        return ImportedSettings(**fields)
+        return self.bind_material_reference(ImportedSettings(**fields))
 
     def restore_imported_settings(self,cfg,path=None):
         with QtCore.QSignalBlocker(self.imported_path):self.imported_path.setText(path or cfg.source)
         self.validate_imported_mdff(expected_sha256=cfg.source_sha256)
         for widget,text in ((self.ionizing_element,cfg.ionizing_element),(self.imported_edge,cfg.core_edge),
-                (self.ionization_selection,'all' if cfg.site_indices is None else ' '.join(map(str,cfg.site_indices))),
-                (self.axis,' '.join(map(str,cfg.magnetization)))):
+                (self.ionization_selection,'all' if cfg.site_indices is None else ' '.join(map(str,cfg.site_indices)))):
             with QtCore.QSignalBlocker(widget):widget.setText(text)
         with QtCore.QSignalBlocker(self.imported_state):self.imported_state.setCurrentText(cfg.magnetic_state)
+        self.set_material_magnetization(cfg.magnetization)
         verified=self.imported_info is not None and self.imported_info.sha256==cfg.source_sha256
         with QtCore.QSignalBlocker(self.imported_declaration):self.imported_declaration.setChecked(bool(verified and cfg.axis_declared))
         self._remember_manual_state()

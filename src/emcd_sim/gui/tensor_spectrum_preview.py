@@ -50,7 +50,9 @@ class TensorSpectrumPreview(QtWidgets.QDialog):
 
     def __init__(self,source,parent=None):
         super().__init__(parent)
-        if not isinstance(source,ImportedMDFF) or source.metadata.get('convention')!=CONVENTION:
+        from .provider_direction import ReversedProviderPair
+        original=source.source if isinstance(source,ReversedProviderPair) else source
+        if not isinstance(original,ImportedMDFF) or source.metadata.get('convention')!=CONVENTION:
             raise ValueError('Preview requires a validated source and the accepted tensor convention')
         if source.metadata.get('atomic_model')!='independent_electron_cubic_2p3d_v1':
             raise ValueError('Atomic preview requires the declared existing atomic model')
@@ -67,6 +69,7 @@ class TensorSpectrumPreview(QtWidgets.QDialog):
         self.resize(1050,740);layout=QtWidgets.QVBoxLayout(self)
         self.identity=QtWidgets.QLabel(source.metadata['element']+' | '+source.metadata['atomic_model']+' | '+source.metadata['magnetic_state']+' | '+source.metadata['status']+
             '\nDeclared LOCAL tensor components; frame_to_crystal='+str(source.metadata['frame_to_crystal'])+
+            ('\nMaterial target uses the validated source −M pair member.' if isinstance(source,ReversedProviderPair) else '\nMaterial target uses the source +M pair member.')+
             '\nSource: '+source.metadata['source'].split(EDITOR_TAG)[0]+'\nSHA256 '+source.sha256)
         self.identity.setWordWrap(True);self.identity.setMaximumHeight(150);layout.addWidget(self.identity)
         self.status=QtWidgets.QLabel('CURRENT mathematically validated source; material parameters remain physically unvalidated. Relative per-atom Angstrom^2/eV.');self.status.setWordWrap(True);layout.addWidget(self.status)

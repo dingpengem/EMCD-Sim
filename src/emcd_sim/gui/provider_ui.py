@@ -9,6 +9,19 @@ from ..imported_mdff import CONVENTION
 
 
 class ProviderUI:
+    def material_direction(self):
+        return self.row[3] if hasattr(self,'row') else self.material_magnetization
+
+    def bind_material_reference(self,cfg):
+        """Reuse the existing physical-pair validator for the Material target."""
+        from .group_mdff import bind_group_direction
+        if hasattr(self,'row'):row=self.row[:4]+(cfg,)
+        else:
+            indices=tuple(i for i,atom in enumerate(self.structure.atoms) if atom.symbol==cfg.ionizing_element)
+            if not indices:raise ValueError('MDFF source element is absent from the Material structure')
+            row=('Global Material M',cfg.ionizing_element,indices,self.material_direction(),cfg)
+        return bind_group_direction(row)
+
     def xmcd_declaration_controls(self):
         self.explicit_xmcd=QtWidgets.QCheckBox('Use explicit material declarations')
         self.form.addRow(self.explicit_xmcd)
@@ -111,7 +124,6 @@ class ProviderUI:
                 self.atomic_editor.load_document(path,validated=True)
             if self.atomic_editor.validated_sha256!=digest:raise ValueError('Atomic source changed while loading the editor; validate again')
             self.atomic_provider_info=cfg
-            with QtCore.QSignalBlocker(self.axis):self.axis.setText(' '.join(map(str,cfg.magnetization)))
             self.atomic_provider_status.setText(cfg.ionizing_element+'; APPROXIMATE / physically unvalidated\nSHA256 '+cfg.source_sha256)
         except Exception as exc:
             self.atomic_editor.external_source_pending=True
@@ -164,8 +176,7 @@ class ProviderUI:
         fields=asdict(base);fields['atomic']=base.atomic
         for key in ('model','source','source_sha256','l3','l2','magnetization','axis_declared'):fields.pop(key,None)
         cfg=replace(cfg,**fields,magnetization=base.magnetization,axis_declared=acknowledged)
-        source_for(cfg)
-        return cfg
+        return self.bind_material_reference(cfg)
 
     def restore_provider_settings(self,cfg,path=None):
         if cfg.model=='atomic':

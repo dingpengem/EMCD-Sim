@@ -13,6 +13,8 @@ from .project_collection import save_collection, load_collection
 
 def capture_configuration(w):
     viewer=getattr(w,'structure_viewer',None)
+    if viewer is not None and viewer.pending_global_direction:
+        raise ValueError('Apply or Cancel pending Global Material M edits before saving; accepted settings are unchanged')
     if (w.magnetization_mode=='local' and viewer is not None
             and viewer.editor.accepted_site_groups is not None
             and (viewer.editor.rows()!=viewer.editor._accepted_rows
@@ -37,7 +39,7 @@ def capture_configuration(w):
             path=w.imported_path.text() if mode=='imported' else w.atomic_parameter_path.text() if mode=='atomic' else w.source_path.text()
             cfg=ForwardSettings(**common,model=('xmcd','atomic','imported')[w.model_box.currentIndex()],
                 source=w.source_path.text(),source_sha256=(w.source_info or {}).get('sha256',''),axis_declared=False,
-                magnetization=tuple(float(v) for v in w.axis.text().replace(',',' ').split()),eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
+                magnetization=w.material_magnetization,eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
                 l3=w.spin['xl3'].value(),l2=w.spin['xl2'].value())
             from .generalized_forward import ImportedSettings,ProviderSettings
             effective=getattr(w,'_configuration_sources',{}).get('config')
@@ -121,7 +123,8 @@ def restore_configuration(w,state):
             w.worker_count.setValue(c.parallel_workers);w._saved_global_config=state.get('global_config')
         drafts=state.get('metadata',{}).get('gui_drafts')
         if drafts:
-            w.axis.setText(drafts['global_axis']);w.atomic_editor.restore_draft(drafts['atomic'])
+            w.set_material_magnetization(tuple(float(v) for v in drafts['global_axis'].replace(',',' ').split()))
+            w.atomic_editor.restore_draft(drafts['atomic'])
             source=w.imported_info;raw=deepcopy(drafts['manual']);raw['source']=source
             w._manual_bindings[drafts['manual_key']]=raw;w._activate_manual_state(drafts['manual_key'],remember=False)
             w.manual_spectral.restore_draft(drafts['spectral'])
@@ -161,6 +164,7 @@ def restore_configuration(w,state):
         display=state.get('metadata',{}).get('viewer_display',{})
         viewer.color_mode.setCurrentIndex(display.get('colors',0));viewer.magnetic_arrows.setChecked(display.get('arrows',False))
         viewer._site_groups=model;viewer.rebuild();viewer.hide();w.set_magnetization_mode(state['magnetization_mode'])
+        w.material_site_groups=model
         w._loaded_fft_recipe=(w.fft_cell_key(),c.fft_generators) if c.fft_generators is not None else None
         w.restore_numerical_selection(state.get('metadata',{}))
         w.refresh();w.sync_magnetization_mode()

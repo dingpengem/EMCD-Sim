@@ -2,6 +2,9 @@
 
 ## Unreleased development source — crystallographic groups and direction workflow
 
+- Make Material authoritative for target M, with transactional Global editing in the existing Viewer/Site Groups workflow and read-only target/context displays in MDFF Configuration. Remove per-model target restoration and source-validation overrides; retain independent full frames, physical-pair validation and compatible preview/submission. Use consistent title-case Settings headings without peer prefixes. This source cleanup is not in the unchanged `windows-crystal-groups-dev1` candidate (`effb755`).
+- Preserve the previous application regression at `f769e05`: **1,300 passed, 40 failed, 126 setup errors, 62 skipped, exit 1**, followed by 22 distinct focused passes at `effb755`. Broad regression/source-guard coverage remains incomplete; this cleanup does not rerun those suites, maintain pins or build another candidate.
+
 - On `feat/v0.9.0-crystal-grouping`, add symmetry-orbit grouping with original ASE indices, Wyckoff/CIF provenance, explicit unconfigured structural drafts and project persistence (`f2a6e93`). Ordinary CIF import does not assign magnetic order or MDFF.
 - Accept compatible group directions and explicitly validated physical reversal pairs through Apply, Save/Open and recalculation (`8b0c8e3`). Preserve source/frame identity and amplitudes; failed Apply retains accepted settings and drafts. Reject unsupported fixed-frame Z→X changes. magCIF and general tensor rotation remain future work.
 - Improve the existing Site Group Editor with a scrollable panel, a readable/resizable group table, count and MDFF status columns, and explicit accepted/draft/input M summaries. Clarify individual atom picking versus whole-group editing and Apply/Cancel status.

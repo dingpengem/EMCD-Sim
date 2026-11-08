@@ -79,7 +79,6 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         self.model = QtWidgets.QComboBox(); self.model.addItems(['XMCD-constrained MDFF','Atomic Ionization MDFF','Manual Tensor'])
         self.model_box = self.model
         self.axis = QtWidgets.QLineEdit(' '.join(map(str,row[3])));self.axis.setReadOnly(True);self.axis.hide()
-        self._mdff_axes = {0:self.axis.text()}
         layout.addWidget(self.model)
         scroll = QtWidgets.QScrollArea(); scroll.setWidgetResizable(True); layout.addWidget(scroll,1)
         self.pages = QtWidgets.QStackedWidget(); scroll.setWidget(self.pages)
@@ -202,7 +201,7 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         self.atomic.element.setCurrentIndex(self.atomic.element.findData(self.row[1]))
         self.atomic.element.setEnabled(False);self.atomic.crystal_box.hide()
         # An explicit full frame is required; group M is never used to build it.
-        self.atomic.direction.setEnabled(False);self.atomic.apply_direction.setEnabled(False)
+        self.atomic.direction.setReadOnly(True)
         self.atomic.invalidated.connect(self.emcd_stale);form.addRow(self.atomic)
         load.clicked.connect(self.load_atomic)
         self.atomic_mode.currentIndexChanged.connect(self.atomic_mode_changed)
@@ -285,7 +284,7 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
 
     def preview_tensor(self):
         try:
-            cfg = self.candidate();source = validate_group_reference(self.row,cfg)
+            cfg = self.bind_material_reference(self.candidate());source = validate_group_reference(self.row,cfg)
             if self.manual_mode.currentIndex() == 1 and self.model.currentIndex() == 2:
                 self.manual_spectral.update_preview(source);return
             from matplotlib.figure import Figure
@@ -320,12 +319,22 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
 
     def set_context(self, row):
         changed = self.row[1:3] != row[1:3]
+        direction_changed=self.row[3]!=row[3]
         self.row = row
         if hasattr(self,'axis'):
-            self.axis.setText(' '.join(map(str,row[3])));self._mdff_axes[0] = self.axis.text()
+            self.axis.setText(' '.join(map(str,row[3])))
+        for editor in (getattr(self,'atomic',None),getattr(self,'manual_spectral',None)):
+            if editor is not None:
+                with QtCore.QSignalBlocker(editor.direction):editor.direction.setText(' '.join(map(str,row[3])))
         if changed:self.emcd_stale()
+        if direction_changed:
+            self.atomic.invalidate_preview('Material group direction changed')
+            self.atomic.preview_state.setText('STALE — Material group direction changed; update preview.')
+            self.manual_spectral.is_stale=True
+            self.manual_spectral.status.setText('STALE — Material group direction changed; update preview.')
+        self.atomic.schematic.draw();self.manual_spectral.frame_diagram.update()
         self.context.setText(f'Group {row[0]} · {row[1]} · ASE indices {row[2]}\n'
-            f'Declared local M (crystal Cartesian): {row[3]}. Legacy Global M is not used. '
+            f'Material group draft M (crystal Cartesian, read-only): {row[3]}. Set through Material → 3D Structure Viewer → Site Groups. Legacy Global M is not used. '
             + ('Physical source −M pair member selected.' if getattr(row[4],'pair_reversed',False) else 'Physical source +M pair member selected.'))
 
     def load_atomic(self):
@@ -356,7 +365,7 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
                 reference_tensor_scale_angstrom2_per_ev=float(self.xmcd_scale.text()),
                 magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
             if (self.reference is not None and self.reference.model=='xmcd' and self.reference.pair_reversed
-                    and str(path)==self.reference.source):
+                    and str(path)==self.reference.source and tuple(self.row[3])==self.reference.magnetization):
                 declaration['magnetization_crystal']=self.reference.provider_declaration['magnetization_crystal']
             return settings_for_provider(path,'xmcd',declaration)
         if self.model.currentIndex() == 1:
@@ -403,7 +412,9 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         unchanged = False
         if self.reference is not None and not self.has_unapplied_edits():
             from ..mdff_providers import load_provider
-            try:load_provider(self.reference);unchanged=True
+            try:
+                load_provider(self.reference)
+                unchanged=(self.reference.model!='xmcd' or tuple(self.row[3])==self.reference.magnetization)
             except (ValueError,OSError):pass  # Retain the existing explicit source-change review workflow.
         cfg = self.reference if unchanged else self.candidate()
         if (self.reference is not None and cfg.source == self.reference.source
@@ -547,7 +558,11 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         self.show();self.raise_();self.activateWindow()
 
     def has_unapplied_edits(self):
-        return self._applied_snapshot is not None and self.snapshot() != self._applied_snapshot
+        if self._applied_snapshot is None:return False
+        current=self.snapshot();accepted=deepcopy(self._applied_snapshot)
+        # Material's read-only direction mirror is not an MDFF parameter edit.
+        for state in (current,accepted):state['spectral'].pop('direction',None)
+        return current!=accepted
 
     def closeEvent(self, event):
         event.accept()  # Keep incomplete drafts; explicit Cancel restores entry state.

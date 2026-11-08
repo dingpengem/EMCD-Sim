@@ -332,7 +332,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
         try:
             frame = np.array(self.table_values(self.frame), float)
             valid = np.isfinite(frame).all() and np.allclose(frame.T @ frame, np.eye(3), atol=1e-12, rtol=0) and np.isclose(np.linalg.det(frame), 1, atol=1e-12, rtol=0)
-            self.derived_axis.setText('Derived crystal M = '+str(frame[:,2].tolist()) if valid else 'Invalid proper frame; no silent repair.')
+            self.derived_axis.setText('Source quantization axis (frame z) = '+str(frame[:,2].tolist()) if valid else 'Invalid proper frame; no silent repair.')
         except ValueError: self.derived_axis.setText('Select/enter a complete proper frame.')
         self.refresh_origin_labels()
         self.edge_status.setText('Edge input provenance - verify the current chemical environment; table references are not material predictions.\n'+
@@ -548,7 +548,8 @@ class AtomicParameterEditor(QtWidgets.QWidget):
             doc = self.document(); path, digest = persist_document(self.workspace(), doc)
             # Existing provider performs transition generation, Hermiticity, PSD and provenance verification.
             from .generalized_forward import settings_for_provider
-            settings_for_provider(path, 'atomic')
+            cfg=settings_for_provider(path, 'atomic')
+            if hasattr(self.owner,'bind_material_reference'):self.owner.bind_material_reference(cfg)
             self.validated_path = str(path); self.validated_sha256 = digest; self.source_location.setText(str(path))
             self._loading = True; self.use_editor.setChecked(True); self._loading = False
             self.sourceReady.emit(str(path))
@@ -564,10 +565,11 @@ class AtomicParameterEditor(QtWidgets.QWidget):
                 if not self.validated_path:return
             _, digest = read_document(self.validated_path)
             if digest != self.validated_sha256: raise ValueError('Atomic source checksum changed')
-            from .generalized_forward import settings_for_provider
-            from ..mdff_providers import load_provider
+            from .generalized_forward import settings_for_provider,source_for
             from .tensor_spectrum_preview import TensorSpectrumPreview
-            source=load_provider(settings_for_provider(self.validated_path,'atomic'))
+            cfg=settings_for_provider(self.validated_path,'atomic')
+            if hasattr(self.owner,'bind_material_reference'):cfg=self.owner.bind_material_reference(cfg)
+            source=source_for(cfg)
             old=getattr(self,'preview_dialog',None)
             if old is not None:old.close()
             self.preview_dialog=TensorSpectrumPreview(source,self)
