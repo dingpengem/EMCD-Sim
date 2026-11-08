@@ -316,6 +316,9 @@ class ResultsView(QtWidgets.QWidget):
         self.details_section=CollapsibleSection('Display details / diagnostics / export',expanded=False);self.details_section.setObjectName('results_details_'+kind);self.details_toggle=self.details_section.header;self.details_body=self.details_section.body;details=QtWidgets.QVBoxLayout(self.details_body);details.setContentsMargins(0,0,0,0)
         for widget in (self.label,self.advanced,self.display_note,export):
             layout.removeWidget(widget);details.addWidget(widget)
+        if kind=='eels':
+            self.multisite_controls.layout().removeWidget(self.multisite_controls.sources)
+            details.addWidget(self.multisite_controls.sources)
         self.full_caption=QtWidgets.QLabel();self.full_caption.setWordWrap(True);self.full_caption.setTextFormat(QtCore.Qt.TextFormat.PlainText);details.addWidget(self.full_caption)
         details.addWidget(self.navigation)
         self.presentation=FigurePresentation(self.canvas,kind,self.full_caption)
@@ -323,7 +326,7 @@ class ResultsView(QtWidgets.QWidget):
         self.choice.currentTextChanged.connect(self.redraw);self.canvas.mpl_connect('pick_event',self.pick)
     def set_compact(self,compact):
         focused=getattr(self,'_focused',False)
-        self.details_section.setVisible(not focused)
+        self.details_section.setVisible(True)
         if hasattr(self,'prb_benchmark'):
             self.prb_benchmark.set_compact(compact)
             self.benchmark_section.setVisible(not focused and (self.result is None or self.result['config'].model!='multisite'))
@@ -332,11 +335,18 @@ class ResultsView(QtWidgets.QWidget):
         w.responsive.show_panel(2);self._focused=not getattr(self,'_focused',False);self.set_compact(w.responsive.compact);w.responsive.focus_plot('results')
     def set_result(self,result):
         self.result=result
+        # The application supplies its metadata-aware figure export action.
+        # Keep the standard Matplotlib action only in standalone views.
+        if any(action.text()=='Export Figure…' for action in self.navigation.actions()):
+            standard=getattr(self.navigation,'_actions',{}).get('save_figure')
+            if standard is not None:self.navigation.removeAction(standard)
         multisite=result['config'].model=='multisite'
         if self.kind=='eels':
             self.multisite_controls.setVisible(multisite);self.choice.setVisible(not multisite)
             self.signal_label.setVisible(not multisite)
+            self.multisite_controls.sources.setVisible(multisite)
             if multisite:self.multisite_controls.set_result(result)
+            else:self.multisite_controls.result=None
         self.multisite_banner.setVisible(multisite)
         if multisite:
             sites=result['metadata']['multisite']
@@ -376,9 +386,13 @@ class ResultsView(QtWidgets.QWidget):
                 current=self.result.get('methods',{}).get(method,self.result)
                 series=spectral_series(current,options['selection'],options['normalization'],options['compared'],options['include_total'])
                 sites=current['metadata']['multisite']
-                self.multisite_banner.setText(selection_description(current,series)+'\nModeled partial core-edge spectrum · '
-                    +current['metadata']['scientific_status']+' · active '+('−M' if sites['global_reversal'] else '+M')+' provider pairs · uncalibrated relative scale.')
-            self.display_note.setText(description(self.result));self.presentation.capture();self.canvas.draw_idle();return
+                self.multisite_banner.setText(self.multisite_controls.normalization_note(current,series)+'\nPartial core-edge · '
+                    +current['metadata']['scientific_status']+' · active '+('−M' if sites['global_reversal'] else '+M'))
+                self.multisite_banner.setToolTip(selection_description(current,series)+'\n'+description(current))
+                self.display_note.setText(selection_description(current,series)+'\n'+description(current))
+            else:self.display_note.setText(description(self.result))
+            if self.figure._suptitle is not None:self.figure._suptitle.set_wrap(True)
+            self.presentation.capture();self.canvas.draw_idle();return
         display=self.normalization.settings()
         advanced=self.advanced.isChecked()
         self.component_mode.setEnabled(not advanced)

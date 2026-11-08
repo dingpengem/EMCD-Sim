@@ -173,12 +173,40 @@ def test_legacy_ni_view_remains_the_existing_two_panel_view(view):
     assert view.component_mode.isVisibleTo(view)
 
 
+def test_results_polish_defaults_relevance_and_exports(view):
+    result=stored_result();view.navigation.addAction('Export Figure…')
+    view.set_result(result);controls=view.multisite_controls
+    assert controls.selection.currentText()=='Total Results'
+    assert controls.groups.isHidden() and controls.normalization.isHidden() and controls.include_total.isHidden()
+    assert controls.sources.parent() is view.details_body
+    assert not controls.sources.isVisibleTo(view) and 'MDFF' in controls.selection.toolTip()
+    assert 'I_A_plus' in controls.quantity.toolTip() and 'D_mag' in controls.quantity.toolTip()
+    assert sum(a.text()=='Export Figure…' for a in view.navigation.actions())==1
+    assert getattr(view.navigation,'_actions',{})['save_figure'] not in view.navigation.actions()
+    select(view,'group','Fe(B)');controls.normalization.setCurrentIndex(1)
+    assert 'Group Mean' in view.multisite_banner.text() and 'not additive' in view.multisite_banner.text()
+    assert not controls.normalization.isHidden() and controls.groups.isHidden()
+    view.set_result(result)  # Redrawing the same run preserves its chosen view.
+    assert controls.options()['selection'][0]=='group' and controls.options()['normalization']=='mean'
+    view.set_result(deepcopy(result))  # A different run starts with total results.
+    assert controls.options()['selection']==('total',None) and controls.options()['normalization']=='weighted'
+    select(view,'compare');assert not controls.groups.isHidden() and controls.groups.height()<78
+    controls.quantity.setCurrentIndex(4)
+    assert '(I_A_plus - I_A_minus)/2' in controls.quantity.toolTip()
+    view._focused=True;view.set_compact(True)
+    assert not view.details_section.isHidden()  # Metadata and exports stay reachable when maximized.
+
+
 @pytest.mark.skipif(sys.platform!='win32' or os.environ.get('QT_QPA_PLATFORM')!='windows',reason='Explicit native Windows result selection check')
 def test_native_windows_group_element_comparison(view,app):
     assert app.platformName() == 'windows'
+    view.window().resize(480,780)  # Match a narrow Results panel, not a full-width plot.
+    view.navigation.addAction('Export Figure…')
     result = stored_result();view.set_result(result);view.window().show();app.processEvents()
     assert QtTest.QTest.qWaitForWindowExposed(view.window().windowHandle(),3000)
     controls = view.multisite_controls
+    if os.environ.get('EMCD_VIEWER_CHECK_IMAGE'):
+        view.canvas.draw();view.window().grab().save(os.environ['EMCD_VIEWER_CHECK_IMAGE']+'_total.png')
     select(view,'group','Fe(B)');controls.normalization.setCurrentIndex(1)
     assert 'not additive' in view.multisite_banner.text()
     select(view,'element','Fe');assert 'fixed N=3' in view.multisite_banner.text()
@@ -198,4 +226,10 @@ def test_native_windows_group_element_comparison(view,app):
     app.processEvents();QtTest.QTest.qWait(150);view.canvas.draw()
     assert len(view.figure.axes[0].lines) == 2
     assert 'fixed N=3' in view.multisite_banner.text()
-    if os.environ.get('EMCD_VIEWER_CHECK_IMAGE'):view.window().grab().save(os.environ['EMCD_VIEWER_CHECK_IMAGE'])
+    if os.environ.get('EMCD_VIEWER_CHECK_IMAGE'):view.window().grab().save(os.environ['EMCD_VIEWER_CHECK_IMAGE']+'_groups.png')
+    # Same production view, legacy Ni arrays and unchanged two-panel presentation.
+    ni=stored_result();ni['config']=ForwardSettings(model='atomic',l3=710,l2=723,energy_scope='full',angular_maps=False,correction=False)
+    ni['model'].elastic.crystal.species=('Ni',)*4
+    view.set_result(ni);app.processEvents();view.canvas.draw()
+    assert len(view.figure.axes)==2 and controls.sources.isHidden()
+    if os.environ.get('EMCD_VIEWER_CHECK_IMAGE'):view.window().grab().save(os.environ['EMCD_VIEWER_CHECK_IMAGE']+'_ni.png')
