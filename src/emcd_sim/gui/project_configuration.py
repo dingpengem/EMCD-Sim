@@ -53,6 +53,7 @@ def _records(state):
             element=g.element,indices=g.indices,magnetization=g.magnetization,multiplicity=g.multiplicity,
             normalization=g.normalization,mdff_reference=g.mdff_reference) for g in sites.groups] if sites is not None else []
     for record in records:
+        if not isinstance(record.get('enabled',True),bool):raise ValueError('Group participation must be a boolean')
         if (isinstance(record['multiplicity'],bool) or not isinstance(record['multiplicity'],(int,np.integer)) or record['multiplicity']!=len(record['indices'])
                 or record['normalization']!='mean_per_selected_atom'):
             raise ValueError('Group multiplicity/normalization differs from the Stage 1 per-atom convention')
@@ -117,7 +118,7 @@ def save_configuration(state,path,*,cancelled=lambda:False,progress=lambda s:Non
         saved_records = [dict(r,mdff_reference=None if r['mdff_reference'] is None else _encode_config(r['mdff_reference'])) for r in records]
         extension = dict(version=1,magnetization_mode=mode,reverse_magnetization=state.get('reverse_magnetization',False),
             groups=saved_records,normalization='mean_per_selected_ionizing_atom',
-            selected_atom_count=sum(r['multiplicity'] for r in records),
+            selected_atom_count=sum(r['multiplicity'] for r in records if r.get('enabled',True)),
             energy_windows=None if windows is None else {key:asdict(w) for key,w in windows.items()},energy_ev=energy,
             global_config=None if state.get('global_config') is None else _encode_config(state['global_config']),
             editor_drafts=state.get('editor_drafts',{}))
@@ -184,7 +185,7 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
     _records(state)
     if parameters.get('multisite_configuration') is not None and (
             extension['normalization']!='mean_per_selected_ionizing_atom'
-            or extension['selected_atom_count']!=sum(r['multiplicity'] for r in records)):
+            or extension['selected_atom_count']!=sum(r['multiplicity'] for r in records if r.get('enabled',True))):
         raise ValueError('Saved selected-atom normalization is inconsistent')
     windows = extension['energy_windows']
     windows = None if windows is None else {key:ModeledEdgeWindow(**value) for key,value in windows.items()}
@@ -216,6 +217,10 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
     from .group_mdff import validate_group_reference
     for r in records:
         check('Validating '+r['group_id']);key = 'group:'+r['group_id'];reference = r['mdff_reference']
+        if not r.get('enabled',True):
+            if reference is None:state['source_states'][key]=dict(state='excluded',verified=False)
+            else:resolve(key,reference)
+            continue
         if reference is None:
             state['source_states'][key] = dict(state='unconfigured',verified=False)
             invalid_groups.append(r['group_id']+': MDFF is unconfigured');continue
@@ -251,7 +256,7 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
                     state['effective_'+key] = None
         else:state['effective_'+key] = None
     if mode=='local':
-        active_valid = bool(records) and not invalid_groups and state['config'].model=='multisite'
+        active_valid = any(r.get('enabled',True) for r in records) and not invalid_groups and state['config'].model=='multisite'
         if not records:state['issues'].append('Local mode has no site groups')
         if state['config'].model!='multisite':state['issues'].append('Local mode requires explicit multi-site forward settings; Global M is not a substitute')
         if windows=={} or (windows is None and state['energy_ev'] is None):

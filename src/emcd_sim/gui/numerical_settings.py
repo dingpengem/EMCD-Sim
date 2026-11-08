@@ -115,19 +115,18 @@ class NumericalSettingsUI:
             if self.numerical_mode.currentIndex()==0:
                 if getattr(self,'magnetization_mode','global') == 'local':
                     raise ValueError('Local multi-site calculations require explicit Manual numerical settings; Ni presets are not transferred')
-                if self.model_box.currentIndex()==2:
+                accepted=getattr(self,'_accepted_global_mdff',None)
+                if accepted is None:raise ValueError('Global MDFF is unconfigured. Elastic preview uses the displayed settings; select Manual to edit them.')
+                if accepted.model=='imported':
                     raise ValueError('Imported MDFF requires explicit Manual numerical settings; Ni presets are not transferred')
                 if (set(self.structure.atoms.get_chemical_symbols())!={'Ni'} or
-                    self.explicit_xmcd.isChecked() or self.atomic_parameter_path.text().strip()):
+                    hasattr(accepted,'provider_schema')):
                     raise ValueError('Declared MDFF providers require explicit Manual numerical settings; Ni presets are not transferred')
                 # Source validation is separate from configuration selection.
-                cfg=ForwardSettings(propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],
+                cfg=replace(accepted,propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],
                     fft_generators=self.saved_fft_generators(),
                     channeling_model=('single','double')[self.channeling_box.currentIndex()],systematic_row=self.row_projection.isChecked(),
-                    model=('xmcd','atomic')[self.model_box.currentIndex()],source_sha256=(self.source_info or {}).get('sha256','') if self.validated_path==self.source_path.text() else '',
-                    axis_declared=self.declaration.isChecked(),magnetization=tuple(float(x) for x in self.axis.text().replace(',',' ').split()),
-                    eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value(),l2=self.spin['xl2'].value(),
-                    radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
+                    magnetization=self.material_magnetization,
                     centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value())
                 s=self.settings()
                 atoms=self.structure.atoms

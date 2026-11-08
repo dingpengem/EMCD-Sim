@@ -333,13 +333,14 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         except ValueError as exc:
             self.view.scene = None; self.view.update(); self.notice.setText(str(exc)); return
         rows = self.editor.rows()
-        if rows and model is None:
+        if rows:
             # Draft visualization only: no placeholder provider or executable model.
-            for number, (_,_,indices,direction,_) in enumerate(rows):
+            for number, (_,_,indices,direction,reference) in enumerate(rows):
                 mask = np.isin(scene.indices,indices)
                 scene.group_indices[mask] = number
                 scene.group_colors[mask] = site_group_color(number)
-                if direction is not None:scene.directions[mask] = direction
+                scene.directions[mask]=0
+                if direction is not None and getattr(reference,'magnetic_state',None)!='nonmagnetic':scene.directions[mask] = direction
         if self.editor.reverse_magnetization:scene.directions[:] *= -1
         camera = (self.view.orientation.copy(),self.view.zoom,self.view.pan.copy())
         had_scene = self.view.scene is not None
@@ -354,7 +355,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         if rows:
             self.group_list.addItem('All groups / no highlight')
             for number, (name,element,indices,_,reference) in enumerate(rows):
-                suffix = ' — unconfigured MDFF' if reference is None else ''
+                suffix = ' — excluded from ionization' if name in self.editor.excluded_groups else ' — unconfigured MDFF' if reference is None else ''
                 item = QtWidgets.QListWidgetItem(f'{name} ({element}, {len(indices)} atoms){suffix}')
                 color = QtGui.QColor.fromRgbF(*site_group_color(number))
                 icon = QtGui.QPixmap(14,14); icon.fill(color); item.setIcon(QtGui.QIcon(icon))

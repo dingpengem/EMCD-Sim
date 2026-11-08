@@ -53,6 +53,10 @@ class EMCDWorker(QtCore.QThread):
                 r=calculate_multisite(self.structure,self.settings,self.sites,self.config,progress,self.cancelled,
                     energy_windows=self.energy_windows,reverse_magnetization=self.reverse_magnetization)
                 r['gui_multisite_input']=self.input_signature
+                if self.input_signature and len(self.input_signature)>3:
+                    r['metadata']['ionization_participation']=dict(
+                        selected_atom_count=sum(g.multiplicity for g in self.sites.groups),
+                        excluded_structural_groups=[dict(group_id=n,element=e,indices=indices,scope='excluded, not calculated') for n,e,indices in self.input_signature[3]])
             if not self.cancelled():self.result.emit(r)
         except Cancelled:pass
         except Exception as exc:
@@ -66,6 +70,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
     emcd_ready=QtCore.Signal()
     def mdff_controls(self):
         self.emcd_result=None;self.source_info=None;self.validated_path=None
+        self._accepted_global_mdff=None
         self.model_box=QtWidgets.QComboBox();self.model_box.addItems(['XMCD-constrained MDFF','Atomic Ionization MDFF']);self.form.addRow(self.model_box)
         self.material_magnetization=(0.,0.,1.)
         self.axis=QtWidgets.QLineEdit('0 0 1');self.axis.setReadOnly(True)
@@ -98,8 +103,6 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.model_box.addItem('Manual tensor')
         legacy.hide()
         self.form=saved
-        from .mdff_usability import configuration_dialog
-        self.button('Configure MDFF...',lambda:configuration_dialog(self))
         self.model_description=QtWidgets.QLabel();self.model_description.setWordWrap(True);self.form.addRow(self.model_description)
         self.model_box.currentIndexChanged.connect(self.model_changed)
         self.axis.textChanged.connect(lambda text:self.set_material_magnetization(tuple(float(v) for v in text.replace(',',' ').split())))
@@ -246,8 +249,6 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             'XMCD-constrained tensor: requires a declared XAS/XMCD spectrum and its conventions.',
             'Atomic ionization: approximate cubic 2p to 3d transitions from editable electronic parameters.',
             'Manual tensor: constant coefficients or phenomenological L2,3 spectral strengths.')[index])
-        if hasattr(self,'correction'):
-            self.correction.setChecked(index==0 and bool(self.source_info and self.source_info['audit']))
         self.emcd_stale()
     def source_changed(self,*_):
         self.source_info=None;self.validated_path=None;self.xmcd_selected.clear();self.declaration.setChecked(False);self.source_status.setText('Source changed; validate and declare conventions.');self.emcd_stale()
@@ -263,7 +264,6 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3' or not info['selected'])
             if info['selected']:self.set_values({'xl3':info['selected']['L3'],'xl2':info['selected']['L2']})
             self.declaration.setChecked(bool(info['audit']));self.source_status.setText(info['provenance']+'\nNative range: %.3f–%.3f eV; no energy shift.'%tuple(info['bounds']))
-            if hasattr(self,'correction'):self.correction.setChecked(bool(info['audit']))
         except Exception as exc:
             self.source_info=None;self.validated_path=None;self.declaration.setChecked(False);self.source_status.setText(str(exc))
             if show_error:self.error(str(exc))
@@ -281,6 +281,32 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if getattr(self,'magnetization_mode','global')=='local':
             from .multisite_run import forward_settings
             return forward_settings(self)
+        viewer=getattr(self,'structure_viewer',None)
+        if viewer is not None and viewer.pending_global_direction:
+            raise ValueError('Apply or Cancel pending Global Material M edits in the 3D viewer before calculation')
+        dialog=getattr(self,'mdff_dialog',None)
+        if dialog is not None and dialog.has_unapplied_edits():raise ValueError('Apply or Cancel the Global MDFF draft before calculation')
+        cfg=getattr(self,'_accepted_global_mdff',None)
+        if cfg is None:raise ValueError('Configure and Apply Global MDFF through Material → 3D Structure Viewer → Site Groups')
+        shared=dict(fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],
+            parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],
+            energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),
+            systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),
+            propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),
+            slice_step=self.spin['slice_step'].value(),energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),
+            depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
+            centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),
+            window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()),magnetization=self.material_magnetization)
+        cfg=replace(cfg,**shared)
+        from .generalized_forward import ImportedSettings,ProviderSettings
+        if isinstance(cfg,ProviderSettings) and cfg.model=='xmcd':
+            declaration=dict(cfg.provider_declaration,magnetization_crystal=list(self.material_magnetization))
+            cfg=replace(cfg,provider_declaration=declaration,pair_reversed=False)
+        if isinstance(cfg,ImportedSettings):cfg=self.bind_material_reference(cfg)
+        from .propagation import resolve_fft_configuration
+        return resolve_fft_configuration(self.structure,self.settings(),cfg)
+
+    def global_mdff_draft_settings(self,prepare=True,*,resolve=False):
         viewer=getattr(self,'structure_viewer',None)
         if viewer is not None and viewer.pending_global_direction:
             raise ValueError('Apply or Cancel pending Global Material M edits in the 3D viewer before preview or calculation')
@@ -307,7 +333,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if mode=='imported':cfg=self.imported_forward_settings(cfg,prepare=prepare)
         else:cfg=self.declared_provider_settings(cfg,prepare=prepare)
         from .propagation import resolve_fft_configuration
-        return resolve_fft_configuration(self.structure,self.settings(),cfg)
+        return resolve_fft_configuration(self.structure,self.settings(),cfg) if resolve else cfg
 
     def emcd_stale(self,*_):
         if getattr(self,'_session_restoring',False):return
@@ -388,7 +414,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if self.model_box.currentIndex()==1 and self.atomic_editor.active:
             self.atomic_editor.preview();return
         try:
-            cfg=self.forward_settings();e=energy_grid(cfg)
+            cfg=self.global_mdff_draft_settings();e=energy_grid(cfg)
             if cfg.model=="imported":self.draw_manual_preview(cfg)
             if cfg.model=='imported' and self.manual_model.currentIndex()==1:return
             from .generalized_forward import is_declared,source_for

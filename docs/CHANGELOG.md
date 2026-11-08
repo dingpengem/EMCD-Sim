@@ -2,6 +2,9 @@
 
 ## Unreleased development source — crystallographic groups and direction workflow
 
+- Prepare local dev3: one Viewer/Site Groups MDFF entry and a shared, explicit-context three-model workspace; remove the main MDFF section while retaining seven peer Settings sections. Accept Global MDFF as configuration data, preserve group draft/outer Cancel transactions and independent contexts, and guard pending context switches. Scroll scientific controls with fixed footer actions for smaller/DPI-scaled desktops.
+- Add explicit ionization participation to existing structural groups and project persistence. Excluded oxygen remains in the full elastic structure but not the selected-Fe denominator; enabled missing sources block by group name. Nonmagnetic sources retain validated reference frames without assigning Material magnetic order. Keep energy-window exclusions separate. Report the actual elastic-preview geometry/beam-limit reason without adding an MDFF requirement. No propagation kernels or historical references changed; dev1/dev2 remain unchanged.
+
 - Make Material authoritative for target M, with transactional Global editing in the existing Viewer/Site Groups workflow and read-only target/context displays in MDFF Configuration. Remove per-model target restoration and source-validation overrides; retain independent full frames, physical-pair validation and compatible preview/submission. Use consistent title-case Settings headings without peer prefixes. This source cleanup is not in the unchanged `windows-crystal-groups-dev1` candidate (`effb755`).
 - Preserve the previous application regression at `f769e05`: **1,300 passed, 40 failed, 126 setup errors, 62 skipped, exit 1**, followed by 22 distinct focused passes at `effb755`. Broad regression/source-guard coverage remains incomplete; this cleanup does not rerun those suites, maintain pins or build another candidate.
 

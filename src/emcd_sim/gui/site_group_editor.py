@@ -26,6 +26,10 @@ def validate_site_rows(atoms, rows):
         if any(isinstance(i,bool) or not isinstance(i,(int,np.integer)) or i<0 or i>=len(atoms) or atoms[i].symbol!=element for i in indices):
             raise ValueError('Each group must contain valid original indices of one element')
         assigned.update(indices)
+        if direction is None and getattr(reference,'magnetic_state',None)=='nonmagnetic':
+            # This is the source's declared compatibility/reference axis, not
+            # an inferred Material magnetization. The structural row stays None.
+            direction=reference.magnetization
         if direction is None:
             if reference is not None:raise ValueError('Declare a magnetic direction before binding an MDFF provider')
             continue  # Structural draft only: no magnetic direction is inferred.
@@ -57,6 +61,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         self.mdff_dialogs = {};self.energy_windows = {};self._mdff_status = {}
         self._accepted_mdff = ({},{},{},{})
         self.crystallographic_provenance = {}
+        self.excluded_groups=set();self._accepted_excluded=set()
         self.setWidgetResizable(True);self.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         body=QtWidgets.QWidget();self.setWidget(body)
         layout = QtWidgets.QVBoxLayout(body)
@@ -65,7 +70,8 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         layout.addWidget(self.mode)
         self.mode_note = QtWidgets.QLabel(); self.mode_note.setWordWrap(True); layout.addWidget(self.mode_note)
         note = QtWidgets.QLabel('Select original atoms here or click in 3D (Ctrl+click toggles). '
-            'Replicas share one original ASE index. Assignment never implies equivalence.')
+            'Replicas share one original ASE index. Check a group to include its ionization contribution; '
+            'unchecked atoms remain in the elastic structure. Assignment never implies equivalence.')
         note.setWordWrap(True); layout.addWidget(note)
         self.filter = QtWidgets.QComboBox(); self.filter.addItems(['All atoms', 'Assigned atoms', 'Unassigned atoms'])
         layout.addWidget(self.filter)
@@ -77,7 +83,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         layout.addWidget(self.selection_text)
         self.groups = QtWidgets.QTreeWidget(); self.groups.setHeaderLabels(['Group ID', 'Element', 'ASE indices', 'MDFF'])
         self.groups.setColumnCount(6)
-        self.groups.setHeaderLabels(['Group ID', 'Element', 'ASE indices', 'MDFF', 'Atoms', 'Wyckoff'])
+        self.groups.setHeaderLabels(['Ionize / Group ID', 'Element', 'ASE indices', 'MDFF', 'Atoms', 'Wyckoff'])
         self.groups.header().moveSection(4,2);self.groups.header().moveSection(5,3)
         self.groups.header().moveSection(self.groups.header().visualIndex(3),4)
         self.groups.header().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Interactive)
@@ -107,8 +113,8 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
                 button.clicked.connect(lambda checked=False, fn=action:self.run_action(fn))
         self.status = QtWidgets.QLabel('No site groups. Ordinary CIF viewing remains available.')
         row = QtWidgets.QHBoxLayout();layout.addLayout(row)
-        configure = QtWidgets.QPushButton('Configure MDFF for Group…');row.addWidget(configure)
-        configure.clicked.connect(lambda:self.run_action(self.configure_mdff))
+        configure = QtWidgets.QPushButton('Configure MDFF…');row.addWidget(configure)
+        configure.clicked.connect(lambda:self.run_action(self.open_mdff_editor))
         recheck = QtWidgets.QPushButton('Recheck sources');row.addWidget(recheck)
         recheck.clicked.connect(self.recheck_mdff_sources)
         self.status.setWordWrap(True); layout.addWidget(self.status)
@@ -117,6 +123,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         self.atom_list.itemSelectionChanged.connect(self.emit_selection)
         self.filter.currentIndexChanged.connect(self.refresh_atoms)
         self.groups.currentItemChanged.connect(self.load_fields)
+        self.groups.itemChanged.connect(self.participation_changed)
         self.mode.currentIndexChanged.connect(self.mode_changed)
         self.mode_changed()
 
@@ -132,7 +139,8 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         self.mode_note.setText('Global magnetization is locked while site-specific magnetization is enabled.'
             if local else 'Legacy Global M is active. Local directions are retained but inactive; edit them in Local mode.')
         self.dirty = (self.rows() != self._accepted_rows or self.magnetization_mode != self._accepted_mode
-                      or self.reverse_magnetization != self._accepted_reversal)
+                      or self.reverse_magnetization != self._accepted_reversal
+                      or self.excluded_groups!=self._accepted_excluded)
         self.update_status(); self.modeChanged.emit(self.magnetization_mode)
 
     def run_action(self, action):
@@ -155,6 +163,9 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
             for name, element, indices, direction, reference in rows:
                 row = (name,element,indices,direction,reference)
                 item = QtWidgets.QTreeWidgetItem([name, element, ', '.join(map(str,indices)),self.mdff_status(row)])
+                item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+                item.setCheckState(0,QtCore.Qt.CheckState.Unchecked if name in self.excluded_groups else QtCore.Qt.CheckState.Checked)
+                item.setToolTip(1,'Checked groups participate in ionization. Unchecked groups remain in the complete elastic crystal. Missing MDFF never excludes a checked group automatically.')
                 item.setToolTip(2,', '.join(map(str,indices)))
                 provenance = self.crystallographic_provenance.get('groups',[])
                 match = next((g for g in provenance if g['indices'] == list(indices) and g['element'] == element),None)
@@ -179,6 +190,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
     def load_groups(self, groups):
         self.crystallographic_provenance = {}
         self.requested_energy_ev=None;self.omitted_site_groups=set()
+        self.excluded_groups=set();self._accepted_excluded=set()
         self.portable_references={}
         self.reverse_magnetization = self._accepted_reversal = False
         for dialog in self.mdff_dialogs.values():dialog.close();dialog.deleteLater()
@@ -284,9 +296,22 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         return tuple(map(float,direction))
 
     def check_rows(self, rows):
-        return validate_site_rows(self.atoms,rows)
+        validate_site_rows(self.atoms,rows)  # Structural checks include excluded rows.
+        return validate_site_rows(self.atoms,self.participating_rows(rows))
+
+    def participating_rows(self,rows=None):
+        return tuple(row for row in (self.rows() if rows is None else rows) if row[0] not in self.excluded_groups)
+
+    def participation_changed(self,item,column):
+        if column!=0:return
+        name=item.text(0)
+        if item.checkState(0)==QtCore.Qt.CheckState.Checked:self.excluded_groups.discard(name)
+        else:self.excluded_groups.add(name)
+        self.preview_site_groups=self.check_rows(self.rows());self.dirty=True
+        self.update_status();self.changed.emit()
 
     def replace_rows(self, rows, current=None):
+        self.excluded_groups.intersection_update(r[0] for r in rows)
         self.preview_site_groups = self.check_rows(rows)
         self.restore_rows(rows); self.dirty = True
         if current is not None and current < self.groups.topLevelItemCount():
@@ -324,6 +349,8 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
     def rename_group(self):
         row = self.current_row(); rows = list(self.rows())
         previous = rows[row][0]
+        if previous in self.excluded_groups:
+            self.excluded_groups.remove(previous);self.excluded_groups.add(self.name.text().strip())
         rows[row] = (self.name.text().strip(),) + rows[row][1:]
         self.replace_rows(rows,row)
         name = rows[row][0]
@@ -346,14 +373,14 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         """
         if self.magnetization_mode != 'local':raise ValueError('Enable Local Site Magnetization Mode first')
         if not self.rows():raise ValueError('Declare local site groups before reversing M')
-        if any(row[3] is None for row in self.rows()):raise ValueError('Declare all local directions explicitly before reversing M')
+        if any(row[3] is None and getattr(row[4],'magnetic_state',None)!='nonmagnetic' for row in self.participating_rows()):raise ValueError('Declare all participating magnetic directions explicitly before reversing M')
         from .generalized_forward import ImportedSettings
-        declared = [isinstance(row[4],ImportedSettings) for row in self.rows()]
+        declared = [isinstance(row[4],ImportedSettings) for row in self.participating_rows()]
         if any(declared):
             if not all(declared):raise ValueError('Configure all group MDFF providers before reversing their magnetic pairs')
             self.reverse_magnetization = not self.reverse_magnetization
             self.dirty = True;self.update_status();self.changed.emit();return
-        self.replace_rows(tuple((name,element,indices,tuple(-v for v in direction),reference)
+        self.replace_rows(tuple((name,element,indices,tuple(-v for v in direction) if direction is not None and name not in self.excluded_groups else direction,reference)
             for name,element,indices,direction,reference in self.rows()), self.current_row())
 
     def set_mdff_reference(self, group_id, reference):
@@ -390,7 +417,6 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         from .group_mdff import GroupMDFFDialog
         from .runtime import workspace
         row = self.effective_row(self.rows()[self.current_row()])
-        if row[3] is None:raise ValueError('Declare this group\'s magnetic direction explicitly before configuring its MDFF')
         dialog = self.mdff_dialogs.get(row[0])
         if dialog is None:
             dialog = GroupMDFFDialog(row,getattr(self,'mdff_workspace',None) or workspace(),self)
@@ -405,6 +431,12 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
             dialog.status.setText('Invalid / stale source: '+self._mdff_status[row[0]][2])
         dialog.open_draft(row)
         return dialog
+
+    def open_mdff_editor(self):
+        if hasattr(self,'mdff_opener'):
+            group=self.rows()[self.current_row()][0] if self.magnetization_mode=='local' and self.current_row()>=0 else None
+            return self.mdff_opener(group)
+        return self.configure_mdff()
 
     def accept_mdff(self, dialog, cfg, window):
         from .group_mdff import validate_group_reference
@@ -421,8 +453,10 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
     def validated_site_groups(self):
         from .generalized_forward import ImportedSettings
         from .group_mdff import validate_group_reference
-        rows = tuple(self.effective_row(row) for row in self.rows())
-        if not rows or any(not isinstance(r[4],ImportedSettings) for r in rows):return None
+        rows = tuple(self.effective_row(row) for row in self.participating_rows())
+        if not rows:raise ValueError('Select at least one participating ionization group')
+        for row in rows:
+            if not isinstance(row[4],ImportedSettings):raise ValueError('Enabled group '+row[0]+': configure and validate its MDFF provider')
         for row in rows:validate_group_reference(row,window=self.energy_windows.get(row[0]))
         return self.check_rows(rows)
 
@@ -435,26 +469,27 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         return row
 
     def update_status(self):
-        missing = sum(row[4] is None for row in self.rows())
+        missing = sum(row[4] is None for row in self.participating_rows())
         undeclared = sum(row[3] is None for row in self.rows())
         prefix = 'Unapplied edits. Apply to accept; Cancel to discard. ' if self.dirty else 'Applied in memory. '
         mode = 'Local mode. ' if self.magnetization_mode == 'local' else 'Global mode; local directions inactive. '
         if self.magnetization_mode == 'local':mode += ('All provider −M states selected. ' if self.reverse_magnetization else 'Declared +M configuration selected. ')
-        invalid = sum(self.mdff_status(row) != 'Configured and valid' for row in self.rows())
+        invalid = sum(self.mdff_status(row) != 'Configured and valid' for row in self.participating_rows())
         self.status.setText(mode + prefix + (f'{undeclared} group direction(s) undeclared. ' if undeclared else '') + (f'{missing} unconfigured group(s): MDFF references required; local configuration is not executable.'
             if missing else ((f'{invalid} invalid/unvalidated provider(s); not ready for calculation.' if invalid else 'All group providers configured and valid.')
                              if self.rows() else ('No local groups configured; local calculation unavailable.'
                                  if self.magnetization_mode == 'local' else 'No groups; ordinary CIF viewing.'))))
+        self.status.setText(self.status.text()+f' Ionization: {sum(len(r[2]) for r in self.participating_rows())} selected atoms; {len(self.excluded_groups)} structural group(s) excluded, retained for elastic scattering.')
         self.refresh_group_summary()
 
     def apply(self):
         from .generalized_forward import ImportedSettings
         from .group_mdff import bind_group_direction
         for name,dialog in self.mdff_dialogs.items():
-            if name in {row[0] for row in self.rows()} and dialog.has_unapplied_edits():
+            if name in {row[0] for row in self.participating_rows()} and dialog.has_unapplied_edits():
                 raise ValueError('Apply or Cancel pending MDFF edits for '+name+' before applying site groups')
         rows = tuple(self.effective_row(row) for row in self.rows())
-        prospective = tuple(row[:4]+(bind_group_direction(row,self.energy_windows.get(row[0])),) for row in rows)
+        prospective = tuple(row if row[0] in self.excluded_groups else row[:4]+(bind_group_direction(row,self.energy_windows.get(row[0])),) for row in rows)
         model = self.check_rows(prospective)
         # Commit only after every group has validated. Recreate a changed group's
         # cached editor from its accepted source next time, avoiding stale +M fields.
@@ -467,6 +502,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         self._accepted_rows = self.rows(); self.accepted_site_groups = self.preview_site_groups = model
         self._accepted_mode = self.magnetization_mode
         self._accepted_reversal = self.reverse_magnetization
+        self._accepted_excluded=set(self.excluded_groups)
         names = {r[0] for r in self.rows()}
         for name in list(self.mdff_dialogs):
             if name not in names:
@@ -478,6 +514,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         return model
 
     def cancel(self):
+        self.excluded_groups=set(self._accepted_excluded)
         dialogs,windows,status,snapshots = self._accepted_mdff
         for dialog in self.mdff_dialogs.values():
             dialog.hide()

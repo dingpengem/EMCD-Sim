@@ -13,12 +13,16 @@ from .project_collection import save_collection, load_collection
 
 def capture_configuration(w):
     viewer=getattr(w,'structure_viewer',None)
+    global_editor=getattr(w,'mdff_dialog',None)
+    if w.magnetization_mode=='global' and global_editor is not None and global_editor.has_unapplied_edits():
+        raise ValueError('Apply or Cancel the Global MDFF draft before saving')
     if viewer is not None and viewer.pending_global_direction:
         raise ValueError('Apply or Cancel pending Global Material M edits before saving; accepted settings are unchanged')
     if (w.magnetization_mode=='local' and viewer is not None
             and viewer.editor.accepted_site_groups is not None
             and (viewer.editor.rows()!=viewer.editor._accepted_rows
                  or viewer.editor.reverse_magnetization!=viewer.editor._accepted_reversal
+                 or viewer.editor.excluded_groups!=viewer.editor._accepted_excluded
                  or viewer.editor.magnetization_mode!=viewer.editor._accepted_mode)):
         raise ValueError('Apply or Cancel pending Site Group direction/provider edits before saving or recalculating; accepted settings are unchanged')
     from .emcd_forward import ForwardSettings
@@ -57,7 +61,7 @@ def capture_configuration(w):
     if viewer is not None:
         editor=viewer.editor;rows=editor.rows()
         state['group_records']=[dict(group_id=r[0],label=r[0],element=r[1],indices=r[2],magnetization=r[3],
-            mdff_reference=r[4],multiplicity=len(r[2]),normalization='mean_per_selected_atom') for r in rows]
+            mdff_reference=r[4],multiplicity=len(r[2]),normalization='mean_per_selected_atom',enabled=r[0] not in editor.excluded_groups) for r in rows]
         state['reverse_magnetization']=editor.reverse_magnetization
         omitted=getattr(editor,'omitted_site_groups',set())
         state['energy_windows']={k:v for k,v in editor.energy_windows.items() if k not in omitted} or None
@@ -85,6 +89,7 @@ def restore_configuration(w,state):
     from .site_group_editor import validate_site_rows
     s=state['settings'];c=state['config'];w._session_restoring=True
     try:
+        if state['magnetization_mode']=='local' and state.get('global_config') is None:w._accepted_global_mdff=None
         if state['magnetization_mode']=='local' and state.get('global_config') is not None:
             global_state=dict(state,magnetization_mode='global',config=state['global_config'],global_config=None,group_records=[],site_groups=None,
                 metadata={},source_overrides={'config':state.get('source_overrides',{}).get('global_config',state['global_config'].source)})
@@ -137,7 +142,9 @@ def restore_configuration(w,state):
             rows.append((r['group_id'],r['element'],tuple(r['indices']),None if r['magnetization'] is None else tuple(r['magnetization']),ref))
         if not rows and state.get('site_groups') is not None:
             rows=[(g.group_id,g.element,g.indices,g.magnetization,g.mdff_reference) for g in state['site_groups'].groups]
-        model=validate_site_rows(w.structure.atoms,rows)
+        editor.excluded_groups={r['group_id'] for r in state.get('group_records',[]) if not r.get('enabled',True)}
+        editor._accepted_excluded=set(editor.excluded_groups)
+        model=editor.check_rows(rows)
         editor.crystallographic_provenance=deepcopy(state.get('metadata',{}).get('crystallographic_sites',{}))
         editor.restore_rows(rows)
         editor.energy_windows=dict(state.get('energy_windows') or {})
@@ -168,6 +175,7 @@ def restore_configuration(w,state):
         w._loaded_fft_recipe=(w.fft_cell_key(),c.fft_generators) if c.fft_generators is not None else None
         w.restore_numerical_selection(state.get('metadata',{}))
         w.refresh();w.sync_magnetization_mode()
+        if state['magnetization_mode']=='global':w.mdff_dialog._entry=w.mdff_dialog.snapshot()
     finally:w._session_restoring=False
     w.emcd_stale()
 

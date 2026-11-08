@@ -226,43 +226,82 @@ def compact_atomic(editor):
     e.reset_defaults()
 
 
+from .mdff_workspace import MDFFWorkspace
+
+
+class GlobalMDFFDialog(MDFFWorkspace):
+    """Global draft controller for the shared three-model workspace."""
+    def __init__(self,window):
+        super().__init__(window);self.window=window
+        w=window
+        for widget in (w.model_box,w.model_description,w.axis,w.mdff_stack):
+            old=widget.parentWidget().layout()
+            if isinstance(old,QtWidgets.QFormLayout):old.takeRow(widget)
+        w.axis.hide()
+        w.mdff_material_direction=QtWidgets.QLabel();w.mdff_material_direction.setWordWrap(True)
+        self.mount_editor(w.structure_label.text(),w.model_box,w.mdff_stack,w.mdff_material_direction,w.model_description)
+        self.status=QtWidgets.QLabel('Global MDFF draft. Validate and Apply accepts this context only.');self.status.setWordWrap(True)
+        self.science_layout.addWidget(self.status)
+        buttons=QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Apply | QtWidgets.QDialogButtonBox.StandardButton.Cancel | QtWidgets.QDialogButtonBox.StandardButton.Close)
+        self.buttons=buttons;self.outer.addWidget(buttons)
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).setText('Validate and Apply')
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).clicked.connect(self.apply_configuration)
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Close).setText('Keep Draft / Close')
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Close).clicked.connect(self.hide)
+        preview=QtWidgets.QPushButton('Update numerical preview');self.outer.insertWidget(self.outer.count()-1,preview);preview.clicked.connect(w.preview_mdff)
+        self._entry=self.snapshot();w.refresh_material_direction()
+
+    def snapshot(self):
+        from copy import deepcopy
+        w=self.window
+        names=('source_path','xmcd_element','xmcd_edge','xmcd_selected','xmcd_provenance','xmcd_validity','xmcd_scale','atomic_parameter_path')
+        manual=w._capture_manual_state();source=manual.pop('source')
+        return dict(model=w.model_box.currentIndex(),fields={n:getattr(w,n).text() for n in names},
+            spins={k:v.value() for k,v in w.spin.items() if k.startswith('atomic_') or k in ('eta','beta','xl3','xl2','sigma','radial')},
+            flags={n:getattr(w,n).isChecked() for n in ('declaration','explicit_xmcd','atomic_declaration','imported_declaration','radial_override')},
+            status=w.xmcd_status.currentIndex(),source_info=deepcopy(w.source_info),validated_path=w.validated_path,
+            atomic=deepcopy(w.atomic_editor.draft()),atomic_path=w.atomic_editor.validated_path,atomic_sha=w.atomic_editor.validated_sha256,
+            atomic_info=w.atomic_provider_info,external=w.atomic_editor.external_source_pending,historical=w.atomic_editor.historical_config,
+            manual=manual,manual_source=source,manual_key=w._manual_key,spectral=deepcopy(w.manual_spectral.draft()))
+
+    def has_unapplied_edits(self):
+        def comparable(state):
+            state=dict(state)
+            for k in ('manual_source','atomic_info','historical'):state.pop(k,None)
+            state['spectral']=dict(state['spectral']);state['spectral'].pop('direction',None)
+            return state
+        return comparable(self.snapshot())!=comparable(self._entry)
+
+    def apply_configuration(self):
+        try:cfg=self.window.global_mdff_draft_settings()
+        except Exception as exc:self.status.setText('Invalid / unapplied: '+str(exc));return None
+        self.window._accepted_global_mdff=cfg;self.window._saved_global_config=cfg
+        self._entry=self.snapshot();self.window.emcd_stale();self.window.mark_project_dirty()
+        self.status.setText('Global MDFF applied in memory. Local groups and the active magnetization mode are unchanged.')
+        return cfg
+
+    def reject(self):
+        from copy import deepcopy
+        w=self.window;s=self._entry;previous=getattr(w,'_session_restoring',False);w._session_restoring=True
+        try:
+            for n,text in s['fields'].items():getattr(w,n).setText(text)
+            w.set_values(s['spins']);w.atomic_editor.restore_draft(deepcopy(s['atomic']))
+            w.atomic_editor.validated_path=s['atomic_path'];w.atomic_editor.validated_sha256=s['atomic_sha'];w.atomic_editor.external_source_pending=s['external']
+            if s['historical'] is not None:
+                from .saved_atomic_ui import restore
+                restore(w.atomic_editor,s['historical'],w.structure)
+            w.atomic_provider_info=s['atomic_info']
+            raw=deepcopy(s['manual']);raw['source']=s['manual_source'];w._manual_bindings[s['manual_key']]=raw
+            w._activate_manual_state(s['manual_key'],remember=False);w.manual_spectral.restore_draft(deepcopy(s['spectral']))
+            w.model_box.setCurrentIndex(s['model']);w.model_changed(s['model'])
+            w.xmcd_status.setCurrentIndex(s['status']);w.source_info=deepcopy(s['source_info']);w.validated_path=s['validated_path']
+            for n,flag in s['flags'].items():getattr(w,n).setChecked(flag)
+        finally:w._session_restoring=previous
+        w.refresh_material_direction();w.emcd_stale();self.hide()
+
+
 def configuration_dialog(window):
-    """Dedicated roomy workspace using the same live provider controls."""
-    w=window
-    if hasattr(w,'mdff_dialog'):
-        w.mdff_dialog.show();w.mdff_dialog.raise_();return
-    dialog=QtWidgets.QDialog(w);dialog.setWindowTitle('MDFF configuration');dialog.resize(1120,800)
-    outer=QtWidgets.QVBoxLayout(dialog)
-    material=QtWidgets.QGroupBox('Material');row=QtWidgets.QHBoxLayout(material)
-    button=QtWidgets.QPushButton('Open CIF…');button.clicked.connect(w.load_cif);row.addWidget(button)
-    w.mdff_material=QtWidgets.QLabel(w.structure_label.text());w.mdff_material.setWordWrap(True);row.addWidget(w.mdff_material,1);outer.addWidget(material)
-    model=QtWidgets.QGroupBox('Model');form=QtWidgets.QFormLayout(model)
-    for widget,label in ((w.model_box,'MDFF model'),(w.model_description,'')):
-        old=widget.parentWidget().layout()
-        if isinstance(old,QtWidgets.QFormLayout):old.takeRow(widget)
-        form.addRow(label,widget)
-    old=w.axis.parentWidget().layout()
-    if isinstance(old,QtWidgets.QFormLayout):old.takeRow(w.axis)
-    w.axis.hide()  # Compatibility/restoration mirror, never a second editor.
-    w.mdff_material_direction=QtWidgets.QLabel();w.mdff_material_direction.setWordWrap(True)
-    form.addRow(w.mdff_material_direction)
-    w.magnetization_mode_note=QtWidgets.QLabel();w.magnetization_mode_note.setWordWrap(True)
-    form.addRow(w.magnetization_mode_note);w.sync_magnetization_mode()
-    outer.addWidget(model)
-    old=w.mdff_stack.parentWidget().layout()
-    if isinstance(old,QtWidgets.QFormLayout):old.takeRow(w.mdff_stack)
-    scroll=QtWidgets.QScrollArea();scroll.setWidgetResizable(True);scroll.setWidget(w.mdff_stack);outer.addWidget(scroll,1)
-    bar=QtWidgets.QHBoxLayout();outer.addLayout(bar)
-    preview=QtWidgets.QPushButton('Update numerical preview');preview.clicked.connect(w.preview_mdff);bar.addWidget(preview)
-    run=QtWidgets.QPushButton('Calculate EMCD / EELS');run.clicked.connect(w.start_emcd);bar.addWidget(run)
-    close=QtWidgets.QPushButton('Done');close.clicked.connect(dialog.hide);bar.addWidget(close)
-    def model_visibility(index):
-        w.refresh_material_direction()
-        w.model_description.setText((
-            'XMCD-constrained tensor: requires a declared XAS/XMCD spectrum and its conventions.',
-            'Atomic ionization: approximate cubic 2p to 3d transitions from editable electronic parameters.',
-            'Manual tensor: constant coefficients or phenomenological L2,3 spectral strengths.')[index])
-    w.mdff_stack.currentChanged.connect(model_visibility);model_visibility(w.model_box.currentIndex())
-    w.mdff_refresh_model=model_visibility
-    w.manual_model.currentIndexChanged.connect(lambda _:model_visibility(w.model_box.currentIndex()))
-    w.mdff_dialog=dialog;w.mdff_scroll=scroll;dialog.show()
+    if not hasattr(window,'mdff_dialog'):window.mdff_dialog=GlobalMDFFDialog(window)
+    dialog=window.mdff_dialog;dialog.set_context_choices(window,None)
+    dialog.show();dialog.raise_();return dialog

@@ -17,11 +17,13 @@ from ..multisite_spectrum import ModeledEdgeWindow
 from .generalized_forward import ImportedSettings, settings_for_provider, settings_for_source
 from .provider_ui import ProviderUI
 from .group_mdff_controls import EdgeSelections, EnergySelection, energy_box
+from .mdff_workspace import MDFFWorkspace
 
 
 def validate_group_reference(row, reference=None, window=None):
     name, element, indices, direction, current = row
     cfg = current if reference is None else reference
+    if getattr(cfg,'magnetic_state',None)=='nonmagnetic':direction=cfg.magnetization
     group = IonizationSiteGroup(name,element,indices,cfg,direction,len(indices))
     source = load_site_group_provider(group)
     bounds = source.energy_ev[[0,-1]] if window is None else np.asarray(window.bounds_ev)
@@ -40,6 +42,9 @@ def bind_group_direction(row, window=None):
     if current is None:return current
     if not isinstance(current,ImportedSettings):
         raise ValueError(f'Group {name}: configure an acknowledged MDFF provider first')
+    if current.magnetic_state=='nonmagnetic':
+        validate_group_reference(row,current,window);return current
+    if direction is None:raise ValueError(f'Group {name}: declare Material magnetization for this magnetic provider')
     for reversed_pair in (False,True):
         candidate=replace(current,magnetization=direction,pair_reversed=reversed_pair)
         try:
@@ -57,7 +62,7 @@ def bind_group_direction(row, window=None):
         'Open this group\'s MDFF Editor or supply a compatible validated source; accepted settings are unchanged.')
 
 
-class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
+class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
     """Each instance owns its GUI drafts; applied references remain immutable."""
     configured = QtCore.Signal(object, object)  # Existing settings, ModeledEdgeWindow.
     draftChanged = QtCore.Signal()
@@ -71,17 +76,13 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         self.commit = None;self.provenance = None
         self.window = None; self.source_info = None; self.validated_path = None;self._reviewed_sha = None
         self._inputs = {}; self.spin = {}; self._loading = True
-        self.setWindowTitle('Configure MDFF for Group')
-        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowType.WindowMinMaxButtonsHint)
-        self.resize(1150,850)
-        layout = QtWidgets.QVBoxLayout(self)
-        self.context = QtWidgets.QLabel(); self.context.setWordWrap(True); layout.addWidget(self.context)
+        self.context = QtWidgets.QLabel(); self.context.setWordWrap(True)
         self.model = QtWidgets.QComboBox(); self.model.addItems(['XMCD-constrained MDFF','Atomic Ionization MDFF','Manual Tensor'])
         self.model_box = self.model
-        self.axis = QtWidgets.QLineEdit(' '.join(map(str,row[3])));self.axis.setReadOnly(True);self.axis.hide()
-        layout.addWidget(self.model)
-        scroll = QtWidgets.QScrollArea(); scroll.setWidgetResizable(True); layout.addWidget(scroll,1)
-        self.pages = QtWidgets.QStackedWidget(); scroll.setWidget(self.pages)
+        self.axis = QtWidgets.QLineEdit('' if row[3] is None else ' '.join(map(str,row[3])));self.axis.setReadOnly(True);self.axis.hide()
+        self.pages = QtWidgets.QStackedWidget()
+        self.mount_editor(self.row[1]+' — '+str(len(self.row[2]))+' original ASE sites',self.model,self.pages,self.context)
+        layout=self.science_layout
         self.declaration = QtWidgets.QCheckBox('I acknowledge this source, its full tensor frame, physical reversal declarations, relative per-atom units and validity limits.')
         self.build_xmcd()
         self.build_atomic()
@@ -108,7 +109,7 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         export.clicked.connect(lambda:self.export_applied_source())
         buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Apply |
             QtWidgets.QDialogButtonBox.StandardButton.Cancel | QtWidgets.QDialogButtonBox.StandardButton.Close)
-        layout.addWidget(buttons);self.buttons = buttons
+        self.outer.addWidget(buttons);self.buttons = buttons
         buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).setText('Validate and Apply')
         buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).clicked.connect(self.apply_configuration)
         buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
@@ -292,7 +293,7 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
             if getattr(self,'tensor_preview',None) is not None:self.tensor_preview.close();self.tensor_preview.deleteLater()
             dialog = QtWidgets.QDialog(self);dialog.setWindowTitle('Provider-evaluated tensor preview');dialog.resize(900,600)
             layout = QtWidgets.QVBoxLayout(dialog);figure = Figure(layout='constrained');canvas = FigureCanvasQTAgg(figure);layout.addWidget(canvas)
-            plus,minus = [t.tensor_angstrom2_per_ev for t in source.tensors(source.energy_ev,np.eye(3),self.row[3])]
+            plus,minus = [t.tensor_angstrom2_per_ev for t in source.tensors(source.energy_ev,np.eye(3),cfg.magnetization)]
             self.preview_states = dict(plus=plus,minus=minus,even=(plus+minus)/2,odd=(plus-minus)/2)
             for ax,part in zip(figure.subplots(2,1),('real','imag')):
                 for label,value in self.preview_states.items():
@@ -322,10 +323,10 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         direction_changed=self.row[3]!=row[3]
         self.row = row
         if hasattr(self,'axis'):
-            self.axis.setText(' '.join(map(str,row[3])))
+            self.axis.setText('' if row[3] is None else ' '.join(map(str,row[3])))
         for editor in (getattr(self,'atomic',None),getattr(self,'manual_spectral',None)):
             if editor is not None:
-                with QtCore.QSignalBlocker(editor.direction):editor.direction.setText(' '.join(map(str,row[3])))
+                with QtCore.QSignalBlocker(editor.direction):editor.direction.setText('Unconfigured' if row[3] is None else ' '.join(map(str,row[3])))
         if changed:self.emcd_stale()
         if direction_changed:
             self.atomic.invalidate_preview('Material group direction changed')
@@ -352,6 +353,8 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         return tuple(float(v) for v in text.replace(',',' ').split())
 
     def candidate(self):
+        if self.model.currentIndex()==0 and self.row[3] is None:
+            raise ValueError('Declare this group\'s Material target M before generating magnetic XMCD tensors')
         if self.model.currentIndex() == 0:
             from ..wien2k_xmcd import load_wien2k_xmcd
             path = self.source_path.text().strip();source = load_wien2k_xmcd(path)
@@ -558,8 +561,9 @@ class GroupMDFFDialog(ProviderUI, QtWidgets.QDialog):
         self.show();self.raise_();self.activateWindow()
 
     def has_unapplied_edits(self):
-        if self._applied_snapshot is None:return False
-        current=self.snapshot();accepted=deepcopy(self._applied_snapshot)
+        baseline=self._applied_snapshot or getattr(self,'_entry',None)
+        if baseline is None:return False
+        current=self.snapshot();accepted=deepcopy(baseline)
         # Material's read-only direction mirror is not an MDFF parameter edit.
         for state in (current,accepted):state['spectral'].pop('direction',None)
         return current!=accepted

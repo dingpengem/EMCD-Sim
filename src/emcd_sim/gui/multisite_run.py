@@ -36,7 +36,7 @@ def applied_inputs(window, cfg):
     if editor.dirty:raise ValueError('Apply or Cancel pending site-group/magnetization edits in the 3D viewer before Run')
     if not editor.rows():raise ValueError('Local mode has no applied site groups; configure groups and MDFF providers')
     for name,dialog in editor.mdff_dialogs.items():
-        if dialog.has_unapplied_edits():raise ValueError('Apply or Cancel pending MDFF edits for '+name+', then Apply site groups')
+        if name not in editor.excluded_groups and dialog.has_unapplied_edits():raise ValueError('Apply or Cancel pending MDFF edits for '+name+', then Apply site groups')
     sites = editor.validated_site_groups
     if sites is None:raise ValueError('Every ionizing group needs a configured and validated MDFF provider; no Global M fallback is used')
     sites.validate_structure(window.structure)
@@ -71,5 +71,6 @@ def applied_inputs(window, cfg):
     cfg = replace(cfg,energy_points=len(plan['energy_ev']),selected_edges=tuple(selections))
     cfg = resolve_fft_configuration(window.structure,window.settings(),cfg)
     signature = (tuple((g.group_id,g.element,g.indices,g.magnetization,g.multiplicity,g.mdff_reference) for g in sites.groups),
-                 tuple(windows.items()),editor.reverse_magnetization)
+                 tuple(windows.items()),editor.reverse_magnetization,
+                 tuple((r[0],r[1],r[2]) for r in editor.rows() if r[0] in editor.excluded_groups))
     return cfg,sites,windows,editor.reverse_magnetization,signature

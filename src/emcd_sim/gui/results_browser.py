@@ -256,6 +256,7 @@ class ProjectWorkspace(ProjectSession):
         if path:self._open_single_result_path(path,legacy=not (Path(path)/'project.json').exists())
     def _reset_project_inputs(self):
         if self.busy:return
+        self._accepted_global_mdff=None;self._saved_global_config=None
         with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
         self.set_values(dict(kv=300,beam=3.2,potential=2.5))
         self.worker_mode.setCurrentIndex(0);self.worker_count.setValue(1)
@@ -268,6 +269,8 @@ class ProjectWorkspace(ProjectSession):
         self.memory_budget.setCurrentIndex(self.memory_budget.findData(DEFAULT_BUDGET_MIB))
         self.spin['grid'].setValue(97)
         self.sync_angular_resolution()
+        if hasattr(self,'mdff_dialog'):
+            self.mdff_dialog.hide();self.mdff_dialog._entry=self.mdff_dialog.snapshot()
     def clear_selected(self):
         if self.busy:return
         self.selected_record=None;self.emcd_result=None;self.browser.table.clearSelection()
@@ -298,6 +301,7 @@ class ProjectWorkspace(ProjectSession):
             for widget,value in controls.items():
                 with QtCore.QSignalBlocker(widget):widget.setText(value)
             self.set_material_magnetization(c.magnetization)
+            self._accepted_global_mdff=c
             for widget,index in ((self.model_box,('xmcd','atomic','imported').index(c.model)),(self.propagation_box,['bloch','fft-multislice','both'].index(c.propagation))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
             for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),(self.energy_scope,('full','edges').index(c.energy_scope))):

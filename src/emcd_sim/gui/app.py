@@ -75,8 +75,10 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.section('Microscope & Sample',key='C. Microscope & Sample')
         self.number('kv','Voltage (kV)',300,20,1000,self.tilt_changed)
         self.number('thickness','Thickness (nm)',30,.1,1000,self.refresh)
-        self.section('MDFF Configuration',True,key='Model')
+        settings_form=self.form
+        self.mdff_host=QtWidgets.QWidget(self);self.form=QtWidgets.QFormLayout(self.mdff_host)
         self.mdff_controls()
+        self.mdff_host.hide();self.form=settings_form
         self.section('Propagation Method',key='E. Propagation Method')
         self.propagation_controls()
         self.section('Shared Calculation Settings',key='F. Shared Calculation Settings')
@@ -116,10 +118,9 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.zone.returnPressed.connect(self.apply_orientation);self.target.returnPressed.connect(self.apply_orientation)
         self.sync_za();self.restore_detectors();self.refresh();self.setup_stage_b();self.setup_stage_d(workspace)
         self.responsive=ResponsiveLayout(self)
-        from .mdff_usability import configuration_dialog
-        configuration_dialog(self)
-        self.mdff_dialog.hide()
         self.model_box.setCurrentIndex(1)
+        from .mdff_usability import GlobalMDFFDialog
+        self.mdff_dialog=GlobalMDFFDialog(self)
         self.structure_view_action=QtGui.QAction('View 3D Crystal Structure…',self)
         self.structure_view_action.triggered.connect(self.show_structure_viewer)
         self.setup_project_session()
@@ -260,6 +261,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'IAM elastic species supported; geometry needs correction.'))
             self.info.setPlainText(self.structure.description()+'\n\nNo valid current geometry: '+message)
             self.run_button.setEnabled(False);self.align_button.setEnabled(False);self.tabs.setTabText(0,'Diffraction (last preview)');self.ax.clear();self.ax.set_title('Beam limit exceeded — no current plot' if beam_limit else 'Invalid configuration — no current plot')
+            self.run_button.setToolTip(message)
             if beam_limit:
                 self.ax.text(.5,.5,str(exc).split('.')[0]+'.\nSelect Manual (Advanced),\nthen lower the Beam / MDFF cutoff.',transform=self.ax.transAxes,ha='center',va='center',wrap=True)
             self.canvas.draw_idle();self.selection.setText(message);self.statusBar().showMessage(message)
@@ -401,6 +403,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         if getattr(self,'structure_viewer',None) is None:
             self.structure_viewer=CrystalStructureDialog(self)
             self.structure_viewer.globalDirectionApplied.connect(self.set_material_magnetization)
+            self.structure_viewer.editor.mdff_opener=self.open_mdff_context
             self.structure_viewer.magnetizationModeChanged.connect(self.set_magnetization_mode)
             self.structure_viewer.editor.changed.connect(self.emcd_stale)
             self.structure_viewer.editor.pendingChanged.connect(self.emcd_stale)
@@ -427,6 +430,21 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.sync_magnetization_mode()
         if changed:self.emcd_stale()
         if changed:self.mark_project_dirty()
+
+    def open_mdff_context(self,group_id=None):
+        from .mdff_workspace import MDFFWorkspace
+        for dialog in self.findChildren(MDFFWorkspace):
+            if dialog.isVisible() and dialog._context_id!=group_id:
+                if not dialog.confirm_context_exit():return None
+                dialog.hide()
+        if group_id is None:
+            from .mdff_usability import configuration_dialog
+            return configuration_dialog(self)
+        editor=self.structure_viewer.editor
+        item=next((editor.groups.topLevelItem(i) for i,r in enumerate(editor.rows()) if r[0]==group_id),None)
+        if item is None:raise ValueError('Unknown MDFF editing context: '+group_id)
+        editor.groups.setCurrentItem(item);dialog=editor.configure_mdff()
+        dialog.set_context_choices(self,group_id);return dialog
 
     def sync_magnetization_mode(self):
         local=self.magnetization_mode=='local'
@@ -460,9 +478,9 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             if editor is not None and hasattr(editor,'direction'):
                 with QtCore.QSignalBlocker(editor.direction):editor.direction.setText(text)
         if hasattr(self,'mdff_material_direction'):
-            self.mdff_material_direction.setText('Local mode: each group uses its Material draft/accepted M; Global M is inactive.'
-                if self.magnetization_mode=='local' else 'Global target M (crystal Cartesian): '+text+
-                '. Set through Material → 3D Structure Viewer → Site Groups, then Apply.')
+            self.mdff_material_direction.setText('Global Material target M (crystal Cartesian, read-only): '+text+
+                '. Set through Material → 3D Structure Viewer → Site Groups. '+
+                ('Inactive for the current Local calculation.' if self.magnetization_mode=='local' else 'Global Magnetization Mode.'))
 
     def inspect_structure(self):
         dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Crystal structure — ASE import');dialog.resize(650,500);layout=QtWidgets.QVBoxLayout(dialog)

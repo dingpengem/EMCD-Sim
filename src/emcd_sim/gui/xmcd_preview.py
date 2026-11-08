@@ -39,7 +39,7 @@ class XMCDPreview(QtWidgets.QGroupBox):
         path=w.source_path.text()
         try:digest=hashlib.sha256(Path(path).read_bytes()).hexdigest()
         except (OSError,ValueError):digest='missing'
-        axis=w.axis.text() if w.model_box.currentIndex()==0 else w._mdff_axes[0]
+        axis=w.axis.text()
         return (path,digest,w.validated_path,(w.source_info or {}).get('sha256'),axis,w.declaration.isChecked(),
             w.explicit_xmcd.isChecked(),tuple(w.spin[k].value() for k in ('eta','beta','xl3','xl2')),
             tuple(field.text() for field in (w.xmcd_element,w.xmcd_edge,w.xmcd_selected,w.xmcd_provenance,w.xmcd_validity,w.xmcd_scale)),
