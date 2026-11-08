@@ -211,4 +211,14 @@ def test_solver_configuration_and_physics_unchanged():
             _,parent_sources=load_scope()
             parent=ast.parse(parent_sources[path].decode('utf-8-sig'))
             actual=find(parent,name)
-        assert ast.dump(normalize_unit_metadata(actual))==ast.dump(find(archived,name))
+        expected=copy.deepcopy(find(archived,name))
+        if name=='restore_structure':
+            # Stage 4D preserves exact Cartesian positions and original ASE
+            # arrays. Allow precisely these additions, retaining every legacy
+            # species/cell/occupancy/source expression and the array safeguards.
+            expected.body[-1:-1]=ast.parse('''if 'cartesian_positions' in snapshot:atoms.set_positions(snapshot['cartesian_positions'])
+for name,array in snapshot.get('atom_arrays',{}).items():
+    if name in ('numbers','positions'):raise ValueError('Reserved ASE array in structure snapshot')
+    atoms.new_array(name,np.asarray(array['values'],dtype=array['dtype']))
+''').body
+        assert ast.dump(normalize_unit_metadata(actual))==ast.dump(expected)

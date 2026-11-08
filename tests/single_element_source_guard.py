@@ -51,6 +51,55 @@ def legacy_kernel_source(path,content):
     conjugation, quadrature or accumulation expression is normalized here.
     """
     text=canonical(content).decode('utf-8')
+    # Stages 3A/3B extracted the same event calculation behind single-group
+    # wrappers. Reassemble that reviewed default path for the ORIGINAL pins;
+    # current_sources independently pins the complete wrappers/group kernels.
+    for name in ('double_channeling','multislice_double_channeling'):
+        group='def '+name+'_group_responses('
+        if path.endswith('/'+name+'.py') and group in text:
+            wrapper=text.index('def '+name+'_response(')
+            head=text[:text.index('    check_cancelled(cancelled)',wrapper)]
+            body=text[text.index('    check_cancelled(cancelled)',text.index(group)):]
+            text=head+body
+            begin=text.index('    if not isinstance(positions_by_group,Mapping)')
+            end=text.index('    # Mode-pair integral' if name=='double_channeling' else '    dense=96',begin)
+            text=text[:begin]+('' if name=='double_channeling' else
+                '    b=min(batch_pixels,len(q));sites=len(elastic.crystal.species)\n')+text[end:]
+    if path.endswith('/double_channeling.py'):
+        text=text.replace('from collections.abc import Mapping\n','')
+        text=text.replace('144*len(q_xy)*len(positions_by_group)\n                     +64*ni*no*sum(len(p) for p in positions_by_group.values())',
+                          '144*len(q_xy)')
+        text=text.replace('        site_phases={key:equivalent_site_phases(elastic.beams.hkl,ob.hkl,positions)\n'
+                          '                     for key,positions in positions_by_group.items()}',
+            '        delta = np.asarray(elastic.beams.hkl)[:, None, :]-np.asarray(ob.hkl)[None, :, :]\n'
+            "        if ionization_sites is None and not all(s == 'Ni' for s in elastic.crystal.species):\n"
+            "            raise ValueError('Equivalent-site response currently supports Ni only')\n"
+            '        positions = elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)\n'
+            '        if len(positions) == 0:\n'
+            "            raise ValueError('At least one core site required')\n"
+            '        phases,site_weights = equivalent_site_phases(elastic.beams.hkl,ob.hkl,positions)')
+        text=text.replace('result = {key:np.empty((len(q_xy),3,3),complex) for key in positions_by_group}',
+                          'result = np.empty((len(q_xy),3,3), complex)')
+        text=text.replace('            for key,(phases,site_weights) in site_phases.items():\n'
+                          '                check_cancelled(cancelled)\n'
+                          '                result[key][p] = sum', '            result[p] = sum')
+        text=text.replace('                    method=method, depth_steps=depth_steps, cancelled=cancelled) for phase,weight',
+                          '                method=method, depth_steps=depth_steps, cancelled=cancelled) for phase,weight')
+    if path.endswith('/multislice_double_channeling.py'):
+        text=text.replace('32*len(q)*9*len(positions_by_group)','32*len(q)*9')
+        text=text.replace('        site_phases={key:equivalent_site_phases(elastic.beams.hkl,ob.hkl,positions)\n'
+                          '                     for key,positions in positions_by_group.items()}',
+            '        phases,site_weights=equivalent_site_phases(elastic.beams.hkl,ob.hkl,elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal))\n'
+            "        if not len(phases):raise ValueError('At least one localized Ni site required')")
+        text=text.replace('responses={key:np.zeros((len(q),3,3),complex) for key in positions_by_group}',
+                          'response=np.zeros((len(q),3,3),complex)')
+        start=text.find('                for key,(phases,site_weights) in site_phases.items():\n')
+        if start!=-1:
+            end=text.index('                np.absolute(reciprocal,out=magnitude)',start)
+            inner=text[start:end].splitlines(keepends=True)[1:]
+            text=text[:start]+''.join(line[4:] for line in inner)+text[end:]
+        text=text.replace('responses[key][sl]+=event','response[sl]+=event')
+        text=text.replace('return responses,diagnostics','return response,diagnostics')
     if path.endswith('/single_channeling_tensor.py'):
         text=text.replace('historical_ni_site_phase_matrix','fcc_site_phase_matrix')
         text=text.replace('from .ionization_sites import single_site_phase_matrix\n','')

@@ -11,7 +11,7 @@ import zipfile
 
 MANIFEST_PATH = 'tests/fixtures/packaging_content_scope_v1.json'
 ARCHIVE_PATH = 'tests/fixtures/packaging_content_parent_v1.zip'
-MANIFEST_SHA256 = 'cc6978fa0fe3b39ec58b386b42b56d5335d286e12641cbc71188802689119d07'
+MANIFEST_SHA256='ba08218072fa55dcb2f1c99838c5e905c326f7dea2cc069df91d77dab8f72fca'
 ARCHIVE_SHA256 = '017093f5788b1f83d34091679a7802e253220213a056cb05b35d2a6e2164e54b'
 PARENT = '3609dfc762749024a3c6726c3763ef33f3e46482'
 MODIFIED = ('packaging/BETA_README.txt', 'packaging/README.md',
@@ -82,7 +82,7 @@ def load(root, overrides=None):
     return scope
 
 
-def support_paths(root):
-    scope = load(root)
+def support_paths(root, overrides=None):
+    scope = load(root, overrides)
     return set(scope['modified']) | set(scope['added']) | {
         MANIFEST_PATH, ARCHIVE_PATH, 'tests/packaging_content_source_scope.py'}

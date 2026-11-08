@@ -99,13 +99,13 @@ def test_forward_computation_ast_is_unchanged_except_approved_metadata_and_prior
 
 
 def test_current_windows_and_workflow_metadata_match_source():
-    assert (__version__,__display_version__)==('0.8.1b1','v0.8.1-beta.1')
+    assert (__version__,__display_version__)==('0.8.1b2','v0.8.1-beta.2')
     text=(ROOT/'packaging/windows_version_info.txt').read_text()
-    assert 'filevers=(0, 8, 1, 1), prodvers=(0, 8, 1, 1)' in text
-    assert "'FileVersion', '0.8.1.1'" in text and "'ProductVersion', 'v0.8.1-beta.1'" in text
+    assert 'filevers=(0, 8, 1, 2), prodvers=(0, 8, 1, 2)' in text
+    assert "'FileVersion', '0.8.1.2'" in text and "'ProductVersion', 'v0.8.1-beta.2'" in text
     workflow=(ROOT/'.github/workflows/windows-build.yml').read_text()
-    assert 'EMCD-Sim-v0.8.1-beta.1-Windows' in workflow
-    assert 'build/windows-v0.8.1-beta.1' in workflow
+    assert 'EMCD-Sim-v0.8.1-beta.2-Windows' in workflow
+    assert 'build/windows-v0.8.1-beta.2' in workflow
     assert not re.search(r'beta3|beta\.3|0\.6\.1b3',workflow)
     assert build_info()['physics_convention']==PHYSICS_CONVENTION
 

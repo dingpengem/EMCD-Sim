@@ -39,8 +39,11 @@ def test_profile_copy_and_fft_hooks_are_bitwise_identical():
     assert counts['outgoing_advance_calls']==4 and counts['outgoing_split_steps']==steps
     assert counts['fftn_batched_calls']==counts['ifftn_batched_calls']==steps
     assert counts['fftn_individual_transforms']==counts['ifftn_individual_transforms']==3*steps
-    assert report['regions']['depth_cartesian_contraction']['calls']==5
-    assert {'dipole_kernel','equivalent_site_phases','depth_cartesian_contraction','norm_leakage_diagnostics'}<={s['category'] for s in sites}
+    # The legacy API is now a wrapper around the shared group response. Its
+    # AST has no event loop; global FFT hooks above still observe the real
+    # outgoing propagation, while the complete result remains bitwise equal.
+    assert report['regions']['response']['calls']==1
+    assert sites==[]
 
 
 def test_hooks_restore_after_exception():

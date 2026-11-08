@@ -107,7 +107,7 @@ def load_scope(*, manifest_bytes=None, archive_bytes=None):
     return scope, contents
 
 
-def current_sources(parent_sources, overrides=None, *, prefix='Unreviewed current source: '):
+def current_sources(parent_sources, overrides=None, *, prefix='Unreviewed current source: ', current_protected=None):
     scope, _ = load_scope()
     from packaging_content_source_scope import load as load_packaging_scope
     packaging_scope = load_packaging_scope(ROOT, overrides)
@@ -118,10 +118,14 @@ def current_sources(parent_sources, overrides=None, *, prefix='Unreviewed curren
         old_digest = old.get('canonical_sha256', old.get('sha256'))
         assert packaging_scope['parent_files'][path]['canonical_sha256'] == old_digest, 'Packaging/editor parent disagreement: '+path
     expected = dict(parent_sources)
+    # The active scope may update current-file pins, but never the archived
+    # parent identities checked above or the ordering agreements below.
+    current_protected=current_protected or {}
     for path, entry in scope['protected_parent'].items():
         if path in expected and entry['mode'] == 'canonical':
             assert expected[path] == entry['sha256'], 'Historical parent disagreement: '+path
         target = amended[path]['sha256'] if path in amended else entry['sha256']
+        if path in current_protected:target=current_protected[path][entry['mode']+'_sha256']
         assert digest(read_source(path, overrides, prefix), entry['mode']) == target, prefix+path
         if path in amended and path in expected:
             expected[path] = amended[path]['canonical_sha256']
@@ -131,6 +135,8 @@ def current_sources(parent_sources, overrides=None, *, prefix='Unreviewed curren
         raw = read_source(path, overrides, prefix)
         key = 'raw_sha256' if entry['mode'] == 'raw' else 'canonical_sha256'
         target = amended[path]['sha256'] if path in amended else entry[key]
+        if path in current_protected:target=current_protected[path][key]
         assert digest(raw, entry['mode']) == target, prefix+path
         expected[path] = amended[path]['canonical_sha256'] if path in amended else entry['canonical_sha256']
+    expected.update({path:entry['canonical_sha256'] for path,entry in current_protected.items() if path in expected})
     return expected

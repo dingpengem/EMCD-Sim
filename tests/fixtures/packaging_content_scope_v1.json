@@ -4,13 +4,13 @@
   "modified": {
     "packaging/BETA_README.txt": {
       "mode": "canonical",
-      "sha256": "39c7fc5684847f488941f0ce2c98754e60b2eec4837cff5dedeb2fc2f3079a81",
-      "canonical_sha256": "39c7fc5684847f488941f0ce2c98754e60b2eec4837cff5dedeb2fc2f3079a81"
+      "sha256": "f0b81c57d86a785bf295cb82a06b079b5d143f49c1ac73c1519e4ca2aa9eb436",
+      "canonical_sha256": "f0b81c57d86a785bf295cb82a06b079b5d143f49c1ac73c1519e4ca2aa9eb436"
     },
     "packaging/README.md": {
       "mode": "canonical",
-      "sha256": "cfabf5b47d42baa0f3d5cc8c46459499c924867d4d23417a979eeb9869bba513",
-      "canonical_sha256": "cfabf5b47d42baa0f3d5cc8c46459499c924867d4d23417a979eeb9869bba513"
+      "sha256": "914c3b9090c59df2409551890208510f6eda14dc6348c8414cf68a5d32638660",
+      "canonical_sha256": "914c3b9090c59df2409551890208510f6eda14dc6348c8414cf68a5d32638660"
     },
     "packaging/build_windows.ps1": {
       "mode": "canonical",
@@ -24,8 +24,8 @@
     },
     "tests/mdff_editor_source_scope.py": {
       "mode": "canonical",
-      "sha256": "1a99976c2f729826b2729ff3bf84631af0e95a1ed08d30b794755a650968f3d9",
-      "canonical_sha256": "1a99976c2f729826b2729ff3bf84631af0e95a1ed08d30b794755a650968f3d9"
+      "sha256": "dd24f8e9e989046d6f021cf1f78ff999ea0f6e9299b0079470f6b99f93b17c6a",
+      "canonical_sha256": "dd24f8e9e989046d6f021cf1f78ff999ea0f6e9299b0079470f6b99f93b17c6a"
     },
     "tests/test_mdff_editor_source_scope.py": {
       "mode": "canonical",

@@ -2,6 +2,10 @@
 
 This loader and its manifest pin are review-bootstrap infrastructure, authenticated
 by the registration-only/combined reviewed patch, not by a self-hash cycle.
+
+The base/accepted-patch IDs and parent archives identify the original review.
+Current-file entries also include the authorized v0.9 multi-site revisions;
+updating those entries does not relabel any historical map or archive.
 """
 import hashlib
 import io
@@ -14,8 +18,8 @@ BASE='3b0ce6c386f3c815f85d8b9d64db679ff7622a94'
 ACCEPTED_PATCH='6e496aff8152903d8bca45bd1d6f1704139647324fd7399920e1ed03e82b7fe2'
 MANIFEST_PATH='tests/fixtures/mdff_usability_scope_v4.json'
 ARCHIVE_PATH='tests/fixtures/mdff_usability_parent_v4.zip'
-MANIFEST_SHA256='f3acf9802d5569a94dadb86c1d332d3d765cf9287be5a9229252c92d897b94a4'
-ACCEPTED_DECLARATION_SHA256='47e38ae6090b7ed6b78d3e2c6a25efb2eb297fe9e7995f54ae4b481dd0ca13c6'
+MANIFEST_SHA256='41e6508a7e2660fbcdd713e217787dd17d7fc2bda8328b5b651e0dbc46a3885c'
+ACCEPTED_DECLARATION_SHA256='a81be784cbdbbdcc705967b45b897d42d06367077aacadc614e5e2449200349f'
 # Closed reviewed paths are literals, not inferred from working files/manifests.
 ACCEPTED_PATHS=('docs/MANUAL_L23_TENSOR_MODEL.md','docs/MDFF_USABILITY_REDESIGN.md','docs/MDFF_USABILITY_SCOPE_PROPOSAL.md',
  'scripts/manual_l23_native_walkthrough.py','scripts/mdff_corrective_walkthrough.py','scripts/mdff_native_walkthrough.py','scripts/verify_mdff_corrective.py','scripts/xmcd_native_walkthrough.py',
@@ -24,6 +28,15 @@ MODIFIED=('src/emcd_sim/gui/app.py','src/emcd_sim/gui/atomic_editor.py','src/emc
 INTEGRATIONS=('tests/unit_source_snapshots.py','tests/single_element_source_guard.py','tests/conftest.py','tests/test_mdff_editor_source_scope.py','tests/test_packaging_content_source_scope.py','tests/test_automatic_numerical_settings.py','.gitattributes','src/emcd_sim/gui/responsive.py','src/emcd_sim/gui/desktop_acceptance.py','packaging/native_acceptance.py','tests/test_bcc_fe_cif_gui.py','tests/test_generalized_emcd_gui.py','tests/test_gui_stage_b.py','tests/test_gui_stage_c.py','tests/test_multislice_slice_step_range.py','tests/test_ni_117.py','tests/test_parallel_resources.py','tests/test_single_element_gui.py','tests/test_solver_settings_ui.py','tests/test_unified_elastic_acceptance.py','tests/test_unified_provider_gui.py')
 BOOTSTRAP=INTEGRATIONS+('tests/mdff_usability_source_scope.py','tests/mdff_workflow_registration.py','tests/test_mdff_usability_source_scope.py','tests/fixtures/mdff_usability_scope_v1.json','tests/fixtures/mdff_usability_parent_v1.zip','tests/fixtures/mdff_usability_scope_v2.json','tests/fixtures/mdff_usability_parent_v2.zip','tests/fixtures/mdff_usability_scope_v3.json','tests/fixtures/mdff_usability_parent_v3.zip',MANIFEST_PATH,ARCHIVE_PATH,'scripts/verify_mdff_registration.py','docs/MDFF_USABILITY_REGISTRATION.md')
 TRUST_ROOTS=('tests/mdff_usability_source_scope.py',MANIFEST_PATH,ARCHIVE_PATH)
+# Only these previously protected files have authorized later revisions in
+# the editor's current map. Unchanged historical entries must still reject a
+# corrupt declaration even when a mutation test replaces its manifest pin.
+CURRENT_REVISIONS=('packaging/BETA_README.txt','packaging/README.md',
+ 'src/emcd_sim/double_channeling.py','src/emcd_sim/gui/channeling.py',
+ 'src/emcd_sim/gui/forward_pipeline.py','src/emcd_sim/gui/numerical_settings.py',
+ 'src/emcd_sim/gui/propagation.py','src/emcd_sim/gui/results.py',
+ 'src/emcd_sim/mdff_providers.py','src/emcd_sim/multislice_double_channeling.py',
+ 'tests/test_atomic_parameter_editor.py')
 WORKFLOWS={
  'test_unified_starting_choices_have_no_material_electronic_defaults':'test_replacement_defaults_preserve_provenance_grid_and_help',
  'test_required_physical_definitions_and_blank_material_inputs':'test_replacement_physical_definitions_units_and_holes',
@@ -123,7 +136,8 @@ def current_sources(parent_sources,overrides=None,*,prefix='Unreviewed current s
     from mdff_editor_source_scope import current_sources as historical_current
     historical_overrides=dict(overrides or {})
     historical_overrides.update(parents)
-    expected=historical_current(parent_sources,historical_overrides,prefix=prefix)
+    expected=historical_current(parent_sources,historical_overrides,prefix=prefix,
+        current_protected={path:scope['protected'][path] for path in CURRENT_REVISIONS})
     for path in MODIFIED:
         if path in expected:assert expected[path]==scope['parent_files'][path]['canonical_sha256'],'Usability accepted-parent disagreement: '+path
     # Historical evidence keeps its original semantic diagnostics. Remaining
@@ -138,8 +152,9 @@ def current_sources(parent_sources,overrides=None,*,prefix='Unreviewed current s
 
 def support_paths():
     """Closed source set for disposable isolation trees; not a changed identity map."""
-    scope,_=load_scope()
-    return set(scope['protected'])|set(scope['candidate'])|set(scope['bootstrap'])
+    scope,parents=load_scope()
+    from packaging_content_source_scope import support_paths as packaging_support
+    return set(scope['protected'])|set(scope['candidate'])|set(scope['bootstrap'])|packaging_support(ROOT,parents)
 
 
 def packaging_parent_scope():
