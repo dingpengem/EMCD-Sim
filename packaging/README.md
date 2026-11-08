@@ -53,7 +53,9 @@ build/windows-build-env/Scripts/python.exe -m pip install -e ".[dev,gui]" -r pac
 build/windows-build-env/Scripts/python.exe packaging/check_windows_metadata.py
 ```
 
-The spec collects licenses for 17 distributions. `six==1.17.0` is an explicit
+The spec collects licenses for 19 distributions, including spglib and its
+typing_extensions dependency. spglib's runtime DLLs are collected explicitly;
+the build identity records both versions. `six==1.17.0` is an explicit
 build requirement even when no current transitive dependency installs it.
 The preflight checks those distributions plus PyInstaller, lists every missing
 metadata name with the installation command, and fails before invoking

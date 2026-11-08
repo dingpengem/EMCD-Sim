@@ -3,7 +3,14 @@ Windows x64 research software; unsigned. Python package 0.9.0b1.
 Windows numeric version 0.9.0.1; ProductVersion v0.9.0-beta.1.
 Physics convention: forward_born_dagger_g_minus_h_v1.
 Exact build source, version and coefficient identity are in About/build_info.json.
-Local development candidate only; not published. Scientific source validated at 49064fd.
+Local development candidate only; not published. Historical scientific validation at 49064fd.
+This crystal-grouping development build includes spglib structural grouping,
+explicit compatible direction/pair Apply and project persistence, and editor
+status improvements. Its exact source is recorded in build_info.json.
+Ordinary CIFs assign neither magnetization nor MDFF. Unsupported fixed-source
+Z-to-X changes remain rejected; magCIF and general tensor rotation are absent.
+The established v0.9 multi-site paths support independently configured groups;
+the single-element descriptions below also document the legacy workflow.
 
 Extract the complete folder. Run EMCD-Sim.exe; keep _internal beside it.
 Python, Conda and WIEN2k are not required. Use a writable project/export folder.

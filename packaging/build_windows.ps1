@@ -2,6 +2,7 @@ param([string]$Python = "$PSScriptRoot/../build/windows-rc/venv/Scripts/python.e
       [string]$BuildRoot = "build/windows-v0.9.0-beta.1",
       [string]$BuildLabel = "",
       [string]$ArchiveName = "",
+      [string]$SourceArchiveName = "",
       [Parameter(Mandatory=$true)][string]$CorrespondingSourceRoot)
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path "$PSScriptRoot/..").Path
@@ -18,7 +19,7 @@ try {
     $displayVersion = (& $Python -c "from emcd_sim import __display_version__; print(__display_version__)").Trim()
     if (-not $BuildLabel) { $BuildLabel = (& $Python -c "from emcd_sim.gui.runtime import LABEL; print(LABEL)").Trim() }
     if (-not $ArchiveName) { $ArchiveName = "EMCD-Sim-$displayVersion-Windows.zip" }
-    $sourceArchiveName = "EMCD-Sim-$displayVersion-Qt-sources.zip"
+    if (-not $SourceArchiveName) { $SourceArchiveName = "EMCD-Sim-$displayVersion-Qt-sources.zip" }
     # PyInstaller logs progress to stderr; Windows PowerShell must not treat
     # those informational native records as terminating script errors.
     $nativePreference = $ErrorActionPreference

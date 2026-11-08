@@ -2,6 +2,7 @@
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import sys
+import json
 
 import numpy as np
 import pytest
@@ -11,6 +12,18 @@ from PySide6 import QtCore, QtWidgets, QtTest
 
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.gui.structure_viewer import CrystalStructureDialog
+from emcd_sim.gui.generalized_forward import settings_for_source, source_for
+from single_element_helpers import document
+
+
+def declared_reference(tmp_path, name, element, direction=(0,0,1), frame=None):
+    data = document(element)
+    data['magnetization_crystal'] = list(direction)
+    if frame is not None:
+        data.update(basis='declared_local',frame_to_crystal=frame.tolist())
+    path = tmp_path/(name+'.json')
+    path.write_text(json.dumps(data),encoding='utf-8')
+    return settings_for_source(path)
 
 
 @pytest.fixture(scope='module')
@@ -32,7 +45,7 @@ def create(editor, name, indices, direction='0 0 1'):
     editor.create_group()
 
 
-def test_afm_drafts_apply_cancel_and_real_reference_handoff(dialog,app):
+def test_afm_drafts_apply_cancel_and_real_reference_handoff(dialog,app,tmp_path):
     atoms = bulk('Cr','bcc',a=2.88,cubic=True); original = atoms.copy()
     dialog.set_structure(atoms); editor = dialog.editor
     create(editor,'Cr-up',[0]);create(editor,'Cr-down',[1],'0 0 -2')
@@ -52,13 +65,15 @@ def test_afm_drafts_apply_cancel_and_real_reference_handoff(dialog,app):
     assert [r[0] for r in editor.rows()] == ['Cr-up','Cr-down']
     np.testing.assert_allclose(editor.rows()[1][3],[0,0,-1])
     # No provider is invented: supply declared source references through the handoff API.
-    editor.set_mdff_reference('Cr-up','source:Cr-up')
-    editor.set_mdff_reference('Cr-down','source:Cr-down')
+    references = [declared_reference(tmp_path,'up','Cr'),
+                  declared_reference(tmp_path,'down','Cr',(0,0,-1))]
+    for name,reference in zip(('Cr-up','Cr-down'),references):
+        editor.set_mdff_reference(name,reference)
     model = editor.apply()
     assert isinstance(model,MultiSiteIonization)
     assert model is dialog.accepted_site_groups
     assert [g.multiplicity for g in model.groups] == [1,1]
-    assert [g.mdff_reference for g in model.groups] == ['source:Cr-up','source:Cr-down']
+    assert [g.mdff_reference for g in model.groups] == references
     assert atoms == original
 
 
@@ -137,9 +152,10 @@ def test_noncollinear_selection_and_supercell_replicas(dialog,app):
     np.testing.assert_array_equal(dialog.view.orientation,before)
 
 
-def test_configured_model_cancel_and_incompatible_structure(dialog):
+def test_configured_model_cancel_and_incompatible_structure(dialog,tmp_path):
     atoms = bulk('Ni','fcc',a=3.52,cubic=True)
-    original = MultiSiteIonization(atoms,[IonizationSiteGroup('Ni','Ni',(0,1,2,3),'source:Ni',(0,0,1),4)])
+    reference = declared_reference(tmp_path,'Ni','Ni')
+    original = MultiSiteIonization(atoms,[IonizationSiteGroup('Ni','Ni',(0,1,2,3),reference,(0,0,1),4)])
     dialog.set_structure(atoms);dialog.set_site_groups(original);editor = dialog.editor
     editor.groups.setCurrentItem(editor.groups.topLevelItem(0))
     editor.name.setText('Ni-renamed');editor.rename_group()
@@ -252,18 +268,21 @@ def test_global_local_lock_legacy_settings_reopen_and_no_fallback(tmp_path,app,m
         window.close();window.deleteLater();app.processEvents()
 
 
-def test_global_flip_preserves_explicit_references_and_full_frames(dialog):
+def test_global_flip_preserves_explicit_references_and_full_frames(dialog,tmp_path):
     atoms = bulk('Cr','bcc',a=2.88,cubic=True)
     frames = [np.eye(3),np.array([[0,-1,0],[1,0,0],[0,0,1]])]
-    references = [dict(source='declared:up',frame_to_crystal=frames[0]),
-                  dict(source='declared:down',frame_to_crystal=frames[1])]
+    references = [declared_reference(tmp_path,'up','Cr',frame=frames[0]),
+                  declared_reference(tmp_path,'down','Cr',(0,0,-1),frames[1])]
     groups = MultiSiteIonization(atoms,[IonizationSiteGroup(str(i),'Cr',(i,),references[i],(0,0,1 if i==0 else -1),1) for i in range(2)])
     dialog.set_structure(atoms);dialog.set_site_groups(groups)
     editor = dialog.editor
     with pytest.raises(ValueError,match='Local'):editor.flip_all()
     editor.mode.setCurrentIndex(1);editor.flip_all()
     model = editor.apply()
-    np.testing.assert_allclose([g.magnetization for g in model.groups],[[0,0,-1],[0,0,1]])
+    # Configured providers keep their declared axes; global reversal selects
+    # every physical pair's other state, rather than rewriting source frames.
+    assert editor.reverse_magnetization
+    np.testing.assert_allclose([g.magnetization for g in model.groups],[[0,0,1],[0,0,-1]])
     for group,reference,frame in zip(model.groups,references,frames):
         assert group.mdff_reference is reference
-        np.testing.assert_array_equal(group.mdff_reference['frame_to_crystal'],frame)
+        np.testing.assert_array_equal(source_for(group.mdff_reference).metadata['frame_to_crystal'],frame)

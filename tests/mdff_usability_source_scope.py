@@ -18,7 +18,7 @@ BASE='3b0ce6c386f3c815f85d8b9d64db679ff7622a94'
 ACCEPTED_PATCH='6e496aff8152903d8bca45bd1d6f1704139647324fd7399920e1ed03e82b7fe2'
 MANIFEST_PATH='tests/fixtures/mdff_usability_scope_v4.json'
 ARCHIVE_PATH='tests/fixtures/mdff_usability_parent_v4.zip'
-MANIFEST_SHA256='1162d75b0ef7f9d0446a1ebf8f6d44b3237837a5269a68969e19966fedff44f8'
+MANIFEST_SHA256='3e3765908e1a58a0cff738b29f30a88c2ec8d11d9adf640b608135c19120db7b'
 ACCEPTED_DECLARATION_SHA256='c83cae2f981927f7fab8cb07430f5e9a36b757f6982abd1dfa90d7bfc611572d'
 # Closed reviewed paths are literals, not inferred from working files/manifests.
 ACCEPTED_PATHS=('docs/MANUAL_L23_TENSOR_MODEL.md','docs/MDFF_USABILITY_REDESIGN.md','docs/MDFF_USABILITY_SCOPE_PROPOSAL.md',
@@ -32,6 +32,10 @@ TRUST_ROOTS=('tests/mdff_usability_source_scope.py',MANIFEST_PATH,ARCHIVE_PATH)
 # the editor's current map. Unchanged historical entries must still reject a
 # corrupt declaration even when a mutation test replaces its manifest pin.
 CURRENT_REVISIONS=('packaging/BETA_README.txt','packaging/README.md',
+ 'packaging/build_windows.ps1','packaging/emcd_gui.spec',
+ 'packaging/check_windows_metadata.py','tests/test_windows_build_metadata.py',
+ 'README.md','docs/CHANGELOG.md','docs/QUICK_START.md','docs/USER_GUIDE.md',
+ 'src/emcd_sim/gui/generalized_forward.py',
  'src/emcd_sim/double_channeling.py','src/emcd_sim/gui/channeling.py',
  'src/emcd_sim/gui/forward_pipeline.py','src/emcd_sim/gui/numerical_settings.py',
  'src/emcd_sim/gui/propagation.py','src/emcd_sim/gui/results.py',

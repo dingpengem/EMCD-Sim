@@ -4,23 +4,23 @@
   "modified": {
     "packaging/BETA_README.txt": {
       "mode": "canonical",
-      "sha256": "2c897d4fc92615ee6b19d8a2c68e42d23d7ddbd968c717134914ae86aa47a408",
-      "canonical_sha256": "2c897d4fc92615ee6b19d8a2c68e42d23d7ddbd968c717134914ae86aa47a408"
+      "sha256": "0c55064de494b1eec5a41c626ad65a1bb121056e1918eaa0733e106692a59636",
+      "canonical_sha256": "0c55064de494b1eec5a41c626ad65a1bb121056e1918eaa0733e106692a59636"
     },
     "packaging/README.md": {
       "mode": "canonical",
-      "sha256": "a4630647f6dba2dc7d6f6b4729d50bb0ce6f1f339c68985e994aa2762a992bcb",
-      "canonical_sha256": "a4630647f6dba2dc7d6f6b4729d50bb0ce6f1f339c68985e994aa2762a992bcb"
+      "sha256": "3e7a0245b66316ce25a59d3be61c2fca5502aae9a3d34c11f460fca6751520b7",
+      "canonical_sha256": "3e7a0245b66316ce25a59d3be61c2fca5502aae9a3d34c11f460fca6751520b7"
     },
     "packaging/build_windows.ps1": {
       "mode": "canonical",
-      "sha256": "af06bd4d0369502efb059fc070f8df56b8ba40f0dcf9da1e5b09eaa610ea3349",
-      "canonical_sha256": "af06bd4d0369502efb059fc070f8df56b8ba40f0dcf9da1e5b09eaa610ea3349"
+      "sha256": "4f4783d77eb7939fcd027c11e9075575a0de12bedbc24ea0440dea5c1e7bd9eb",
+      "canonical_sha256": "4f4783d77eb7939fcd027c11e9075575a0de12bedbc24ea0440dea5c1e7bd9eb"
     },
     "packaging/emcd_gui.spec": {
       "mode": "canonical",
-      "sha256": "d93822a4ecbc8e221fbf79bfa315507217bf108a4699ac3b513d096d2303805e",
-      "canonical_sha256": "d93822a4ecbc8e221fbf79bfa315507217bf108a4699ac3b513d096d2303805e"
+      "sha256": "87a0b929ebb137cfe011e16d72ad85afd82886cff802bbd54f015c18e7c6ef36",
+      "canonical_sha256": "87a0b929ebb137cfe011e16d72ad85afd82886cff802bbd54f015c18e7c6ef36"
     },
     "tests/mdff_editor_source_scope.py": {
       "mode": "canonical",

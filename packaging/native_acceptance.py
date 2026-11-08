@@ -436,11 +436,162 @@ def run_multisite(output):
     return 0 if report['complete'] and not report['errors'] and report['closed_cleanly'] else 1
 
 
+def run_grouping(output, historical_project=None):
+    """Compact packaged grouping/pair-persistence acceptance, one calculation."""
+    from ase.build import bulk
+    from ase.io import write
+    from PySide6 import QtCore
+    from emcd_sim.gui.app import MainWindow
+    from emcd_sim.gui.runtime import build_info, resource_root
+    from emcd_sim.gui.generalized_forward import source_for
+    out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
+    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    app.setQuitOnLastWindowClosed(False)
+    report=dict(build=build_info(),frozen=bool(getattr(sys,'frozen',False)),executable=sys.executable,
+        qt_platform=app.platformName(),cases=[],checks=[],errors=[],complete=False,closed_cleanly=False)
+    w=MainWindow(out/'workspace');w.error=lambda message:report['errors'].append(str(message))
+    w.store_ui_preferences=lambda:None
+    w.inspect_structure=lambda:None
+    def wait():
+        deadline=time.monotonic()+180
+        while w.busy and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
+        assert not w.busy,'Native worker timeout'
+        app.processEvents();assert not report['errors'],report['errors']
+    def capture(name,widget):
+        app.processEvents();time.sleep(.15);app.processEvents()
+        assert widget.grab().save(str(out/(name+'.png')))
+    def load_cif(path):
+        with patch.object(QtWidgets.QFileDialog,'getOpenFileName',return_value=(str(path),'')):w.load_cif()
+        w.show_structure_viewer();v=w.structure_viewer
+        v.showMaximized();v.tabs.setCurrentWidget(v.editor);app.processEvents()
+        return v,v.editor
+    def save_open(name):
+        project=out/name
+        with patch.object(QtWidgets.QFileDialog,'getSaveFileName',return_value=(str(project),'')):
+            w.save_project_action(save_as=True);wait()
+        assert w.project_save_status=='Saved' and not w.project_dirty
+        w.close_project();w.open_project_path(project);wait();w.show_structure_viewer()
+        return w.structure_viewer,w.structure_viewer.editor
+    execute=QtWidgets.QMessageBox.exec
+    def retain(dialog):
+        if dialog.windowTitle()=='Retain Calculation':dialog.defaultButton().click();return 0
+        return execute(dialog)
+    try:
+        assert report['frozen'] and app.platformName()=='windows','Packaged native Windows EXE required'
+        with (patch.object(QtWidgets.QMessageBox,'exec',retain),
+              patch.object(QtWidgets.QMessageBox,'warning',return_value=QtWidgets.QMessageBox.StandardButton.Discard),
+              patch.object(QtWidgets.QMessageBox,'question',return_value=QtWidgets.QMessageBox.StandardButton.Yes)):
+            w.show();app.processEvents()
+            assert w.splitter.count()==3 and w.browser_dock.isVisible()
+            v,e=load_cif(resource_root()/'examples/Fe3O4_inverse_spinel.cif')
+            rows=e.rows();provenance=e.crystallographic_provenance
+            assert [(r[0],len(r[2])) for r in rows]==[('Fe(A)',8),('Fe(B)',16),('O',32)]
+            assert all(r[3] is None and r[4] is None for r in rows)
+            assert [e.groups.topLevelItem(i).text(5) for i in range(3)]==['8a','16d','32e']
+            assert provenance['setting']=='2' and provenance['spglib_version']==report['build']['versions']['spglib']
+            atoms=w.structure.atoms;distances=atoms.get_all_distances(mic=True)
+            oxygen=np.array(rows[2][2])
+            for row,coordination in zip(rows[:2],(4,6)):
+                assert all(atoms[i].symbol=='Fe' and np.count_nonzero(distances[i,oxygen]<2.3)==coordination for i in row[2])
+            assert not v.view.scene.directions.any()
+            e.groups.setCurrentItem(e.groups.topLevelItem(0))
+            assert 'Fe(A)' in e.group_summary.text() and '8 atoms' in e.group_summary.text()
+            capture('Fe3O4-structural-groups',v)
+            v.dialog_buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).click()
+            v.close();v,e=save_open('Fe3O4-structural-project')
+            assert e.rows()==rows and e.crystallographic_provenance==provenance and e.accepted_site_groups is None
+            report['checks'].append('Fe3O4: actual ASE indices; 8/16/32, 8a/16d/32e; coordination 4/6; unset M/MDFF; structural Save/Open')
+            v.close();w.new_project()
+            cif=out/'Cr.cif';write(cif,bulk('Cr','bcc',a=2.88,cubic=True),format='cif')
+            v,e=load_cif(cif)
+            while e.rows():e.groups.setCurrentItem(e.groups.topLevelItem(0));e.delete_group()
+            e.mode.setCurrentIndex(1);assert not w.axis.isEnabled()
+            fractional=w.structure.atoms.get_scaled_positions()
+            indices=[int(np.flatnonzero(np.linalg.norm(fractional-p,axis=1)<1e-8)[0]) for p in ([0,0,0],[.5,.5,.5])]
+            for gid,index,sign in zip(('Cr-up','Cr-down'),indices,(1,-1)):
+                e.select_indices([index]);e.name.setText(gid);e.direction.setText(f'0 0 {sign}');e.create_group()
+                dialog=e.configure_mdff();dialog.model.setCurrentIndex(2);dialog.manual_mode.setCurrentIndex(2)
+                dialog.constant_energy.low.setValue(700);dialog.constant_energy.high.setValue(740);dialog.constant_energy.count.setValue(2)
+                dialog.manual_edges.set_rows([('L3',710.),('L2',723.)])
+                for tensor,state in zip(dialog.pair,(sign,-sign)):
+                    a=np.eye(3,dtype=complex);a[0,1]=.1j*state;a[1,0]=-.1j*state
+                    a[0,2]=a[2,0]=.02*state
+                    with QtCore.QSignalBlocker(tensor.cells):
+                        for i in range(3):
+                            for j in range(3):tensor.cells.item(i,j).setText(str(a[i,j]).strip('()').replace('j','i'))
+                    tensor.edited()
+                dialog.declaration.setChecked(True)
+                dialog.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).click()
+                assert e.mdff_status(e.rows()[-1])=='Configured and valid',dialog.status.text()
+                dialog.close()
+            v.dialog_buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).click()
+            assert e.accepted_site_groups is not None,e.status.text()
+            other=e.rows()[1];e.groups.setCurrentItem(e.groups.topLevelItem(0))
+            e.direction.setText('0 0 -1');e.buttons['Update direction'].click()
+            assert 'Draft M (unapplied)' in e.group_summary.text() and 'Accepted M' in e.group_summary.text()
+            capture('Cr-pair-direction-draft',v)
+            v.dialog_buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).click()
+            assert e.rows()[0][4].pair_reversed and e.rows()[1]==other,e.status.text()
+            e.requested_energy_ev=np.array([710.,723.])
+            accepted=e.rows();frames=[source_for(r[4]).metadata['frame_to_crystal'] for r in accepted]
+            v.close();v,e=save_open('Cr-configured-project')
+            for row,before,frame in zip(e.rows(),accepted,frames):
+                assert row[:4]==before[:4] and row[4].pair_reversed==before[4].pair_reversed
+                assert row[4].source_sha256==before[4].source_sha256
+                assert source_for(row[4]).metadata['frame_to_crystal']==frame
+            assert not w.axis.isEnabled()
+            e.groups.setCurrentItem(e.groups.topLevelItem(0));v.magnetic_arrows.setChecked(True)
+            capture('Cr-restored-pair',v);v.close()
+            w.numerical_mode.setCurrentIndex(1);w.zone.setText('0 0 1');w.target.setText('1 1 0')
+            w.basis_mode.setCurrentIndex(0);w.row_projection.setChecked(True)
+            w.propagation_box.setCurrentIndex(0);w.channeling_box.setCurrentIndex(0);w.energy_scope.setCurrentIndex(1)
+            w.correction.setChecked(False);w.angular_maps.setChecked(True);w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(1)
+            w.set_values(dict(kv=200,thickness=.1,beam=.6,potential=1.2,grid=9,depth=3,subpixels=4,
+                fft_grid=16,slice_step=.02,halfwidth=.7,radius=.12,tx=-5,ty=7))
+            w.detectors=np.array([[.2,.2],[.2,-.2]]);w.sync_detectors();w.refresh()
+            w.emcd_button.click();wait();assert w.run_outcome=='completed'
+            r=w.emcd_result;s=r['spectra']
+            assert r['groups']['Cr-up']['metadata']['source']['direction_binding']['pair_state']=='minus'
+            for key in ('I_A_plus','I_A_minus','I_B_plus','I_B_minus'):
+                assert np.isfinite(s[key]).all()
+                np.testing.assert_allclose(s[key],sum(g['metadata']['multiplicity']*g['spectra'][key] for g in r['groups'].values())/2,rtol=1e-12,atol=1e-14)
+            np.testing.assert_allclose(s['M_A'],(s['I_A_plus']-s['I_A_minus'])/2,rtol=1e-12,atol=1e-14)
+            capture('Cr-restored-calculation',w)
+            report['cases'].append(dict(material='synthetic Cr',solver='bloch',channel='single',energy_ev=s['energy_ev'].tolist()))
+            w.show_structure_viewer();v=w.structure_viewer;e=v.editor;v.tabs.setCurrentWidget(e)
+            accepted=e.accepted_site_groups;before=e._accepted_rows
+            e.groups.setCurrentItem(e.groups.topLevelItem(0));e.direction.setText('1 0 0');e.buttons['Update direction'].click()
+            v.dialog_buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).click()
+            assert e.accepted_site_groups is accepted and e._accepted_rows==before
+            assert 'requested' in e.status.text() and 'source axis' in e.status.text() and 'MDFF Editor' in e.status.text()
+            capture('Cr-unsupported-direction-rejected',v)
+            v.dialog_buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).click()
+            assert e.rows()==before
+            report['checks'].append('Cr: native Manual PSD pair; independent group; accepted/draft status; reversal Apply/Save/Open/restored BW Single; fixed-source X rejected atomically; Cancel; Global M lock')
+            if historical_project:
+                w.close_project();w.open_project_path(historical_project);wait()
+                assert w.magnetization_mode=='global' and w.axis.isEnabled() and w.browser.registry.records
+                w.browser.select_id(w.browser.registry.records[-1]['id']);w.browser.view()
+                assert w.emcd_result is not None and not w.emcd_result.get('groups')
+                capture('legacy-Ni-project',w)
+                report['checks'].append('Existing legacy-workflow Ni saved project opened without recalculation')
+            report['complete']=True
+    except Exception:report['errors'].append(traceback.format_exc())
+    finally:
+        if w.busy:w.cancel();w.worker.wait(15000);app.processEvents()
+        for dialog in w.findChildren(QtWidgets.QDialog):dialog.close()
+        w.project_dirty=False;w.close();w.deleteLater();app.processEvents();report['closed_cleanly']=not w.busy
+        (out/'acceptance.json').write_text(json.dumps(report,indent=2,default=str),encoding='utf-8')
+    return 0 if report['complete'] and not report['errors'] and report['closed_cleanly'] else 1
+
+
 def main():
     parser=argparse.ArgumentParser(description='Opt-in native release acceptance; bounded synthetic tests only')
     parser.add_argument('output',type=Path);parser.add_argument('--historical-project',type=Path)
     parser.add_argument('--multisite',action='store_true',help='Bounded v0.9 native multi-site/project acceptance')
+    parser.add_argument('--grouping',action='store_true',help='Compact packaged crystallographic grouping and physical-pair persistence check')
     args=parser.parse_args()
+    if args.grouping:return run_grouping(args.output,args.historical_project)
     return run_multisite(args.output) if args.multisite else run(args.output,args.historical_project)
 
 

@@ -130,11 +130,15 @@ def test_species_axis_coverage_identity_and_explicit_revalidation(viewer,tmp_pat
     assert not dialog.declaration.isChecked() and 'identity changed' in dialog.status.text()
     dialog.declaration.setChecked(True);assert dialog.apply_configuration() is not None
     assert editor.rows()[0][4].source_sha256 != original.source_sha256
-    # Editing local M invalidates the binding; no frame or physical state is manufactured.
+    # A direction draft is separate from the acknowledged source parameters.
+    # Unsupported directions still fail provider validation; no frame is made up.
     editor.direction.setText('1 0 0');editor.update_direction()
-    assert not dialog.declaration.isChecked()
+    assert dialog.declaration.isChecked() and not dialog.has_unapplied_edits()
     assert editor.mdff_status(editor.rows()[0]) == 'Needs validation'
     with pytest.raises(ValueError,match='axis'):editor.validated_site_groups
+    accepted = editor.accepted_site_groups
+    with pytest.raises(ValueError,match='requested.*source axis.*MDFF Editor'):editor.apply()
+    assert editor.accepted_site_groups is accepted
 
 
 def test_explicit_manual_pair_has_real_odd_component_and_full_frame(viewer):

@@ -20,11 +20,12 @@ def parent_snapshot(config,request):
         target=folder/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw)
     for path,raw in parents.items():
         target=folder/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw)
-    # The retained legacy workflows use the current shared Results widget.
-    # Include its three ordinary GUI dependencies without replacing any
+    # The retained legacy workflows use current Results and CIF adapters.
+    # Include their ordinary dependencies without replacing any
     # archived parent source or changing the historical test assertions.
     support=('src/emcd_sim/gui/multisite_results_controls.py',
-             'src/emcd_sim/gui/multisite_results.py','src/emcd_sim/gui/multisite_export.py')
+             'src/emcd_sim/gui/multisite_results.py','src/emcd_sim/gui/multisite_export.py',
+             'src/emcd_sim/crystallographic_sites.py','src/emcd_sim/multisite.py')
     for path in support:
         target=folder/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes((ROOT/path).read_bytes())
     config._mdff_parent_snapshot=folder
