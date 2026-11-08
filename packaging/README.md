@@ -43,7 +43,7 @@ This opt-in mode requires a fresh output directory and a genuine checksummed his
 
 ## Current Windows release build
 
-Current release: **v0.8.1-beta.2 / 0.8.1b2**, convention
+Current local development candidate (not published): **v0.9.0-beta.1 / 0.9.0b1**, convention
 `forward_born_dagger_g_minus_h_v1`. Use a fresh Python 3.11 Windows build venv
 without `--system-site-packages`. Install the same declared inputs as Actions:
 
@@ -62,14 +62,14 @@ missing metadata is not ignored and license collection is not removed.
 Scientific dependency pins, production numerical defaults and physics conventions are unchanged. Version metadata is updated separately from cleanup.
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python ./build/windows-build-env/Scripts/python.exe -BuildRoot build/windows-v0.8.1-beta.2-release -CorrespondingSourceRoot C:/path/to/verified-qt-6.12.0-sources
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python ./build/windows-build-env/Scripts/python.exe -BuildRoot build/windows-v0.9.0-beta.1-release -CorrespondingSourceRoot C:/path/to/verified-qt-6.12.0-sources
 ```
 
-Default archive: `EMCD-Sim-v0.8.1-beta.2-Windows.zip`. Windows numeric version:
-0.8.1.2; ProductVersion: v0.8.1-beta.2. Use a new output root: previous
-packages must not be overwritten. The exact local source commit, clean/dirty
-state, convention, build environment and native validation are documented in
-[release acceptance](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/WINDOWS_0_8_1_BETA_1_ACCEPTANCE.md).
+Default archive: `EMCD-Sim-v0.9.0-beta.1-Windows.zip`. Windows numeric version:
+0.9.0.1; ProductVersion: v0.9.0-beta.1. Use a new output root: previous
+packages must not be overwritten. The candidate build_manifest.json and native acceptance.json record the exact
+source, environment, provenance and observed checks. Historical redistribution
+arrangements are documented in the v0.8.1 acceptance records.
 No push, Actions dispatch, release or tag is performed. Native same-host
 standalone checks are not independent clean-machine installation.
 Older commands below are historical.

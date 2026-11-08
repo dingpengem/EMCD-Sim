@@ -1,4 +1,4 @@
-Qt/PySide/Shiboken inventory for v0.8.1-beta.2
+Qt/PySide/Shiboken inventory for v0.9.0-beta.1 local development candidate
 
 Retained Qt, PySide6 and Shiboken version: 6.12.0, using LGPL v3 alternatives
 and the individual third-party license terms. EMCD-Sim remains MIT licensed.

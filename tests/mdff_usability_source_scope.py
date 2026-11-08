@@ -18,7 +18,7 @@ BASE='3b0ce6c386f3c815f85d8b9d64db679ff7622a94'
 ACCEPTED_PATCH='6e496aff8152903d8bca45bd1d6f1704139647324fd7399920e1ed03e82b7fe2'
 MANIFEST_PATH='tests/fixtures/mdff_usability_scope_v4.json'
 ARCHIVE_PATH='tests/fixtures/mdff_usability_parent_v4.zip'
-MANIFEST_SHA256='41e6508a7e2660fbcdd713e217787dd17d7fc2bda8328b5b651e0dbc46a3885c'
+MANIFEST_SHA256='95bd7b2aebc4707d0822828b82f0d9216f590a2ac4d2667bf37f8c1494b9e838'
 ACCEPTED_DECLARATION_SHA256='a81be784cbdbbdcc705967b45b897d42d06367077aacadc614e5e2449200349f'
 # Closed reviewed paths are literals, not inferred from working files/manifests.
 ACCEPTED_PATHS=('docs/MANUAL_L23_TENSOR_MODEL.md','docs/MDFF_USABILITY_REDESIGN.md','docs/MDFF_USABILITY_SCOPE_PROPOSAL.md',

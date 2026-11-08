@@ -1,13 +1,13 @@
-EMCD-Sim v0.8.1-beta.2 - Windows Research Beta prerelease
-Windows x64 research software; unsigned. Python package 0.8.1b2.
-Windows numeric version 0.8.1.2; ProductVersion v0.8.1-beta.2.
+EMCD-Sim v0.9.0-beta.1 - Windows Research Beta prerelease
+Windows x64 research software; unsigned. Python package 0.9.0b1.
+Windows numeric version 0.9.0.1; ProductVersion v0.9.0-beta.1.
 Physics convention: forward_born_dagger_g_minus_h_v1.
 Exact build source, version and coefficient identity are in About/build_info.json.
-Published prerelease: https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2
+Local development candidate only; not published. Scientific source validated at 49064fd.
 
 Extract the complete folder. Run EMCD-Sim.exe; keep _internal beside it.
 Python, Conda and WIEN2k are not required. Use a writable project/export folder.
-Verify the downloaded ZIP against the matching release's SHA256SUMS.txt.
+Verify the candidate ZIP against the accompanying SHA256SUMS.txt.
 Acceptance is on the development Windows host, not an independent clean PC/VM.
 Linux/macOS applications are not certified or packaged by this candidate.
 
@@ -79,6 +79,12 @@ Saved arrays remain viewable when an external source is unavailable. Failed atom
 generation does not replace an existing successful result with stale source state.
 SHA256 establishes file identity, not scientific authenticity or physical accuracy.
 
+MULTI-SITE RESEARCH LIMITS
+Independent local MDFF reversal pairs and selected-ionizing-atom normalization
+are supported. Fe3O4/NiFe2O4 benchmarks use synthetic site tensors, not calibrated
+material spectra or magnetic moments. Finite ZOLZ and continuous-depth events
+remain approximations; general beam-basis and BW/MS convergence is incomplete.
+
 SIGNALS AND NUMERICAL LIMITATIONS
 Single Channeling is entrance-only; Double includes localized ionization and
 reduced-energy outgoing elastic propagation. BW and FFT MS use the selected
@@ -114,7 +120,7 @@ _internal/examples/Ni_FCC_a3.52.cif. Select these files in the CIF open dialog.
 Their provenance and MIT redistribution terms are in _internal/examples/README.txt
 and LICENSE.txt. The Ni example uses a=3.52 angstrom; built-in Ni uses 3.524.
 Qt component licenses, notices and provenance: _internal/licenses/qt/README.txt.
-Qt PDF and Virtual Keyboard are excluded from beta.2. Retained components have
+Qt PDF and Virtual Keyboard are excluded from this candidate. Retained components have
 separate license terms; see the component inventory and accompanying source kit.
 
 DISTRIBUTION PREREQUISITES AND SOURCE
@@ -122,7 +128,7 @@ Install Microsoft's official x64 Visual C++ v14 runtime (14.44.35211 or newer)
 directly from https://aka.ms/vc14/vc_redist.x64.exe . Windows 10/11 x64 required.
 No Microsoft runtime DLL copies or installer are included in this package.
 Qt PDF and Virtual Keyboard are unused and excluded, with their dependency chain.
-Download EMCD-Sim-v0.8.1-beta.2-Qt-sources.zip from the same release page for
+Use the accompanying EMCD-Sim-v0.9.0-beta.1-Qt-sources.zip for
 matching LGPL component sources and build/replacement instructions. Also see
 _internal/licenses/qt/SOURCE_AND_REPLACEMENT.md and the included license texts.
 EMCD-Sim remains MIT licensed; dependency licenses apply separately.

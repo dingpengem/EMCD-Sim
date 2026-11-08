@@ -274,10 +274,171 @@ def _additional_provider_cases(out,app,windows,report,wait,*,coverage='edges',on
     report['checks'].append('Fixed three-model menu for Ni/Fe/Co/Cr; direct Fe XMCD and non-3d K-edge Single/Double BW/MS, maps/exports/reopen')
 
 
+def run_multisite(output):
+    """Bounded v0.9 acceptance through real widgets/workers in the same EXE.
+
+    Synthetic BCC Cr and seven-atom Fe3O4 motifs reuse the application tests'
+    ordered-site fixtures; constant PSD pairs are software checks, not spectra.
+    File-dialog choices/confirmation answers are automated, not the solvers.
+    """
+    from ase import Atoms
+    from ase.io import write
+    from PySide6 import QtCore, QtTest
+    from emcd_sim.gui.app import MainWindow
+    from emcd_sim.gui.runtime import build_info, resource_root
+    from emcd_sim.gui.project_collection import load_collection
+    out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
+    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    app.setQuitOnLastWindowClosed(False)
+    report=dict(build=build_info(),frozen=bool(getattr(sys,'frozen',False)),executable=sys.executable,
+        qt_platform=app.platformName(),cases=[],checks=[],errors=[],complete=False,closed_cleanly=False)
+    w=MainWindow(out/'workspace');w.error=lambda message:report['errors'].append(str(message))
+    w.store_ui_preferences=lambda:None
+    def wait():
+        deadline=time.monotonic()+180
+        while w.busy and time.monotonic()<deadline:app.processEvents();QtTest.QTest.qWait(10)
+        assert not w.busy,'Native worker timeout'
+        app.processEvents();assert not report['errors'],report['errors']
+    def capture(name,widget=None):
+        app.processEvents();QtTest.QTest.qWait(100)
+        assert (widget or w).grab().save(str(out/(name+'.png')))
+    def controls(material,method='bloch',channel='single'):
+        w.numerical_mode.setCurrentIndex(1);w.zone.setText('0 0 1')
+        w.target.setText('1 1 0' if material=='Cr' else '2 0 0')
+        w.basis_mode.setCurrentIndex(0);w.row_projection.setChecked(True)
+        w.propagation_box.setCurrentIndex(0 if method=='bloch' else 1)
+        w.channeling_box.setCurrentIndex(0 if channel=='single' else 1)
+        w.energy_scope.setCurrentIndex(1);w.correction.setChecked(False);w.angular_maps.setChecked(True)
+        w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(1)
+        w.set_values(dict(kv=200,thickness=.1,beam=.6,potential=1.2,grid=9,depth=3,
+            subpixels=4,fft_grid=16,slice_step=.02,halfwidth=.7,radius=.12,tx=-5,ty=7))
+        w.detectors=np.array([[.2,.2],[.2,-.2]]);w.sync_detectors();w.refresh()
+    def calculate(material,method,channel):
+        controls(material,method,channel);QtTest.QTest.mouseClick(w.emcd_button,QtCore.Qt.MouseButton.LeftButton);wait()
+        assert w.run_outcome=='completed' and w.emcd_result is not None
+        r=w.emcd_result;s=r['spectra']
+        for key in ('I_A_plus','I_A_minus','I_B_plus','I_B_minus'):assert np.isfinite(s[key]).all()
+        np.testing.assert_allclose(s['M_A'],(s['I_A_plus']-s['I_A_minus'])/2,rtol=1e-12,atol=1e-14)
+        np.testing.assert_allclose(s['N_A'],(s['I_A_plus']+s['I_A_minus'])/2,rtol=1e-12,atol=1e-14)
+        report['cases'].append(dict(material=material,solver=method,channel=channel,
+            groups=list(r.get('groups',{})),energy_ev=s['energy_ev'].tolist(),settings=r['metadata'].get('settings')))
+        return r
+    def save_as(path):
+        with patch.object(QtWidgets.QFileDialog,'getSaveFileName',return_value=(str(path),'')):
+            w.save_project_action(save_as=True);wait()
+        assert w.project_save_status=='Saved' and not w.project_dirty
+        assert w.active_project_path==str(path)
+    execute=QtWidgets.QMessageBox.exec
+    def retain(dialog):
+        if dialog.windowTitle()=='Retain Calculation':dialog.defaultButton().click();return 0
+        return execute(dialog)
+    try:
+        assert app.platformName()=='windows','Native Windows platform required'
+        assert build_info()['application_version']=='0.9.0b1'
+        with (patch.object(QtWidgets.QMessageBox,'exec',retain),
+              patch.object(QtWidgets.QMessageBox,'warning',return_value=QtWidgets.QMessageBox.StandardButton.Discard),
+              patch.object(QtWidgets.QMessageBox,'question',return_value=QtWidgets.QMessageBox.StandardButton.Yes)):
+            w.show();assert QtTest.QTest.qWaitForWindowExposed(w.windowHandle(),5000)
+            assert w.splitter.count()==3 and w.browser_dock.isVisible()
+            assert w.axis.isEnabled() and w.magnetization_mode=='global'
+            # Bundled Ni source, the established Global M path, actual workers.
+            w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
+            for channel in ('single','double'):calculate('Ni','bloch',channel)
+            capture('Ni-results');save_as(out/'Ni-project')
+            ni_before={key:value.copy() for key,value in w.emcd_result['spectra'].items()}
+            w.close_project();w.open_project_path(out/'Ni-project');wait()
+            assert len(w.browser.registry.records)==2 and w.magnetization_mode=='global'
+            w.browser.select_id(w.browser.registry.records[-1]['id']);w.browser.view()
+            for key,value in ni_before.items():np.testing.assert_array_equal(w.emcd_result['spectra'][key],value)
+            report['checks'].append('Legacy Ni BW Single/Double; bundled MDFF; EELS/EMCD; project Save/Open')
+            for material in ('Cr','Fe3O4'):
+                w.new_project();assert w.project_save_status=='Unsaved Project'
+                atoms=(Atoms('Cr2',scaled_positions=[[0,0,0],[.5,.5,.5]],cell=[2.88]*3,pbc=True) if material=='Cr' else
+                    Atoms('Fe3O4',scaled_positions=[[0,0,0],[.25,.25,.25],[.75,.75,.75],
+                        [.2,.2,.2],[.8,.8,.2],[.8,.2,.8],[.2,.8,.8]],cell=[5]*3,pbc=True))
+                cif=out/(material+'.cif');write(cif,atoms,format='cif')
+                with patch.object(QtWidgets.QFileDialog,'getOpenFileName',return_value=(str(cif),'')):w.load_cif()
+                w.show_structure_viewer();viewer=w.structure_viewer;editor=viewer.editor
+                viewer.tabs.setCurrentWidget(editor);editor.mode.setCurrentIndex(1)
+                assert not w.axis.isEnabled() and w.magnetization_mode=='local'
+                groups=[('Cr(A)' if material=='Cr' else 'Fe(A)',[0],1.,1.),
+                        ('Cr(B)' if material=='Cr' else 'Fe(B)',[1] if material=='Cr' else [1,2],-1.,1. if material=='Cr' else 2.)]
+                for gid,indices,sign,scale in groups:
+                    editor.select_indices(indices);editor.name.setText(gid);editor.direction.setText('0 0 '+str(sign));editor.create_group()
+                    dialog=editor.configure_mdff();dialog.model.setCurrentIndex(2);dialog.manual_mode.setCurrentIndex(2)
+                    dialog.constant_energy.low.setValue(700);dialog.constant_energy.high.setValue(740);dialog.constant_energy.count.setValue(2)
+                    dialog.manual_edges.set_rows([('L3',710.),('L2',723.)])
+                    for tensor,odd in zip(dialog.pair,(sign,-sign)):
+                        a=np.eye(3,dtype=complex)*scale;a[0,1]=.1j*odd*scale;a[1,0]=-.1j*odd*scale
+                        with QtCore.QSignalBlocker(tensor.cells):
+                            for i in range(3):
+                                for j in range(3):tensor.cells.item(i,j).setText(str(a[i,j]).strip('()').replace('j','i'))
+                        tensor.edited()
+                    dialog.declaration.setChecked(True)
+                    QtTest.QTest.mouseClick(dialog.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply),QtCore.Qt.MouseButton.LeftButton)
+                    assert editor.mdff_status(editor.rows()[-1])=='Configured and valid',dialog.status.text()
+                    if indices==[0]:capture(material+'-manual-pair',dialog)
+                    dialog.close()
+                editor.apply();assert editor.accepted_site_groups is not None
+                references=tuple(row[4] for row in editor.rows())
+                editor.mode.setCurrentIndex(0);assert w.axis.isEnabled()
+                editor.mode.setCurrentIndex(1);assert not w.axis.isEnabled()
+                assert tuple(row[4] for row in editor.rows())==references
+                editor.flip_all();editor.apply();assert editor.reverse_magnetization
+                editor.flip_all();editor.apply();assert not editor.reverse_magnetization
+                viewer.tabs.setCurrentIndex(0);viewer.color_mode.setCurrentIndex(1);viewer.magnetic_arrows.setChecked(True)
+                viewer.set_repetitions((2,2,2));capture(material+'-viewer',viewer)
+                assert len(viewer._atoms)==len(atoms)  # replicas do not replace the original structure
+                viewer.close()
+                for channel in ('single','double'):
+                    for method in ('bloch','fft-multislice'):calculate(material,method,channel)
+                r=w.emcd_result;denominator=r['metadata']['multisite']['selected_atom_count']
+                assert denominator==(2 if material=='Cr' else 3)
+                for key in ('I_A_plus','I_A_minus','I_B_plus','I_B_minus'):
+                    expected=sum(g['metadata']['multiplicity']*g['spectra'][key] for g in r['groups'].values())/denominator
+                    np.testing.assert_allclose(r['spectra'][key],expected,rtol=1e-12,atol=1e-14)
+                c=w.eels_view.multisite_controls
+                for index in range(c.selection.count()):c.selection.setCurrentIndex(index);app.processEvents()
+                c.include_total.setChecked(True);c.quantity.setCurrentIndex(6);w.eels_view.canvas.draw();capture(material+'-results')
+                export=out/(material+'-csv');export.mkdir()
+                with patch.object(QtWidgets.QFileDialog,'getExistingDirectory',return_value=str(export)):w.eels_view.export_derived()
+                assert list(export.rglob('*.csv')),'Displayed comparison CSV missing'
+                project=out/(material+'-project');save_as(project)
+                assert len(load_collection(project)['runs'])==4
+                first,second=[row['id'] for row in w.browser.registry.records[:2]]
+                w.browser.select_id(first);w.browser.view();w.use_result_settings();assert not w.axis.isEnabled()
+                assert w.settings().thickness==.1
+                w.compare_selected();comparison=w.dialogs[-1]
+                assert comparison.first.currentData()!=comparison.second.currentData() and comparison.rows
+                assert {record['id'] for record,_ in comparison.runs}=={row['id'] for row in w.browser.registry.records}
+                comparison.second.setCurrentIndex(comparison.first.currentIndex());assert not comparison.rows
+                comparison.second.setCurrentIndex(1);assert comparison.rows;capture(material+'-compare',comparison);comparison.close()
+                w.browser.select_id(first);w.delete_selected_calculation();assert len(w.browser.registry.records)==3
+                w.save_project_action();wait();assert len(load_collection(project)['runs'])==3
+                copied=out/(material+'-save-as');save_as(copied)
+                w.close_project();assert not w.browser.registry.records
+                w.open_project_path(copied);wait();assert len(w.browser.registry.records)==3
+                assert w.magnetization_mode=='local' and not w.axis.isEnabled() and w.project_save_status=='Saved'
+                w.spin['thickness'].setValue(.2);assert w.project_save_status=='Unsaved Changes'
+                report['checks'].append(material+': CIF/viewer/replicas; local M lock; explicit Manual pairs; four solvers; selected-atom normalization; group/element/total/even/odd; CSV; history/restore/compare/delete/SaveAs/reopen')
+            report['checks'].append('Four-region layout: Settings / Diffraction Preview / Results / lower Project Management')
+            report['complete']=True
+    except Exception:
+        report['errors'].append(traceback.format_exc())
+    finally:
+        if w.busy:w.cancel();w.worker.wait(15000);app.processEvents()
+        for dialog in w.findChildren(QtWidgets.QDialog):dialog.close()
+        w.project_dirty=False;w.close();w.deleteLater();app.processEvents();report['closed_cleanly']=not w.busy
+        (out/'acceptance.json').write_text(json.dumps(report,indent=2,default=str),encoding='utf-8')
+    return 0 if report['complete'] and not report['errors'] and report['closed_cleanly'] else 1
+
+
 def main():
     parser=argparse.ArgumentParser(description='Opt-in native release acceptance; bounded synthetic tests only')
     parser.add_argument('output',type=Path);parser.add_argument('--historical-project',type=Path)
-    args=parser.parse_args();return run(args.output,args.historical_project)
+    parser.add_argument('--multisite',action='store_true',help='Bounded v0.9 native multi-site/project acceptance')
+    args=parser.parse_args()
+    return run_multisite(args.output) if args.multisite else run(args.output,args.historical_project)
 
 
 if __name__=='__main__':raise SystemExit(main())

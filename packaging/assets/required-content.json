@@ -154,7 +154,7 @@
       "destination": "_internal/licenses/qt/qtvirtualkeyboard-upstream.zip"
     },
     "packaging/assets/qt-licenses/README.txt": {
-      "sha256": "649d9bde70a75ec4d24413206eeae05e7144617f865c94e2fa2731df3a2e4c4c",
+      "sha256": "9904790be39cbd5e0cc06bf461e6d30cbcc708b989b5b546fd2f1eddc677620c",
       "destination": "_internal/licenses/qt/README.txt"
     },
     "packaging/assets/qt-licenses/upstream-provenance.json": {
@@ -162,7 +162,7 @@
       "destination": "_internal/licenses/qt/upstream-provenance.json"
     },
     "packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md": {
-      "sha256": "4b7ffa33d00dc55f79b25e16c7877b662c469c9256d93402216e5e7944fa0f62",
+      "sha256": "a42d98485f23383c0bf8dcb0241e50fcb9b82c12ba034825cbb7aa939afc7fb6",
       "destination": "_internal/licenses/qt/SOURCE_AND_REPLACEMENT.md"
     }
   }

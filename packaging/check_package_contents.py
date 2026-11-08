@@ -10,7 +10,7 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = 'packaging/assets/required-content.json'
-MANIFEST_SHA256 = 'c8e183f56d4675ea110df11aff9f5c27f31ee55951f2906148df8e2d47e6634a'
+MANIFEST_SHA256='aa31940be6f11a7cc2001713861d25979401a1313b9c81a19a9d923073d5e63d'
 QT_VERSIONS = {name: '6.12.0' for name in
                ('PySide6', 'PySide6_Essentials', 'PySide6_Addons', 'shiboken6')}
 QT_VERSIONS.update(PySide6_Pdf='6.12.0.140', PySide6_WebEngine='6.12.0.140')
