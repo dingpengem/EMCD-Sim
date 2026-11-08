@@ -49,9 +49,9 @@
       "raw_sha256": "4aaa5ecc8768e66f60d94b375c8c92490eb157fd3b2d3ebe3c8694cb7c8a2054"
     },
     "packaging/native_acceptance.py": {
-      "canonical_sha256": "57217dbd525e230a751ff53e6d987f8ef214ed6f95bb199c6f1a019775e67ef2",
+      "canonical_sha256": "2ff614381f81bec9154370fc93ca7590c26cd82e5d5ac1dea983bd08f1629c89",
       "mode": "canonical",
-      "raw_sha256": "0dfd05ca0e146488f7b44391e983a19e5ebb63ae2a5bfd0a17942de571ae2b66"
+      "raw_sha256": "2ff614381f81bec9154370fc93ca7590c26cd82e5d5ac1dea983bd08f1629c89"
     },
     "scripts/verify_mdff_registration.py": {
       "canonical_sha256": "7a850023b911c9bd7e9034b200ba0457b3b63c7c2f29ba4eaa9fdcecd08d649f",

@@ -283,7 +283,7 @@ def run_multisite(output):
     """
     from ase import Atoms
     from ase.io import write
-    from PySide6 import QtCore, QtTest
+    from PySide6 import QtCore
     from emcd_sim.gui.app import MainWindow
     from emcd_sim.gui.runtime import build_info, resource_root
     from emcd_sim.gui.project_collection import load_collection
@@ -296,11 +296,11 @@ def run_multisite(output):
     w.store_ui_preferences=lambda:None
     def wait():
         deadline=time.monotonic()+180
-        while w.busy and time.monotonic()<deadline:app.processEvents();QtTest.QTest.qWait(10)
+        while w.busy and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
         assert not w.busy,'Native worker timeout'
         app.processEvents();assert not report['errors'],report['errors']
     def capture(name,widget=None):
-        app.processEvents();QtTest.QTest.qWait(100)
+        app.processEvents();time.sleep(.1);app.processEvents()
         assert (widget or w).grab().save(str(out/(name+'.png')))
     def controls(material,method='bloch',channel='single'):
         w.numerical_mode.setCurrentIndex(1);w.zone.setText('0 0 1')
@@ -314,7 +314,7 @@ def run_multisite(output):
             subpixels=4,fft_grid=16,slice_step=.02,halfwidth=.7,radius=.12,tx=-5,ty=7))
         w.detectors=np.array([[.2,.2],[.2,-.2]]);w.sync_detectors();w.refresh()
     def calculate(material,method,channel):
-        controls(material,method,channel);QtTest.QTest.mouseClick(w.emcd_button,QtCore.Qt.MouseButton.LeftButton);wait()
+        controls(material,method,channel);w.emcd_button.click();wait()
         assert w.run_outcome=='completed' and w.emcd_result is not None
         r=w.emcd_result;s=r['spectra']
         for key in ('I_A_plus','I_A_minus','I_B_plus','I_B_minus'):assert np.isfinite(s[key]).all()
@@ -338,7 +338,10 @@ def run_multisite(output):
         with (patch.object(QtWidgets.QMessageBox,'exec',retain),
               patch.object(QtWidgets.QMessageBox,'warning',return_value=QtWidgets.QMessageBox.StandardButton.Discard),
               patch.object(QtWidgets.QMessageBox,'question',return_value=QtWidgets.QMessageBox.StandardButton.Yes)):
-            w.show();assert QtTest.QTest.qWaitForWindowExposed(w.windowHandle(),5000)
+            w.show();exposure_deadline=time.monotonic()+5
+            while not w.windowHandle().isExposed() and time.monotonic()<exposure_deadline:
+                app.processEvents();time.sleep(.01)
+            assert w.isVisible() and w.windowHandle().isExposed()
             assert w.splitter.count()==3 and w.browser_dock.isVisible()
             assert w.axis.isEnabled() and w.magnetization_mode=='global'
             # Bundled Ni source, the established Global M path, actual workers.
@@ -375,7 +378,7 @@ def run_multisite(output):
                                 for j in range(3):tensor.cells.item(i,j).setText(str(a[i,j]).strip('()').replace('j','i'))
                         tensor.edited()
                     dialog.declaration.setChecked(True)
-                    QtTest.QTest.mouseClick(dialog.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply),QtCore.Qt.MouseButton.LeftButton)
+                    dialog.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).click()
                     assert editor.mdff_status(editor.rows()[-1])=='Configured and valid',dialog.status.text()
                     if indices==[0]:capture(material+'-manual-pair',dialog)
                     dialog.close()
