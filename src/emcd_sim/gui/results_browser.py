@@ -257,13 +257,16 @@ class ProjectWorkspace(ProjectSession):
     def _reset_project_inputs(self):
         if self.busy:return
         self._accepted_global_mdff=None;self._saved_global_config=None
+        self.explicit_xmcd.setChecked(True);self.sync_xmcd_route()
+        self.xmcd_scale.setText('1');self.xmcd_provenance.clear();self.xmcd_validity.clear()
+        self.xmcd_status.setCurrentIndex(0);self.source_info=None;self.validated_path=None;self.declaration.setChecked(False)
         with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
         self.set_values(dict(kv=300,beam=2.5,potential=2.0))
         self.retire_post_edge();self._post_edge_disabled_on_restore=False;self.correction_notice.hide()
         self.worker_mode.setCurrentIndex(0);self.worker_count.setValue(1)
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
         self._slice_step_override=None;self.set_values(dict(slice_step=2.))
-        with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(0)
+        with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(1)
         self.apply_numerical_visibility()
         self.clear_selected();self.input_source_requirements=[];self.default_structure()
         from .memory_budget import DEFAULT_BUDGET_MIB
@@ -272,6 +275,7 @@ class ProjectWorkspace(ProjectSession):
         self.sync_angular_resolution()
         if hasattr(self,'mdff_dialog'):
             self.mdff_dialog.hide();self.mdff_dialog._entry=self.mdff_dialog.snapshot()
+            self.mdff_dialog._draft_configuration=None;self.mdff_dialog._ready_snapshot=None
     def clear_selected(self):
         if self.busy:return
         self.selected_record=None;self.emcd_result=None;self.browser.table.clearSelection()

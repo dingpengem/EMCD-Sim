@@ -1,6 +1,7 @@
 """Compact editors over the existing authenticated MDFF providers."""
 import hashlib
 import json
+import logging
 from pathlib import Path
 import re
 import numpy as np
@@ -240,17 +241,16 @@ class GlobalMDFFDialog(MDFFWorkspace):
         w.axis.hide()
         w.mdff_material_direction=QtWidgets.QLabel();w.mdff_material_direction.setWordWrap(True)
         self.mount_editor(w.structure_label.text(),w.model_box,w.mdff_stack,w.mdff_material_direction,w.model_description)
-        self.status=QtWidgets.QLabel('Global MDFF draft. Validate and Apply accepts this context only.');self.status.setWordWrap(True)
+        self.status=QtWidgets.QLabel('Global MDFF draft. Done validates and returns to Material; Viewer Apply and Close accepts the configuration.');self.status.setWordWrap(True)
         self.science_layout.addWidget(self.status)
         buttons=QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Apply | QtWidgets.QDialogButtonBox.StandardButton.Cancel | QtWidgets.QDialogButtonBox.StandardButton.Close)
         self.buttons=buttons;self.outer.addWidget(buttons)
-        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).setText('Validate and Apply')
-        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).clicked.connect(self.apply_configuration)
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).setText('Done')
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).clicked.connect(self.finish_edit)
         buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
-        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Close).setText('Keep Draft / Close')
-        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Close).clicked.connect(self.hide)
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Close).hide()
         preview=QtWidgets.QPushButton('Update numerical preview');self.outer.insertWidget(self.outer.count()-1,preview);preview.clicked.connect(w.preview_mdff)
-        self._entry=self.snapshot();w.refresh_material_direction()
+        self._entry=self.snapshot();self._draft_configuration=None;self._ready_snapshot=None;w.refresh_material_direction()
 
     def snapshot(self):
         from copy import deepcopy
@@ -265,22 +265,45 @@ class GlobalMDFFDialog(MDFFWorkspace):
             atomic_info=w.atomic_provider_info,external=w.atomic_editor.external_source_pending,historical=w.atomic_editor.historical_config,
             manual=manual,manual_source=source,manual_key=w._manual_key,spectral=deepcopy(w.manual_spectral.draft()))
 
+    @staticmethod
+    def comparable(state):
+        state=dict(state)
+        for k in ('manual_source','atomic_info','historical'):state.pop(k,None)
+        state['spectral']=dict(state['spectral']);state['spectral'].pop('direction',None)
+        return state
+
     def has_unapplied_edits(self):
-        def comparable(state):
-            state=dict(state)
-            for k in ('manual_source','atomic_info','historical'):state.pop(k,None)
-            state['spectral']=dict(state['spectral']);state['spectral'].pop('direction',None)
-            return state
-        return comparable(self.snapshot())!=comparable(self._entry)
+        return self._draft_configuration is not None or self.comparable(self.snapshot())!=self.comparable(self._entry)
+
+    def draft_ready(self):
+        return self._draft_configuration is not None and self.comparable(self.snapshot())==self.comparable(self._ready_snapshot)
 
     def apply_configuration(self):
-        try:cfg=self.window.global_mdff_draft_settings()
-        except Exception as exc:self.status.setText('Invalid / unapplied: '+str(exc));self.refresh_context_status();return None
-        self.window._accepted_global_mdff=cfg;self.window._saved_global_config=cfg
-        self._entry=self.snapshot();self.window.emcd_stale();self.window.mark_project_dirty()
-        self.status.setText('Global MDFF applied in memory. Local groups and the active magnetization mode are unchanged.')
+        try:
+            if self.window.model_box.currentIndex()==0:self.window.validate_xmcd(show_error=False)
+            cfg=self.window.global_mdff_draft_settings()
+            from .generalized_forward import material_reason
+            reason=material_reason(self.window.structure,cfg)
+            if reason:raise ValueError(reason)
+        except Exception as exc:
+            logging.getLogger('emcd_sim.gui').exception('Global MDFF draft validation failed')
+            self.status.setText('Invalid / unapplied: '+str(exc));self.refresh_context_status();return None
+        self._draft_configuration=cfg;self._ready_snapshot=self.snapshot()
+        self.window.emcd_stale()
+        self.status.setText('Global MDFF draft ready. Apply and Close in the Viewer accepts the complete Material configuration; Cancel discards it.')
         self.refresh_context_status()
         return cfg
+
+    def prepare_material_apply(self):
+        if not self.has_unapplied_edits():return None
+        if not self.draft_ready():raise ValueError('Global MDFF has unfinished edits: choose Done in MDFF Configuration, or Cancel the draft.')
+        return self.window.global_mdff_draft_settings()
+
+    def commit_material(self,cfg):
+        self.window._accepted_global_mdff=cfg;self.window._saved_global_config=cfg
+        self._draft_configuration=None;self._ready_snapshot=None;self._entry=self.snapshot()
+        self.status.setText('Global MDFF accepted with Material settings.')
+        self.refresh_context_status()
 
     def reject(self):
         from copy import deepcopy
@@ -299,6 +322,7 @@ class GlobalMDFFDialog(MDFFWorkspace):
             w.xmcd_status.setCurrentIndex(s['status']);w.source_info=deepcopy(s['source_info']);w.validated_path=s['validated_path']
             for n,flag in s['flags'].items():getattr(w,n).setChecked(flag)
         finally:w._session_restoring=previous
+        self._draft_configuration=None;self._ready_snapshot=None
         self.status.setText('Global MDFF draft cancelled; accepted configuration retained.')
         w.refresh_material_direction();w.emcd_stale();self.refresh_context_status();self.hide()
 
@@ -306,4 +330,9 @@ class GlobalMDFFDialog(MDFFWorkspace):
 def configuration_dialog(window):
     if not hasattr(window,'mdff_dialog'):window.mdff_dialog=GlobalMDFFDialog(window)
     dialog=window.mdff_dialog;dialog.set_context_choices(window,None)
+    if window._accepted_global_mdff is None and not dialog.has_unapplied_edits():
+        elements=set(window.structure.atoms.get_chemical_symbols())
+        if len(elements)==1:
+            with QtCore.QSignalBlocker(window.xmcd_element):window.xmcd_element.setText(next(iter(elements)))
+    window.sync_xmcd_route();window.refresh_material_direction()
     dialog.show();dialog.raise_();return dialog

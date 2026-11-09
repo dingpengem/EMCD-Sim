@@ -10,7 +10,9 @@ from ..imported_mdff import CONVENTION
 
 class ProviderUI:
     def material_direction(self):
-        return self.row[3] if hasattr(self,'row') else self.material_magnetization
+        if hasattr(self,'row'):return self.row[3]
+        viewer=getattr(self,'structure_viewer',None)
+        return viewer.draft_global_direction() if viewer is not None and viewer.editor.magnetization_mode=='global' else self.material_magnetization
 
     def bind_material_reference(self,cfg):
         """Reuse the existing physical-pair validator for the Material target."""
@@ -23,8 +25,13 @@ class ProviderUI:
         return bind_group_direction(row)
 
     def xmcd_declaration_controls(self):
-        self.explicit_xmcd=QtWidgets.QCheckBox('Use explicit material declarations')
-        self.form.addRow(self.explicit_xmcd)
+        self.explicit_xmcd=QtWidgets.QCheckBox('Use explicit material declarations',self)
+        self.explicit_xmcd.setChecked(True)
+        self.explicit_xmcd.hide()  # Retained for saved historical settings.
+        self.reference_ni=QtWidgets.QCheckBox('Historical reference Ni adapter (a=3.524 Å; v0.8 behavior)')
+        self.form.addRow(self.reference_ni)
+        self.reference_ni.toggled.connect(lambda checked:self.explicit_xmcd.setChecked(not checked))
+        self.explicit_xmcd.toggled.connect(self.sync_xmcd_route)
         self.xmcd_element=QtWidgets.QLineEdit('Ni');self.form.addRow('Declared source element',self.xmcd_element)
         self.xmcd_edge=QtWidgets.QLineEdit('L2,3');self.form.addRow('Declared core-loss edge',self.xmcd_edge)
         self.xmcd_l23_controls=tuple(widget for key in ('xl3','xl2') for widget in (self.spin[key],self.form.labelForField(self.spin[key])))
@@ -33,7 +40,10 @@ class ProviderUI:
         self.xmcd_selected.setEnabled(False)  # L2,3 uses the visible energy controls.
         self.xmcd_provenance=QtWidgets.QLineEdit();self.form.addRow('Source / provenance',self.xmcd_provenance)
         self.xmcd_validity=QtWidgets.QLineEdit();self.form.addRow('Physical assumptions / limits',self.xmcd_validity)
-        self.xmcd_scale=QtWidgets.QLineEdit();self.form.addRow('Relative tensor reference (A^2/eV)',self.xmcd_scale)
+        self.xmcd_scale=QtWidgets.QLineEdit('1');self.form.addRow('Relative tensor reference (A^2/eV)',self.xmcd_scale)
+        self.xmcd_scale.setToolTip('Default 1: one relative reference unit after source-max normalization. This is not an absolute cross-section calibration.')
+        note=QtWidgets.QLabel('Element/edge are editing-context declarations, not five-column file metadata. Native peak selections are suggestions: confirm their L3/L2 assignment. Relative reference defaults to 1; no absolute calibration is implied.')
+        note.setWordWrap(True);self.form.addRow(note)
         self.xmcd_status=QtWidgets.QComboBox();self.xmcd_status.addItems(['physical_source_unvalidated','synthetic']);self.form.addRow('Scientific status',self.xmcd_status)
         for widget in (self.xmcd_element,self.xmcd_edge,self.xmcd_provenance,self.xmcd_validity,self.xmcd_scale):
             widget.textChanged.connect(self.xmcd_declaration_changed)
@@ -46,8 +56,18 @@ class ProviderUI:
     def xmcd_declaration_changed(self,*_):
         for widget in self.xmcd_l23_controls:widget.setVisible(self.xmcd_edge.text().strip()=='L2,3')
         self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3' or not (self.source_info or {}).get('selected'))
-        self.declaration.setChecked(False)
+        if self.sender() in (self.xmcd_element,self.xmcd_edge):self.declaration.setChecked(False)
         self.emcd_stale()
+
+    def sync_xmcd_route(self,*_):
+        with QtCore.QSignalBlocker(self.reference_ni):self.reference_ni.setChecked(not self.explicit_xmcd.isChecked())
+        for widget in (self.xmcd_element,self.xmcd_edge,self.xmcd_selected,self.xmcd_provenance,self.xmcd_validity,self.xmcd_scale,self.xmcd_status):
+            widget.setEnabled(self.explicit_xmcd.isChecked())
+
+    def xmcd_descriptions(self):
+        path=Path(self.source_path.text())
+        return (f'{path.name}; five-column XAS/XMCD input; identity checked, material calibration not established',
+                'Effective axisymmetric XMCD model; uniform selected magnetic state; shared XAS and reversal-odd XMCD; no full ab-initio MDFF or absolute material calibration')
 
     def xmcd_energy_selected(self,edge,value):
         if self.source_info is not None and self.validated_path==self.source_path.text():
@@ -164,11 +184,17 @@ class ProviderUI:
                 if not self.xmcd_selected.text().strip():
                     raise ValueError('Explicit native edge selections JSON required for this edge')
                 selected=json.loads(self.xmcd_selected.text())
+            raw=self.xmcd_scale.text().strip()
+            try:scale=float(raw)
+            except ValueError:raise ValueError('Relative tensor reference (A^2/eV): enter a positive finite number; the relative-model default is 1 (not absolute calibration)') from None
+            import math
+            if not math.isfinite(scale) or scale<=0:raise ValueError('Relative tensor reference (A^2/eV): enter a positive finite number')
+            provenance,limits=self.xmcd_descriptions()
             declaration=dict(element=self.xmcd_element.text().strip(),edge=self.xmcd_edge.text().strip(),selected_ev=selected,
                 magnetization_crystal=list(base.magnetization),handedness='RP_minus_LP_in_declared_axis',eta=base.eta,beta=base.beta,
-                normalization='source_max_nonmagnetic',convention=CONVENTION,source=self.xmcd_provenance.text().strip(),
-                validity=self.xmcd_validity.text().strip(),status=self.xmcd_status.currentText(),source_sha256=base.source_sha256,
-                reference_tensor_scale_angstrom2_per_ev=float(self.xmcd_scale.text()),
+                normalization='source_max_nonmagnetic',convention=CONVENTION,source=self.xmcd_provenance.text().strip() or provenance,
+                validity=self.xmcd_validity.text().strip() or limits,status=self.xmcd_status.currentText(),source_sha256=base.source_sha256,
+                reference_tensor_scale_angstrom2_per_ev=scale,
                 magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
             cfg=settings_for_provider(base.source,'xmcd',declaration)
             acknowledged=base.axis_declared
@@ -193,6 +219,7 @@ class ProviderUI:
                 with QtCore.QSignalBlocker(widget):widget.setText(value)
             with QtCore.QSignalBlocker(self.xmcd_status):self.xmcd_status.setCurrentText(d['status'])
             with QtCore.QSignalBlocker(self.explicit_xmcd):self.explicit_xmcd.setChecked(True)
+            self.sync_xmcd_route()
             if d['edge']=='L2,3':
                 for key,edge in (('xl3','L3'),('xl2','L2')):
                     with QtCore.QSignalBlocker(self.spin[key]):self.spin[key].setValue(d['selected_ev'][edge])

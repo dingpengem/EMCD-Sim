@@ -79,10 +79,10 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.mdff_stack=QtWidgets.QStackedWidget();self.form.addRow(self.mdff_stack)
         xm=QtWidgets.QWidget();xf=QtWidgets.QFormLayout(xm);self.mdff_stack.addWidget(xm);saved=self.form;self.form=xf
         self.source_path=QtWidgets.QLineEdit(str(DEFAULT_SOURCE) if DEFAULT_SOURCE.exists() else '');self.form.addRow('Five-column XMCD',self.source_path)
-        self.button('Browse XMCD...',self.browse_xmcd);self.button('Validate source / native features',self.validate_xmcd)
+        self.button('Browse XMCD...',self.browse_xmcd);self.button('Recheck source (optional)',self.validate_xmcd)
         self.number('eta','eta',1,-5,5,self.emcd_stale);self.number('beta','beta',1,0,10,self.emcd_stale)
         self.number('xl3','L3 native feature (eV)',831.271,1,10000,self.emcd_stale);self.number('xl2','L2 native feature (eV)',848.698,1,10000,self.emcd_stale)
-        self.declaration=QtWidgets.QCheckBox('I declare M axis, RP/LP convention\nand edge assignments');self.declaration.setToolTip('Tensor Txy=+i eta (RP-LP)/2; source convention must be checked.');self.form.addRow(self.declaration)
+        self.declaration=QtWidgets.QCheckBox('Confirm RP−LP about Material +M\nand the displayed L3/L2 assignments');self.declaration.setToolTip('Required scientific choice: tensor Txy=+i eta (RP-LP)/2. Five-column parsing does not establish handedness or edge assignment.');self.form.addRow(self.declaration)
         self.xmcd_declaration_controls()
         self.source_status=QtWidgets.QLabel('Validate source before calculation.');self.source_status.setWordWrap(True);self.form.addRow(self.source_status)
         from .xmcd_preview import install_xmcd_preview
@@ -107,6 +107,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.model_box.currentIndexChanged.connect(self.model_changed)
         self.axis.textChanged.connect(lambda text:self.set_material_magnetization(tuple(float(v) for v in text.replace(',',' ').split())))
         self.declaration.toggled.connect(self.emcd_stale);self.source_path.textChanged.connect(self.source_changed);self.radial_override.toggled.connect(self.emcd_stale)
+        self.source_path.editingFinished.connect(lambda:self.validate_xmcd(show_error=False))
 
     def propagation_controls(self):
         self.channeling_box=QtWidgets.QComboBox();self.channeling_box.addItems(['Single Channeling','Double Channeling']);self.form.addRow('Channeling Model',self.channeling_box)
@@ -254,19 +255,24 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             'Manual tensor: constant coefficients or phenomenological L2,3 spectral strengths.')[index])
         self.emcd_stale()
     def source_changed(self,*_):
-        self.source_info=None;self.validated_path=None;self.xmcd_selected.clear();self.declaration.setChecked(False);self.source_status.setText('Source changed; validate and declare conventions.');self.emcd_stale()
+        self.source_info=None;self.validated_path=None;self.xmcd_selected.clear();self.declaration.setChecked(False);self.source_status.setText('Source changed; format/range will be checked when source entry finishes. Confirm its conventions.');self.emcd_stale()
     def browse_xmcd(self):
         path,_=QtWidgets.QFileDialog.getOpenFileName(self,'Import five-column XAS/XMCD','','XMCD / text (*.xmcd *.txt *.dat);;All files (*)')
         if path:self.source_path.setText(path);self.validate_xmcd()
     def validate_xmcd(self,show_error=True):
         try:
             info=inspect_source(self.source_path.text())
-            if (self.source_info or {}).get('sha256')==info['sha256'] and self.validated_path==self.source_path.text():
+            unchanged=(self.source_info or {}).get('sha256')==info['sha256'] and self.validated_path==self.source_path.text()
+            if unchanged:
                 info['explicit_selected']=self.source_info.get('explicit_selected',{})
             self.source_info=info;self.validated_path=self.source_path.text()
             self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3' or not info['selected'])
             if info['selected']:self.set_values({'xl3':info['selected']['L3'],'xl2':info['selected']['L2']})
-            self.declaration.setChecked(bool(info['audit']));self.source_status.setText(info['provenance']+'\nNative range: %.3f–%.3f eV; no energy shift.'%tuple(info['bounds']))
+            self.declaration.setChecked(self.declaration.isChecked() if unchanged else bool(info['audit']));self.source_status.setText(info['provenance']+'\nNative range: %.3f–%.3f eV; no energy shift.'%tuple(info['bounds']))
+            provenance,limits=self.xmcd_descriptions()
+            for widget,text in ((self.xmcd_provenance,provenance),(self.xmcd_validity,limits)):
+                if not widget.text().strip():
+                    with QtCore.QSignalBlocker(widget):widget.setText(text)
         except Exception as exc:
             self.source_info=None;self.validated_path=None;self.declaration.setChecked(False);self.source_status.setText(str(exc))
             if show_error:self.error(str(exc))
@@ -318,17 +324,19 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
 
     def global_mdff_draft_settings(self,prepare=True,*,resolve=False):
         viewer=getattr(self,'structure_viewer',None)
-        if viewer is not None and viewer.pending_global_direction:
-            raise ValueError('Apply or Cancel pending Global Material M edits in the 3D viewer before preview or calculation')
         if prepare and self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:
             self.prepare_manual_tensor()
         if prepare and self.model_box.currentIndex()==1 and self.atomic_editor.active and not self.atomic_editor.validated_path:
             self.atomic_editor.generate()
         if self.spin['grid'].value()%2==0:raise ValueError('Choose an odd angular / detector grid size so qy=0 is sampled exactly.')
         atomic=NiLocalConfig(**{k:self.spin['atomic_'+k].value() for k in asdict(NiLocalConfig())})
-        mode=('xmcd','atomic','imported')[self.model_box.currentIndex()];axis=self.material_magnetization
+        mode=('xmcd','atomic','imported')[self.model_box.currentIndex()];axis=self.material_direction()
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')
-        if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):raise ValueError('Validate the current XMCD source first')
+        if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):
+            self.validate_xmcd(show_error=False)
+            if not self.source_info:raise ValueError('Five-column XMCD: select a readable valid source file. '+self.source_status.text())
+        if mode=='xmcd' and not self.declaration.isChecked():
+            raise ValueError('Source conventions: confirm RP−LP about Material +M and the displayed L3/L2 assignments beside the source controls; parsing cannot establish these choices')
         cfg=ForwardSettings(fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,

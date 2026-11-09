@@ -67,7 +67,8 @@ REFERENCE_SOURCE_SHA256 = 'a0e28ea6423b6c7832bb3cce6d69d71aa59336a221baeee3d2556
 
 class NumericalSettingsUI:
     def setup_numerical_mode(self, form):
-        self.numerical_mode=QtWidgets.QComboBox();self.numerical_mode.addItems(['Automatic','Manual (Advanced)'])
+        self.numerical_mode=QtWidgets.QComboBox();self.numerical_mode.addItems(['Historical Ni reference presets (Automatic)','General settings (editable)'])
+        self.numerical_mode.setCurrentIndex(1)
         form.insertRow(0,'Numerical Settings',self.numerical_mode)
         self.numerical_status=QtWidgets.QLabel();self.numerical_status.setWordWrap(True);form.insertRow(1,self.numerical_status)
         self.numerical_details=QtWidgets.QGroupBox('View Numerical Parameters');self.numerical_details.setCheckable(True);self.numerical_details.setChecked(False)
@@ -148,7 +149,7 @@ class NumericalSettingsUI:
                 self.numerical_status.setText(self.numerical_provenance['source']+'\n'+self.numerical_provenance['status'])
             else:
                 self.numerical_provenance=dict(source='Manual configuration',policy=None)
-                self.numerical_status.setText('Manual configuration')
+                self.numerical_status.setText('General editable settings — convergence is not established.')
             self._numerical_error=None
             values=self.numerical_snapshot()
             labels=dict(beam='Beam / MDFF cutoff (Å⁻¹)',potential='Potential cutoff (Å⁻¹)',fft_grid='FFT grid',depth='Depth nodes',slice_step='Max slice step (nm)',grid='Angular grid',subpixels='Aperture boundary subpixels',halfwidth='Map halfwidth (Å⁻¹)',energy='Energy sampling points',memory_budget_mib='Memory budget (MiB)')

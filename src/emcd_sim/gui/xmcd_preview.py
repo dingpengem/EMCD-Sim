@@ -39,7 +39,8 @@ class XMCDPreview(QtWidgets.QGroupBox):
         path=w.source_path.text()
         try:digest=hashlib.sha256(Path(path).read_bytes()).hexdigest()
         except (OSError,ValueError):digest='missing'
-        axis=w.axis.text()
+        try:axis=tuple(w.material_direction())
+        except (ValueError,TypeError):axis='invalid Material direction'
         return (path,digest,w.validated_path,(w.source_info or {}).get('sha256'),axis,w.declaration.isChecked(),
             w.explicit_xmcd.isChecked(),tuple(w.spin[k].value() for k in ('eta','beta','xl3','xl2')),
             tuple(field.text() for field in (w.xmcd_element,w.xmcd_edge,w.xmcd_selected,w.xmcd_provenance,w.xmcd_validity,w.xmcd_scale)),
@@ -68,7 +69,7 @@ class XMCDPreview(QtWidgets.QGroupBox):
             if hashlib.sha256(raw).hexdigest()!=source.source_sha256:raise ValueError('Source checksum changed during input loading.')
             input_columns=np.loadtxt(io.BytesIO(raw),comments='#',ndmin=2)
             self.input_snapshot=dict(energy=source.energy_ev.copy(),input_columns=input_columns.copy())
-            axis=tuple(float(v) for v in w.axis.text().replace(',',' ').split())
+            axis=w.material_direction()
             base=ForwardSettings(model='xmcd',source=w.source_path.text(),source_sha256=source.source_sha256,
                 magnetization=axis,axis_declared=w.declaration.isChecked(),eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
                 l3=w.spin['xl3'].value(),l2=w.spin['xl2'].value())
@@ -140,7 +141,7 @@ def install_xmcd_preview(window,panel,form):
     form.setFormAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
     advanced=CollapsibleSection('Advanced source declarations',expanded=False);detail=QtWidgets.QFormLayout(advanced.body)
     detail.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
-    for widget in (window.explicit_xmcd,window.xmcd_element,window.xmcd_edge,window.xmcd_selected,window.xmcd_provenance,window.xmcd_validity,window.xmcd_scale,window.xmcd_status):
+    for widget in (window.reference_ni,window.xmcd_selected,window.xmcd_provenance,window.xmcd_validity,window.xmcd_status):
         taken=form.takeRow(widget)
         if taken.labelItem:detail.addRow(taken.labelItem.widget(),widget)
         else:detail.addRow(widget)

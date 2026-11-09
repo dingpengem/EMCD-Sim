@@ -2,6 +2,8 @@
 
 ## Unreleased development source — crystallographic groups and direction workflow
 
+- Simplify new Global XMCD setup: automatic source format/range checks, visible source-convention choice and relative reference default 1, generated provenance/limitations with optional overrides, and the generalized provider as the normal path. MDFF Done returns a validated Material draft; Viewer Apply and Close accepts it. Cancel rolls back pending MDFF/direction edits. New projects start with editable general numerical settings (2.5/2.0 Å⁻¹ cutoffs), explicitly without a convergence claim. Preserve saved historical Ni providers and presets as reference options. Replace empty-reference conversion errors with a named A²/eV input error. These are development-source changes, not changes to previously accepted EXEs.
+
 - Clarify UI status scope: local groups show “Inactive — Global mode” while Global magnetization is active, with inactive local direction details. Local mode retains actual missing/invalid-provider requirements and elastic-only exclusions. The shared MDFF editor identifies Global versus group readiness without copying configurations or changing validation. This is a UI-status clarification, not acceptance of Site M calculations.
 
 - Prepare local dev4: full-basis diffraction preview no longer requires an inherited target to survive systematic-absence filtering (Fe₃O₄ [017], cutoff 2: 59 beams, absent 200 target). Retain valid orientation, two-beam-target and 121-beam safeguards. Set ordinary fresh/reset/Automatic cutoffs to beam 2.5 and potential 2.0 Å⁻¹; retain explicit saved values and the matched historical reference preset.

@@ -458,7 +458,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.refresh_material_direction()
         if hasattr(self,'magnetization_mode_note'):
             self.magnetization_mode_note.setText('Global magnetization is locked while site-specific magnetization is enabled.'
-                + ' Run uses applied group MDFFs and their energy grids.' if local else 'Global Magnetization Mode (legacy). Local directions are inactive; configure site groups in the 3D viewer.')
+                + ' Run uses applied group MDFFs and their energy grids.' if local else 'Global Magnetization Mode. Local directions are inactive; configure Global MDFF through the 3D viewer.')
 
     def set_material_magnetization(self,direction):
         vector=np.asarray(direction,float)
@@ -477,7 +477,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.emcd_stale();self.mark_project_dirty()
 
     def refresh_material_direction(self):
-        text=' '.join(f'{v:.12g}' for v in self.material_magnetization)
+        try:text=' '.join(f'{v:.12g}' for v in self.material_direction())
+        except ValueError:text='Invalid Material direction — correct Global Material M in the Viewer'
         for editor in (getattr(self,'atomic_editor',None),getattr(self,'manual_spectral',None)):
             if editor is not None and hasattr(editor,'direction'):
                 with QtCore.QSignalBlocker(editor.direction):editor.direction.setText(text)

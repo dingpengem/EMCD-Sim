@@ -181,7 +181,10 @@ def restore_configuration(w,state):
         w._loaded_fft_recipe=(w.fft_cell_key(),c.fft_generators) if c.fft_generators is not None else None
         w.restore_numerical_selection(state.get('metadata',{}))
         w.refresh();w.sync_magnetization_mode()
-        if state['magnetization_mode']=='global':w.mdff_dialog._entry=w.mdff_dialog.snapshot()
+        if state['magnetization_mode']=='global':
+            w.mdff_dialog._entry=w.mdff_dialog.snapshot()
+            w.mdff_dialog._draft_configuration=None;w.mdff_dialog._ready_snapshot=None
+            w.sync_xmcd_route()
     finally:w._session_restoring=False
     w.emcd_stale()
 

@@ -53,12 +53,14 @@ class MDFFWorkspace(QtWidgets.QDialog):
         editor=self._window.structure_viewer.editor
         if self._context_id is None:
             cfg=getattr(self._window,'_accepted_global_mdff',None)
-            if cfg is None:message='Global MDFF: Incomplete — configure, validate and Apply the Global provider.'
+            if hasattr(self,'draft_ready') and self.draft_ready():message='Global MDFF: draft ready — Viewer Apply and Close accepts the Material configuration.'
+            elif self.status.text().startswith('Invalid / unapplied:'):message='Global MDFF: '+self.status.text()
+            elif cfg is None:message='Global MDFF: missing input — select the model/source and conventions, then choose Done.'
             elif cfg.model in ('xmcd','imported') and not cfg.axis_declared:
                 message='Global MDFF: Incomplete — validate and acknowledge the Global source declarations.'
             elif self.status.text().startswith('Invalid / unapplied:') or getattr(self._window,'_restored_source_block',False):
                 message='Global MDFF: Incomplete — source/configuration needs validation. '+self.status.text()
-            elif self.has_unapplied_edits():message='Global MDFF: unapplied editor changes; accepted configuration retained. Apply or Cancel the draft.'
+            elif self.has_unapplied_edits():message='Global MDFF: draft edits; accepted configuration retained. Choose Done or Cancel.'
             else:message='Global MDFF: accepted ('+cfg.model+'). Local group configuration is not required in Global mode.'
             if editor.magnetization_mode=='local':message+=' Global settings are inactive while Local mode is selected.'
         else:
@@ -81,6 +83,7 @@ class MDFFWorkspace(QtWidgets.QDialog):
         self.hide();self._window.open_mdff_context(target)
 
     def confirm_context_exit(self):
+        if hasattr(self,'draft_ready') and self.draft_ready():return True
         if self.has_unapplied_edits():
             answer=QtWidgets.QMessageBox.question(self,'Unapplied MDFF edits',
                 'Apply these MDFF edits, discard them, or cancel the context switch?',
@@ -93,3 +96,6 @@ class MDFFWorkspace(QtWidgets.QDialog):
             else:ok=False
             return ok
         return True
+
+    def finish_edit(self):
+        if self.apply_configuration() is not None:self.hide()

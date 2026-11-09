@@ -249,6 +249,7 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         self.dialog_buttons = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.StandardButton.Apply | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
         self.dialog_buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).clicked.connect(self.apply_groups)
+        self.dialog_buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).setText('Apply and Close')
         self.dialog_buttons.rejected.connect(self.reject); layout.addWidget(self.dialog_buttons)
         self.style.currentIndexChanged.connect(self.atom_style_changed)
         self.view.atomSelected.connect(self.inspect_atom)
@@ -271,6 +272,14 @@ class CrystalStructureDialog(QtWidgets.QDialog):
         if self.editor.magnetization_mode!='global':return False
         try:return tuple(float(v) for v in self.global_direction.text().replace(',',' ').split())!=self._global_direction
         except ValueError:return True
+
+    def draft_global_direction(self):
+        try:direction=tuple(float(v) for v in self.global_direction.text().replace(',',' ').split())
+        except ValueError:raise ValueError('Global Material M (x y z): enter three finite Cartesian components, for example 0 0 1') from None
+        a=np.asarray(direction)
+        if a.shape!=(3,) or not np.isfinite(a).all() or np.linalg.norm(a)<1e-12:
+            raise ValueError('Global Material M (x y z): enter three finite nonzero Cartesian components, for example 0 0 1')
+        return direction
 
     def set_global_direction(self,direction):
         direction=tuple(direction)
@@ -454,21 +463,24 @@ class CrystalStructureDialog(QtWidgets.QDialog):
 
     def apply_groups(self):
         def apply():
-            direction=None
+            direction=None;cfg=None
+            dialog=getattr(self.parent(),'mdff_dialog',None)
             if self.editor.magnetization_mode=='global':
-                direction=tuple(float(v) for v in self.global_direction.text().replace(',',' ').split())
-                a=np.asarray(direction)
-                if a.shape!=(3,) or not np.isfinite(a).all() or np.linalg.norm(a)<1e-12:
-                    raise ValueError('Global Material M requires three finite nonzero crystal Cartesian components')
+                direction=self.draft_global_direction()
+                if dialog is not None:cfg=dialog.prepare_material_apply()
             self.editor.apply()
             if direction is not None:
                 self._global_direction=direction;self.globalDirectionApplied.emit(direction)
+            if cfg is not None:dialog.commit_material(cfg)
+            self.close()
         self.editor.run_action(apply)
 
     def reject(self):
         self.close()
 
     def closeEvent(self, event):
+        dialog=getattr(self.parent(),'mdff_dialog',None)
+        if dialog is not None and dialog.has_unapplied_edits():dialog.reject()
         self.editor.cancel()
         self.global_direction.setText(' '.join(f'{v:.17g}' for v in self._global_direction))
         event.accept()

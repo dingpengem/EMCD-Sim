@@ -1,5 +1,30 @@
 # Group magnetization and MDFF consistency
 
+## Current development Global XMCD workflow
+
+Import the CIF, then open Material → 3D Structure Viewer → Site groups. Set
+Global Material M and open Configure MDFF in Global context. Source entry or
+Browse automatically checks the five-column file and native energy range.
+Element/edge labels describe the editing context; suggested native peaks are
+not authoritative source assignments. Confirm RP−LP about Material +M and the
+displayed L3/L2 assignments beside the source controls. The visible relative
+reference default is 1 after source-max normalization, not an absolute cross
+section. Provenance and honest model limitations are generated when optional
+overrides are blank; parsing never establishes physical material calibration.
+
+MDFF **Done** validates and returns the parent draft without accepting Material.
+Viewer **Apply and Close** accepts direction and provider together. Cancel
+discards unaccepted changes. Continue downward through the existing Settings
+sections; new projects use editable general numerical defaults, including
+2.5/2.0 Å⁻¹ beam/potential cutoffs, without claiming convergence. Saved numerical
+choices remain intact. Save/Open retains the accepted generalized provider.
+
+The Advanced historical reference Ni option preserves the original 3.524 Å
+adapter and saved v0.8 behavior; it is not the normal route for a 3.520 Å CIF.
+This workflow is in development source/new local candidates only. Previously
+accepted candidate artifacts remain unchanged. magCIF and general tensor
+rotation remain future work.
+
 **Bounded compatible-direction binding is implemented. General tensor rotation
 and the broader follow-on proposals below remain unimplemented.**
 
