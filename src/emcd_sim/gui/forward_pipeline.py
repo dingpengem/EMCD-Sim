@@ -257,6 +257,57 @@ def _multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,
     return result
 
 
+def _multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detector_support,
+                                      rotation,thickness_nm,incoming,workers,reverse_magnetization,stage,cancelled):
+    """Schedule existing BW DC responses on selected maps or detector support.
+
+    Each energy is evaluated once; complete-crystal incoming fields are shared
+    across blocks. Reduction retains original fractional weights and group means.
+    """
+    from ..multisite_double_channeling import contract_multisite_bloch_double
+    from .propagation import MULTISITE_ENERGY_BATCH
+    energy=plan['energy_ev'];full=np.zeros(len(energy),bool)
+    if cfg.angular_maps:
+        for _,loss in cfg.selected_edges:full|=np.isclose(energy,loss,rtol=0,atol=1e-9)
+    result=dict(total={},weighted_sum={},groups={g.group_id:{} for g in sites.groups},diagnostics=[])
+    contraction_seconds=0.;reduction_seconds=0.
+    def integrate(target,part,block_cfg,block_energy,selection,support):
+        reduced=_multisite_detector_data(part,block_cfg,block_energy,qx,qy,weights,support)
+        if not target:target.update(spectra={key:np.empty(len(energy)) for key in reduced['spectra']},maps={},qx=qx,qy=qy,weights=weights)
+        for key,value in reduced['spectra'].items():target['spectra'][key][selection]=value
+        target['maps'].update(reduced['maps'])
+    for is_full in (False,True):
+        candidates=np.flatnonzero(full==is_full);support=np.ones(qx.size,bool) if is_full else detector_support
+        for start in range(0,len(candidates),MULTISITE_ENERGY_BATCH):
+            selection=candidates[start:start+MULTISITE_ENERGY_BATCH];block_energy=energy[selection]
+            stage(f'BW Double Channeling: {"selected maps" if is_full else "detector support"}; energies {start+1}–{start+len(selection)}/{len(candidates)}, {int(support.sum())} pixels')
+            block_plan=dict(plan,energy_ev=block_energy,active={gid:mask[selection] for gid,mask in plan['active'].items()})
+            block_cfg=replace(cfg,angular_maps=cfg.angular_maps and is_full,selected_edges=tuple((label,loss) for label,loss in cfg.selected_edges if np.any(np.isclose(block_energy,loss,rtol=0,atol=1e-9))))
+            before=perf_counter()
+            raw=contract_multisite_bloch_double(model,sites,block_plan,qx.ravel()[support],qy.ravel()[support],
+                crystal_to_microscope=rotation,thickness_nm=thickness_nm,depth_steps=cfg.depth,
+                method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.memory_budget_mib,
+                prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled,execution_workers=workers)
+            contraction_seconds+=perf_counter()-before;before=perf_counter()
+            integrate(result['total'],raw['total'],block_cfg,block_energy,selection,support)
+            integrate(result['weighted_sum'],raw['weighted_sum'],block_cfg,block_energy,selection,support)
+            for group in sites.groups:
+                entry=result['groups'][group.group_id];part=raw['groups'][group.group_id]
+                integrate(entry,part,block_cfg,block_energy,selection,support)
+                entry['metadata']={key:value for key,value in part.items() if key not in ('plus','minus')}
+            del part
+            for i,diagnostic in enumerate(raw['diagnostics']):
+                diagnostic.update(energy_index=int(selection[i]),full_field=is_full,
+                    outgoing_energy_ev=float(1000*model.elastic.microscope.acceleration_kv-block_energy[i]))
+                result['diagnostics'].append(diagnostic)
+            result['metadata']=raw['metadata'];reduction_seconds+=perf_counter()-before
+            del raw
+    result['diagnostics'].sort(key=lambda row:row['energy_index'])
+    result['metadata']['outgoing_energy_ev']=(1000*model.elastic.microscope.acceleration_kv-energy).tolist()
+    result['timings']=dict(outgoing_response_and_mdff_seconds=contraction_seconds,detector_reduction_seconds=reduction_seconds)
+    return result
+
+
 def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None,
                        cancelled=lambda:False,*,energy_ev=None,energy_windows=None,reverse_magnetization=False):
     """Multi-site Single or Double Channeling with BW or FFT Multislice.
@@ -370,7 +421,11 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
             psi=waves[method]
             coherence=coherence_from_amplitudes(z,psi)
             stage('Contracting '+method+' multi-site '+cfg.channeling_model.title()+' Channeling')
-            if double and method=='bloch':
+            reduced_double=double and method=='bloch' and cfg.angular_evaluation=='selected'
+            if reduced_double:
+                raw=_multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detector_support,
+                    rotation,settings.thickness,incoming,info['execution']['effective_workers'][method],reverse_magnetization,stage,cancelled)
+            elif double and method=='bloch':
                 from ..multisite_double_channeling import contract_multisite_bloch_double
                 raw=contract_multisite_bloch_double(model,sites,plan,qx.ravel()[support],qy.ravel()[support],
                     crystal_to_microscope=rotation,thickness_nm=settings.thickness,depth_steps=cfg.depth,
@@ -389,18 +444,18 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
             else:
                 raw=_multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,qy,weights,detector_support,
                     rotation,settings.thickness,reverse_magnetization,stage,cancelled)
-            data=(_multisite_detector_data(raw['total'],cfg,energy,qx,qy,weights,support) if double else raw['total'])
-            angular_policy=('full_grid_all_energies' if cfg.angular_evaluation=='all' or double else 'full_grid_selected_energies') if cfg.angular_maps else 'fractional_aperture_support'
+            data=(_multisite_detector_data(raw['total'],cfg,energy,qx,qy,weights,support) if double and not reduced_double else raw['total'])
+            angular_policy=('full_grid_all_energies' if cfg.angular_evaluation=='all' or (double and not reduced_double) else 'full_grid_selected_energies') if cfg.angular_maps else 'fractional_aperture_support'
             data.update(angular_evaluation_policy=angular_policy,diagnostics=raw.get('diagnostics',[]))
             result=_contract(structure,settings,cfg,model,rotation,hkl,g,info['dense_working_estimate_mib'],z,psi,
                              coherence,energy,(),stage,cancelled,prepared=data)
             result.update(method=method,groups={},weighted_sum=(
-                _multisite_detector_data(raw['weighted_sum'],cfg,energy,qx,qy,weights,support) if double else raw['weighted_sum']))
+                _multisite_detector_data(raw['weighted_sum'],cfg,energy,qx,qy,weights,support) if double and not reduced_double else raw['weighted_sum']))
             for group in sites.groups:
                 stage('Integrating '+group.group_id+' fractional detector intensities')
                 group_raw=raw['groups'][group.group_id]
-                entry=_multisite_detector_data(group_raw,cfg,energy,qx,qy,weights,support) if double else group_raw
-                if double:entry['metadata']={k:v for k,v in group_raw.items() if k not in ('plus','minus')}
+                entry=_multisite_detector_data(group_raw,cfg,energy,qx,qy,weights,support) if double and not reduced_double else group_raw
+                if double and not reduced_double:entry['metadata']={k:v for k,v in group_raw.items() if k not in ('plus','minus')}
                 entry['metadata']['contribution_weight']=group.multiplicity/raw['metadata']['selected_atom_count']
                 result['groups'][group.group_id]=entry
             meta=result['metadata']
@@ -411,7 +466,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                 numerics=info,execution=info['execution'],memory_admission=admission,
                 solver=method+' '+cfg.channeling_model.title()+' Channeling; independent localized site-group intensities',
                 incoming_propagation_seconds=incoming_seconds,
-                single_channeling_timings=raw.get('timings'),
+                single_channeling_timings=raw.get('timings') if not double else None,
                 intensity_convention=raw['metadata']['intensity_convention'],
                 spectral_coverage=plan['metadata']['coverage_mode'],
                 spectrum_kind='modeled_partial_core_edge_spectrum',
@@ -419,6 +474,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                 detector_evaluation=angular_policy,
                 limitations='Projected neutral IAM; finite ZOLZ; '+(method+' Double Channeling' if double else 'Single Channeling')+'; modeled partial core-edge spectrum; omitted channels/tails are not physical zeros; no absolute or cross-element calibration')
             result['weighted_sum']['metadata']=dict(normalization='sum_over_selected_atoms',spectrum_kind='modeled_partial_core_edge_spectrum')
+            if reduced_double:meta['double_channeling_timings']=raw['timings']
             if method=='fft-multislice':meta['fft']=fft_info['summary']
             methods[method]=result
             del raw
