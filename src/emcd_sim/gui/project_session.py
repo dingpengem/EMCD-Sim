@@ -30,7 +30,7 @@ def capture_configuration(w):
     common=dict(propagation=('bloch','fft-multislice','both')[w.propagation_box.currentIndex()],
         channeling_model=('single','double')[w.channeling_box.currentIndex()],energy_scope=('full','edges')[w.energy_scope.currentIndex()],
         centers=tuple(tuple(p) for p in w.detectors),angular_maps=w.angular_maps.isChecked(),systematic_row=w.row_projection.isChecked(),
-        correction=w.correction.isChecked(),memory_budget_mib=w.memory_budget.currentData(),
+        correction=False,memory_budget_mib=w.memory_budget.currentData(),
         worker_mode=('automatic','manual')[w.worker_mode.currentIndex()],parallel_workers=w.worker_count.value(),fft_generators=w.saved_fft_generators())
     for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step'):common[key]=w.spin[key].value()
     if w.magnetization_mode=='local':cfg=MultiSiteForwardSettings(**common)
@@ -76,6 +76,7 @@ def capture_configuration(w):
         spectral=w.manual_spectral.draft(),atomic=w.atomic_editor.draft(),global_axis=w.axis.text())
     state['metadata']['numerical_selection']=w.numerical_selection_snapshot()
     if w.magnetization_mode=='local':state['global_config']=getattr(w,'_saved_global_config',None)
+    if state.get('global_config') is not None:state['global_config']=replace(state['global_config'],correction=False)
     declared={'config':cfg.source_sha256,'global_config':getattr(state.get('global_config'),'source_sha256','')}
     declared.update({'group:'+r['group_id']:getattr(r['mdff_reference'],'source_sha256','') for r in state.get('group_records',[])})
     pins=getattr(w,'_configuration_source_pins',{})
@@ -87,6 +88,11 @@ def restore_configuration(w,state):
     """Restore editable inputs, never results, and never infer a tensor frame."""
     from .geometry import orientation
     from .site_group_editor import validate_site_rows
+    state=dict(state)
+    enabled=state['config'].correction or bool(state.get('global_config') and state['global_config'].correction)
+    w.retire_post_edge(enabled)
+    state['config']=replace(state['config'],correction=False)
+    if state.get('global_config') is not None:state['global_config']=replace(state['global_config'],correction=False)
     s=state['settings'];c=state['config'];w._session_restoring=True
     try:
         if state['magnetization_mode']=='local' and state.get('global_config') is None:w._accepted_global_mdff=None
@@ -123,7 +129,7 @@ def restore_configuration(w,state):
             values=dict(kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,tx=s.tilt[0],ty=s.tilt[1])
             values.update({key:getattr(c,key) for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step')})
             w.set_values(values);w.detectors=np.asarray(c.centers);w.sync_detectors();w.sync_za()
-            for widget,value in ((w.angular_maps,c.angular_maps),(w.row_projection,c.systematic_row),(w.correction,c.correction)):
+            for widget,value in ((w.angular_maps,c.angular_maps),(w.row_projection,c.systematic_row)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(value)
             w.worker_count.setValue(c.parallel_workers);w._saved_global_config=state.get('global_config')
         drafts=state.get('metadata',{}).get('gui_drafts')
@@ -278,6 +284,7 @@ class ProjectSession:
         if self.busy:return
         if not self.confirm_project_changes(lambda:self.open_project_path(path)):return
         def loaded(payload):
+            self._post_edge_disabled_on_restore=False;self.correction_notice.hide()
             restore_configuration(self,payload['state'])
             self.browser.selection_timer.stop();self.browser.cache={};self.browser.registry.records=[]
             for record,result in payload['runs']:
@@ -292,7 +299,8 @@ class ProjectSession:
             if payload['runs']:
                 r=self.browser.registry.records[-1];self.browser.select_id(r['id']);self.display_saved_result(self.browser.cache[r['id']],r)
             else:self.clear_selected()
-            self.project_dirty=False;self.set_project_status('Saved')
+            self.project_dirty=getattr(self,'_post_edge_disabled_on_restore',False)
+            self.set_project_status('Unsaved Changes' if self.project_dirty else 'Saved')
         self.io_operation(lambda cancel,progress:load_collection(path,cancelled=cancel,progress=progress),loaded)
 
     def new_project(self):

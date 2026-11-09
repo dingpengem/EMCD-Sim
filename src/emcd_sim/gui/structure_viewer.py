@@ -176,6 +176,11 @@ class CrystalCanvas(QtWidgets.QWidget):
 
 
 class CrystalStructureDialog(QtWidgets.QDialog):
+    def showEvent(self,event):
+        from .parameter_wheel import protect_parameter_wheels
+        protect_parameter_wheels(self)
+        super().showEvent(event)
+
     """A modeless snapshot viewer; only Apply retains in-memory group edits."""
     siteGroupsApplied = QtCore.Signal(object)
     magnetizationModeChanged = QtCore.Signal(str)

@@ -109,6 +109,8 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         export.clicked.connect(lambda:self.export_applied_source())
         buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Apply |
             QtWidgets.QDialogButtonBox.StandardButton.Cancel | QtWidgets.QDialogButtonBox.StandardButton.Close)
+        preview=QtWidgets.QPushButton('Update numerical preview');self.outer.addWidget(preview)
+        preview.clicked.connect(self.preview_current_model)
         self.outer.addWidget(buttons);self.buttons = buttons
         buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).setText('Validate and Apply')
         buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).clicked.connect(self.apply_configuration)
@@ -180,12 +182,16 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             self.source_info = dict(sha256=source.source_sha256,bounds=source.energy_ev[[0,-1]].tolist(),
                 selected=None,explicit_selected=dict(L3=self.spin['xl3'].value(),L2=self.spin['xl2'].value()))
             self.validated_path = self.source_path.text();self.declaration.setChecked(False)
-            self.status.setText('Spectral data validated. Select native energies and acknowledge declarations before tensor preview or Apply.')
-        except Exception as exc:self.status.setText('Invalid spectral data: '+str(exc))
+            low,high=source.energy_ev[[0,-1]]
+            self.status.setText(f'Spectral data validated ({low:g}–{high:g} eV). Enter native edge selections, source/provenance, validity and relative reference scale, then acknowledge declarations for the tensor. No parameters were inferred.')
+        except Exception as exc:
+            self.source_info=None;self.validated_path=None
+            self.status.setText('Invalid spectral data: '+str(exc))
+        self.xmcd_preview.update_preview()
 
     def declared_provider_settings(self, base, prepare=True):
         # The unchanged XMCD preview requests the same declared group candidate.
-        return self.candidate()
+        return self.bind_material_reference(self.candidate())
 
     def build_atomic(self):
         from .atomic_editor import AtomicParameterEditor
@@ -301,7 +307,15 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
                     ax.plot(source.energy_ev,getattr(np.trace(value,axis1=1,axis2=2)/3,part),ls='--',label=label+' Tr(T)/3')
                 ax.set(xlabel='Energy loss (eV)',ylabel=part+' Å²/eV');ax.legend(ncol=4,fontsize=8)
             self.tensor_preview = dialog;canvas.draw_idle();dialog.show()
-        except Exception as exc:self.status.setText('Preview unavailable: '+str(exc))
+        except Exception as exc:
+            self.status.setText('Preview unavailable: '+str(exc))
+            self.scroll.ensureWidgetVisible(self.status)
+
+    def preview_current_model(self):
+        if self.model.currentIndex()==0:self.xmcd_preview.update_preview()
+        elif self.model.currentIndex()==1 and self.atomic_mode.currentIndex()==1:self.atomic.preview()
+        elif self.model.currentIndex() in (1,2):self.preview_tensor()
+        else:self.status.setText('Preview unavailable: select and configure an MDFF model in this context first.')
 
     def set_values(self, values):
         for key,value in values.items():
@@ -358,6 +372,12 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         if self.model.currentIndex() == 0:
             from ..wien2k_xmcd import load_wien2k_xmcd
             path = self.source_path.text().strip();source = load_wien2k_xmcd(path)
+            for widget,label in ((self.xmcd_provenance,'Source / provenance'),(self.xmcd_validity,'Physical assumptions / limits')):
+                if not widget.text().strip():raise ValueError(f'Group {self.row[0]}: complete {label} in this XMCD context')
+            try:scale=float(self.xmcd_scale.text())
+            except ValueError:scale=float('nan')
+            if not np.isfinite(scale) or scale<=0:
+                raise ValueError(f'Group {self.row[0]}: enter a positive finite Relative tensor reference scale (A^2/eV); no calibration is inferred')
             selected = (dict(L3=self.spin['xl3'].value(),L2=self.spin['xl2'].value())
                         if self.xmcd_edge.text().strip() == 'L2,3' else self.xmcd_edges.selected())
             declaration = dict(element=self.row[1],edge=self.xmcd_edge.text().strip(),selected_ev=selected,
@@ -365,7 +385,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
                 eta=float(self.eta.text()),beta=float(self.beta.text()),normalization='source_max_nonmagnetic',
                 convention=CONVENTION,source=self.xmcd_provenance.text().strip(),validity=self.xmcd_validity.text().strip(),
                 status=self.xmcd_status.currentText(),source_sha256=source.source_sha256,
-                reference_tensor_scale_angstrom2_per_ev=float(self.xmcd_scale.text()),
+                reference_tensor_scale_angstrom2_per_ev=scale,
                 magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
             if (self.reference is not None and self.reference.model=='xmcd' and self.reference.pair_reversed
                     and str(path)==self.reference.source and tuple(self.row[3])==self.reference.magnetization):

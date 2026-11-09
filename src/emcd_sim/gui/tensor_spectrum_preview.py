@@ -44,6 +44,11 @@ noncollinear spin texture or quantitative Fe spectroscopy is established.'''
 
 
 class TensorSpectrumPreview(QtWidgets.QDialog):
+    def showEvent(self,event):
+        from .parameter_wheel import protect_parameter_wheels
+        protect_parameter_wheels(self)
+        super().showEvent(event)
+
     MODES = ('Tensor Components','Magnetization Reversal',
         'Magnetic-Odd and Nonmagnetic-Even Components','Full 3x3 Complex Tensor')
     COMPONENTS = ('Trace/3','Txx','Txy','Txz','Tyx','Tyy','Tyz','Tzx','Tzy','Tzz')

@@ -12,6 +12,11 @@ from .normalization_export import save_figure
 
 
 class CalculationComparison(QtWidgets.QDialog):
+    def showEvent(self,event):
+        from .parameter_wheel import protect_parameter_wheels
+        protect_parameter_wheels(self)
+        super().showEvent(event)
+
     def __init__(self,owner):
         super().__init__(owner);self.setWindowTitle('Compare Calculations');self.resize(1050,760)
         self.setWindowFlag(QtCore.Qt.WindowType.WindowMaximizeButtonHint,True)

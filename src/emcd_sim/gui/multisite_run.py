@@ -21,8 +21,7 @@ def forward_settings(window):
         fft_grid=window.spin['fft_grid'].value(),slice_step=window.spin['slice_step'].value(),
         grid=window.spin['grid'].value(),depth=window.spin['depth'].value(),subpixels=window.spin['subpixels'].value(),
         halfwidth=window.spin['halfwidth'].value(),centers=tuple(tuple(p) for p in window.detectors),
-        radius=window.spin['radius'].value(),correction=window.correction.isChecked())
-    if cfg.correction:raise ValueError('Disable post-edge correction for Local multi-site calculations; it is not supported')
+        radius=window.spin['radius'].value(),correction=False)
     if cfg.channeling_model == 'double' and cfg.propagation == 'both':
         raise ValueError('Multi-site Double Channeling requires a separate BW or FFT Multislice run; select one solver')
     return cfg

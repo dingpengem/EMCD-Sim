@@ -153,9 +153,9 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
     def numerical_controls(self):
         shared_form=self.form
         self.shared_elastic_group=self.shared_group('Elastic Potential and Beam Support')
-        self.number('beam','Beam / MDFF basis cutoff (Å⁻¹)',3.2,.2,6.5,self.refresh)
+        self.number('beam','Beam / MDFF basis cutoff (Å⁻¹)',2.5,.2,6.5,self.refresh)
         self.spin['beam'].setToolTip('Shared retained basis: BW uses these elastic beams; MS uses the same ordered beams for diffraction/MDFF contraction. Additional FFT harmonics may participate in MS propagation. This is not a BW-only cutoff.')
-        self.number('potential','Potential Fourier cutoff\n|g−g′|max (Å⁻¹)',2.5,.1,6.5,self.refresh)
+        self.number('potential','Potential Fourier cutoff\n|g−g′|max (Å⁻¹)',2.0,.1,6.5,self.refresh)
         self.spin['potential'].setToolTip('BW: limits crystal-potential Fourier components used in diffraction-beam coupling. MS: limits Fourier components used to construct the projected real-space potential. U_(g−g′), |g−g′| ≤ cutoff. Distinct from beam radius, ionization momentum transfer and detector extent. Crystallographic g=1/d; no extra 2π.')
         self.number('b','Debye–Waller B (A²)',0,0,10,self.refresh)
         self.spin['b'].setToolTip('Shared IAM elastic-potential damping for both BW and MS; not a solver-specific sampling control.')
@@ -186,11 +186,14 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.angular_maps=QtWidgets.QCheckBox('Calculate angular maps');self.angular_maps.setChecked(True);self.form.addRow(self.angular_maps);self.angular_maps.toggled.connect(self.emcd_stale)
         self.angular_maps.setToolTip('Full-field angular maps are evaluated at selected L3/L2 energies. Other spectral energies use detector-only sampling for faster EELS computation. When off, all energies use nonzero fractional-detector support on the unchanged grid. No grid, precision or physical parameter is reduced.')
         saved_form=self.form;group=QtWidgets.QGroupBox('Advanced post-edge diagnostics');group.setCheckable(True);group.setChecked(False);body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(group);outer.addWidget(body);self.form.addRow(group);body.hide();group.toggled.connect(body.setVisible);self.form=QtWidgets.QFormLayout(body)
-        self.correction=QtWidgets.QCheckBox('Enable post-edge A/B correction');self.correction.setChecked(True);self.form.addRow(self.correction);self.correction.toggled.connect(self.emcd_stale)
+        self.correction=QtWidgets.QCheckBox('Enable post-edge A/B correction');self.correction.setChecked(False);self.form.addRow(self.correction)
         self.correction.setToolTip('Derived A/B post-edge scaling and residual diagnostics only; does not change the propagation, MDFF or original raw spectra. Corrected contrast is not intrinsically magnetic.')
         self.number('window_lo','Window start (eV)',878,1,10000,self.emcd_stale);self.number('window_hi','Window end (eV)',882,1,10000,self.emcd_stale)
         self.form=saved_form
+        group.hide()  # Compatibility fields only; retired from new GUI requests.
         self.form=shared_form
+        self.correction_notice=QtWidgets.QLabel('Optional post-edge A/B correction was disabled for new calculations. Historical results retain their original settings.')
+        self.correction_notice.setWordWrap(True);self.correction_notice.hide();self.form.addRow(self.correction_notice)
         self.shared_resources_group=self.shared_group('Computational Resources')
         from .memory_budget import BUDGETS_MIB,DEFAULT_BUDGET_MIB
         self.memory_budget=QtWidgets.QComboBox()
@@ -277,6 +280,13 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         recipe=getattr(self,'_loaded_fft_recipe',None)
         return recipe[1] if recipe is not None and recipe[0]==self.fft_cell_key() else None
 
+    def retire_post_edge(self,was_enabled=False):
+        """Working GUI settings only; saved result/config objects stay untouched."""
+        with QtCore.QSignalBlocker(self.correction):self.correction.setChecked(False)
+        if was_enabled:
+            self._post_edge_disabled_on_restore=True
+            self.correction_notice.show()
+
     def forward_settings(self,prepare=True):
         if getattr(self,'magnetization_mode','global')=='local':
             from .multisite_run import forward_settings
@@ -295,7 +305,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),
             slice_step=self.spin['slice_step'].value(),energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),
             depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
-            centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),
+            centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=False,
             window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()),magnetization=self.material_magnetization)
         cfg=replace(cfg,**shared)
         from .generalized_forward import ImportedSettings,ProviderSettings
@@ -323,7 +333,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
-            centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=self.correction.isChecked(),window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
+            centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=False,window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
         if mode=='atomic' and self.atomic_editor.historical_config is not None:
             saved=self.atomic_editor.historical_config
             if not np.allclose(np.asarray(axis)/np.linalg.norm(axis),np.asarray(saved.magnetization)/np.linalg.norm(saved.magnetization)):
@@ -439,6 +449,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 for _,v in selected_samples(cfg):ax.axvline(v,ls=':',color='.5')
                 ax.set(xlabel='Unshifted source / model energy (eV)',ylabel='Source spectral units' if cfg.model=='xmcd' else 'Tensor (A²/eV)',xlim=(e[0],e[-1]) if choice.currentIndex()==0 else ((cfg.l3-5,cfg.l3+5) if choice.currentIndex()==1 else (cfg.l2-5,cfg.l2+5)))
                 ax.legend();canvas.draw_idle()
+            from .parameter_wheel import protect_parameter_wheels
+            protect_parameter_wheels(dialog)
             choice.currentTextChanged.connect(draw);draw();dialog.show();self.dialogs.append(dialog)
         except Exception as exc:
             if self.invalidate_on_source_error(exc):self.emcd_stale()

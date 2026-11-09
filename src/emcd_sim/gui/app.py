@@ -124,6 +124,8 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.structure_view_action=QtGui.QAction('View 3D Crystal Structure…',self)
         self.structure_view_action.triggered.connect(self.show_structure_viewer)
         self.setup_project_session()
+        from .parameter_wheel import protect_parameter_wheels
+        protect_parameter_wheels(self)
 
     def section(self,title,expanded=True,*,key=None):
         group=CollapsibleSection(title.replace('&','&&'),expanded=expanded)
@@ -209,11 +211,13 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.spin['beam'].setToolTip(f'BW: limits diffraction beams retained in the Bloch-wave eigenproblem and MDFF response. MS: limits retained diffraction beams used for MDFF contraction. Additional FFT harmonics may participate in MS propagation. g=1/d, Å⁻¹; no 2π conversion. Approximate angular equivalent λ|g|max = {angle:.4f} mrad at {s.voltage:g} kV. Not the EELS detector collection limit.')
             target_valid=s.target in hkl and s.target!=(0,0,0)
             elastic_reason=self.structure.elastic_reason_for(s.elastic_provider)
-            supported=not elastic_reason and target_valid
+            preview_reason=self.preview_blocking_reason(s,hkl)
+            supported=not preview_reason
             numerical_reason=self._numerical_error or ''
             self.run_button.setEnabled(supported and not self.busy);self.align_button.setEnabled(target_valid and not self.busy)
             elastic_notice=('Elastic Preview uses the displayed settings unchanged; no automatic preset was applied for these inputs. Inherited values are not independently convergence-validated for this material. MDFF/EELS automatic settings remain unavailable: '+numerical_reason if numerical_reason else '')
-            self.run_button.setToolTip(elastic_reason or elastic_notice or 'Calculate elastic diffraction for the current structure and settings.')
+            target_notice=('Selected target is absent from the retained basis; full-basis elastic preview remains available. Choose a retained reflection for Bragg alignment.' if not target_valid else '')
+            self.run_button.setToolTip(preview_reason or target_notice or elastic_notice or 'Calculate elastic diffraction for the current structure and settings.')
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(elastic_reason or 'IAM BW elastic preview supported; EMCD material eligibility is separate.'))
             old_limits=(self.ax.get_xlim(),self.ax.get_ylim()) if self.ax.has_data() else ((-1.3,1.3),(-1.3,1.3))
             self.ax.clear();fresh=self.preview_is_current(s)
@@ -295,7 +299,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             j=hkl.index(s.target);gg=g[j];error=float(excitation(gg,s.tilt,s.voltage))
             value=f'{self.last_result["intensity"][j]:.7g}' if fresh else 'not calculated for current inputs'
             text=f'Target {s.target}: q=({gg[0]:.6f}, {gg[1]:.6f}) Å⁻¹; |g|={np.linalg.norm(gg):.6f}\ns={error:+.9g} Å⁻¹; exit intensity={value} a.u.'
-        else:text='Target is not a nonzero reflection in this oriented basis. Click a valid spot or enter its hkl; no intensity is calculated.'
+        else:text='Target is not a nonzero retained reflection. Choose a valid spot for alignment or target intensity; other retained reflections can still be previewed in the full basis.'
         text+=f'\nZA=({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; tilt=({s.tilt[0]:.8f}, {s.tilt[1]:.8f}) mrad'
         text+=f'\nLaue center: ({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; Laue radius: {radius:.6f} Å⁻¹'
         if radius<=1e-12:text+=' — On zone axis'
@@ -492,16 +496,22 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             # MDFF Automatic-policy failures do not invalidate displayed elastic
             # controls. Validate those controls and their provider independently;
             # Run EMCD / EELS retains its existing _numerical_error gate.
-            reason=self.structure.elastic_reason_for(self.settings().elastic_provider)
-            if reason:raise ValueError(reason)
             s=self.settings();actual=geometry(self.structure,s,systematic_row=self.row_projection.isChecked())
+            reason=self.preview_blocking_reason(s,actual[2])
+            if reason:raise ValueError(reason)
         except Exception as exc:self.error(str(exc));return
-        if s.target not in actual[2] or s.target==(0,0,0):self.error('Select a valid nonzero target');return
         self.refresh()
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0);self.emcd_button.setEnabled(False)
         self.statusBar().showMessage('Preparing crystal / selecting basis / running Bloch-wave elastic preview…')
         self.worker=PreviewWorker(Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings),s,self.row_projection.isChecked())
         self.worker.result.connect(self.completed);self.worker.failed.connect(self.preview_failed);self.worker.finished.connect(self.finished);self.worker.start()
+
+    def preview_blocking_reason(self,settings,hkl):
+        reason=self.structure.elastic_reason_for(settings.elastic_provider)
+        if reason:return reason
+        if settings.basis_mode=='two-beam' and (settings.target not in hkl or settings.target==(0,0,0)):
+            return 'Ideal two-beam preview requires a retained nonzero target; check its systematic absence and the beam cutoff.'
+        return ''
     def completed(self,result):
         if self.worker.isInterruptionRequested():return
         self.run_outcome='completed'

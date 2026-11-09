@@ -18,7 +18,7 @@ def resolve_parameters(structure, settings, cfg):
     exact-Bragg [017] representative points. Other cases use released starting
     defaults. Even reference matches are not claims about full-field convergence.
     """
-    values = dict(beam=3.2,potential=2.5,fft_grid=32,depth=64,slice_step=2.,
+    values = dict(beam=2.5,potential=2.0,fft_grid=32,depth=64,slice_step=2.,
                   grid=97,subpixels=64,halfwidth=1.,energy=241,memory_budget_mib=2048)
     centers=((1/3.524,1/3.524),(1/3.524,-1/3.524))
     # Native-source identity is explicit; a filename/material resemblance is insufficient.

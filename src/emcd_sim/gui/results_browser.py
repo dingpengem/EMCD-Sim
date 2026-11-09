@@ -258,7 +258,8 @@ class ProjectWorkspace(ProjectSession):
         if self.busy:return
         self._accepted_global_mdff=None;self._saved_global_config=None
         with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
-        self.set_values(dict(kv=300,beam=3.2,potential=2.5))
+        self.set_values(dict(kv=300,beam=2.5,potential=2.0))
+        self.retire_post_edge();self._post_edge_disabled_on_restore=False;self.correction_notice.hide()
         self.worker_mode.setCurrentIndex(0);self.worker_count.setValue(1)
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
         self._slice_step_override=None;self.set_values(dict(slice_step=2.))
@@ -293,6 +294,8 @@ class ProjectWorkspace(ProjectSession):
         try:structure=restore_structure(r.get('structure_snapshot'))
         except Exception as exc:self.error(str(exc));return
         if self.model_box.currentIndex()==2:self._remember_manual_state()
+        self.retire_post_edge(c.correction)
+        c=replace(c,correction=False)
         self._restoring=True
         try:
             self.structure=structure;self.last_result=None;self.table.setRowCount(0)
@@ -320,7 +323,7 @@ class ProjectWorkspace(ProjectSession):
             values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial if c.radial is not None else .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
             values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()});self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()
             self.sync_angular_resolution()
-            for widget,checked in ((self.correction,c.correction),(self.radial_override,c.radial is not None),(self.declaration,c.axis_declared)):
+            for widget,checked in ((self.radial_override,c.radial is not None),(self.declaration,c.axis_declared)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.source_info=None;self.validated_path=None
             if c.model=='xmcd':

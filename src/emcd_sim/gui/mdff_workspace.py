@@ -3,6 +3,11 @@ from PySide6 import QtCore,QtWidgets
 
 
 class MDFFWorkspace(QtWidgets.QDialog):
+    def showEvent(self,event):
+        from .parameter_wheel import protect_parameter_wheels
+        protect_parameter_wheels(self)
+        super().showEvent(event)
+
     def __init__(self,parent=None):
         super().__init__(parent)
         self.setWindowTitle('MDFF Configuration')

@@ -169,6 +169,8 @@ MS-only controls are in panel E; they hide/disable appropriately for BW and reta
 
 **Automatic** selects deterministic starting values and performs configuration/FFT-support checks without trial scattering calculations. Inspect **View Numerical Parameters**; do not assume a literature/research profile was matched merely because the material or zone name agrees. **Manual (Advanced)** exposes explicit support/sampling controls. Preserve and report actual effective values, including numerical-selection metadata.
 
+**Dev4 development source:** fresh/reset Beam / MDFF basis cutoff is **2.5 Å⁻¹**, and Potential Fourier cutoff is **2.0 Å⁻¹**. Ordinary Automatic starts use these values; matched historical reference presets remain explicitly distinguished. Saved explicit cutoffs survive reopening. The table below retains released v0.8 starting values. Scrolling over focused numeric controls or closed selectors scrolls the page without editing parameters; use typing, keyboard arrows or step buttons to edit.
+
 |Control|Released starting value|Role|
 |---|---:|---|
 |Voltage / thickness|300 kV / 30 nm|Physical inputs; set explicitly for each study|
@@ -274,6 +276,8 @@ The released EELS percentage helper masks nonpositive/nonfinite denominators and
 Reversal-even and reversal-odd are defined by the four raw spectra; preserve the identity `D_conv=D_mag+D_nonmag`. Fixed-detector Flip-M A has magnetic contribution `2*M_A` and exactly zero nonmagnetic residual under identical geometry and nonmagnetic conditions within the ideal model. The underlying `N_A(E)` remains nonzero. It is a different measurement from magnetic A/B; its magnitude can be larger or smaller. Real drift/background/counting variance requires separate experimental modeling.
 
 **Advanced post-edge diagnostics → Enable post-edge A/B correction** derives a +M A/B scaling from **Window start/end (eV)**. It does not change the MDFF, propagation or raw spectra. Its corrected contrast is **not intrinsically magnetic**; processed magnetic bias and residual even terms must be inspected separately. A selected-energy run may not contain the post-edge window and can report correction unavailable. Record the window, scale factors and definitions instead of calling every corrected signal magnetic.
+
+That optional control is retained here as a historical v0.8 reference. **Dev4 retires it from the active GUI:** new requests always disable it. Opening a legacy enabled configuration shows a notice and disables only the working flag; Save is required to change the project file. Historical result arrays/settings remain unchanged. See the [development workflow](MDFF_WORKFLOWS.md#development-group-direction-workflow) for preview eligibility, model previews and current controls.
 
 <a id="project-management"></a>
 ## 18. Project management
