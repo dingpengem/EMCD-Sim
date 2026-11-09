@@ -232,7 +232,48 @@ def test_shared_tabs_and_saved_map_export(view,monkeypatch,tmp_path):
     monkeypatch.setattr(QtWidgets.QFileDialog,'getExistingDirectory',lambda *a:str(tmp_path))
     monkeypatch.setattr('emcd_sim.gui.project_io.save_project',lambda r,p:saved.append((r,p)))
     widget.export_derived()
-    assert len(saved)==1 and saved[0][0] is result and saved[0][1].parent==tmp_path
+    assert len(saved)==1 and saved[0][0]['maps'] is result['maps'] and saved[0][1].parent==tmp_path
+    assert saved[0][0]['display_state']['angular_selection']==widget.map_options()
+    widget.deleteLater()
+
+
+@pytest.mark.parametrize('normalization,identical',[('weighted',False),('mean',True)])
+def test_angular_group_energy_binding_matches_image_arrays(view,monkeypatch,normalization,identical):
+    from dataclasses import replace
+    from emcd_sim.gui.multisite_results import angular_group_view
+    result=stored_result();keys=('Fe(A):L3','Fe(B):L2')
+    result['config']=replace(result['config'],angular_maps=True,selected_edges=((keys[0],710.),(keys[1],723.)))
+    qx,qy=np.meshgrid([-1.,0.,1.],[-1.,0.,1.]);result.update(qx=qx,qy=qy)
+    result['model'].elastic.crystal.g_vector=lambda hkl:np.array([1.,0.,0.])
+    monkeypatch.setattr('emcd_sim.gui.results.decorate_reciprocal_map',lambda *a,**k:None)
+    for index,(gid,group) in enumerate(result['groups'].items()):
+        group['metadata']['source']['selected_ev']={'L3':710.,'L2':723.};group['maps']={}
+        for e,key in enumerate(keys):
+            base=10+qx*qx+(0 if identical else (index+e+1)*.1*qy)
+            odd=(.2 if identical else .1*(1+2*index+e))*qy
+            group['maps'][key]=dict(I_plus=base+odd,I_minus=base-odd,I_mag=odd,I_nonmag=base)
+    result['maps']={key:{field:sum(g['metadata']['multiplicity']/3*g['maps'][key][field] for g in result['groups'].values())
+                        for field in ('I_plus','I_minus','I_mag','I_nonmag')} for key in keys}
+    original=deepcopy(result['groups']);widget=ResultsView(view.owner,'maps');widget.set_result(result)
+    widget.map_scope.setCurrentIndex(widget.map_scope.findData(normalization));images=[];limits=[]
+    for gid,key in [('Fe(A)',keys[0]),('Fe(B)',keys[1]),('Fe(A)',keys[0])]:
+        index=next((i for i in range(widget.choice.count()) if tuple(widget.choice.itemData(i))==(gid,key)),-1)
+        assert index>=0;widget.choice.setCurrentIndex(index);widget.redraw()
+        fields=original[gid]['maps'][key];scale=1. if normalization=='mean' else original[gid]['metadata']['multiplicity']/3
+        odd=(fields['I_plus']-fields['I_minus'])/2;expected=scale*(odd-odd[::-1])
+        image=widget.figure.axes[0].images[0];np.testing.assert_allclose(image.get_array(),expected,rtol=1e-13,atol=1e-14)
+        assert widget.figure._emcd_display_metadata['group_id']==gid
+        assert widget.figure._emcd_display_metadata['energy_ev']==dict(result['config'].selected_edges)[key]
+        images.append(np.array(image.get_array()));limits.append(image.get_clim())
+    np.testing.assert_array_equal(images[0],images[2]);assert limits[0]==limits[1]==limits[2]
+    if identical:np.testing.assert_array_equal(images[0],images[1])  # Never force physical differences.
+    options=widget.map_options();widget.map_scope.setCurrentIndex(0);widget.restore_map_options(options);assert widget.map_options()==options
+    widget.component_mode.setCurrentIndex(1)
+    fields=original['Fe(A)']['maps'][keys[0]];ap=fields['I_plus']
+    np.testing.assert_allclose(widget.figure.axes[0].images[0].get_array(),100*(ap-ap[::-1])/(ap+ap[::-1]))
+    for gid,g in original.items():
+        for edge,fields in g['maps'].items():
+            for key,value in fields.items():np.testing.assert_array_equal(value,result['groups'][gid]['maps'][edge][key])
     widget.deleteLater()
 
 

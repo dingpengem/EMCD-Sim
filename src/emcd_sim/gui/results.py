@@ -44,8 +44,8 @@ def spectral_coverage_label(result):
     return 'Full spectrum'
 
 
-def draw_maps(fig,result,edge,method=None,field=None,display=None,*,signal_mode='raw'):
-    if display is None and field is None:return draw_component_maps(fig,result,edge,method,signal_mode)
+def draw_maps(fig,result,edge,method=None,field=None,display=None,*,signal_mode='raw',group_id=None,normalization='weighted'):
+    if display is None and field is None:return draw_component_maps(fig,result,edge,method,signal_mode,group_id,normalization)
     display=display or DisplaySettings()
     original=result
     all_results=list(result.get('methods',{}).values()) or [result]
@@ -204,17 +204,26 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
     return legends
 
 
-def draw_component_maps(fig,result,edge,method=None,signal_mode='raw'):
+def draw_component_maps(fig,result,edge,method=None,signal_mode='raw',group_id=None,normalization='weighted'):
     from .component_display import primary_angular,MODES
     fig.clear();method=method or result.get('method','bloch')
-    methods=result.get('methods',{result.get('method','bloch'):result})
-    r=methods.get(method,next(iter(methods.values())))
+    originals=result.get('methods',{result.get('method','bloch'):result})
     try:
+        from .multisite_results import angular_group_view
+        methods={name:angular_group_view(value,group_id,normalization) if group_id is not None else value for name,value in originals.items()}
+        r=methods.get(method,next(iter(methods.values())))
         values,meta=primary_angular(r,edge,signal_mode)
         if method=='difference':
             bv,_=primary_angular(methods['bloch'],edge,signal_mode);mv,_=primary_angular(methods['fft-multislice'],edge,signal_mode)
             values={k:bv[k]-mv[k] for k in bv};meta=dict(meta,units='BW-MS difference ('+('a.u.' if signal_mode=='raw' else 'percentage points')+')')
-        pools=[v for m in methods.values() for ed in m['maps'] for v in primary_angular(m,ed,signal_mode)[0].values()]
+        scale_views=list(methods.values())
+        if group_id is not None:
+            scale_views=[]
+            for original in originals.values():
+                for gid in original['groups']:
+                    try:scale_views.append(angular_group_view(original,gid,normalization))
+                    except ValueError:continue
+        pools=[v for m in scale_views for ed in m['maps'] for v in primary_angular(m,ed,signal_mode)[0].values()]
         if method=='difference':pools=list(values.values())
     except (ValueError,KeyError) as exc:
         fig.subplots().text(.05,.5,'Paired angular display unavailable: '+str(exc),wrap=True)
@@ -234,10 +243,15 @@ def draw_component_maps(fig,result,edge,method=None,signal_mode='raw'):
         if not np.isfinite(v).any():ax.text(.1,.5,'All pixels undefined / masked',transform=ax.transAxes)
     e=dict(selected_samples(r['config']))[edge]
     sampling=f'Angular Grid: {qx.shape[1]} x {qx.shape[0]}; q spacing: {dx:.6g}, {dy:.6g} Å⁻¹'
-    fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | {edge} {e:.4f} eV\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry\n'+sampling,fontsize=10)
+    scope=('Group Mean: ' if normalization=='mean' else 'Group Contribution: ')+group_id if group_id is not None else ('Total Results' if r['config'].model=='multisite' else '')
+    fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | '+(scope+' | ' if scope else '')+f'{edge} {e:.4f} eV\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry\n'+sampling,fontsize=10)
     if r['config'].model=='imported':fig.suptitle(fig._suptitle.get_text()+'\n'+mdff_label(r),fontsize=10)
     fig._emcd_display_metadata=dict(kind='primary angular components',edge=edge,method=method,**meta,shared_color_scale=True,
         angular_grid_shape=list(qx.shape),q_spacing_inv_angstrom=[float(dx),float(dy)],display_interpolation='nearest')
+    if r['config'].model=='multisite':fig._emcd_display_metadata.update(scope=scope,energy_ev=e,
+        group_id=group_id,normalization=normalization if group_id is not None else 'total_mean_per_selected_atom',
+        selected_atom_count=r['metadata']['multisite']['selected_atom_count'],
+        group=r.get('angular_selection'),global_reversal=r['metadata']['multisite']['global_reversal'])
 
 
 def draw_diffraction(fig,result,method=None,depth_average=False):
@@ -300,7 +314,16 @@ class ResultsView(QtWidgets.QWidget):
     def __init__(self,parent,kind):
         super().__init__();self.owner=parent;self.kind=kind;self.result=None;self.proxies=[]
         layout=QtWidgets.QVBoxLayout(self);self.label=QtWidgets.QLabel('No completed EMCD calculation.');self.label.setWordWrap(True);layout.addWidget(self.label)
-        row=FlowLayout();layout.addLayout(row);self.choice=QtWidgets.QComboBox();self.choice.addItems(['L3','L2'] if kind=='maps' else (['Exit intensity','Depth average'] if kind=='diffraction' else ['Full spectrum','L3 zoom','L2 zoom']));row.addWidget(self.choice)
+        row=FlowLayout();layout.addLayout(row)
+        if kind=='maps':
+            self.map_scope=QtWidgets.QComboBox();self.map_scope.setAccessibleName('Angular result scope')
+            for title,key in [('Total Results','total'),('Group Contribution (n/N)','weighted'),('Group Mean (per atom)','mean')]:self.map_scope.addItem(title,key)
+            self.map_scope.hide();row.addWidget(self.map_scope);self.map_scope.currentIndexChanged.connect(self.update_map_choices)
+        self.choice=QtWidgets.QComboBox();self.choice.addItems(['L3','L2'] if kind=='maps' else (['Exit intensity','Depth average'] if kind=='diffraction' else ['Full spectrum','L3 zoom','L2 zoom']));row.addWidget(self.choice)
+        if kind=='maps':
+            self.choice.setAccessibleName('Angular group / energy')
+            for box in (self.map_scope,self.choice):
+                box.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon);box.setMinimumContentsLength(16)
         self.method=QtWidgets.QComboBox();row.addWidget(self.method);self.method.currentIndexChanged.connect(self.redraw)
         self.choice.setVisible(kind!='comparison');self.method.setVisible(kind!='comparison')
         self.field=QtWidgets.QComboBox();self.field.addItem('All six fields',None)
@@ -357,6 +380,7 @@ class ResultsView(QtWidgets.QWidget):
         w=self.owner
         w.responsive.show_panel(2);self._focused=not getattr(self,'_focused',False);self.set_compact(w.responsive.compact);w.responsive.focus_plot('results')
     def set_result(self,result):
+        fresh=result is not self.result
         self.result=result
         # The application supplies its metadata-aware figure export action.
         # Keep the standard Matplotlib action only in standalone views.
@@ -382,8 +406,17 @@ class ResultsView(QtWidgets.QWidget):
         self.export_button.setToolTip(('All spectral components for the selected series; unsupported samples are blank and labeled. Metadata is written automatically.' if self.kind=='eels' else 'Original saved total/group arrays, coverage, normalization and source metadata; no recalculation.') if multisite else '')
         if self.kind=='eels':self.benchmark_section.setVisible(not multisite)
         if self.kind=='maps':
-            with QtCore.QSignalBlocker(self.choice):
-                self.choice.clear();self.choice.addItems(list(result['maps']))
+            self.map_scope.setVisible(multisite)
+            if multisite:
+                from .multisite_results import angular_choices
+                available=bool(angular_choices(result,True))
+                for i in (1,2):self.map_scope.model().item(i).setEnabled(available)
+                if fresh or not available:
+                    with QtCore.QSignalBlocker(self.map_scope):self.map_scope.setCurrentIndex(0)
+                self.update_map_choices(redraw=False)
+            else:
+                with QtCore.QSignalBlocker(self.choice):
+                    self.choice.clear();self.choice.addItems(list(result['maps']))
         elif self.kind=='eels':
             with QtCore.QSignalBlocker(self.choice):
                 self.choice.clear();self.choice.addItem(spectral_coverage_label(result))
@@ -396,6 +429,27 @@ class ResultsView(QtWidgets.QWidget):
         for key in options:self.method.addItem(METHOD_NAMES.get(key,'BW / MS overlay'),key)
         if self.kind=='eels':self.choice.setItemText(0,spectral_coverage_label(result))
         self.method.blockSignals(False);self.redraw()
+    def update_map_choices(self,*_,redraw=True):
+        if self.result is None or self.result['config'].model!='multisite':return
+        from .multisite_results import angular_choices
+        previous=self.choice.currentData()
+        with QtCore.QSignalBlocker(self.choice):
+            self.choice.clear()
+            for label,data in angular_choices(self.result,self.map_scope.currentData()!='total'):self.choice.addItem(label,data)
+            index=next((i for i in range(self.choice.count()) if previous is not None and tuple(self.choice.itemData(i))==tuple(previous)),-1)
+            if index>=0:self.choice.setCurrentIndex(index)
+        self.choice.setToolTip('Select the actual saved group and energy. Total Results uses total maps; the spectra selector is independent. Only modeled, saved group maps are listed.')
+        if redraw:self.redraw()
+    def map_options(self):
+        selection=self.choice.currentData() or (None,self.choice.currentText())
+        return dict(scope=self.map_scope.currentData(),group_id=selection[0],edge=selection[1])
+    def restore_map_options(self,options):
+        index=self.map_scope.findData(options.get('scope','total'))
+        self.map_scope.setCurrentIndex(index if index>=0 and self.map_scope.model().item(index).isEnabled() else 0)
+        self.update_map_choices(redraw=False)
+        index=next((i for i in range(self.choice.count()) if tuple(self.choice.itemData(i))==(options.get('group_id'),options.get('edge'))),-1)
+        if index>=0:self.choice.setCurrentIndex(index)
+        self.redraw()
     def redraw(self,*_):
         if self.result is None:return
         method=self.method.currentData() or self.result.get('method','bloch')
@@ -420,7 +474,19 @@ class ResultsView(QtWidgets.QWidget):
         advanced=self.advanced.isChecked() and self.result['config'].model!='multisite'
         self.component_mode.setEnabled(not advanced)
         try:
-            if self.kind=='maps':draw_maps(self.figure,self.result,self.choice.currentText(),method,self.field.currentData() if advanced else None,display if advanced else None,signal_mode=self.component_mode.currentData())
+            if self.kind=='maps':
+                local=self.result['config'].model=='multisite'
+                option=self.map_options() if local else dict(edge=self.choice.currentText(),group_id=None,scope='total')
+                if local and option['scope']!='total' and option['group_id'] is None:raise ValueError('No modeled group angular maps were saved')
+                draw_maps(self.figure,self.result,option['edge'],method,self.field.currentData() if advanced else None,display if advanced else None,
+                    signal_mode=self.component_mode.currentData(),group_id=option['group_id'],normalization=option['scope'])
+                if local:
+                    gid=option['group_id'];n=self.result['metadata']['multisite']['selected_atom_count']
+                    note=(f'Total Results: mean per selected ionizing atom (N={n}).' if gid is None else
+                        f'{gid}: '+('Group Mean per atom (nonadditive).' if option['scope']=='mean' else f'Group Contribution: n/N × group mean (fixed N={n}).'))
+                    self.multisite_banner.setText(note)
+                    state='reversed configuration' if self.result['metadata']['multisite']['global_reversal'] else 'declared configuration'
+                    self.multisite_banner.setToolTip(note+' '+state+(f'; crystal M={self.result["groups"][gid]["metadata"]["magnetization_crystal"]}' if gid is not None else '')+'; minus exchanges all provider pairs.')
             elif self.kind=='diffraction':draw_diffraction(self.figure,self.result,method,self.choice.currentIndex()==1)
             elif self.kind=='comparison':draw_comparison(self.figure,self.result,display)
             else:
@@ -462,7 +528,8 @@ class ResultsView(QtWidgets.QWidget):
                 if multisite:
                     if self.kind!='eels':
                         from .project_io import save_project
-                        save_project(self.result,Path(parent)/datetime.now().strftime('multisite_%Y%m%d_%H%M%S_%f'))
+                        state=dict(self.result.get('display_state',{}),angular_selection=self.map_options(),map_signal_mode=self.component_mode.currentData())
+                        save_project(dict(self.result,display_state=state),Path(parent)/datetime.now().strftime('multisite_%Y%m%d_%H%M%S_%f'))
                         return
                     from .multisite_export import export_multisite_spectra
                     export_multisite_spectra(self.result,Path(parent)/datetime.now().strftime('multisite_%Y%m%d_%H%M%S_%f'),

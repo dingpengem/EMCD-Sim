@@ -262,6 +262,7 @@ class ProjectSession:
                     component_diagnostic=view.component_diagnostic.currentData())
                 if current['config'].model=='multisite':
                     retained['display_state']['multisite_selection']=view.multisite_controls.options()
+                    retained['display_state']['angular_selection']=self.maps_view.map_options()
         except Exception as exc:self.set_project_status('Save Failed');self._after_project_save=None;self.error(str(exc));return
         self.set_project_status('Saving…');self._saving_project=True
         def saved(root):

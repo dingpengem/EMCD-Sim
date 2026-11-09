@@ -29,6 +29,42 @@ def covered_segments(result, energy, group_ids=None):
     return [(energy>=lo)&(energy<=hi) for lo,hi in merged]
 
 
+def angular_group_view(result, group_id, normalization='weighted'):
+    """Display adapter over saved group means, with the fixed total denominator."""
+    from ..mdff_edges import selected_samples
+    group=result['groups'][group_id];meta=group['metadata']
+    channel=result['metadata']['multisite']['channels'][group_id]
+    bounds=channel['modeled_window_ev']
+    if channel['omitted_by_request'] or bounds is None:raise ValueError(group_id+' is excluded/unmodeled; not a physical zero')
+    scale=1. if normalization=='mean' else meta['multiplicity']/result['metadata']['multisite']['selected_atom_count']
+    energies=dict(selected_samples(result['config']))
+    maps={key:{field:scale*np.asarray(value) for field,value in fields.items()}
+          for key,fields in group.get('maps',{}).items() if key in energies and bounds[0]<=energies[key]<=bounds[1]}
+    if not maps:raise ValueError('No modeled angular maps were saved for '+group_id)
+    return dict(result,maps=maps,angular_selection=dict(group_id=group_id,normalization=normalization,
+        scale=scale,multiplicity=meta['multiplicity'],magnetization_crystal=meta['magnetization_crystal']))
+
+
+def angular_choices(result, groups=False):
+    """Labels identify scope explicitly; item data retains the original saved key."""
+    from ..mdff_edges import selected_samples
+    samples=dict(selected_samples(result['config']))
+    if not groups:return [(f'Total | {key} | {samples[key]:.4f} eV',(None,key)) for key in result['maps'] if key in samples]
+    choices=[]
+    for gid,group in result['groups'].items():
+        try:maps=angular_group_view(result,gid)['maps']
+        except ValueError:continue
+        selections=group['metadata']['source'].get('selected_ev',{})
+        if selections:
+            for edge,energy in sorted(selections.items(),key=lambda item:item[1]):
+                candidates=[key for key in maps if np.isclose(samples[key],energy,rtol=0,atol=1e-9)]
+                preferred=gid+':'+edge
+                if candidates:choices.append((f'{gid} | {edge} | {energy:.4f} eV',(gid,preferred if preferred in candidates else candidates[0])))
+        else:
+            choices.extend((f'{gid} | {key} | {samples[key]:.4f} eV',(gid,key)) for key in maps)
+    return choices
+
+
 SPECTRAL_KEYS = ('I_A_plus','I_B_plus','I_A_minus','I_B_minus','N_A','N_B','M_A','M_B',
                  'D_raw','D_mag','D_nonmag','Sigma_ref')
 PANELS = [
