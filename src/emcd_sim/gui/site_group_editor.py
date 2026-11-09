@@ -418,7 +418,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
             return 'Inactive — Global mode','This local configuration is not used by the current Global calculation. '+detail
         if row[0] in self.excluded_groups:
             return 'Excluded — elastic only','MDFF is not required while this group is excluded from local ionization. '+detail
-        if actual=='Configured and valid' and not requirements:return actual,detail
+        if actual=='Configured and valid' and not requirements:return ('Draft ready' if self.dirty else actual),detail
         return ('Incomplete' if actual=='Incomplete' else 'Incomplete — '+actual.lower()),detail
 
     def recheck_mdff_sources(self):

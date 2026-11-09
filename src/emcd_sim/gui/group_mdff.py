@@ -6,6 +6,7 @@ from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
 import json
+import logging
 
 import numpy as np
 from PySide6 import QtCore, QtWidgets
@@ -83,7 +84,8 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         self.pages = QtWidgets.QStackedWidget()
         self.mount_editor(self.row[1]+' — '+str(len(self.row[2]))+' original ASE sites',self.model,self.pages,self.context)
         layout=self.science_layout
-        self.declaration = QtWidgets.QCheckBox('I acknowledge this source, its full tensor frame, physical reversal declarations, relative per-atom units and validity limits.')
+        self.declaration = QtWidgets.QCheckBox('Confirm the displayed model, source frame, reversal assumptions and relative units')
+        self.declaration.toggled.connect(self.emcd_stale)
         self.build_xmcd()
         self.build_atomic()
         self.build_manual()
@@ -96,7 +98,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             'Intensities retain declared relative per-atom amplitudes; cross-element absolute calibration is not implied. '
             'Local M is not a complete anisotropic tensor frame.')
         note.setWordWrap(True); layout.addWidget(note); layout.addWidget(self.declaration)
-        self.status = QtWidgets.QLabel('Incomplete — select a model and explicitly configure its source.');self.status.setWordWrap(True)
+        self.status = QtWidgets.QLabel('Select a model and configure its inputs, then choose Done.');self.status.setWordWrap(True)
         self.status.setMinimumHeight(48);self.status.setMaximumHeight(76)
         self.status.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,QtWidgets.QSizePolicy.Policy.Minimum)
         self.status.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -129,11 +131,13 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         form.addRow(label,widget); widget.textChanged.connect(self.emcd_stale)
         return widget
 
-    def browse_row(self, field, form, title):
+    def browse_row(self, field, form, title, checked=None):
         button = QtWidgets.QPushButton('Browse…');form.addRow(button)
         def browse():
             path,_ = QtWidgets.QFileDialog.getOpenFileName(self,title,'','Source files (*)')
-            if path:field.setText(path)
+            if path:
+                field.setText(path)
+                if checked is not None:checked()
         button.clicked.connect(browse)
         return button
 
@@ -142,10 +146,18 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         inputs = QtWidgets.QWidget();self.form = QtWidgets.QFormLayout(inputs);columns.addWidget(inputs,1)
         self.form.setFormAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.source_path = self.field('xmcd_path','',self.form,'Original five-column source')
-        self.browse_row(self.source_path,self.form,'Select original XMCD spectrum')
+        self.browse_row(self.source_path,self.form,'Select original XMCD spectrum',self.validate_xmcd_source)
+        self.source_path.editingFinished.connect(self.validate_xmcd_source)
+        self.source_path.textChanged.connect(self.xmcd_source_changed)
         for key,label in [('xl3','Explicit L3 selection (eV)'),('xl2','Explicit L2 selection (eV)')]:
             box = QtWidgets.QDoubleSpinBox();box.setRange(.001,1e6);box.setDecimals(6)
+            box.setSpecialValueText('Select a source / enter energy')
             self.spin[key] = box;self.form.addRow(label,box)
+            box.valueChanged.connect(self.xmcd_assignment_changed)
+        self.xmcd_conventions=QtWidgets.QCheckBox('Confirm RP−LP about Material +M\nand the displayed L3/L2 assignments')
+        self.xmcd_conventions.toggled.connect(self.emcd_stale);self.form.addRow(self.xmcd_conventions)
+        self.xmcd_conventions.toggled.connect(self.sync_xmcd_confirmation)
+        self.declaration.toggled.connect(self.sync_xmcd_confirmation)
         self.xmcd_declaration_controls()  # The same declarations as the legacy dialog.
         self.xmcd_selected.hide();self.form.labelForField(self.xmcd_selected).hide()
         self.xmcd_edges = EdgeSelections();self.form.addRow('Selected core edges',self.xmcd_edges)
@@ -156,10 +168,15 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         for name in ('xmcd_element','xmcd_edge','xmcd_selected','xmcd_provenance','xmcd_validity','xmcd_scale'):
             self._inputs[name] = getattr(self,name)
         self.eta = QtWidgets.QDoubleSpinBox();self.eta.setRange(-1e6,1e6);self.eta.setValue(1.)
-        self.beta = QtWidgets.QDoubleSpinBox();self.beta.setRange(-1e6,1e6)
+        self.beta = QtWidgets.QDoubleSpinBox();self.beta.setRange(-1e6,1e6);self.beta.setValue(1.)
         for key,box in [('eta',self.eta),('beta',self.beta)]:
             box.setDecimals(6);self.spin[key] = box;self.form.addRow(key,box);box.valueChanged.connect(self.emcd_stale)
-        validate = QtWidgets.QPushButton('Validate spectral data');self.form.addRow(validate)
+        from .responsive import CollapsibleSection
+        advanced=CollapsibleSection('Optional source details',expanded=False);details=QtWidgets.QFormLayout(advanced.body)
+        for widget in (self.xmcd_provenance,self.xmcd_validity,self.xmcd_status):
+            taken=self.form.takeRow(widget);details.addRow(taken.labelItem.widget(),widget)
+        self.form.addRow(advanced)
+        validate = QtWidgets.QPushButton('Recheck source (optional)');self.form.addRow(validate)
         validate.clicked.connect(self.validate_xmcd_source)
         text = QtWidgets.QLabel('Existing axisymmetric XMCD-odd/shared-XAS model only. Source-maximum normalization and the explicitly declared reference amplitude are retained. This is not a full anisotropic DFT MDFF.')
         text.setWordWrap(True);self.form.addRow(text)
@@ -174,19 +191,38 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             visible = self.xmcd_edge.text().strip() != 'L2,3'
             self.xmcd_edges.setVisible(visible);self.form.labelForField(self.xmcd_edges).setVisible(visible)
 
+    def xmcd_source_changed(self,*_):
+        if self._loading:return
+        self.source_info=None;self.validated_path=None;self.xmcd_conventions.setChecked(False)
+        self.emcd_stale()
+
+    def sync_xmcd_confirmation(self,checked):
+        if self.model.currentIndex()!=0:return
+        other=self.declaration if self.sender() is self.xmcd_conventions else self.xmcd_conventions
+        with QtCore.QSignalBlocker(other):other.setChecked(checked)
+
+    def xmcd_assignment_changed(self,*_):
+        if not self._loading:self.xmcd_conventions.setChecked(False);self.emcd_stale()
+
     def validate_xmcd_source(self):
+        if self._loading:return
         try:
-            from ..wien2k_xmcd import load_wien2k_xmcd
-            source = load_wien2k_xmcd(self.source_path.text())
-            self.source_info = dict(sha256=source.source_sha256,bounds=source.energy_ev[[0,-1]].tolist(),
-                selected=None,explicit_selected=dict(L3=self.spin['xl3'].value(),L2=self.spin['xl2'].value()))
-            self.validated_path = self.source_path.text();self.declaration.setChecked(False)
-            low,high=source.energy_ev[[0,-1]]
-            self.status.setText(f'Spectral data validated ({low:g}–{high:g} eV). Enter native edge selections, source/provenance, validity and relative reference scale, then acknowledge declarations for the tensor. No parameters were inferred.')
+            from .emcd_forward import inspect_source
+            info=inspect_source(self.source_path.text())
+            unchanged=(self.source_info or {}).get('sha256')==info['sha256'] and self.validated_path==self.source_path.text()
+            retained=(self.reference is not None and self.reference.source==self.source_path.text()
+                      and self.reference.source_sha256==info['sha256'])
+            if not unchanged and not retained:
+                self.xmcd_conventions.setChecked(False)
+                if info['selected']:self.set_values({'xl3':info['selected']['L3'],'xl2':info['selected']['L2']})
+            info['explicit_selected']=dict(L3=self.spin['xl3'].value(),L2=self.spin['xl2'].value())
+            self.source_info=info;self.validated_path=self.source_path.text()
+            low,high=info['bounds']
+            self.status.setText(f'Source format/range checked ({low:g}–{high:g} eV). Confirm the visible source convention and edge assignments; no material calibration is established.')
+            self.draftChanged.emit()
         except Exception as exc:
-            self.source_info=None;self.validated_path=None
-            self.status.setText('Invalid spectral data: '+str(exc))
-        self.xmcd_preview.update_preview()
+            self.source_info=None;self.validated_path=None;self.xmcd_conventions.setChecked(False)
+            self.status.setText('Original five-column source: '+str(exc))
 
     def declared_provider_settings(self, base, prepare=True):
         # The unchanged XMCD preview requests the same declared group candidate.
@@ -311,10 +347,16 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             self.scroll.ensureWidgetVisible(self.status)
 
     def preview_current_model(self):
+        if self.row[3] is None and self.model.currentIndex() in (0,1):
+            self.status.setText(f'Group {self.row[0]}: set the Material direction in Site groups before preview.');return
         if self.model.currentIndex()==0:self.xmcd_preview.update_preview()
         elif self.model.currentIndex()==1 and self.atomic_mode.currentIndex()==1:self.atomic.preview()
         elif self.model.currentIndex() in (1,2):self.preview_tensor()
         else:self.status.setText('Preview unavailable: select and configure an MDFF model in this context first.')
+        ready=(self.model.currentIndex()==0 and self.xmcd_preview.snapshot is not None and not self.xmcd_preview.is_stale
+               or self.model.currentIndex()==1 and self.atomic_mode.currentIndex()==1 and self.atomic.preview_state.text().startswith('CURRENT'))
+        if ready:self.status.setText(f'Preview ready for group {self.row[0]}; no Material settings have been accepted by preview. Choose Done, then Viewer Apply and Close.')
+        self.refresh_context_status()
 
     def set_values(self, values):
         for key,value in values.items():
@@ -323,12 +365,14 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
     def model_changed(self, index):
         self.pages.setEnabled(index >= 0)
         if index >= 0:self.pages.setCurrentIndex(index)
+        self.declaration.setVisible(index!=0)
+        if not self._loading:
+            with QtCore.QSignalBlocker(self.declaration):self.declaration.setChecked(self.xmcd_conventions.isChecked() if index==0 else False)
         self.emcd_stale()
 
     def emcd_stale(self, *_):
         if not self._loading and hasattr(self,'status'):
-            self.declaration.setChecked(False)
-            self.status.setText('Incomplete / unapplied draft. Validate and Apply before using this configuration.')
+            self.status.setText('Draft inputs changed. Preview or choose Done; accepted Material settings are unchanged.')
             self.draftChanged.emit()
 
     def set_context(self, row):
@@ -348,8 +392,8 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             self.manual_spectral.status.setText('STALE — Material group direction changed; update preview.')
         self.atomic.schematic.draw();self.manual_spectral.frame_diagram.update()
         self.context.setText(f'Group {row[0]} · {row[1]} · ASE indices {row[2]}\n'
-            f'Material group draft M (crystal Cartesian, read-only): {row[3] if row[3] is not None else "Unconfigured"}. Set through Material → 3D Structure Viewer → Site Groups. Legacy Global M is not used. '
-            + ('No group MDFF provider configured.' if row[4] is None else 'Physical source −M pair member selected.' if getattr(row[4],'pair_reversed',False) else 'Physical source +M pair member selected.'))
+            f'Material group draft M (crystal Cartesian, read-only): {row[3] if row[3] is not None else "Unconfigured"}. Edit in the Material viewer; Global M does not override this direction. '
+            + ('No group model/source accepted yet.' if row[4] is None else 'Declared −M state selected.' if getattr(row[4],'pair_reversed',False) else 'Declared +M state selected.'))
 
     def load_atomic(self):
         try:
@@ -366,26 +410,17 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         return tuple(float(v) for v in text.replace(',',' ').split())
 
     def candidate(self):
-        if self.model.currentIndex()==0 and self.row[3] is None:
-            raise ValueError('Declare this group\'s Material target M before generating magnetic XMCD tensors')
+        if self.model.currentIndex() in (0,1) and self.row[3] is None:
+            raise ValueError(f'Group {self.row[0]}: set its Material direction in Site groups and choose Update direction before configuring a magnetic model')
         if self.model.currentIndex() == 0:
-            from ..wien2k_xmcd import load_wien2k_xmcd
-            path = self.source_path.text().strip();source = load_wien2k_xmcd(path)
-            for widget,label in ((self.xmcd_provenance,'Source / provenance'),(self.xmcd_validity,'Physical assumptions / limits')):
-                if not widget.text().strip():raise ValueError(f'Group {self.row[0]}: complete {label} in this XMCD context')
-            try:scale=float(self.xmcd_scale.text())
-            except ValueError:scale=float('nan')
-            if not np.isfinite(scale) or scale<=0:
-                raise ValueError(f'Group {self.row[0]}: enter a positive finite Relative tensor reference scale (A^2/eV); no calibration is inferred')
-            selected = (dict(L3=self.spin['xl3'].value(),L2=self.spin['xl2'].value())
-                        if self.xmcd_edge.text().strip() == 'L2,3' else self.xmcd_edges.selected())
-            declaration = dict(element=self.row[1],edge=self.xmcd_edge.text().strip(),selected_ev=selected,
-                magnetization_crystal=list(self.row[3]),handedness='RP_minus_LP_in_declared_axis',
-                eta=float(self.eta.text()),beta=float(self.beta.text()),normalization='source_max_nonmagnetic',
-                convention=CONVENTION,source=self.xmcd_provenance.text().strip(),validity=self.xmcd_validity.text().strip(),
-                status=self.xmcd_status.currentText(),source_sha256=source.source_sha256,
-                reference_tensor_scale_angstrom2_per_ev=scale,
-                magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
+            from .emcd_forward import ForwardSettings
+            self.validate_xmcd_source()
+            if self.source_info is None:raise ValueError(self.status.text())
+            path=self.source_path.text().strip()
+            base=ForwardSettings(model='xmcd',source=path,source_sha256=self.source_info['sha256'],
+                magnetization=self.row[3],axis_declared=self.source_conventions_confirmed(),
+                l3=self.spin['xl3'].value(),l2=self.spin['xl2'].value(),eta=self.eta.value(),beta=self.beta.value())
+            declaration=self.xmcd_source_declaration(base)
             if (self.reference is not None and self.reference.model=='xmcd' and self.reference.pair_reversed
                     and str(path)==self.reference.source and tuple(self.row[3])==self.reference.magnetization):
                 declaration['magnetization_crystal']=self.reference.provider_declaration['magnetization_crystal']
@@ -430,7 +465,12 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         raise ValueError('Select and configure an MDFF model')
 
     def validate_configuration(self):
-        if not self.declaration.isChecked():raise ValueError('Acknowledge source, tensor frame, reversal and units first')
+        if self.model.currentIndex()<0:raise ValueError(f'Group {self.row[0]}: select an MDFF model first')
+        if self.model.currentIndex()==0:
+            self.validate_xmcd_source()
+            if self.source_info is None:raise ValueError(self.status.text())
+            if not self.source_conventions_confirmed():raise ValueError(f'Group {self.row[0]}: confirm RP−LP about Material +M and the displayed L3/L2 assignments beside the source')
+        elif not self.declaration.isChecked():raise ValueError(f'Group {self.row[0]}: confirm the displayed model, source frame, reversal assumptions and relative units')
         unchanged = False
         if self.reference is not None and not self.has_unapplied_edits():
             from ..mdff_providers import load_provider
@@ -441,7 +481,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         cfg = self.reference if unchanged else self.candidate()
         if (self.reference is not None and cfg.source == self.reference.source
                 and cfg.source_sha256 != self.reference.source_sha256 and self._reviewed_sha != cfg.source_sha256):
-            self._reviewed_sha = cfg.source_sha256;self.declaration.setChecked(False)
+            self._reviewed_sha = cfg.source_sha256;self.declaration.setChecked(False);self.xmcd_conventions.setChecked(False)
             raise ValueError('Source identity changed; review, acknowledge and validate the new source again')
         cfg = bind_group_direction(self.row[:4]+(cfg,))
         source = validate_group_reference(self.row,cfg)
@@ -464,7 +504,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             self.reference = cfg;self.window = window
             self.provenance = source.provenance()
             d = source.metadata
-            self.status.setText(f'Configured and valid: {d["element"]} {d["edge"]}, {source.energy_ev[0]:g}–{source.energy_ev[-1]:g} eV. '
+            self.status.setText(f'Draft ready: {d["element"]} {d["edge"]}, {source.energy_ev[0]:g}–{source.energy_ev[-1]:g} eV. '
                 'Relative per-atom units; physical calibration not established.')
             self.detail_text.setPlainText(json.dumps(self.provenance,indent=2,ensure_ascii=False))
             self._entry = self.snapshot()
@@ -472,6 +512,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             self.refresh_context_status()
             return cfg
         except Exception as exc:
+            logging.getLogger('emcd_sim.gui').exception('Group %s MDFF draft validation failed',self.row[0])
             self.status.setText('Invalid / incomplete: '+str(exc));self.refresh_context_status();return None
 
     def export_applied_source(self, path=None):
@@ -534,6 +575,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             except (ValueError,OSError):pass  # Stale original remains an Advanced source; never substitute a default.
         self.pages.setEnabled(True);self.pages.setCurrentIndex(self.model.currentIndex())
         self.declaration.setChecked(cfg.axis_declared)
+        self.xmcd_conventions.setChecked(cfg.axis_declared if cfg.model=='xmcd' else False)
 
     def snapshot(self):
         # Selected edges are stored by their native controls below. The hidden
@@ -548,7 +590,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             spectral=deepcopy(self.manual_spectral.draft()),eta=self.eta.value(),beta=self.beta.value(),
             pair=[[[e.cells.item(i,j).text() for j in range(3)] for i in range(3)] for e in self.pair],
             selections=[self.spin[k].value() for k in ('xl3','xl2')],
-            status=self.xmcd_status.currentIndex(),ack=self.declaration.isChecked())
+            status=self.xmcd_status.currentIndex(),ack=self.declaration.isChecked(),xmcd_ack=self.xmcd_conventions.isChecked())
 
     def restore_snapshot(self, state):
         self._loading = True
@@ -570,11 +612,12 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         self.model.setCurrentIndex(state['model']);self.manual_mode.setCurrentIndex(state['manual'])
         for key,value in zip(('xl3','xl2'),state['selections']):self.spin[key].setValue(value)
         self.xmcd_status.setCurrentIndex(state['status']);self.declaration.setChecked(state['ack'])
+        self.xmcd_conventions.setChecked(state.get('xmcd_ack',state['ack']))
         self.source_info = deepcopy(state['source_info']);self.validated_path = state['validated_path'];self._reviewed_sha = state['reviewed_sha']
         self._loading = False
         self.provenance = None
         self.detail_text.clear()
-        self.status.setText('Restored draft. Validate and Apply to confirm source identity, frame and coverage.')
+        self.status.setText('Restored draft. Done checks source identity, frame and coverage; Viewer Apply and Close accepts it.')
 
     def open_draft(self, row):
         self.set_context(row);self._entry = self.snapshot()
@@ -586,6 +629,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         current=self.snapshot();accepted=deepcopy(baseline)
         # Material's read-only direction mirror is not an MDFF parameter edit.
         for state in (current,accepted):state['spectral'].pop('direction',None)
+        for state in (current,accepted):state.setdefault('xmcd_ack',state.get('ack',False))
         return current!=accepted
 
     def closeEvent(self, event):

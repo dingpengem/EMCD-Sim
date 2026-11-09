@@ -42,6 +42,8 @@ class EMCDWorker(QtCore.QThread):
             logger=logging.getLogger('emcd_sim.gui')
             configuration=asdict(self.config);configuration.pop('source',None)
             logger.info('Calculation inputs settings=%s config=%s',asdict(self.settings),configuration)
+            if self.sites is not None:
+                logger.info('Local site inputs=%s',[(g.group_id,g.indices,g.magnetization,g.mdff_reference.model,g.mdff_reference.source,g.mdff_reference.source_sha256) for g in self.sites.groups])
             def progress(message):
                 logger.info('Calculation stage: %s',message)
                 self.stage.emit(message)
@@ -394,6 +396,10 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             self.memory_label.setText(preview_text(s,cfg,info))
             if sites is not None:self.memory_label.setText(self.memory_label.text()+'\nInitial estimate; production admission includes retained multi-site arrays before propagation.')
             if info.get('numerical_warnings'):self.memory_label.setText(self.memory_label.text()+'\n'+'\n'.join(info['numerical_warnings']))
+            if sites is not None:
+                groups=', '.join(g.group_id+' ('+g.mdff_reference.model+')' for g in sites.groups)
+                coverage='selected edge samples' if cfg.energy_scope=='edges' else 'full modeled-source coverage'
+                self.numerical_status.setText(self.numerical_status.text()+f'\nLocal {groups}: {cfg.energy_points} energies, {cfg.grid}×{cfg.grid} pixels; {coverage}. Larger sampling increases work; convergence is not established.')
             if info['execution']['blocked']:reason=reason or info['execution']['risk']+': '+' '.join(info['execution']['messages'])
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
             structure_matches=self.emcd_result is not None and self.emcd_result['metadata']['structure']==self.structure.description()

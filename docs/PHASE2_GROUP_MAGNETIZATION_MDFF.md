@@ -19,11 +19,38 @@ sections; new projects use editable general numerical defaults, including
 2.5/2.0 Å⁻¹ beam/potential cutoffs, without claiming convergence. Saved numerical
 choices remain intact. Save/Open retains the accepted generalized provider.
 
-The Advanced historical reference Ni option preserves the original 3.524 Å
-adapter and saved v0.8 behavior; it is not the normal route for a 3.520 Å CIF.
+Saved historical Ni configurations preserve the original adapter and v0.8
+behavior internally. Reference-Ni choices are not ordinary configuration inputs;
+new source-backed configurations are not restricted to the 3.524 Å reference cell.
 This workflow is in development source/new local candidates only. Previously
 accepted candidate artifacts remain unchanged. magCIF and general tensor
 rotation remain future work.
+
+## Local group workflow
+
+In Site groups choose Local Site Magnetization Mode, select the group, and
+declare its crystal-Cartesian direction with Update direction. Configure MDFF
+must show that group's context and read-only target. It does not require an
+initial outer Apply or an accepted Global provider. XMCD file selection checks
+format/range and suggests native L3/L2 selections; confirm the actual convention
+and assignments. Element/edge describe the editing context, not file metadata.
+Relative reference 1 is a defined relative scale, not absolute calibration.
+Optional source details have generated honest defaults. Atomic uses its visible
+element-specific reference energies, full frame and electronic parameters; these
+remain approximate/synthetic unless independently calibrated.
+
+Preview checks and displays the draft without accepting Material. An unchanged
+preview does not reset scientific confirmations. Done returns a ready group
+draft; Apply and Close accepts the groups together. Cancel preserves previous
+accepted settings. Source changes still require review, and full tensor-frame,
+species, reversal and coverage checks remain enforced. M alone never supplies
+an anisotropic frame. Save/Open retains accepted group/provider settings.
+
+Select declared edge samples for a small diagnostic, or deliberately request
+full modeled-source coverage. The Local workload label reports actual energy
+and pixel counts; full coverage on a 97×97 grid is much more work than two
+samples on 9×9. No numerical convergence or calibrated material accuracy is
+implied, and no source tails or automatic intensity calibration are introduced.
 
 **Bounded compatible-direction binding is implemented. General tensor rotation
 and the broader follow-on proposals below remain unimplemented.**

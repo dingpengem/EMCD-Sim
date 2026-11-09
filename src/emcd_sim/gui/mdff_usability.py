@@ -161,7 +161,9 @@ class AtomicSchematic(QtWidgets.QWidget):
                 energy.annotate(label,xy=(v,.9),xytext=(v,.35),rotation=90,ha='center',fontsize=8,arrowprops=dict(arrowstyle='->',color='#d95f02' if self.key in ('l3','l2','sigma') else '#555'))
             energy.set(xlabel='Energy loss (eV)',yticks=[],title=f'Schematic • σ={sigma:g} eV');energy.legend(fontsize=7)
             r=np.array(e.table_values(e.frame),float)
-            m=np.array(e.owner.material_direction() if hasattr(e.owner,'material_direction') else r[:,2],float)
+            direction=e.owner.material_direction() if hasattr(e.owner,'material_direction') else r[:,2]
+            if direction is None:raise ValueError('Material direction is unconfigured')
+            m=np.array(direction,float)
             m=m/np.linalg.norm(m)*(1 if self.reversal.currentIndex()==0 else -1)
             # Beam supplied in crystal Cartesian coordinates by the main window.
             beam=getattr(e,'beam_crystal',np.array([0.,0.,1.])); beam=beam/np.linalg.norm(beam)

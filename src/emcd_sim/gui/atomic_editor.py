@@ -301,7 +301,10 @@ class AtomicParameterEditor(QtWidgets.QWidget):
     def update_derived(self):
         if hasattr(self,"schematic"):
             self.schematic.draw()
-            try:self.direction.setText(" ".join(self.frame.cellWidget(i,2).text() for i in range(3)))
+            try:
+                direction=self.owner.material_direction() if hasattr(self.owner,'material_direction') else None
+                self.direction.setText(('Unconfigured' if direction is None else ' '.join(map(str,direction)))
+                    if hasattr(self.owner,'material_direction') else ' '.join(self.frame.cellWidget(i,2).text() for i in range(3)))
             except ValueError:pass
         if hasattr(self,'main_error'):self.main_error.setText(capability_reason(self.element.currentData()) or self.reference_problem)
         scientific_status=self.scientific_status.currentText()

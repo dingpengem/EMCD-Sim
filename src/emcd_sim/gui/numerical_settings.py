@@ -67,7 +67,7 @@ REFERENCE_SOURCE_SHA256 = 'a0e28ea6423b6c7832bb3cce6d69d71aa59336a221baeee3d2556
 
 class NumericalSettingsUI:
     def setup_numerical_mode(self, form):
-        self.numerical_mode=QtWidgets.QComboBox();self.numerical_mode.addItems(['Historical Ni reference presets (Automatic)','General settings (editable)'])
+        self.numerical_mode=QtWidgets.QComboBox();self.numerical_mode.addItems(['Saved automatic settings','General settings (editable)'])
         self.numerical_mode.setCurrentIndex(1)
         form.insertRow(0,'Numerical Settings',self.numerical_mode)
         self.numerical_status=QtWidgets.QLabel();self.numerical_status.setWordWrap(True);form.insertRow(1,self.numerical_status)
@@ -88,6 +88,7 @@ class NumericalSettingsUI:
 
     def apply_numerical_visibility(self):
         manual=self.numerical_mode.currentIndex()==1
+        self.numerical_mode.model().item(0).setEnabled(not manual)
         for group in (self.shared_elastic_group,self.shared_sampling_group):
             group.setVisible(manual);group.presentation_section.setVisible(manual)
         self.shared_resources_group.setVisible(True)

@@ -69,7 +69,9 @@ class MDFFWorkspace(QtWidgets.QDialog):
             else:
                 display,detail=editor.mdff_display(row,group_context=True)
                 message='Group '+row[0]+': '+display+'. '+detail
+                if self.status.text().startswith(('Invalid / incomplete:','Preview ready')):message='Group '+row[0]+': '+self.status.text()
                 if self.has_unapplied_edits():message+=' Unapplied MDFF draft; accepted group settings are retained.'
+                elif editor.dirty:message+=' Material draft pending: Viewer Apply and Close accepts it; Cancel discards it.'
                 if editor.magnetization_mode=='global':message+=' This local configuration is not used by the current Global calculation.'
         self.context_status.setText(message)
 

@@ -41,7 +41,7 @@ class XMCDPreview(QtWidgets.QGroupBox):
         except (OSError,ValueError):digest='missing'
         try:axis=tuple(w.material_direction())
         except (ValueError,TypeError):axis='invalid Material direction'
-        return (path,digest,w.validated_path,(w.source_info or {}).get('sha256'),axis,w.declaration.isChecked(),
+        return (path,digest,w.validated_path,(w.source_info or {}).get('sha256'),axis,w.source_conventions_confirmed(),
             w.explicit_xmcd.isChecked(),tuple(w.spin[k].value() for k in ('eta','beta','xl3','xl2')),
             tuple(field.text() for field in (w.xmcd_element,w.xmcd_edge,w.xmcd_selected,w.xmcd_provenance,w.xmcd_validity,w.xmcd_scale)),
             w.xmcd_status.currentText(),tuple(w.structure.atoms.get_chemical_symbols()))
@@ -71,7 +71,7 @@ class XMCDPreview(QtWidgets.QGroupBox):
             self.input_snapshot=dict(energy=source.energy_ev.copy(),input_columns=input_columns.copy())
             axis=w.material_direction()
             base=ForwardSettings(model='xmcd',source=w.source_path.text(),source_sha256=source.source_sha256,
-                magnetization=axis,axis_declared=w.declaration.isChecked(),eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
+                magnetization=axis,axis_declared=w.source_conventions_confirmed(),eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
                 l3=w.spin['xl3'].value(),l2=w.spin['xl2'].value())
             if not base.axis_declared:raise ValueError('Acknowledge this context\'s source conventions and native edge assignments before tensor preview. Material target M is set in the 3D Viewer.')
             cfg=w.declared_provider_settings(base)
@@ -141,7 +141,7 @@ def install_xmcd_preview(window,panel,form):
     form.setFormAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
     advanced=CollapsibleSection('Advanced source declarations',expanded=False);detail=QtWidgets.QFormLayout(advanced.body)
     detail.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
-    for widget in (window.reference_ni,window.xmcd_selected,window.xmcd_provenance,window.xmcd_validity,window.xmcd_status):
+    for widget in (window.xmcd_selected,window.xmcd_provenance,window.xmcd_validity,window.xmcd_status):
         taken=form.takeRow(widget)
         if taken.labelItem:detail.addRow(taken.labelItem.widget(),widget)
         else:detail.addRow(widget)

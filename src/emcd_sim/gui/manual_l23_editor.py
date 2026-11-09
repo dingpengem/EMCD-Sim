@@ -306,7 +306,8 @@ class ManualL23Editor(QtWidgets.QWidget):
         if explicit:
             try:
                 frame=self.frame_value()
-                with QtCore.QSignalBlocker(self.direction):self.direction.setText(' '.join(map(str,self.window.material_direction())))
+                direction=self.window.material_direction()
+                with QtCore.QSignalBlocker(self.direction):self.direction.setText('Unconfigured' if direction is None else ' '.join(map(str,direction)))
             except ValueError:pass
         self.is_stale=True;self.status.setText('STALE numerical tensor — update preview for current draft.')
         try:self.inputs();self.error.clear()

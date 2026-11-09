@@ -29,7 +29,7 @@ class ProviderUI:
         self.explicit_xmcd.setChecked(True)
         self.explicit_xmcd.hide()  # Retained for saved historical settings.
         self.reference_ni=QtWidgets.QCheckBox('Historical reference Ni adapter (a=3.524 Å; v0.8 behavior)')
-        self.form.addRow(self.reference_ni)
+        self.reference_ni.hide()  # Saved compatibility state, not an ordinary model choice.
         self.reference_ni.toggled.connect(lambda checked:self.explicit_xmcd.setChecked(not checked))
         self.explicit_xmcd.toggled.connect(self.sync_xmcd_route)
         self.xmcd_element=QtWidgets.QLineEdit('Ni');self.form.addRow('Declared source element',self.xmcd_element)
@@ -56,7 +56,9 @@ class ProviderUI:
     def xmcd_declaration_changed(self,*_):
         for widget in self.xmcd_l23_controls:widget.setVisible(self.xmcd_edge.text().strip()=='L2,3')
         self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3' or not (self.source_info or {}).get('selected'))
-        if self.sender() in (self.xmcd_element,self.xmcd_edge):self.declaration.setChecked(False)
+        if self.sender() in (self.xmcd_element,self.xmcd_edge):
+            self.declaration.setChecked(False)
+            if hasattr(self,'xmcd_conventions'):self.xmcd_conventions.setChecked(False)
         self.emcd_stale()
 
     def sync_xmcd_route(self,*_):
@@ -68,6 +70,33 @@ class ProviderUI:
         path=Path(self.source_path.text())
         return (f'{path.name}; five-column XAS/XMCD input; identity checked, material calibration not established',
                 'Effective axisymmetric XMCD model; uniform selected magnetic state; shared XAS and reversal-odd XMCD; no full ab-initio MDFF or absolute material calibration')
+
+    def source_conventions_confirmed(self):
+        return (self.xmcd_conventions if hasattr(self,'xmcd_conventions') else self.declaration).isChecked()
+
+    def xmcd_source_declaration(self,base):
+        if self.xmcd_edge.text().strip()=='L2,3':
+            selected=dict(L3=base.l3,L2=base.l2);info=self.source_info or {}
+            if not info.get('selected') and info.get('explicit_selected')!=selected:
+                raise ValueError('Select the source-covered L3/L2 energies beside the source controls')
+        else:
+            if not self.xmcd_selected.text().strip():raise ValueError('Selected core edges: enter explicit source-covered energies (eV)')
+            selected=json.loads(self.xmcd_selected.text())
+        bounds=(self.source_info or {}).get('bounds')
+        if bounds is not None:
+            for edge,value in selected.items():
+                if not bounds[0]<=value<=bounds[1]:raise ValueError(f'{edge} selection (eV): choose an energy in the source range {bounds[0]:g}–{bounds[1]:g} eV')
+        raw=self.xmcd_scale.text().strip()
+        try:scale=float(raw)
+        except ValueError:raise ValueError('Relative tensor reference (A^2/eV): enter a positive finite number; the relative-model default is 1 (not absolute calibration)') from None
+        import math
+        if not math.isfinite(scale) or scale<=0:raise ValueError('Relative tensor reference (A^2/eV): enter a positive finite number')
+        provenance,limits=self.xmcd_descriptions()
+        return dict(element=self.xmcd_element.text().strip(),edge=self.xmcd_edge.text().strip(),selected_ev=selected,
+            magnetization_crystal=list(base.magnetization),handedness='RP_minus_LP_in_declared_axis',eta=base.eta,beta=base.beta,
+            normalization='source_max_nonmagnetic',convention=CONVENTION,source=self.xmcd_provenance.text().strip() or provenance,
+            validity=self.xmcd_validity.text().strip() or limits,status=self.xmcd_status.currentText(),source_sha256=base.source_sha256,
+            reference_tensor_scale_angstrom2_per_ev=scale,magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
 
     def xmcd_energy_selected(self,edge,value):
         if self.source_info is not None and self.validated_path==self.source_path.text():
@@ -175,27 +204,7 @@ class ProviderUI:
             if not self.explicit_xmcd.isChecked() and symbols=={'Ni'}:return base
             if Path(base.source).resolve()==DEFAULT_SOURCE.resolve() and symbols!={'Ni'}:
                 raise ValueError('Bundled Ni XMCD cannot be used for another element; select its declared source')
-            if self.xmcd_edge.text().strip()=='L2,3':
-                selected=dict(L3=base.l3,L2=base.l2)
-                info=self.source_info or {}
-                if not info.get('selected') and info.get('explicit_selected')!=selected:
-                    raise ValueError('Explicit native edge selections required: select both L3/L2 energies or enter their JSON')
-            else:
-                if not self.xmcd_selected.text().strip():
-                    raise ValueError('Explicit native edge selections JSON required for this edge')
-                selected=json.loads(self.xmcd_selected.text())
-            raw=self.xmcd_scale.text().strip()
-            try:scale=float(raw)
-            except ValueError:raise ValueError('Relative tensor reference (A^2/eV): enter a positive finite number; the relative-model default is 1 (not absolute calibration)') from None
-            import math
-            if not math.isfinite(scale) or scale<=0:raise ValueError('Relative tensor reference (A^2/eV): enter a positive finite number')
-            provenance,limits=self.xmcd_descriptions()
-            declaration=dict(element=self.xmcd_element.text().strip(),edge=self.xmcd_edge.text().strip(),selected_ev=selected,
-                magnetization_crystal=list(base.magnetization),handedness='RP_minus_LP_in_declared_axis',eta=base.eta,beta=base.beta,
-                normalization='source_max_nonmagnetic',convention=CONVENTION,source=self.xmcd_provenance.text().strip() or provenance,
-                validity=self.xmcd_validity.text().strip() or limits,status=self.xmcd_status.currentText(),source_sha256=base.source_sha256,
-                reference_tensor_scale_angstrom2_per_ev=scale,
-                magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
+            declaration=self.xmcd_source_declaration(base)
             cfg=settings_for_provider(base.source,'xmcd',declaration)
             acknowledged=base.axis_declared
         else:return base
