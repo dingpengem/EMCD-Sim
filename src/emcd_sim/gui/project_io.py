@@ -123,6 +123,7 @@ def config_from_dict(value):
             if d['provider_schema']!=1:raise ValueError('Unsupported MDFF provider configuration schema')
             return ProviderSettings(**d)
         return ImportedSettings(**d)
+    if 'selected_edges' in d:d['selected_edges']=tuple(tuple(v) for v in d['selected_edges'])
     return ForwardSettings(**d)
 
 

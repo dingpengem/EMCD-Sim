@@ -183,6 +183,11 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.spin['halfwidth'].setToolTip('Shared reciprocal q extent for angular maps and detector integration; must contain the physical apertures. Not an elastic-potential cutoff.')
         self.energy_scope=QtWidgets.QComboBox();self.energy_scope.addItems(['Full native energy-resolved spectrum','Selected declared edge samples only (not full EELS)']);self.form.addRow('Spectral coverage',self.energy_scope);self.energy_scope.currentIndexChanged.connect(self.emcd_stale)
         self.energy_scope.setToolTip('Full spectra evaluate every displayed energy. Double Channeling angular maps can be expensive. Selected samples are displayed as points, never a fabricated white-line shape. Settings are not reduced automatically.')
+        self.edge_sample=QtWidgets.QComboBox()
+        for title,value in [('All declared samples',None),('L3 only','L3'),('L2 only','L2')]:self.edge_sample.addItem(title,value)
+        self.form.addRow('Global XMCD edge samples',self.edge_sample)
+        self.edge_sample.setToolTip('Sampling only: the source retains its complete edge declarations and original amplitudes. Applies to Global XMCD selected-energy calculations.')
+        self.edge_sample.currentIndexChanged.connect(self.emcd_stale)
         self.angular_maps=QtWidgets.QCheckBox('Calculate angular maps');self.angular_maps.setChecked(True);self.form.addRow(self.angular_maps);self.angular_maps.toggled.connect(self.emcd_stale)
         self.angular_maps.setToolTip('Full-field angular maps are evaluated at selected L3/L2 energies. Other spectral energies use detector-only sampling for faster EELS computation. When off, all energies use nonzero fractional-detector support on the unchanged grid. No grid, precision or physical parameter is reduced.')
         saved_form=self.form;group=QtWidgets.QGroupBox('Advanced post-edge diagnostics');group.setCheckable(True);group.setChecked(False);body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(group);outer.addWidget(body);self.form.addRow(group);body.hide();group.toggled.connect(body.setVisible);self.form=QtWidgets.QFormLayout(body)
@@ -313,8 +318,19 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             declaration=dict(cfg.provider_declaration,magnetization_crystal=list(self.material_magnetization))
             cfg=replace(cfg,provider_declaration=declaration,pair_reversed=False)
         if isinstance(cfg,ImportedSettings):cfg=self.bind_material_reference(cfg)
+        cfg=self.global_sample_settings(cfg)
         from .propagation import resolve_fft_configuration
         return resolve_fft_configuration(self.structure,self.settings(),cfg)
+
+    def global_sample_settings(self,cfg):
+        if cfg.model!='xmcd':return cfg
+        declared=getattr(cfg,'provider_declaration',{}).get('selected_ev')
+        samples=tuple(declared.items()) if declared else (('L3',cfg.l3),('L2',cfg.l2))
+        edge=self.edge_sample.currentData() if cfg.energy_scope=='edges' else None
+        if edge is not None:
+            samples=tuple(item for item in samples if item[0]==edge)
+            if not samples:raise ValueError('The selected XMCD source does not declare '+edge)
+        return replace(cfg,selected_edges=samples)
 
     def global_mdff_draft_settings(self,prepare=True,*,resolve=False):
         viewer=getattr(self,'structure_viewer',None)
@@ -342,12 +358,14 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 axis_declared=saved.axis_declared)
         if mode=='imported':cfg=self.imported_forward_settings(cfg,prepare=prepare)
         else:cfg=self.declared_provider_settings(cfg,prepare=prepare)
+        cfg=self.global_sample_settings(cfg)
         from .propagation import resolve_fft_configuration
         return resolve_fft_configuration(self.structure,self.settings(),cfg) if resolve else cfg
 
     def emcd_stale(self,*_):
         if getattr(self,'_session_restoring',False):return
         if not hasattr(self,'ms_settings_group'):return
+        self.edge_sample.setEnabled(getattr(self,'magnetization_mode','global')=='global' and self.model_box.currentIndex()==0 and self.energy_scope.currentIndex()==1)
         if hasattr(self,'manual_spectral'):
             if self.model_box.currentIndex()==2 and self.manual_model.currentIndex()==1:self.manual_spectral.sync_material()
             self.refresh_material_direction()

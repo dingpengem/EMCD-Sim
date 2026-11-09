@@ -260,6 +260,7 @@ class ProjectWorkspace(ProjectSession):
         with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
         self.set_values(dict(kv=300,beam=2.5,potential=2.0))
         self.retire_post_edge();self._post_edge_disabled_on_restore=False;self.correction_notice.hide()
+        with QtCore.QSignalBlocker(self.edge_sample):self.edge_sample.setCurrentIndex(0)
         self.worker_mode.setCurrentIndex(0);self.worker_count.setValue(1)
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
         self._slice_step_override=None;self.set_values(dict(slice_step=2.))
@@ -309,6 +310,8 @@ class ProjectWorkspace(ProjectSession):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
             for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),(self.energy_scope,('full','edges').index(c.energy_scope))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
+            edge=c.selected_edges[0][0] if len(c.selected_edges)==1 and c.selected_edges[0][0] in ('L3','L2') else None
+            with QtCore.QSignalBlocker(self.edge_sample):self.edge_sample.setCurrentIndex(self.edge_sample.findData(edge))
             with QtCore.QSignalBlocker(self.basis_mode):self.basis_mode.setCurrentIndex(self.basis_mode.findData(s.basis_mode))
             provider_index=self.elastic_provider_box.findData(s.elastic_provider)
             if provider_index<0:raise ValueError('Saved elastic provider is unavailable; inputs cannot be restored')

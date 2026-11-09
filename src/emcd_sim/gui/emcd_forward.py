@@ -74,6 +74,7 @@ class ForwardSettings:
     worker_mode: str='automatic'
     parallel_workers: int=1
     fft_generators: tuple|None=None
+    selected_edges: tuple=()
 
 
 # Historical imports remain aliases, not additional forward implementations.
