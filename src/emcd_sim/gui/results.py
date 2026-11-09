@@ -377,9 +377,9 @@ class ResultsView(QtWidgets.QWidget):
                 f'Modeled partial core-edge · mean per selected ionizing atom (N={sites["selected_atom_count"]}).')
         self.advanced.setVisible(not multisite);self.component_mode.setVisible(self.kind in ('eels','maps'))
         self.field.setVisible(self.kind=='maps' and not multisite)
-        self.export_button.setEnabled(not multisite or self.kind=='eels')
-        self.export_button.setText('Export selected spectra CSV + metadata' if multisite else 'Export derived NPZ/CSV + metadata')
-        self.export_button.setToolTip('All spectral components for the selected series; unsupported samples are blank and labeled. Metadata is written automatically.' if multisite else '')
+        self.export_button.setEnabled(True)
+        self.export_button.setText(('Export selected spectra CSV + metadata' if self.kind=='eels' else 'Export saved arrays + metadata') if multisite else 'Export derived NPZ/CSV + metadata')
+        self.export_button.setToolTip(('All spectral components for the selected series; unsupported samples are blank and labeled. Metadata is written automatically.' if self.kind=='eels' else 'Original saved total/group arrays, coverage, normalization and source metadata; no recalculation.') if multisite else '')
         if self.kind=='eels':self.benchmark_section.setVisible(not multisite)
         if self.kind=='maps':
             with QtCore.QSignalBlocker(self.choice):
@@ -460,6 +460,10 @@ class ResultsView(QtWidgets.QWidget):
         if parent and self.result is not None:
             try:
                 if multisite:
+                    if self.kind!='eels':
+                        from .project_io import save_project
+                        save_project(self.result,Path(parent)/datetime.now().strftime('multisite_%Y%m%d_%H%M%S_%f'))
+                        return
                     from .multisite_export import export_multisite_spectra
                     export_multisite_spectra(self.result,Path(parent)/datetime.now().strftime('multisite_%Y%m%d_%H%M%S_%f'),
                         method=self.method.currentData() or self.result.get('method','bloch'),**self.multisite_controls.options())

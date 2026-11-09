@@ -219,6 +219,23 @@ def test_shared_primary_total_components_and_display_restoration(view):
     for key,value in before.items():np.testing.assert_array_equal(result['spectra'][key],value)
 
 
+def test_shared_tabs_and_saved_map_export(view,monkeypatch,tmp_path):
+    from emcd_sim.gui.stage_b import StageB
+    tabs=QtWidgets.QTabWidget()
+    for _ in range(4):tabs.addTab(QtWidgets.QWidget(),'')
+    for result in (stored_result(),dict(config=ForwardSettings())):
+        StageB.sync_result_capabilities(SimpleNamespace(tabs=tabs),result)
+        assert tabs.tabText(1)=='EMCD Angular Maps' and tabs.tabText(3)=='Magnetic / Nonmagnetic'
+    widget=ResultsView(view.owner,'maps');result=stored_result();widget.set_result(result)
+    assert widget.export_button.isEnabled()
+    saved=[]
+    monkeypatch.setattr(QtWidgets.QFileDialog,'getExistingDirectory',lambda *a:str(tmp_path))
+    monkeypatch.setattr('emcd_sim.gui.project_io.save_project',lambda r,p:saved.append((r,p)))
+    widget.export_derived()
+    assert len(saved)==1 and saved[0][0] is result and saved[0][1].parent==tmp_path
+    widget.deleteLater()
+
+
 @pytest.mark.skipif(sys.platform!='win32' or os.environ.get('QT_QPA_PLATFORM')!='windows',reason='Explicit native Windows result selection check')
 def test_native_windows_group_element_comparison(view,app):
     assert app.platformName() == 'windows'

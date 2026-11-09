@@ -590,6 +590,5 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         except Exception as exc:self.error(str(exc))
 
     def sync_result_capabilities(self,result):
-        multisite=result['config'].model=='multisite'
-        self.tabs.setTabText(1,'Total angular intensities' if multisite else 'EMCD Angular Maps')
-        self.tabs.setTabText(3,'Reversal / detector differences' if multisite else 'Magnetic / Nonmagnetic')
+        self.tabs.setTabText(1,'EMCD Angular Maps')
+        self.tabs.setTabText(3,'Magnetic / Nonmagnetic')
