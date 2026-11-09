@@ -253,14 +253,15 @@ class ProjectSession:
             # any calculated arrays or the settings of other history entries.
             current=self.emcd_result
             retained=self.browser.cache.get(self.selected_record['id']) if self.selected_record else None
-            if (retained is not None and current is not None and retained['spectra'] is current['spectra']
-                    and current['config'].model!='multisite'):
+            if retained is not None and current is not None and retained['spectra'] is current['spectra']:
                 view=self.eels_view;prb=view.prb_benchmark
                 retained['display_state']=dict(current.get('display_state',{}),signal_display_schema=2,
                     component_mode=view.component_mode.currentData(),map_signal_mode=self.maps_view.component_mode.currentData(),
                     method=view.method.currentData(),zoom=view.choice.currentText(),selection=prb.selection.currentData(),
                     energy_ev=prb.energy.value(),locked=prb.fixed.isChecked(),advanced=view.advanced.isChecked(),
                     component_diagnostic=view.component_diagnostic.currentData())
+                if current['config'].model=='multisite':
+                    retained['display_state']['multisite_selection']=view.multisite_controls.options()
         except Exception as exc:self.set_project_status('Save Failed');self._after_project_save=None;self.error(str(exc));return
         self.set_project_status('Saving…');self._saving_project=True
         def saved(root):

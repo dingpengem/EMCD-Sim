@@ -137,40 +137,62 @@ def _draw_eels_diagnostics(fig,result,zoom='Full spectrum',method=None,display=N
     return legends
 
 
-def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,component_mode='raw',diagnostics=False):
+def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,component_mode='raw',diagnostics=False,selection=('total',None),normalization='weighted',compared=(),quantity=0,include_total=False):
     """Two primary panels; legacy normalization is an explicit diagnostic."""
     if diagnostics or display is not None:return _draw_eels_diagnostics(fig,result,zoom,method,display)
     from .component_display import components,readouts
-    fig.clear();axes=fig.subplots(2,1,sharex=True);cfg=result['config'];legends=[];records=[]
+    cfg=result['config'];multisite=cfg.model=='multisite'
+    from .multisite_results import spectral_series,covered_segments,QUANTITIES,selection_description
+    fields=QUANTITIES[quantity][1] if multisite and quantity else None
+    fig.clear();axes=np.atleast_1d(fig.subplots(1 if fields else 2,1,sharex=True));legends=[];records=[]
     methods=result.get('methods',{result.get('method','bloch'):result});method=method or result.get('method','bloch')
     chosen=methods if method=='overlay' else {method:methods[method]}
     for name,r in chosen.items():
         s=r['spectra'];e=s['energy_ev'];points=cfg.energy_scope=='edges' or len(e)<=2
         style=dict(ls='None' if points else ('--' if name=='fft-multislice' else '-'),marker='o' if points else None,lw=1.3)
-        labels=(name+': ') if len(chosen)>1 else ''
-        for key,label,color in (('I_A_plus','Detector A','C0'),('I_B_plus','Detector B','C1')):
-            axes[0].plot(e,s[key],label=labels+label,color=color,**style)
-        curves,meta=components(s,component_mode)
-        for label,v in curves.items():
-            color={'Magnetic':'C3','Nonmagnetic':'C0','EMCD Asymmetry':'C2'}[label]
-            shown=({'Magnetic':'Magnetic-only Asymmetry','Nonmagnetic':'Nonmagnetic Asymmetry'}[label] if component_mode=='relative' else label)
-            axes[1].plot(e,v,label=labels+shown,color=color,**style)
-        rows,_=readouts(r);records.append(dict(method=name,channeling_model=cfg.channeling_model,**meta,prb_readouts=rows))
-    axes[0].set_ylabel('EELS intensity (a.u.)');axes[1].set_ylabel(meta['units']);axes[1].axhline(0,color='.45',lw=.7)
-    axes[1].set_xlabel('Native energy loss (eV)')
+        series=spectral_series(r,selection,normalization,compared,include_total) if multisite else [dict(spectra=s,label='',groups=())]
+        for index,item in enumerate(series):
+            s=item['spectra'];prefix=(name+': ' if len(chosen)>1 else '')+(item['label']+' | ' if len(series)>1 else '')
+            segments=covered_segments(r,e,item['groups']) if multisite else [np.ones(len(e),bool)]
+            def plot(ax,value,label,color,linestyle='-'):
+                drawn=False
+                for mask in segments:
+                    if not np.any(mask):continue
+                    line_style=dict(style)
+                    if len(series)>1:line_style.update(ls='None' if points else linestyle)
+                    ax.plot(e[mask],np.asarray(value)[mask],label=prefix+label if not drawn else None,color=color,**line_style);drawn=True
+            for i,(key,label) in enumerate(fields or [('I_A_plus','Detector A'),('I_B_plus','Detector B')]):
+                plot(axes[0],s[key],label,'C'+str(index%10) if len(series)>1 else 'C'+str(i),('-','--',':','-.')[i%4])
+            curves,meta=components(s,component_mode)
+            if not fields:
+                for i,(label,v) in enumerate(curves.items()):
+                    color='C'+str(index%10) if len(series)>1 else {'Magnetic':'C3','Nonmagnetic':'C0','EMCD Asymmetry':'C2'}[label]
+                    shown=({'Magnetic':'Magnetic-only Asymmetry','Nonmagnetic':'Nonmagnetic Asymmetry'}[label] if component_mode=='relative' else label)
+                    plot(axes[1],v,shown,color,('-','--')[i%2])
+        rows=[] if multisite else readouts(r)[0]
+        records.append(dict(method=name,channeling_model=cfg.channeling_model,**(meta if series else {}),prb_readouts=rows))
+    axes[0].set_ylabel('EELS intensity (a.u.)' if not fields else 'Intensity (a.u.)')
+    if not fields:axes[1].set_ylabel('Intensity difference (a.u.)' if component_mode=='raw' else 'EMCD Asymmetry (%)' if component_mode=='asymmetry' else 'Magnetic-only / Nonmagnetic Asymmetry (%)');axes[1].axhline(0,color='.45',lw=.7)
+    axes[-1].set_xlabel('Energy loss (eV)')
+    samples=[(label,float(value)) for label,value in selected_samples(cfg) if np.isfinite(value)]
     for ax in axes:
-        ax.grid(alpha=.15);ax.legend(fontsize=8,loc='upper right')
-        for v in (cfg.l3,cfg.l2):ax.axvline(v,color='.6',ls=':',lw=.6)
-    limits=(cfg.l3-5,cfg.l3+5) if zoom=='L3 zoom' else (cfg.l2-5,cfg.l2+5) if zoom=='L2 zoom' else (float(e[0]),float(e[-1]))
+        ax.grid(alpha=.15)
+        if ax.get_legend_handles_labels()[0]:ax.legend(fontsize=8,loc='upper right')
+        else:ax.text(.5,.5,'No modeled samples for this selection; excluded/unmodeled is not physical zero.',ha='center',va='center',wrap=True,transform=ax.transAxes,fontsize=8)
+        if not fields:
+            for v in dict.fromkeys(v for _,v in samples):ax.axvline(v,color='.6',ls=':',lw=.6)
+    selected=dict(samples).get(zoom.removesuffix(' zoom')) if zoom.endswith(' zoom') else None
+    limits=(selected-5,selected+5) if selected is not None else (float(e[0]),float(e[-1]))
     if len(e)==1:limits=result['metadata'].get('imported_mdff',{}).get('energy_bounds_ev',(float(e[0])-1,float(e[0])+1))
     axes[-1].set_xlim(limits)
     from .component_display import MODES
-    element=getattr(cfg,'ionizing_element','Ni')
+    element=', '.join(dict.fromkeys(g['metadata']['element'] for g in result['groups'].values())) if multisite else getattr(cfg,'ionizing_element','Ni')
     title=f'{MODES.get(component_mode, "Magnetic-only / Nonmagnetic Asymmetry diagnostics")} | {cfg.channeling_model.title()} Channeling | {method} | {element} {list(result["settings"].zone)}, {result["settings"].thickness:g} nm'
     if points:title+='\nSelected native '+ '/'.join(k for k,_ in selected_samples(cfg))+' samples only; full EELS spectrum not calculated'
     elif spectral_coverage_label(result)=='Calculated energy subset':title+='\nCalculated energy subset; full native range not covered'
     title+='\n'+geometry_description(result)
-    title+='\n'+zoom+'; '+('declared/interpolated tensor energy samples' if cfg.model=='imported' else 'actual native energy samples')
+    title+='\n'+zoom+'; actual calculated energy samples'
+    if multisite:title+='\n'+selection_description(result,spectral_series(result,selection,normalization,compared,include_total))
     if cfg.model=='imported' or hasattr(cfg,'provider_schema'):title+='\n'+mdff_label(result)
     fig.suptitle(title,fontsize=11)
     fig._emcd_display_metadata=dict(kind='primary spectra',component_mode=component_mode,records=records,
@@ -178,6 +200,7 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
         spectral_coverage='selected samples only' if points else spectral_coverage_label(result),
         geometry=geometry_description(result),
         prb='Separate raw +M difference/sum scalar benchmark; not the magnetic-only percentage')
+    if multisite:fig._emcd_display_metadata.update(selection=selection,quantity=QUANTITIES[quantity][0],normalization=normalization,selected_atom_count=result['metadata']['multisite']['selected_atom_count'])
     return legends
 
 
@@ -342,8 +365,8 @@ class ResultsView(QtWidgets.QWidget):
             if standard is not None:self.navigation.removeAction(standard)
         multisite=result['config'].model=='multisite'
         if self.kind=='eels':
-            self.multisite_controls.setVisible(multisite);self.choice.setVisible(not multisite)
-            self.signal_label.setVisible(not multisite)
+            self.multisite_controls.setVisible(multisite);self.choice.setVisible(True)
+            self.signal_label.setVisible(True)
             self.multisite_controls.sources.setVisible(multisite)
             if multisite:self.multisite_controls.set_result(result)
             else:self.multisite_controls.result=None
@@ -351,9 +374,8 @@ class ResultsView(QtWidgets.QWidget):
         if multisite:
             sites=result['metadata']['multisite']
             self.multisite_banner.setText('Complete-crystal incoming elastic intensity; per incident electron.' if self.kind=='diffraction' else
-                f'Modeled partial core-edge spectrum · mean per selected ionizing atom (n={sites["selected_atom_count"]}).\n'
-                +result['metadata']['scientific_status']+' · active '+('−M' if sites['global_reversal'] else '+M')+' provider pairs · uncalibrated relative scale.')
-        self.advanced.setVisible(not multisite);self.component_mode.setVisible(not multisite)
+                f'Modeled partial core-edge · mean per selected ionizing atom (N={sites["selected_atom_count"]}).')
+        self.advanced.setVisible(not multisite);self.component_mode.setVisible(self.kind in ('eels','maps'))
         self.field.setVisible(self.kind=='maps' and not multisite)
         self.export_button.setEnabled(not multisite or self.kind=='eels')
         self.export_button.setText('Export selected spectra CSV + metadata' if multisite else 'Export derived NPZ/CSV + metadata')
@@ -365,7 +387,7 @@ class ResultsView(QtWidgets.QWidget):
         elif self.kind=='eels':
             with QtCore.QSignalBlocker(self.choice):
                 self.choice.clear();self.choice.addItem(spectral_coverage_label(result))
-                if not multisite and getattr(result['config'],'core_edge','L2,3')=='L2,3':self.choice.addItems(['L3 zoom','L2 zoom'])
+                self.choice.addItems([label+' zoom' for label,value in selected_samples(result['config']) if np.isfinite(value)])
         if not multisite:self.normalization.set_result(result)
         from .propagation import METHOD_NAMES
         options=list(result.get('methods',{result.get('method','bloch'):result}))
@@ -377,24 +399,25 @@ class ResultsView(QtWidgets.QWidget):
     def redraw(self,*_):
         if self.result is None:return
         method=self.method.currentData() or self.result.get('method','bloch')
-        if self.result['config'].model=='multisite':
+        if self.result['config'].model=='multisite' and self.kind in ('eels','comparison'):
             from .multisite_results import draw_totals,description
             options=self.multisite_controls.options() if self.kind=='eels' else {}
-            self.proxies=draw_totals(self.figure,self.result,method,self.kind,self.choice.currentText(),**options)
+            self.proxies=(draw_eels(self.figure,self.result,self.choice.currentText(),method,component_mode=self.component_mode.currentData(),**options)
+                if self.kind=='eels' else draw_totals(self.figure,self.result,method,self.kind,self.choice.currentText(),**options))
             if self.kind=='eels':
                 from .multisite_results import spectral_series,selection_description
                 current=self.result.get('methods',{}).get(method,self.result)
                 series=spectral_series(current,options['selection'],options['normalization'],options['compared'],options['include_total'])
                 sites=current['metadata']['multisite']
-                self.multisite_banner.setText(self.multisite_controls.normalization_note(current,series)+'\nPartial core-edge · '
-                    +current['metadata']['scientific_status']+' · active '+('−M' if sites['global_reversal'] else '+M'))
+                self.multisite_banner.setText(self.multisite_controls.normalization_note(current,series))
                 self.multisite_banner.setToolTip(selection_description(current,series)+'\n'+description(current))
                 self.display_note.setText(selection_description(current,series)+'\n'+description(current))
+                self.component_mode.setEnabled(options['quantity']==0)
             else:self.display_note.setText(description(self.result))
             if self.figure._suptitle is not None:self.figure._suptitle.set_wrap(True)
             self.presentation.capture();self.canvas.draw_idle();return
         display=self.normalization.settings()
-        advanced=self.advanced.isChecked()
+        advanced=self.advanced.isChecked() and self.result['config'].model!='multisite'
         self.component_mode.setEnabled(not advanced)
         try:
             if self.kind=='maps':draw_maps(self.figure,self.result,self.choice.currentText(),method,self.field.currentData() if advanced else None,display if advanced else None,signal_mode=self.component_mode.currentData())

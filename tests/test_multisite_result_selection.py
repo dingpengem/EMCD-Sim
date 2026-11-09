@@ -197,6 +197,28 @@ def test_results_polish_defaults_relevance_and_exports(view):
     assert not view.details_section.isHidden()  # Metadata and exports stay reachable when maximized.
 
 
+def test_shared_primary_total_components_and_display_restoration(view):
+    result=stored_result('FeNi');before=deepcopy(result['spectra']);view.set_result(result)
+    assert len(view.figure.axes)==2
+    assert not view.choice.isHidden() and not view.component_mode.isHidden()
+    # Actual modeled samples only: no line joins the unsupported Fe/Ni gap.
+    for ax in view.figure.axes:
+        for line in ax.lines:
+            if not line.get_label().startswith('_'):
+                energy=line.get_xdata()
+                assert np.max(energy)<800 or np.min(energy)>800
+    from emcd_sim.gui.component_display import components
+    expected=components(result['spectra'],'asymmetry')[0]['EMCD Asymmetry']
+    view.component_mode.setCurrentIndex(1)
+    curves=[line for line in view.figure.axes[1].lines if line.get_color()=='C2']
+    np.testing.assert_array_equal(np.concatenate([line.get_ydata() for line in curves]),expected)
+    controls=view.multisite_controls;select(view,'compare');controls.include_total.setChecked(True)
+    controls.groups.item(1).setCheckState(QtCore.Qt.CheckState.Unchecked)
+    options=controls.options();controls.set_result(deepcopy(result));controls.restore_options(options)
+    assert controls.options()==options
+    for key,value in before.items():np.testing.assert_array_equal(result['spectra'][key],value)
+
+
 @pytest.mark.skipif(sys.platform!='win32' or os.environ.get('QT_QPA_PLATFORM')!='windows',reason='Explicit native Windows result selection check')
 def test_native_windows_group_element_comparison(view,app):
     assert app.platformName() == 'windows'

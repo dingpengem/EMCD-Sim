@@ -195,6 +195,7 @@ class ProjectWorkspace(ProjectSession):
             with QtCore.QSignalBlocker(prb.fixed):prb.fixed.setChecked(bool(state.get('locked',False)))
             view.component_diagnostic.setCurrentIndex(1 if state.get('component_diagnostic')=='relative' else 0)
             self.maps_view.component_mode.setCurrentIndex(1 if state.get('map_signal_mode')=='asymmetry' else 0)
+            if result['config'].model=='multisite':view.multisite_controls.restore_options(state.get('multisite_selection',{}))
             view.advanced.setChecked(bool(state.get('advanced',False)));view.redraw()
             if notes:view.display_note.setText(' '.join(notes))
         sources=source_status(result);warnings=result.get('project_warnings',[])

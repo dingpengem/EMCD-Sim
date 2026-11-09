@@ -75,6 +75,19 @@ class MultisiteSpectraControls(QtWidgets.QWidget):
         return dict(selection=selection,normalization=normalization,compared=compared,quantity=self.quantity.currentIndex(),
                     include_total=self.include_total.isChecked() and selection[0]=='compare')
 
+    def restore_options(self, options):
+        """Restore display preferences against available saved group identities."""
+        selection=tuple(options.get('selection',('total',None)))
+        index=next((i for i in range(self.selection.count()) if tuple(self.selection.itemData(i))==selection),0)
+        self.selection.setCurrentIndex(index)
+        self.normalization.setCurrentIndex(1 if options.get('normalization')=='mean' else 0)
+        self.quantity.setCurrentIndex(max(0,min(len(QUANTITIES)-1,int(options.get('quantity',0)))))
+        for i in range(self.groups.count()):
+            item=self.groups.item(i)
+            item.setCheckState(QtCore.Qt.CheckState.Checked if item.data(QtCore.Qt.ItemDataRole.UserRole) in options.get('compared',()) else QtCore.Qt.CheckState.Unchecked)
+        self.include_total.setChecked(bool(options.get('include_total',False)))
+        self.updated()
+
     def updated(self, *_):
         mode,value = self.selection.currentData() or ('total',None)
         self.groups.setVisible(mode == 'compare');self.normalization.setVisible(mode in ('group','compare'))

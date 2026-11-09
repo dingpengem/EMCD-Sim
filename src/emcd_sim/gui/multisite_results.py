@@ -37,7 +37,7 @@ PANELS = [
     ('Global reversal-odd', [('M_A','Odd A'),('M_B','Odd B')]),
     ('Detector A − B differences', [('D_raw','Conventional +state A−B'),('D_mag','Magnetic odd A−B'),('D_nonmag','Nonmagnetic even A−B')])]
 QUANTITIES = [
-    ('Overview',None),('Raw EELS +state (A, B)',PANELS[0][1][:2]),
+    ('EELS / magnetic and nonmagnetic components',None),('Raw EELS +state (A, B)',PANELS[0][1][:2]),
     ('Raw EELS −state (A, B)',PANELS[0][1][2:]),('Reversal-even (A, B)',PANELS[1][1]),
     ('Reversal-odd (A, B)',PANELS[2][1]),('Conventional A−B (+state)',PANELS[3][1][:1]),
     ('Magnetic A−B',PANELS[3][1][1:2]),('Nonmagnetic A−B',PANELS[3][1][2:])]
@@ -107,57 +107,14 @@ def comparison_text(result):
 
 
 def draw_totals(figure, result, method, kind, choice, *, selection=('total',None),normalization='weighted',compared=(),quantity=0,include_total=False):
-    r = result.get('methods',{}).get(method,result)
-    figure.clear();proxies = []
-    series = []
+    """Compatibility entry point; presentation belongs to the shared Results view."""
+    from .results import draw_eels,draw_maps,draw_diffraction
     if kind == 'eels':
-        from matplotlib import colormaps
-        series = spectral_series(r,selection,normalization,compared,include_total)
-        panels = PANELS if quantity == 0 else [(QUANTITIES[quantity][0],QUANTITIES[quantity][1])]
-        axes = figure.subplots(len(panels),1,sharex=True,squeeze=False).ravel();e = r['spectra']['energy_ev']
-        for ax,(title,curves) in zip(axes,panels):
-            for item in series:
-                group_index = list(r['groups']).index(item['groups'][0]) if item['groups'] else 0
-                group_color = ('black' if item['normalization']=='total' else colormaps['tab10'](group_index%10)) if len(series)>1 else None
-                for index,(key,label) in enumerate(curves):
-                    color = group_color
-                    prefix = '' if item['normalization']=='total' and len(series)==1 else item['label']+' | '
-                    drawn = False
-                    for mask in covered_segments(r,e,item['groups']):
-                        if not np.any(mask):continue
-                        points = r['config'].energy_scope == 'edges'
-                        line, = ax.plot(e[mask],item['spectra'][key][mask],marker='o' if points or len(e)<4 else None,
-                            ls='none' if points else (('-', '--', ':', '-.')[index%4] if len(series)>1 else '-'),
-                            label=prefix+label if not drawn else None,color=color)
-                        color = line.get_color();drawn = True
-            ax.set_title(title,fontsize=8);ax.set_ylabel('Relative I',fontsize=8)
-            ax.tick_params(labelsize=7);ax.grid(alpha=.15)
-            if ax.get_legend_handles_labels()[0]:ax.legend(fontsize=6,ncol=2)
-            else:ax.text(.5,.5,'No modeled samples for this selection; excluded/unmodeled is not physical zero.',
-                         ha='center',va='center',wrap=True,transform=ax.transAxes,fontsize=8)
-        axes[-1].set_xlabel('Energy loss (eV)',fontsize=8)
-    elif kind == 'maps' and r['maps']:
-        values = r['maps'][choice];extent = (r['qx'].min(),r['qx'].max(),r['qy'].min(),r['qy'].max())
-        for ax,(key,title) in zip(figure.subplots(2,2).flat,[('I_plus','Total +state'),('I_minus','Total −state'),('I_nonmag','Reversal-even'),('I_mag','Reversal-odd')]):
-            image = ax.imshow(values[key],origin='lower',extent=extent,cmap='RdBu_r' if key=='I_mag' else 'viridis')
-            ax.set(title=title,xlabel='qx (Å⁻¹)',ylabel='qy (Å⁻¹)');figure.colorbar(image,ax=ax,shrink=.75)
-    elif kind == 'diffraction':
-        from .results import draw_diffraction
-        draw_diffraction(figure,result,method,choice=='Depth average')
-    else:
-        ax = figure.subplots();ax.axis('off');ax.text(.01,.98,comparison_text(result),va='top',fontsize=8,wrap=True)
-    sites = r['metadata']['multisite']
-    figure.suptitle(f'{material(r)} | {method} {r["config"].channeling_model.title()} Channeling | partial core-edge spectrum\n'
-        f'Mean per selected ionizing atom (n={sites["selected_atom_count"]}); active provider '+
-        ('−M' if sites['global_reversal'] else '+M')+' states; relative scale\n'+r['metadata']['scientific_status'],fontsize=8)
-    if kind=='diffraction':figure.suptitle(f'{material(r)} | {method} complete-crystal incoming elastic intensity; per incident electron',fontsize=8)
-    if kind=='eels':
-        names = 'Total' if selection[0]=='total' else ', '.join(item['label'] for item in series) or 'No groups selected'
-        figure.suptitle(f'{material(r)} | {method} | {names} | partial core-edge spectrum\n'+selection_description(r,series),fontsize=8)
-    figure._emcd_display_metadata = dict(kind='multisite totals',normalization='per_incident_electron' if kind=='diffraction' else 'mean_per_selected_ionizing_atom',
-        spectrum_kind='modeled_partial_core_edge_spectrum',method=method)
-    if kind=='eels':figure._emcd_display_metadata.update(selection=selection,quantity=QUANTITIES[quantity][0],include_total=include_total,
-        group_ids=[item['groups'] for item in series],scales=[item['scale'] for item in series],
-        normalization='mean_per_group_atom_nonadditive' if normalization=='mean' and selection[0] in ('group','compare') else 'fixed_total_selected_atom_denominator',
-        selected_atom_count=sites['selected_atom_count'])
-    return proxies
+        return draw_eels(figure,result,choice,method,selection=selection,normalization=normalization,
+                         compared=compared,quantity=quantity,include_total=include_total)
+    if kind == 'maps':return draw_maps(figure,result,choice,method)
+    if kind == 'diffraction':return draw_diffraction(figure,result,method,choice=='Depth average')
+    figure.clear();ax=figure.subplots();ax.axis('off')
+    ax.text(.01,.98,comparison_text(result),va='top',fontsize=8,wrap=True)
+    figure._emcd_display_metadata=dict(kind='multisite details',method=method)
+    return []
