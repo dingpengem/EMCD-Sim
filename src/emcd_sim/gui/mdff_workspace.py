@@ -6,6 +6,7 @@ class MDFFWorkspace(QtWidgets.QDialog):
     def showEvent(self,event):
         from .parameter_wheel import protect_parameter_wheels
         protect_parameter_wheels(self)
+        self.refresh_context_status()
         super().showEvent(event)
 
     def __init__(self,parent=None):
@@ -22,6 +23,7 @@ class MDFFWorkspace(QtWidgets.QDialog):
         self.material_label=QtWidgets.QLabel(material);self.material_label.setWordWrap(True);form.addRow(self.material_label)
         self.context_selector=QtWidgets.QComboBox();form.addRow('MDFF editing context',self.context_selector)
         self.context_selector.addItem('Current context');self.context_selector.setEnabled(False)
+        self.context_status=QtWidgets.QLabel();self.context_status.setWordWrap(True);form.addRow(self.context_status)
         self.outer.addWidget(box)
         box=QtWidgets.QGroupBox('Model');form=QtWidgets.QFormLayout(box)
         form.addRow('MDFF model',model)
@@ -34,6 +36,8 @@ class MDFFWorkspace(QtWidgets.QDialog):
         self.context_selector.currentIndexChanged.connect(self.switch_context)
 
     def set_context_choices(self,window,group_id=None):
+        if self._window is None:
+            window.structure_viewer.editor.modeChanged.connect(self.refresh_context_status)
         self._window=window;self._context_id=group_id
         self.material_label.setText(window.structure_label.text())
         with QtCore.QSignalBlocker(self.context_selector):
@@ -42,6 +46,30 @@ class MDFFWorkspace(QtWidgets.QDialog):
             for row in viewer.editor.rows() if viewer is not None else ():self.context_selector.addItem('Site group: '+row[0],row[0])
             self.context_selector.setCurrentIndex(self.context_selector.findData(group_id))
         self.context_selector.setEnabled(True)
+        self.refresh_context_status()
+
+    def refresh_context_status(self,*_):
+        if self._window is None:return
+        editor=self._window.structure_viewer.editor
+        if self._context_id is None:
+            cfg=getattr(self._window,'_accepted_global_mdff',None)
+            if cfg is None:message='Global MDFF: Incomplete — configure, validate and Apply the Global provider.'
+            elif cfg.model in ('xmcd','imported') and not cfg.axis_declared:
+                message='Global MDFF: Incomplete — validate and acknowledge the Global source declarations.'
+            elif self.status.text().startswith('Invalid / unapplied:') or getattr(self._window,'_restored_source_block',False):
+                message='Global MDFF: Incomplete — source/configuration needs validation. '+self.status.text()
+            elif self.has_unapplied_edits():message='Global MDFF: unapplied editor changes; accepted configuration retained. Apply or Cancel the draft.'
+            else:message='Global MDFF: accepted ('+cfg.model+'). Local group configuration is not required in Global mode.'
+            if editor.magnetization_mode=='local':message+=' Global settings are inactive while Local mode is selected.'
+        else:
+            row=next((r for r in editor.rows() if r[0]==self._context_id),None)
+            if row is None:message='This site group is no longer available.'
+            else:
+                display,detail=editor.mdff_display(row,group_context=True)
+                message='Group '+row[0]+': '+display+'. '+detail
+                if self.has_unapplied_edits():message+=' Unapplied MDFF draft; accepted group settings are retained.'
+                if editor.magnetization_mode=='global':message+=' This local configuration is not used by the current Global calculation.'
+        self.context_status.setText(message)
 
     def switch_context(self,index):
         if self._window is None:return

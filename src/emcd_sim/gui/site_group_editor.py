@@ -162,7 +162,8 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
             self.groups.clear()
             for name, element, indices, direction, reference in rows:
                 row = (name,element,indices,direction,reference)
-                item = QtWidgets.QTreeWidgetItem([name, element, ', '.join(map(str,indices)),self.mdff_status(row)])
+                display,detail=self.mdff_display(row)
+                item = QtWidgets.QTreeWidgetItem([name, element, ', '.join(map(str,indices)),display])
                 item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
                 item.setCheckState(0,QtCore.Qt.CheckState.Unchecked if name in self.excluded_groups else QtCore.Qt.CheckState.Checked)
                 item.setToolTip(1,'Checked groups participate in ionization. Unchecked groups remain in the complete elastic crystal. Missing MDFF never excludes a checked group automatically.')
@@ -171,7 +172,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
                 match = next((g for g in provenance if g['indices'] == list(indices) and g['element'] == element),None)
                 item.setText(4,str(len(indices)));item.setText(5,match['wyckoff'] if match else 'Manual / edited')
                 item.setToolTip(0,('Crystallographic orbit; CIF labels: '+', '.join(match['cif_labels'])) if match else 'Manual assignment')
-                item.setToolTip(3,self._mdff_status.get(name,('',None,'No validated provider'))[2])
+                item.setToolTip(3,detail)
                 item.setData(0, ROLE, tuple(indices)); item.setData(1, ROLE, None if direction is None else tuple(direction))
                 # A tuple keeps arbitrary Python references intact; a bare dict
                 # is otherwise converted to a copied QVariantMap by Qt.
@@ -224,15 +225,18 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         name=current.text(0);indices=current.data(0,ROLE);direction=current.data(1,ROLE)
         reference=current.data(2,ROLE)[0]
         accepted=next((r for r in self._accepted_rows if r[0]==name),None)
-        vector=lambda m:'Unconfigured' if m is None else ' '.join(f'{v:.8g}' for v in m)
+        inactive=self.magnetization_mode=='global'
+        vector=lambda m:('Unconfigured' if m is None else ' '.join(f'{v:.8g}' for v in m))+(' (inactive)' if inactive else '')
         lines=[f'Selected group: {name} — {len(indices)} '+('atom' if len(indices)==1 else 'atoms'),
                'Accepted M: '+(vector(accepted[3]) if accepted is not None else 'Not yet applied')]
         if accepted is None or direction!=accepted[3]:lines.append('Draft M (unapplied): '+vector(direction))
-        text=self.direction.text().strip();staged='' if direction is None else vector(direction)
+        text=self.direction.text().strip();staged='' if direction is None else ' '.join(f'{v:.8g}' for v in direction)
         if text!=staged:lines.append('Input M (not staged): '+(text or '(empty)')+'; use Update direction.')
         row=(name,current.text(1),indices,direction,reference)
         label='MDFF draft' if accepted is not None and reference!=accepted[4] else 'MDFF'
-        lines.append(label+': '+self.mdff_status(row))
+        display,detail=self.mdff_display(row)
+        lines.append(label+': '+display)
+        lines.append(detail)
         if reference is not None:lines.append('Source pair member: '+('−M' if getattr(reference,'pair_reversed',False) else '+M'))
         self.group_summary.setText('\n'.join(lines))
 
@@ -399,6 +403,24 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         if context != row[1:4] or reference is not row[4]:return 'Needs validation'
         return 'Configured and valid' if message == 'valid' else 'Invalid / stale'
 
+    def mdff_display(self,row,*,group_context=False):
+        """Scope presentation only; mdff_status remains the validation status."""
+        actual=self.mdff_status(row);requirements=[]
+        if row[3] is None and getattr(row[4],'magnetic_state',None)!='nonmagnetic':requirements.append('Declare a local magnetization direction.')
+        if row[4] is None:requirements.append('Configure and validate this group’s MDFF provider.')
+        elif actual!='Configured and valid':
+            message=self._mdff_status.get(row[0],('',None,''))[2]
+            requirements.append(message if message and message!='valid' else actual+'. Recheck or validate this group’s MDFF source.')
+        detail=' '.join(requirements) or 'Group provider configured and valid.'
+        if row[0] in self.excluded_groups:
+            detail='Local participation: excluded / elastic-only. '+detail
+        if self.magnetization_mode=='global' and not group_context:
+            return 'Inactive — Global mode','This local configuration is not used by the current Global calculation. '+detail
+        if row[0] in self.excluded_groups:
+            return 'Excluded — elastic only','MDFF is not required while this group is excluded from local ionization. '+detail
+        if actual=='Configured and valid' and not requirements:return actual,detail
+        return ('Incomplete' if actual=='Incomplete' else 'Incomplete — '+actual.lower()),detail
+
     def recheck_mdff_sources(self):
         from .group_mdff import validate_group_reference
         for row in self.rows():
@@ -408,9 +430,6 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
             except Exception as exc:message = str(exc)
             self._mdff_status[row[0]] = (row[1:4],row[4],message)
         # Refresh status cells only: never reset atom selection or current group.
-        for i,row in enumerate(self.rows()):
-            item = self.groups.topLevelItem(i);item.setText(3,self.mdff_status(row))
-            item.setToolTip(3,self._mdff_status.get(row[0],('',None,''))[2])
         self.update_status()
 
     def configure_mdff(self):
@@ -469,8 +488,12 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         return row
 
     def update_status(self):
+        with QtCore.QSignalBlocker(self.groups):
+            for i,row in enumerate(self.rows()):
+                display,detail=self.mdff_display(row)
+                item=self.groups.topLevelItem(i);item.setText(3,display);item.setToolTip(3,detail)
         missing = sum(row[4] is None for row in self.participating_rows())
-        undeclared = sum(row[3] is None for row in self.rows())
+        undeclared = sum(row[3] is None and getattr(row[4],'magnetic_state',None)!='nonmagnetic' for row in self.participating_rows())
         prefix = 'Unapplied edits. Apply to accept; Cancel to discard. ' if self.dirty else 'Applied in memory. '
         mode = 'Local mode. ' if self.magnetization_mode == 'local' else 'Global mode; local directions inactive. '
         if self.magnetization_mode == 'local':mode += ('All provider −M states selected. ' if self.reverse_magnetization else 'Declared +M configuration selected. ')
@@ -480,6 +503,8 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
                              if self.rows() else ('No local groups configured; local calculation unavailable.'
                                  if self.magnetization_mode == 'local' else 'No groups; ordinary CIF viewing.'))))
         self.status.setText(self.status.text()+f' Ionization: {sum(len(r[2]) for r in self.participating_rows())} selected atoms; {len(self.excluded_groups)} structural group(s) excluded, retained for elastic scattering.')
+        if self.magnetization_mode=='global':
+            self.status.setText('Global mode. '+prefix+'Local group settings are inactive; they do not determine Global MDFF readiness. Configure Global MDFF in the Global editor context. Local assignments are retained.')
         self.refresh_group_summary()
 
     def apply(self):

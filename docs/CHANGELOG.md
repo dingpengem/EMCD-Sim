@@ -2,6 +2,8 @@
 
 ## Unreleased development source — crystallographic groups and direction workflow
 
+- Clarify UI status scope: local groups show “Inactive — Global mode” while Global magnetization is active, with inactive local direction details. Local mode retains actual missing/invalid-provider requirements and elastic-only exclusions. The shared MDFF editor identifies Global versus group readiness without copying configurations or changing validation. This is a UI-status clarification, not acceptance of Site M calculations.
+
 - Prepare local dev4: full-basis diffraction preview no longer requires an inherited target to survive systematic-absence filtering (Fe₃O₄ [017], cutoff 2: 59 beams, absent 200 target). Retain valid orientation, two-beam-target and 121-beam safeguards. Set ordinary fresh/reset/Automatic cutoffs to beam 2.5 and potential 2.0 Å⁻¹; retain explicit saved values and the matched historical reference preset.
 - Retire optional post-edge A/B correction from the GUI and force it off in new requests. Convert enabled legacy flags only in working settings with a notice; retain original files until Save and preserve historical results. Keep required MDFF physics and source/frame validation.
 - Prevent wheel edits to focused parameter spin boxes and closed selectors, forwarding page scrolling while preserving explicit edits, dropdown-list scrolling, 3D zoom and plot gestures. Give group MDFFs an explicit numerical-preview action, show validated XMCD input spectra when missing declarations block tensors, and bind reversed group previews through the existing physical-pair validator. No general tensor rotation, scattering-kernel or numerical-reference changes; dev1/dev2/dev3 remain unchanged.

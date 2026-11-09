@@ -349,8 +349,8 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             self.manual_spectral.status.setText('STALE — Material group direction changed; update preview.')
         self.atomic.schematic.draw();self.manual_spectral.frame_diagram.update()
         self.context.setText(f'Group {row[0]} · {row[1]} · ASE indices {row[2]}\n'
-            f'Material group draft M (crystal Cartesian, read-only): {row[3]}. Set through Material → 3D Structure Viewer → Site Groups. Legacy Global M is not used. '
-            + ('Physical source −M pair member selected.' if getattr(row[4],'pair_reversed',False) else 'Physical source +M pair member selected.'))
+            f'Material group draft M (crystal Cartesian, read-only): {row[3] if row[3] is not None else "Unconfigured"}. Set through Material → 3D Structure Viewer → Site Groups. Legacy Global M is not used. '
+            + ('No group MDFF provider configured.' if row[4] is None else 'Physical source −M pair member selected.' if getattr(row[4],'pair_reversed',False) else 'Physical source +M pair member selected.'))
 
     def load_atomic(self):
         try:
@@ -470,9 +470,10 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             self.detail_text.setPlainText(json.dumps(self.provenance,indent=2,ensure_ascii=False))
             self._entry = self.snapshot()
             self._applied_snapshot = deepcopy(self._entry)
+            self.refresh_context_status()
             return cfg
         except Exception as exc:
-            self.status.setText('Invalid / incomplete: '+str(exc));return None
+            self.status.setText('Invalid / incomplete: '+str(exc));self.refresh_context_status();return None
 
     def export_applied_source(self, path=None):
         """Expert exchange of the original input; no project serialization."""

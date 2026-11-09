@@ -275,10 +275,11 @@ class GlobalMDFFDialog(MDFFWorkspace):
 
     def apply_configuration(self):
         try:cfg=self.window.global_mdff_draft_settings()
-        except Exception as exc:self.status.setText('Invalid / unapplied: '+str(exc));return None
+        except Exception as exc:self.status.setText('Invalid / unapplied: '+str(exc));self.refresh_context_status();return None
         self.window._accepted_global_mdff=cfg;self.window._saved_global_config=cfg
         self._entry=self.snapshot();self.window.emcd_stale();self.window.mark_project_dirty()
         self.status.setText('Global MDFF applied in memory. Local groups and the active magnetization mode are unchanged.')
+        self.refresh_context_status()
         return cfg
 
     def reject(self):
@@ -298,7 +299,8 @@ class GlobalMDFFDialog(MDFFWorkspace):
             w.xmcd_status.setCurrentIndex(s['status']);w.source_info=deepcopy(s['source_info']);w.validated_path=s['validated_path']
             for n,flag in s['flags'].items():getattr(w,n).setChecked(flag)
         finally:w._session_restoring=previous
-        w.refresh_material_direction();w.emcd_stale();self.hide()
+        self.status.setText('Global MDFF draft cancelled; accepted configuration retained.')
+        w.refresh_material_direction();w.emcd_stale();self.refresh_context_status();self.hide()
 
 
 def configuration_dialog(window):
