@@ -10,6 +10,22 @@ from ..multislice_reference import complex_wave_diagnostics
 
 METHOD_NAMES={'bloch':'Bloch-wave','fft-multislice':'FFT Multislice','difference':'BW-MS numerical difference'}
 
+# Single Channeling reduces these energy blocks before retaining final results.
+# This is an allocation bound, not a change to spectral/angular sampling.
+MULTISITE_ENERGY_BATCH = 16
+
+
+def multisite_memory_terms(cfg, group_count):
+    """Storage that coexists in the multi-site Single Channeling adapter."""
+    energies=cfg.energy_points;pixels=cfg.grid**2
+    methods=2 if cfg.propagation=='both' else 1
+    block=min(energies,MULTISITE_ENERGY_BATCH)
+    return dict(
+        multisite_energy_block=16*block*pixels*(2*group_count+12)/2**20,
+        provider_tensors=576*energies*group_count/2**20,
+        selected_group_maps=methods*64*len(cfg.selected_edges)*pixels*(group_count+2)/2**20,
+        group_detector_spectra=methods*256*energies*(group_count+2)/2**20)
+
 
 def projected_geometry_for(settings,crystal=None,fft_generators=None):
     if crystal is None:
@@ -101,6 +117,9 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             elastic_basis_mode=settings.basis_mode,
             fft_projection='Explicit exp(i dz PVP) FFT-convolution two-beam Galerkin' if settings.basis_mode=='two-beam' else 'Unrestricted FFT propagation; finite incoming/outgoing MDFF beam support')
     methods=2 if cfg.propagation=='both' else 1
+    multisite_terms=(multisite_memory_terms(cfg,len(ionization_sites.groups))
+                     if ionization_sites is not None and cfg.channeling_model=='single' else {})
+    additional_retained_working_mib+=sum(multisite_terms.values())
     info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20+additional_retained_working_mib
     info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+info['retained_results_working_mib']
     if cfg.channeling_model=='double':
@@ -121,6 +140,13 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
         dense=max(densities);info['dense_working_estimate_mib']=dense
         info['estimated_working_mib']=max(engines)+info['retained_results_working_mib']+info['fft_storage_working_mib']
         info['detector_workers']=dict(execution['effective_workers'])
+    if multisite_terms:
+        info['multisite_energy_batch_size']=min(cfg.energy_points,MULTISITE_ENERGY_BATCH)
+        info['multisite_additional_working_mib']=sum(multisite_terms.values())
+        info['memory_breakdown_mib']=dict(dense_kernel_bound=dense,
+            fft_storage=info['fft_storage_working_mib'],depth_coherence=info['coherence_working_mib'],
+            retained_results_and_coordinates=info['retained_results_working_mib']-sum(multisite_terms.values()),
+            **multisite_terms)
     info['memory_note']='Dense arrays plus FFT/depth storage, retained method results and coordinate/work arrays. Total process estimate adds current RSS, concurrent reservations, 25% allocation margin and 128 MiB reserve. Conservative estimate, not guaranteed peak RSS.'
     if check_memory:
         from .memory_budget import assess_memory
@@ -137,8 +163,14 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             execution['messages'].append('Automatic detector-worker count was limited by the current memory budget/RAM; numerical settings are unchanged.')
         info.update(admission)
         if admission.get('rejected'):
+            # A native-thread caution is not permission to exceed memory limits.
+            execution['messages']=[message for message in execution['messages']
+                                   if not message.startswith('Conservative execution allowed')]
             execution.update(blocked=True,status='Blocked',risk='RESOURCE REJECTED')
             execution['messages'].append(admission['rejection_reason'])
+            if info.get('memory_breakdown_mib'):
+                from .parallel_resources import memory_contributors
+                execution['messages'].append(memory_contributors(info))
     info['execution']=execution
     if check_memory and enforce_execution:require_supported(execution)
     return info

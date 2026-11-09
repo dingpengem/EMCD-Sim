@@ -394,7 +394,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             info=numerical_info(self.structure,s,cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             from .parallel_resources import preview_text
             self.memory_label.setText(preview_text(s,cfg,info))
-            if sites is not None:self.memory_label.setText(self.memory_label.text()+'\nInitial estimate; production admission includes retained multi-site arrays before propagation.')
+            if sites is not None and cfg.channeling_model=='double':self.memory_label.setText(self.memory_label.text()+'\nInitial estimate; production admission includes retained multi-site arrays before propagation.')
             if info.get('numerical_warnings'):self.memory_label.setText(self.memory_label.text()+'\n'+'\n'.join(info['numerical_warnings']))
             if sites is not None:
                 groups=', '.join(g.group_id+' ('+g.mdff_reference.model+')' for g in sites.groups)
