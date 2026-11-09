@@ -46,7 +46,7 @@ def controls(window, structure, method='bloch', channel='single'):
     target = '1 1 0' if set(structure.atoms.get_chemical_symbols()) == {'Cr'} else '2 0 0'
     with QtCore.QSignalBlocker(window.target):window.target.setText(target)
     for box,index in [(window.basis_mode,1),(window.propagation_box,0 if method=='bloch' else 1),
-                      (window.channeling_box,0 if channel=='single' else 1),(window.energy_scope,1),(window.worker_mode,1)]:
+                      (window.channeling_box,0 if channel=='single' else 1),(window.energy_scope,window.energy_scope.findData('edges')),(window.worker_mode,1)]:
         with QtCore.QSignalBlocker(box):box.setCurrentIndex(index)
     window.worker_count.setValue(1)
     from emcd_sim.elastic_providers import LOBATO,ADAPTIVE
@@ -127,7 +127,7 @@ def test_afm_gui_modes_match_programmatic_api(window,tmp_path,app,method,channel
 @pytest.mark.parametrize('kind',['Fe3O4','FeNi'])
 def test_group_weighting_windows_and_global_pair_reversal(window,tmp_path,app,kind):
     structure,sites = sites_for(tmp_path,kind);controls(window,structure);editor = bind(window,sites)
-    if kind == 'FeNi':window.energy_scope.setCurrentIndex(0)  # Independent full provider grids, not legacy energy sampling.
+    if kind == 'FeNi':window.energy_scope.setCurrentIndex(window.energy_scope.findData('native'))  # Independent provider grids.
     window.start_emcd();normal = finish(window,app)
     total = normal['spectra'];n = sum(g.multiplicity for g in sites.groups)
     for key in RAW:

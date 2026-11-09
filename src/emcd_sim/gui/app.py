@@ -454,7 +454,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         local=self.magnetization_mode=='local'
         self.axis.setEnabled(not local)
         if hasattr(self,'numerical_mode'):
-            self.spin['energy'].setEnabled(not local and self.numerical_mode.currentIndex()==1)
+            self.sync_sampling_controls()
         self.refresh_material_direction()
         if hasattr(self,'magnetization_mode_note'):
             self.magnetization_mode_note.setText('Global magnetization is locked while site-specific magnetization is enabled.'

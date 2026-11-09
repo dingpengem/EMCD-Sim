@@ -105,6 +105,12 @@ def load_elastic_project(path):
 
 def config_from_dict(value):
     d=dict(value);d['atomic']=NiLocalConfig(**d.get('atomic',{}))
+    # Saved Local full spectra used their declared/native grids and full-field
+    # evaluation. Preserve those explicit old choices; absent choices use the
+    # new uniform/selected defaults. Historical Global full means uniform.
+    d.setdefault('energy_sampling','edges' if d.get('energy_scope')=='edges' else
+                 'native' if d.get('model')=='multisite' and d.get('energy_scope')=='full' else 'uniform')
+    d.setdefault('angular_evaluation','all' if d.get('model')=='multisite' and d.get('angular_maps') else 'selected')
     if d.get('model')=='atomic' and 'provider_schema' not in d:
         # Old Atomic schemas may omit redundant selected-energy fields. Only
         # absent keys inherit their saved atomic peaks; explicit values survive.

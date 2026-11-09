@@ -14,27 +14,24 @@ from .single_channeling_tensor import _tensor_angular_maps
 from .cancellation import check_cancelled
 
 
-def run_multisite_with_coherence(model, sites, coherence, energy_ev, qx, qy, *,
-                                crystal_to_microscope, thickness_nm=30.,
-                                reverse_magnetization=False, cancelled=None):
-    """Return query-point intensities with energy as the leading array axis.
+def _group_intensity_pair(model,coherence,phase,energy,tensors,qx,qy,thickness_nm,cancelled):
+    """Existing bounded tensor contraction, also used by the GUI scheduler."""
+    raw=np.empty((2,len(energy))+qx.shape)
+    flat_raw=raw.reshape(2,len(energy),-1)
+    for state,tensor in enumerate(tensors):
+        for ie,loss in enumerate(energy):
+            for start in range(0,qx.size,64):
+                check_cancelled(cancelled)
+                sl=slice(start,start+64)
+                real_part,imag_part=_tensor_angular_maps(model,tensor[ie],loss,coherence,
+                    phase,qx.ravel()[sl],qy.ravel()[sl])
+                flat_raw[state,ie,sl]=thickness_nm*(real_part+imag_part)
+    if not np.isfinite(raw).all() or raw.min() < -1e-8*max(1.,float(np.max(abs(raw)))):
+        raise ValueError('Invalid tensor-derived site intensity: check conventions/phase')
+    return raw
 
-    ``model`` contains the complete oriented elastic crystal and ordered beam
-    basis. ``coherence`` is its depth-averaged incoming coherence (BW or MS),
-    including any projection leakage; its trace is never renormalized.
-    ``sites`` is the Stage 1 snapshot in the original crystal Cartesian frame.
-    The supplied proper rotation maps that frame to the microscope frame.
 
-    Every provider must cover every requested energy. Each group supplies its
-    explicit plus/minus pair; global reversal exchanges ALL pairs, leaving the
-    elastic state, detectors and local frames fixed. Real/imaginary tensor
-    decomposition is only an internal kernel operation, not magnetic parity.
-
-    Group arrays are means per group atom. Total arrays are means per selected
-    ionizing atom; weighted_sum arrays are the unnormalized multiplicity sums.
-    All retain declared source amplitudes and are relative, uncalibrated values.
-    Query points are evaluated in bounded batches, with cancellation checkpoints.
-    """
+def _validate_multisite_inputs(model,sites,coherence,energy_ev,qx,qy,crystal_to_microscope,thickness_nm,reverse_magnetization,cancelled):
     check_cancelled(cancelled)
     if not isinstance(sites, MultiSiteIonization):
         raise ValueError('An explicit MultiSiteIonization model is required')
@@ -71,24 +68,41 @@ def run_multisite_with_coherence(model, sites, coherence, energy_ev, qx, qy, *,
     if np.linalg.eigvalsh(coherence).min() < -1e-10 * max(1., np.linalg.norm(coherence)):
         raise ValueError('Coherence must be positive semidefinite')
 
+    return rotation,positions,energy,qx,qy,coherence
+
+
+def run_multisite_with_coherence(model, sites, coherence, energy_ev, qx, qy, *,
+                                crystal_to_microscope, thickness_nm=30.,
+                                reverse_magnetization=False, cancelled=None):
+    """Return query-point intensities with energy as the leading array axis.
+
+    ``model`` contains the complete oriented elastic crystal and ordered beam
+    basis. ``coherence`` is its depth-averaged incoming coherence (BW or MS),
+    including any projection leakage; its trace is never renormalized.
+    ``sites`` is the Stage 1 snapshot in the original crystal Cartesian frame.
+    The supplied proper rotation maps that frame to the microscope frame.
+
+    Every provider must cover every requested energy. Each group supplies its
+    explicit plus/minus pair; global reversal exchanges ALL pairs, leaving the
+    elastic state, detectors and local frames fixed. Real/imaginary tensor
+    decomposition is only an internal kernel operation, not magnetic parity.
+
+    Group arrays are means per group atom. Total arrays are means per selected
+    ionizing atom; weighted_sum arrays are the unnormalized multiplicity sums.
+    All retain declared source amplitudes and are relative, uncalibrated values.
+    Query points are evaluated in bounded batches, with cancellation checkpoints.
+    """
+    rotation,positions,energy,qx,qy,coherence=_validate_multisite_inputs(
+        model,sites,coherence,energy_ev,qx,qy,crystal_to_microscope,thickness_nm,reverse_magnetization,cancelled)
+
     prepared = prepare_site_group_providers(sites, energy, rotation)
     groups = {}
     weighted = np.zeros((2, len(energy)) + qx.shape)
     for group, tensors, source in prepared:
         phase = single_site_phase_matrix(model.elastic.beams.hkl, positions[list(group.indices)])
-        raw = np.empty_like(weighted)
-        flat_raw = raw.reshape(2, len(energy), -1)
-        for state, tensor in enumerate(tensors[::-1] if reverse_magnetization else tensors):
-            for ie, loss in enumerate(energy):
-                for start in range(0, qx.size, 64):
-                    check_cancelled(cancelled)
-                    sl = slice(start, start + 64)
-                    real_part, imag_part = _tensor_angular_maps(
-                        model, tensor.tensor_angstrom2_per_ev[ie], loss, coherence,
-                        phase, qx.ravel()[sl], qy.ravel()[sl])
-                    flat_raw[state, ie, sl] = thickness_nm * (real_part + imag_part)
-        if not np.isfinite(raw).all() or raw.min() < -1e-8 * max(1., float(np.max(abs(raw)))):
-            raise ValueError('Invalid tensor-derived site intensity: check conventions/phase')
+        pair=tensors[::-1] if reverse_magnetization else tensors
+        raw=_group_intensity_pair(model,coherence,phase,energy,
+            [tensor.tensor_angstrom2_per_ev for tensor in pair],qx,qy,thickness_nm,cancelled)
         weighted += group.multiplicity * raw
         groups[group.group_id] = dict(
             plus=raw[0], minus=raw[1], element=group.element,

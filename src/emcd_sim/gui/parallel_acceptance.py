@@ -47,7 +47,7 @@ def run(output,project=None,workers=None):
     else:report['parallel_request_blocked']=False
     if workers is None:w.worker_mode.setCurrentIndex(0)
     else:w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(workers)
-    w.energy_scope.setCurrentIndex(1);w.angular_maps.setChecked(False)
+    w.energy_scope.setCurrentIndex(w.energy_scope.findData('edges'));w.angular_maps.setChecked(False)
     report['run_preview']=w.memory_label.text();report['requested_workers']=workers
     assert (w.settings().beam_cutoff,w.settings().potential_cutoff)==run_cutoffs
     w.show();app.processEvents()

@@ -69,7 +69,9 @@ class ForwardSettings:
     memory_budget_mib: int=2048
     channeling_model: str='single'
     energy_scope: str='full'
+    energy_sampling: str='uniform'
     angular_maps: bool=True
+    angular_evaluation: str='selected'
     systematic_row: bool=False
     worker_mode: str='automatic'
     parallel_workers: int=1

@@ -131,7 +131,7 @@ def run(output,historical_project=None):
         w.set_values(dict(kv=200,tx=-1000*electron_wavelength_angstrom(200)/3.524,ty=15,
             thickness=1,beam=.9,potential=1.8,grid=9,depth=9,subpixels=16))
         w.propagation_box.setCurrentIndex(0);w.channeling_box.setCurrentIndex(0)
-        w.energy_scope.setCurrentIndex(1);w.angular_maps.setChecked(False);w.correction.setChecked(False)
+        w.energy_scope.setCurrentIndex(w.energy_scope.findData('edges'));w.angular_maps.setChecked(False);w.correction.setChecked(False)
         w.declaration.setChecked(True);w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(1)
         # Reconnect the bundled source, never an old project's external path.
         from .runtime import reference_source

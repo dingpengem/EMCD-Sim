@@ -94,7 +94,7 @@ class NumericalSettingsUI:
         self.shared_resources_group.setVisible(True)
         self.shared_resources_group.presentation_section.setVisible(True)
         for key in NUMERICAL_KEYS:self.spin[key].setEnabled(manual)
-        if getattr(self,'magnetization_mode','global') == 'local':self.spin['energy'].setEnabled(False)
+        self.sync_sampling_controls()
         self.memory_budget.setEnabled(True);self.angular_resolution.setEnabled(manual)
         self.numerical_details.setVisible(not manual)
         self.sync_solver_controls()
@@ -168,6 +168,9 @@ class NumericalSettingsUI:
 
     def restore_numerical_selection(self, metadata):
         saved=metadata.get('numerical_selection',{})
+        requested=saved.get('actual',{}).get('energy')
+        if requested is not None and self.energy_scope.currentData()=='uniform':
+            with QtCore.QSignalBlocker(self.spin['energy']):self.spin['energy'].setValue(requested)
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(0 if saved.get('mode')=='automatic' else 1)
         self._manual_numerics=saved.get('manual_overrides');self._numerical_cache=None
         # Loaded projects retain their explicit step, including legacy projects.

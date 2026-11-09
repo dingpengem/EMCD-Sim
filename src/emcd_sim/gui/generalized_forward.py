@@ -88,7 +88,8 @@ def material_reason(structure,cfg=None):
 
 def energy_grid(cfg,requested=None):
     from ..mdff_providers import prepare_provider
-    return prepare_provider(cfg).energy_grid(requested)
+    from .provider_preparation import provider_energy_grid
+    return provider_energy_grid(prepare_provider(cfg),cfg,requested)
 
 
 def tensors(cfg,energy,R):

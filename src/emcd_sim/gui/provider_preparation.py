@@ -28,6 +28,19 @@ def declared_material_reason(structure,cfg):
     return ''
 
 
+def sampling_mode(cfg):
+    return 'edges' if cfg.energy_scope=='edges' else cfg.energy_sampling
+
+
+def provider_energy_grid(provider,cfg,requested=None):
+    # Preserve the historical adapter and its validation. An explicitly chosen
+    # native XMCD grid is supplied through its existing requested-grid API.
+    if requested is None and not provider.declared and cfg.model=='xmcd' and sampling_mode(cfg)=='native':
+        from ..wien2k_xmcd import load_wien2k_xmcd
+        requested=np.unique(np.r_[load_wien2k_xmcd(cfg.source).energy_ev,[v for _,v in selected_samples(cfg)]])
+    return provider.energy_grid(requested)
+
+
 def declared_energy_grid(cfg,requested=None):
     source=source_for(cfg);lo,hi=source.energy_ev[[0,-1]]
     values=[v for _,v in selected_samples(cfg)]
@@ -35,7 +48,10 @@ def declared_energy_grid(cfg,requested=None):
     if not 9<=cfg.energy_points<=501 or not 9<=cfg.grid<=193 or cfg.grid%2!=1 or not 2<=cfg.depth<=1025 or not 4<=cfg.subpixels<=256:raise ValueError('Numerical sampling exceeds supported bounds')
     if not np.isfinite([cfg.halfwidth,cfg.radius,*np.ravel(cfg.centers),*cfg.window]).all() or min(cfg.halfwidth,cfg.radius)<=0:raise ValueError('Invalid detector/grid controls')
     if requested is None:
-        e=np.array(values) if cfg.energy_scope=='edges' else np.unique(np.r_[np.linspace(lo,hi,cfg.energy_points),values])
+        mode=sampling_mode(cfg)
+        if mode not in ('uniform','native','edges'):raise ValueError('Unknown energy sampling')
+        e=(np.array(values) if mode=='edges' else
+           np.unique(np.r_[source.energy_ev if mode=='native' else np.linspace(lo,hi,cfg.energy_points),values]))
     else:e=np.asarray(requested,float)
     if e.ndim!=1 or not len(e) or not np.isfinite(e).all() or np.any(np.diff(e)<=0) or e[0]<lo or e[-1]>hi:raise ValueError('No imported MDFF energy extrapolation')
     if not all(np.any(np.isclose(e,v,rtol=0,atol=1e-9)) for v in values):raise ValueError('Requested grid must include declared selected energies')

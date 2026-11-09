@@ -311,8 +311,9 @@ class ProjectWorkspace(ProjectSession):
             self._accepted_global_mdff=c
             for widget,index in ((self.model_box,('xmcd','atomic','imported').index(c.model)),(self.propagation_box,['bloch','fft-multislice','both'].index(c.propagation))):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
-            for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),(self.energy_scope,('full','edges').index(c.energy_scope))):
+            for widget,index in ((self.channeling_box,('single','double').index(c.channeling_model)),):
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
+            self.restore_sampling_controls(c)
             with QtCore.QSignalBlocker(self.basis_mode):self.basis_mode.setCurrentIndex(self.basis_mode.findData(s.basis_mode))
             provider_index=self.elastic_provider_box.findData(s.elastic_provider)
             if provider_index<0:raise ValueError('Saved elastic provider is unavailable; inputs cannot be restored')

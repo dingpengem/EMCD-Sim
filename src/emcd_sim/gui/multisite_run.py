@@ -15,7 +15,7 @@ def forward_settings(window):
     cfg = MultiSiteForwardSettings(
         fft_generators=window.saved_fft_generators(),worker_mode=('automatic','manual')[window.worker_mode.currentIndex()],
         parallel_workers=window.worker_count.value(),channeling_model=('single','double')[window.channeling_box.currentIndex()],
-        energy_scope=('full','edges')[window.energy_scope.currentIndex()],angular_maps=window.angular_maps.isChecked(),
+        **window.sampling_fields(),
         systematic_row=window.row_projection.isChecked(),memory_budget_mib=window.memory_budget.currentData(),
         propagation=('bloch','fft-multislice','both')[window.propagation_box.currentIndex()],
         fft_grid=window.spin['fft_grid'].value(),slice_step=window.spin['slice_step'].value(),
@@ -44,7 +44,10 @@ def applied_inputs(window, cfg):
     from ..mdff_providers import load_site_group_provider
     windows = {};selections = []
     requested=getattr(editor,'requested_energy_ev',None)
-    if requested is not None and getattr(editor,'_restored_energy_scope',cfg.energy_scope)!=cfg.energy_scope:requested=None
+    from .provider_preparation import sampling_mode
+    mode=sampling_mode(cfg)
+    if requested is not None and (getattr(editor,'_restored_energy_sampling',mode)!=mode or
+            mode=='uniform' and getattr(editor,'_restored_uniform_points',cfg.energy_points)!=cfg.energy_points):requested=None
     for group in sites.groups:
         if group.group_id in getattr(editor,'omitted_site_groups',set()):continue
         source = load_site_group_provider(group)
@@ -52,13 +55,20 @@ def applied_inputs(window, cfg):
         bounds = declared.bounds_ev if declared is not None else tuple(source.energy_ev[[0,-1]])
         selected = [(key,float(value)) for key,value in source.metadata['selected_ev'].items() if bounds[0]<=value<=bounds[1]]
         if requested is not None:selected=[(key,value) for key,value in selected if np.any(np.isclose(requested,value,rtol=0,atol=1e-9))]
-        if cfg.energy_scope == 'edges':
+        if mode == 'edges':
             if not selected:raise ValueError('No selected core-edge energies in the modeled window for '+group.group_id+'; use Full spectrum or edit its window')
             samples = [value for _,value in selected]
-        else:
-            samples = (np.asarray(requested)[(np.asarray(requested)>=bounds[0])&(np.asarray(requested)<=bounds[1])] if requested is not None else
-                       declared.energy_ev if declared is not None and declared.energy_ev is not None
+        elif requested is not None:
+            samples=np.asarray(requested)[(np.asarray(requested)>=bounds[0])&(np.asarray(requested)<=bounds[1])]
+        elif mode=='uniform':
+            samples=np.linspace(*bounds,cfg.energy_points)
+        elif mode=='native':
+            samples = (declared.energy_ev if getattr(editor,'_restored_energy_sampling',None)=='native'
+                       and not getattr(editor,'_sampling_user_override',False)
+                       and declared is not None and declared.energy_ev is not None
                        else source.energy_ev[(source.energy_ev>=bounds[0]) & (source.energy_ev<=bounds[1])])
+        else:raise ValueError('Unknown energy sampling')
+        if mode!='edges':
             # Exact source selections are needed by the existing angular-map controls.
             samples = np.r_[samples,[value for _,value in selected]]
         samples = tuple(np.unique(samples))

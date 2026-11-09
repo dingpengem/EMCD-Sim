@@ -149,7 +149,7 @@ def run(output, orientation='017'):
                 w.set_values(dict(beam=3.2, potential=3.8, fft_grid=32))
             w.zone.setText(' '.join(orientation)); w.target.setText(' '.join(map(str, _TARGETS[orientation])))
             w.apply_orientation(); w.align(); w.restore_detectors()
-            w.propagation_box.setCurrentIndex(2); w.energy_scope.setCurrentIndex(1)
+            w.propagation_box.setCurrentIndex(2); w.energy_scope.setCurrentIndex(w.energy_scope.findData('edges'))
             w.declaration.setChecked(True)
             w.refresh()
             report['smoke_profile'] = dict(settings=asdict(w.settings()), config=asdict(w.forward_settings()),

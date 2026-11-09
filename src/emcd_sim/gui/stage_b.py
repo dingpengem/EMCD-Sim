@@ -38,6 +38,7 @@ class EMCDWorker(QtCore.QThread):
         return requested
     def run(self):
         try:
+            calculation_start=time.perf_counter()
             logging.getLogger('emcd_sim.gui').info('Calculate method=%s model=%s sha256=%s', self.config.propagation, self.config.model, self.config.source_sha256)
             logger=logging.getLogger('emcd_sim.gui')
             configuration=asdict(self.config);configuration.pop('source',None)
@@ -59,6 +60,10 @@ class EMCDWorker(QtCore.QThread):
                     r['metadata']['ionization_participation']=dict(
                         selected_atom_count=sum(g.multiplicity for g in self.sites.groups),
                         excluded_structural_groups=[dict(group_id=n,element=e,indices=indices,scope='excluded, not calculated') for n,e,indices in self.input_signature[3]])
+            elapsed=time.perf_counter()-calculation_start
+            r['metadata']['calculation_seconds']=elapsed
+            for entry in r.get('methods',{}).values():entry['metadata']['calculation_seconds']=elapsed
+            logger.info('Calculation elapsed_seconds=%.6f (excludes GUI display and project saving)',elapsed)
             if not self.cancelled():self.result.emit(r)
         except Cancelled:pass
         except Exception as exc:
@@ -184,10 +189,16 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.spin['grid'].valueChanged.connect(self.sync_angular_resolution)
         self.number('halfwidth','Map halfwidth (Å⁻¹)',1,.1,10,self.emcd_stale)
         self.spin['halfwidth'].setToolTip('Shared reciprocal q extent for angular maps and detector integration; must contain the physical apertures. Not an elastic-potential cutoff.')
-        self.energy_scope=QtWidgets.QComboBox();self.energy_scope.addItems(['Full native energy-resolved spectrum','Selected declared edge samples only (not full EELS)']);self.form.addRow('Spectral coverage',self.energy_scope);self.energy_scope.currentIndexChanged.connect(self.emcd_stale)
-        self.energy_scope.setToolTip('Full spectra evaluate every displayed energy. Double Channeling angular maps can be expensive. Selected samples are displayed as points, never a fabricated white-line shape. Settings are not reduced automatically.')
-        self.angular_maps=QtWidgets.QCheckBox('Calculate angular maps');self.angular_maps.setChecked(True);self.form.addRow(self.angular_maps);self.angular_maps.toggled.connect(self.emcd_stale)
+        self.uniform_points_label=self.form.labelForField(self.spin['energy'])
+        self.energy_scope=QtWidgets.QComboBox()
+        for label,key in [('Entire energy range — uniform sampling','uniform'),('All native source energies','native'),('Selected energies only','edges')]:self.energy_scope.addItem(label,key)
+        self.form.addRow('Energy sampling',self.energy_scope);self.energy_scope.currentIndexChanged.connect(self.sampling_changed)
+        self.energy_scope.setToolTip('Uniform: requested points across each modeled source range, with exact selected energies inserted. Native: retain the source samples. Selected: only declared energies. No extrapolation; independent source windows retain their bounds.')
+        self.energy_count_note=QtWidgets.QLabel('Actual energy count is available after MDFF acceptance.');self.energy_count_note.setWordWrap(True);self.form.addRow(self.energy_count_note)
+        self.angular_maps=QtWidgets.QCheckBox('Full angular maps at selected energies');self.angular_maps.setChecked(True);self.form.addRow(self.angular_maps);self.angular_maps.toggled.connect(self.emcd_stale)
         self.angular_maps.setToolTip('Full-field angular maps are evaluated at selected L3/L2 energies. Other spectral energies use detector-only sampling for faster EELS computation. When off, all energies use nonzero fractional-detector support on the unchanged grid. No grid, precision or physical parameter is reduced.')
+        self.full_angular_field=QtWidgets.QCheckBox('Full angular field at every energy (advanced)');self.form.addRow(self.full_angular_field);self.full_angular_field.toggled.connect(self.emcd_stale)
+        self.full_angular_field.setToolTip('Explicit opt-in to evaluate every angular pixel at every energy. Only selected maps are retained. Detector-only evaluation elsewhere gives the same detector integrals.')
         saved_form=self.form;group=QtWidgets.QGroupBox('Advanced post-edge diagnostics');group.setCheckable(True);group.setChecked(False);body=QtWidgets.QWidget();outer=QtWidgets.QVBoxLayout(group);outer.addWidget(body);self.form.addRow(group);body.hide();group.toggled.connect(body.setVisible);self.form=QtWidgets.QFormLayout(body)
         self.correction=QtWidgets.QCheckBox('Enable post-edge A/B correction');self.correction.setChecked(False);self.form.addRow(self.correction)
         self.correction.setToolTip('Derived A/B post-edge scaling and residual diagnostics only; does not change the propagation, MDFF or original raw spectra. Corrected contrast is not intrinsically magnetic.')
@@ -295,6 +306,34 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             self._post_edge_disabled_on_restore=True
             self.correction_notice.show()
 
+    def sampling_fields(self):
+        mode=self.energy_scope.currentData()
+        return dict(energy_scope='edges' if mode=='edges' else 'full',energy_sampling=mode,
+            energy_points=self.spin['energy'].value(),angular_maps=self.angular_maps.isChecked(),
+            angular_evaluation='all' if self.full_angular_field.isChecked() else 'selected')
+
+    def sync_sampling_controls(self):
+        if not hasattr(self,'full_angular_field'):return
+        uniform=self.energy_scope.currentData()=='uniform'
+        self.spin['energy'].setVisible(uniform);self.uniform_points_label.setVisible(uniform)
+        self.spin['energy'].setEnabled(uniform and (not hasattr(self,'numerical_mode') or self.numerical_mode.currentIndex()==1))
+        self.full_angular_field.setEnabled(self.angular_maps.isChecked())
+
+    def sampling_changed(self):
+        viewer=getattr(self,'structure_viewer',None)
+        if viewer is not None and not getattr(self,'_session_restoring',False):
+            viewer.editor.requested_energy_ev=None
+            viewer.editor._sampling_user_override=True
+        self.sync_sampling_controls();self.emcd_stale()
+
+    def restore_sampling_controls(self,cfg):
+        from .provider_preparation import sampling_mode
+        for widget,value in ((self.energy_scope,self.energy_scope.findData(sampling_mode(cfg))),):
+            with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(value)
+        for widget,value in ((self.angular_maps,cfg.angular_maps),(self.full_angular_field,cfg.angular_evaluation=='all')):
+            with QtCore.QSignalBlocker(widget):widget.setChecked(value)
+        self.sync_sampling_controls()
+
     def forward_settings(self,prepare=True):
         if getattr(self,'magnetization_mode','global')=='local':
             from .multisite_run import forward_settings
@@ -308,10 +347,10 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if cfg is None:raise ValueError('Configure and Apply Global MDFF through Material → 3D Structure Viewer → Site Groups')
         shared=dict(fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],
             parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],
-            energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),
+            **self.sampling_fields(),
             systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),
             propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),
-            slice_step=self.spin['slice_step'].value(),energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),
+            slice_step=self.spin['slice_step'].value(),grid=self.spin['grid'].value(),
             depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=False,
             window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()),magnetization=self.material_magnetization)
@@ -339,10 +378,10 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if not self.source_info:raise ValueError('Five-column XMCD: select a readable valid source file. '+self.source_status.text())
         if mode=='xmcd' and not self.declaration.isChecked():
             raise ValueError('Source conventions: confirm RP−LP about Material +M and the displayed L3/L2 assignments beside the source controls; parsing cannot establish these choices')
-        cfg=ForwardSettings(fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],energy_scope=('full','edges')[self.energy_scope.currentIndex()],angular_maps=self.angular_maps.isChecked(),systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+        cfg=ForwardSettings(**self.sampling_fields(),fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
-            energy_points=self.spin['energy'].value(),grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
+            grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=False,window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
         if mode=='atomic' and self.atomic_editor.historical_config is not None:
             saved=self.atomic_editor.historical_config
@@ -387,11 +426,15 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 cfg,sites,windows,reverse,signature=applied_inputs(self,cfg)
                 reason=self.structure.elastic_reason_for(s.elastic_provider)
             else:
-                energy_grid(cfg);reason=material_reason(self.structure,cfg)
+                actual_energy=energy_grid(cfg);reason=material_reason(self.structure,cfg)
+            count=cfg.energy_points if sites is not None else len(actual_energy)
+            mode=self.energy_scope.currentData()
+            self.energy_count_note.setText((f'Requested uniform points: {self.spin["energy"].value()}; actual: {count}, including exact selected energies.'
+                if mode=='uniform' else f'Actual calculation energies: {count} ({"source samples" if mode=="native" else "selected energies only"}).'))
             if cfg.model=='xmcd' and not cfg.axis_declared:raise ValueError('Declare XMCD conventions before Run EMCD')
             if cfg.model=='atomic' and not hasattr(cfg,'provider_schema') and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
             from .propagation import numerical_info
-            info=numerical_info(self.structure,s,cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
+            info=numerical_info(self.structure,s,replace(cfg,energy_points=count),enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             from .parallel_resources import preview_text
             self.memory_label.setText(preview_text(s,cfg,info))
             if sites is not None and cfg.channeling_model=='double':self.memory_label.setText(self.memory_label.text()+'\nInitial estimate; production admission includes retained multi-site arrays before propagation.')
@@ -517,6 +560,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if not self.worker.isInterruptionRequested():self.preview_failed(message)
     def emcd_completed(self,result):
         if self.worker.isInterruptionRequested():return
+        display_start=time.perf_counter()
         selection=getattr(self,'_run_numerical_selection',None)
         if selection:
             result['metadata']['numerical_selection']=selection
@@ -529,6 +573,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         for i,view in ((5,self.diffraction_view),(6,self.overview_view)):
             self.tabs.setTabEnabled(i,i==5 or len(result.get('methods',{}))==2);view.set_result(result)
         self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale();self.emcd_ready.emit()
+        logging.getLogger('emcd_sim.gui').info('Result display setup elapsed_seconds=%.6f (canvas painting may be deferred)',time.perf_counter()-display_start)
     def emcd_finished(self):
         self.finished();self.emcd_stale()
         if self.worker.isInterruptionRequested():

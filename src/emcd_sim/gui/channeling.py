@@ -127,7 +127,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
     diagnostics=[]
     for ie,e in enumerate(energy):
         if cancelled():raise Cancelled()
-        full=cfg.angular_maps and ie in selected
+        full=cfg.angular_maps and (ie in selected or cfg.angular_evaluation=='all')
         support,points,query=supports[full]
         diagnostic=dict(energy_ev=float(e),full_field=full,required_pixels=len(points),
             evaluated_pixels=0,query_pixels=0,response_batches=0,outgoing_directions=0,
@@ -214,4 +214,5 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             energy_checkpoint(float(e),compact)
     if cancelled():raise Cancelled()
     return dict(spectra=spectra,maps=maps,qx=qx,qy=qy,weights=weights,diagnostics=diagnostics,
-        angular_evaluation_policy=EVALUATION_POLICY,incoming_preparation_seconds=incoming_seconds)
+        angular_evaluation_policy='full_grid_all_energies' if cfg.angular_maps and cfg.angular_evaluation=='all' else EVALUATION_POLICY,
+        incoming_preparation_seconds=incoming_seconds)

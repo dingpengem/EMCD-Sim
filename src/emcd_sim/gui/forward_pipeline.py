@@ -29,7 +29,8 @@ def calculate_prepared(structure,settings,cfg,progress,cancelled,*,energy_ev=Non
     provider=prepare_provider(cfg)
     reason=provider.material_reason(structure)
     if reason:raise ValueError(reason)
-    energy=provider.energy_grid(energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
+    from .provider_preparation import provider_energy_grid
+    energy=provider_energy_grid(provider,cfg,energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
     if settings.target not in hkl or settings.target==(0,0,0):raise ValueError('Select a nonzero target in the finite diffraction basis')
     memory=64*cfg.grid**2*len(hkl)**2/2**20
     declared=provider.declared
@@ -148,7 +149,32 @@ def _multisite_detector_data(raw,cfg,energy,qx,qy,weights,support):
     return dict(spectra=spectra,maps=maps,qx=qx,qy=qy,weights=weights)
 
 
-def _multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,qy,weights,support,
+def _multisite_single_block(model,sites,coherence,plan,selection,points,prepared,rotation,thickness_nm,reverse,cancelled):
+    """One bounded support/energy cohort using already validated group inputs."""
+    from ..multisite_spectrum import _empty_group_intensities,_spectrum_result
+    from ..multisite_single_channeling import _group_intensity_pair
+    energy=plan['energy_ev'][selection]
+    block_plan=dict(plan,energy_ev=energy)
+    groups,weighted=_empty_group_intensities(sites,block_plan,points[0].shape)
+    calls=0
+    for group in sites.groups:
+        if group.group_id not in prepared:continue
+        phase,pair,index=prepared[group.group_id]
+        active=index[selection]>=0
+        if not active.any():continue
+        tensors=[tensor[index[selection][active]] for tensor in pair]
+        raw=_group_intensity_pair(model,coherence,phase,energy[active],tensors[::-1] if reverse else tensors,
+                                  *points,thickness_nm,cancelled)
+        for state,label in enumerate(('plus','minus')):
+            groups[group.group_id][label][active]=raw[state]
+            weighted[state,active]+=group.multiplicity*raw[state]
+        calls+=2*int(active.sum())*((len(points[0])+63)//64)
+    result=_spectrum_result(sites,plan,groups,weighted,rotation,thickness_nm,reverse)
+    result['kernel_calls']=calls
+    return result
+
+
+def _multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,qy,weights,detector_support,
                                     rotation,thickness_nm,reverse_magnetization,stage,cancelled):
     """Reduce bounded raw blocks; retain all detector samples and selected maps.
 
@@ -157,9 +183,37 @@ def _multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,
     not final results, and must not survive into the next block.
     """
     from .propagation import MULTISITE_ENERGY_BATCH
-    from ..multisite_spectrum import contract_multisite_spectrum
+    from ..mdff_providers import prepare_site_group_providers
+    from ..multisite import MultiSiteIonization
+    from ..ionization_sites import single_site_phase_matrix
     energy=plan['energy_ev']
+    from ..multisite_single_channeling import _validate_multisite_inputs
+    rotation,positions,_,_,_,coherence=_validate_multisite_inputs(model,sites,coherence,energy,qx,qy,
+        rotation,thickness_nm,reverse_magnetization,cancelled)
+    # The kernel only reads these elastic inputs. Freeze this request's basis
+    # locally instead of rebuilding reciprocal vectors for every pixel batch.
+    # qz and all Coulomb factors remain energy-dependent inside the kernel.
+    from types import SimpleNamespace
+    kernel_model=SimpleNamespace(elastic=SimpleNamespace(microscope=model.elastic.microscope,
+        reciprocal_vectors_xy=model.elastic.reciprocal_vectors_xy))
     result=dict(total={},weighted_sum={},groups={group.group_id:{} for group in sites.groups})
+    start_preparation=perf_counter();prepared={}
+    for group in sites.groups:
+        active=plan['active'][group.group_id]
+        if not active.any():continue
+        _,pair,_=prepare_site_group_providers(MultiSiteIonization(structure,[group]),energy[active],rotation)[0]
+        phase=single_site_phase_matrix(model.elastic.beams.hkl,positions[list(group.indices)])
+        index=np.full(len(energy),-1,dtype=int);index[active]=np.arange(int(active.sum()))
+        prepared[group.group_id]=(phase,[t.tensor_angstrom2_per_ev for t in pair],index)
+    result['preparation_seconds']=perf_counter()-start_preparation
+    full=np.zeros(len(energy),bool)
+    if cfg.angular_maps:
+        if cfg.angular_evaluation=='all':full[:]=True
+        else:
+            for _,loss in cfg.selected_edges:full|=np.isclose(energy,loss,rtol=0,atol=1e-9)
+    supports={False:detector_support,True:np.ones(qx.size,bool)}
+    points={key:(qx.ravel()[mask],qy.ravel()[mask]) for key,mask in supports.items()}
+    diagnostics=[];contraction_seconds=0.;reduction_seconds=0.
 
     def integrate(target,part,block_cfg,block_energy,selection):
         reduced=_multisite_detector_data(part,block_cfg,block_energy,qx,qy,weights,support)
@@ -171,24 +225,35 @@ def _multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,
 
     for start in range(0,len(energy),MULTISITE_ENERGY_BATCH):
         stage(f'Single Channeling energies {start+1}–{min(start+MULTISITE_ENERGY_BATCH,len(energy))}/{len(energy)}')
-        selection=slice(start,start+MULTISITE_ENERGY_BATCH)
-        block_energy=energy[selection]
-        block_plan=dict(plan,energy_ev=block_energy,
-                        active={key:mask[selection] for key,mask in plan['active'].items()})
-        block_cfg=replace(cfg,selected_edges=tuple((label,loss) for label,loss in cfg.selected_edges
-            if np.any(np.isclose(block_energy,loss,rtol=0,atol=1e-9))))
-        raw=contract_multisite_spectrum(model,structure,sites,coherence,block_plan,
-            qx.ravel()[support],qy.ravel()[support],crystal_to_microscope=rotation,
-            thickness_nm=thickness_nm,reverse_magnetization=reverse_magnetization,cancelled=cancelled)
-        integrate(result['total'],raw['total'],block_cfg,block_energy,selection)
-        integrate(result['weighted_sum'],raw['weighted_sum'],block_cfg,block_energy,selection)
-        for group in sites.groups:
-            entry=result['groups'][group.group_id]
-            integrate(entry,raw['groups'][group.group_id],block_cfg,block_energy,selection)
-            entry['metadata']={key:value for key,value in raw['groups'][group.group_id].items()
-                               if key not in ('plus','minus')}
-        result['metadata']=raw['metadata']
-        del raw
+        candidates=np.arange(start,min(start+MULTISITE_ENERGY_BATCH,len(energy)))
+        for is_full in (False,True):
+            selection=candidates[full[candidates]==is_full]
+            if not len(selection):continue
+            block_energy=energy[selection];support=supports[is_full]
+            block_cfg=replace(cfg,angular_maps=cfg.angular_maps and is_full,
+                selected_edges=tuple((label,loss) for label,loss in cfg.selected_edges
+                    if np.any(np.isclose(block_energy,loss,rtol=0,atol=1e-9))))
+            before=perf_counter()
+            raw=_multisite_single_block(kernel_model,sites,coherence,plan,selection,points[is_full],prepared,
+                rotation,thickness_nm,reverse_magnetization,cancelled)
+            elapsed=perf_counter()-before;contraction_seconds+=elapsed
+            diagnostics.append(dict(energy_indices=selection.tolist(),energy_count=len(selection),full_field=is_full,
+                required_pixels=int(support.sum()),evaluated_pixels=int(support.sum())*len(selection),
+                kernel_calls=raw['kernel_calls'],mdff_contraction_seconds=elapsed))
+            before=perf_counter()
+            integrate(result['total'],raw['total'],block_cfg,block_energy,selection)
+            integrate(result['weighted_sum'],raw['weighted_sum'],block_cfg,block_energy,selection)
+            for group in sites.groups:
+                entry=result['groups'][group.group_id]
+                integrate(entry,raw['groups'][group.group_id],block_cfg,block_energy,selection)
+                entry['metadata']={key:value for key,value in raw['groups'][group.group_id].items()
+                                   if key not in ('plus','minus')}
+            reduction_seconds+=perf_counter()-before
+            result['metadata']=raw['metadata']
+            del raw
+    result['diagnostics']=diagnostics
+    result['timings']=dict(group_preparation_seconds=result.pop('preparation_seconds'),
+        mdff_contraction_seconds=contraction_seconds,detector_reduction_seconds=reduction_seconds)
     return result
 
 
@@ -226,6 +291,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     if not isinstance(cfg,MultiSiteForwardSettings) or cfg.model!='multisite' or cfg.channeling_model not in ('single','double'):
         raise ValueError('MultiSiteForwardSettings with Single or Double Channeling required')
     double=cfg.channeling_model=='double'
+    if cfg.angular_evaluation not in ('selected','all'):raise ValueError('Unknown angular evaluation policy')
     if double:
         if cfg.propagation not in ('bloch','fft-multislice'):
             raise ValueError('Multi-site Double Channeling requires an individual Bloch-wave or FFT Multislice run')
@@ -321,10 +387,11 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                     prepared_grid=grid,prepared_incoming=fields,reverse_magnetization=reverse_magnetization,cancelled=cancelled,
                     execution_workers=info['execution']['effective_workers'][method])
             else:
-                raw=_multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,qy,weights,support,
+                raw=_multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,qy,weights,detector_support,
                     rotation,settings.thickness,reverse_magnetization,stage,cancelled)
             data=(_multisite_detector_data(raw['total'],cfg,energy,qx,qy,weights,support) if double else raw['total'])
-            data.update(angular_evaluation_policy='full_grid_all_energies' if cfg.angular_maps else 'fractional_aperture_support',diagnostics=raw.get('diagnostics',[]))
+            angular_policy=('full_grid_all_energies' if cfg.angular_evaluation=='all' or double else 'full_grid_selected_energies') if cfg.angular_maps else 'fractional_aperture_support'
+            data.update(angular_evaluation_policy=angular_policy,diagnostics=raw.get('diagnostics',[]))
             result=_contract(structure,settings,cfg,model,rotation,hkl,g,info['dense_working_estimate_mib'],z,psi,
                              coherence,energy,(),stage,cancelled,prepared=data)
             result.update(method=method,groups={},weighted_sum=(
@@ -344,11 +411,12 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                 numerics=info,execution=info['execution'],memory_admission=admission,
                 solver=method+' '+cfg.channeling_model.title()+' Channeling; independent localized site-group intensities',
                 incoming_propagation_seconds=incoming_seconds,
+                single_channeling_timings=raw.get('timings'),
                 intensity_convention=raw['metadata']['intensity_convention'],
                 spectral_coverage=plan['metadata']['coverage_mode'],
                 spectrum_kind='modeled_partial_core_edge_spectrum',
                 reversal='Explicit provider pairs exchanged together; fixed elastic state, detectors and frames',
-                detector_evaluation='Full grid at all energies' if cfg.angular_maps else 'Nonzero fractional-aperture support',
+                detector_evaluation=angular_policy,
                 limitations='Projected neutral IAM; finite ZOLZ; '+(method+' Double Channeling' if double else 'Single Channeling')+'; modeled partial core-edge spectrum; omitted channels/tails are not physical zeros; no absolute or cross-element calibration')
             result['weighted_sum']['metadata']=dict(normalization='sum_over_selected_atoms',spectrum_kind='modeled_partial_core_edge_spectrum')
             if method=='fft-multislice':meta['fft']=fft_info['summary']

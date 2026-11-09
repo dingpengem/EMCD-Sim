@@ -28,8 +28,8 @@ def capture_configuration(w):
     from .emcd_forward import ForwardSettings
     from .forward_pipeline import MultiSiteForwardSettings
     common=dict(propagation=('bloch','fft-multislice','both')[w.propagation_box.currentIndex()],
-        channeling_model=('single','double')[w.channeling_box.currentIndex()],energy_scope=('full','edges')[w.energy_scope.currentIndex()],
-        centers=tuple(tuple(p) for p in w.detectors),angular_maps=w.angular_maps.isChecked(),systematic_row=w.row_projection.isChecked(),
+        channeling_model=('single','double')[w.channeling_box.currentIndex()],**w.sampling_fields(),
+        centers=tuple(tuple(p) for p in w.detectors),systematic_row=w.row_projection.isChecked(),
         correction=False,memory_budget_mib=w.memory_budget.currentData(),
         worker_mode=('automatic','manual')[w.worker_mode.currentIndex()],parallel_workers=w.worker_count.value(),fft_generators=w.saved_fft_generators())
     for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step'):common[key]=w.spin[key].value()
@@ -121,13 +121,14 @@ def restore_configuration(w,state):
             for widget,text in ((w.zone,' '.join(map(str,s.zone))),(w.target,' '.join(map(str,s.target)))):
                 with QtCore.QSignalBlocker(widget):widget.setText(text)
             for widget,value in ((w.propagation_box,('bloch','fft-multislice','both').index(c.propagation)),
-                (w.channeling_box,('single','double').index(c.channeling_model)),(w.energy_scope,('full','edges').index(c.energy_scope)),
+                (w.channeling_box,('single','double').index(c.channeling_model)),
                 (w.elastic_provider_box,w.elastic_provider_box.findData(s.elastic_provider)),(w.basis_mode,w.basis_mode.findData(s.basis_mode)),
                 (w.memory_budget,w.memory_budget.findData(c.memory_budget_mib)),(w.worker_mode,0 if c.worker_mode=='automatic' else 1)):
                 if value<0:raise ValueError('Saved numerical/provider setting is unavailable')
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(value)
             values=dict(kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,tx=s.tilt[0],ty=s.tilt[1])
-            values.update({key:getattr(c,key) for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step')})
+            values.update({key:getattr(c,key) for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step')},energy=c.energy_points)
+            w.restore_sampling_controls(c)
             w.set_values(values);w.detectors=np.asarray(c.centers);w.sync_detectors();w.sync_za()
             for widget,value in ((w.angular_maps,c.angular_maps),(w.row_projection,c.systematic_row)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(value)
@@ -155,7 +156,10 @@ def restore_configuration(w,state):
         editor.restore_rows(rows)
         editor.energy_windows=dict(state.get('energy_windows') or {})
         editor.omitted_site_groups=({r[0] for r in rows}-set(editor.energy_windows)) if state.get('energy_windows') is not None else set()
+        from .provider_preparation import sampling_mode
         editor.requested_energy_ev=state.get('energy_ev');editor._restored_energy_scope=c.energy_scope
+        editor._restored_energy_sampling=sampling_mode(c);editor._restored_uniform_points=c.energy_points
+        editor._sampling_user_override=False
         editor.reverse_magnetization=editor._accepted_reversal=state.get('reverse_magnetization',False)
         editor.preview_site_groups=editor.accepted_site_groups=model;editor._accepted_rows=tuple(rows)
         editor.mode.setCurrentIndex(1 if state['magnetization_mode']=='local' else 0)
@@ -311,6 +315,9 @@ class ProjectSession:
         self._session_restoring=True
         try:
             self._reset_project_inputs();self.set_magnetization_mode('global')
+            from .emcd_forward import ForwardSettings
+            self.restore_sampling_controls(ForwardSettings())
+            self.spin['energy'].setValue(241)
             if getattr(self,'structure_viewer',None):self.structure_viewer.editor.load_groups(None)
             self.browser.registry.records=[];self.browser.cache={};self.browser.refresh()
             self.active_project_path=None;self.project_dirty=False;self._configuration_sources={}

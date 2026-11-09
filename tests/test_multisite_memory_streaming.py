@@ -22,16 +22,17 @@ def test_blocks_release_raw_arrays_and_match_unbatched_windows(tmp_path,monkeypa
                  down=multisite_spectrum.ModeledEdgeWindow((714.,723.)))
     cfg=configuration(angular_maps=angular_maps,selected_edges=(('first',710.),('middle',716.),('last',723.)))
     original=multisite_spectrum.contract_multisite_spectrum
+    original_block=forward._multisite_single_block
     previous=[];sizes=[]
 
     def bounded(*args,**kwargs):
         assert all(ref() is None for ref in previous), 'Previous raw block is still resident'
-        block=args[4]['energy_ev'];sizes.append(len(block))
-        raw=original(*args,**kwargs)
+        sizes.append(len(args[4]))
+        raw=original_block(*args,**kwargs)
         previous[:]=[weakref.ref(raw['total']['plus']),weakref.ref(raw['groups']['up']['plus'])]
         return raw
 
-    monkeypatch.setattr(multisite_spectrum,'contract_multisite_spectrum',bounded)
+    monkeypatch.setattr(forward,'_multisite_single_block',bounded)
     result=forward.calculate_multisite(structure,settings,sites,cfg,energy_ev=energy,
         energy_windows=windows,reverse_magnetization=True)
     assert len(sizes)>1 and max(sizes)<=propagation.MULTISITE_ENERGY_BATCH

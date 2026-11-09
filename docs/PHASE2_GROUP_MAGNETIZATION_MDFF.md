@@ -134,6 +134,35 @@ transformed numerical tensors and a new declaration, or an explicitly declared
 local source with the new full frame. This is a proposed input operation, not
 new scattering physics or material calibration.
 
+## Sampling in the current development workflow
+
+After CIF import, explicit Local M/MDFF configuration, Done and Viewer Apply and
+Close, use **Shared Calculation Settings → Inelastic and Angular Sampling**.
+Energy sampling and angular output are independent:
+
+- **Entire energy range — uniform sampling** is the new-project default: 241
+  requested points across each declared modeled source range, with selected
+  energies inserted exactly. For the Ni example this gives 243 actual samples.
+- **All native source energies** retains source samples (4,329 for the supplied
+  Ni XMCD file). The uniform-count field is hidden; the actual count is shown.
+- **Selected energies only** evaluates the declared energies, without inventing
+  a continuous spectrum or unsupported tails.
+- **Full angular maps at selected energies** is enabled by default. Single
+  Channeling evaluates the complete angular grid at those energies and exactly
+  the nonzero fractional-detector support elsewhere. Turning maps off retains
+  detector spectra. **Full angular field at every energy (advanced)** explicitly
+  restores the broader evaluation; only selected maps are retained.
+
+Single Channeling shares incoming propagation/coherence, weights, group phases,
+provider tensor pairs and the fixed reciprocal basis. Energy-dependent qz and
+Coulomb factors still use each actual loss. Raw work remains in bounded energy
+blocks. Source amplitudes and per-ionizing-atom normalization are unchanged.
+Saved native/full-field configurations retain those choices on Open; new
+defaults do not silently migrate historical calculations. These changes are
+development source only and do not update earlier accepted EXEs. Double
+Channeling optimization and scientific convergence are not acceptance claims
+of this Single Channeling task.
+
 ## Broader follow-on proposal (not implemented)
 
 - Keep the selected-group/count summary and group-level direction controls.
