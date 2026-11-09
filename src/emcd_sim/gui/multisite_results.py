@@ -9,6 +9,14 @@ def material(result):
     return ''.join(symbol+(str(n) if n != 1 else '') for symbol,n in counts.items())
 
 
+def ionizing_label(result):
+    if result.get('groups'):return ', '.join(dict.fromkeys(g['metadata']['element'] for g in result['groups'].values()))
+    element=getattr(result['config'],'ionizing_element',None) or result.get('metadata',{}).get('imported_mdff',{}).get('element')
+    if element:return element
+    species=set(getattr(result['model'].elastic.crystal,'species',()))
+    return next(iter(species)) if len(species)==1 else 'Declared ionizing sites'
+
+
 def description(result):
     meta = result['metadata'];sites = meta['multisite']
     return (f'{material(result)} | {meta["solver"]} | {meta["scientific_status"]}\nModeled partial core-edge spectrum; mean per selected ionizing atom '
@@ -45,11 +53,55 @@ def angular_group_view(result, group_id, normalization='weighted'):
         scale=scale,multiplicity=meta['multiplicity'],magnetization_crystal=meta['magnetization_crystal']))
 
 
+def energy_sample_index(result, energy):
+    """Resolve a declared selection to an actual saved sample, without rounding."""
+    grid=np.asarray(result['spectra']['energy_ev'],float)
+    found=np.flatnonzero(grid==float(energy))
+    if not len(found):found=np.flatnonzero(np.isclose(grid,energy,rtol=0,atol=1e-9))
+    if len(found)!=1:raise ValueError('Selected energy does not identify one saved sample: '+str(energy))
+    return int(found[0])
+
+
+def total_energy_samples(result, maps_only=True):
+    """One aggregate entry per stored energy; aliases are provenance, not scopes."""
+    from ..mdff_edges import selected_samples
+    samples=dict(selected_samples(result['config']))
+    records={};groups=result.get('groups',{});channels=result.get('metadata',{}).get('multisite',{}).get('channels',{})
+    for key,energy in samples.items():
+        if maps_only and key not in result['maps']:continue
+        index=energy_sample_index(result,energy)
+        record=records.setdefault(index,dict(index=index,energy_ev=float(result['spectra']['energy_ev'][index]),keys=[]))
+        record['keys'].append(key)
+    for record in records.values():
+        index=record['index'];edges=[]
+        active=[gid for gid,c in channels.items() if not c['omitted_by_request'] and c['active_energy_mask'][index]]
+        for gid in active:
+            source=groups[gid]['metadata']['source']
+            for edge,energy in source.get('selected_ev',{}).items():
+                try:matches=energy_sample_index(result,energy)==index
+                except ValueError:matches=False
+                if matches and (source['element'],edge) not in edges:edges.append((source['element'],edge))
+        if groups:
+            # Some stored providers declare a core edge without named selections.
+            if not edges:edges=list(dict.fromkeys((groups[g]['metadata']['element'],groups[g]['metadata']['source']['edge']) for g in active))
+            multiple=len({g['metadata']['element'] for g in groups.values()})>1
+            record['edge_label']=' / '.join((element+' ' if multiple else '')+edge for element,edge in edges) or 'Unmodeled sample'
+        else:record['edge_label']=' / '.join(dict.fromkeys(record['keys']))
+        record['partial']=bool(groups) and len(active)!=len(groups)
+        record['active_groups']=active
+    records=sorted(records.values(),key=lambda record:record['energy_ev'])
+    labels=[(r['edge_label'],f'{r["energy_ev"]:.4f}') for r in records]
+    for record,label in zip(records,labels):
+        energy=f'{record["energy_ev"]:.17g}' if labels.count(label)>1 else label[1]
+        record['label']=record['edge_label']+' · '+energy+' eV'+(' · modeled channels' if record['partial'] else '')
+    return records
+
+
 def angular_choices(result, groups=False):
     """Labels identify scope explicitly; item data retains the original saved key."""
     from ..mdff_edges import selected_samples
     samples=dict(selected_samples(result['config']))
-    if not groups:return [(f'Total | {key} | {samples[key]:.4f} eV',(None,key)) for key in result['maps'] if key in samples]
+    if not groups:return [(r['label'],(None,r['keys'][0])) for r in total_energy_samples(result)]
     choices=[]
     for gid,group in result['groups'].items():
         try:maps=angular_group_view(result,gid)['maps']
@@ -57,7 +109,9 @@ def angular_choices(result, groups=False):
         selections=group['metadata']['source'].get('selected_ev',{})
         if selections:
             for edge,energy in sorted(selections.items(),key=lambda item:item[1]):
-                candidates=[key for key in maps if np.isclose(samples[key],energy,rtol=0,atol=1e-9)]
+                try:index=energy_sample_index(result,energy)
+                except ValueError:continue  # A declared source selection need not have been calculated.
+                candidates=[key for key in maps if energy_sample_index(result,samples[key])==index]
                 preferred=gid+':'+edge
                 if candidates:choices.append((f'{gid} | {edge} | {energy:.4f} eV',(gid,preferred if preferred in candidates else candidates[0])))
         else:

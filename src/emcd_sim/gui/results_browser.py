@@ -33,7 +33,8 @@ class Registry:
             existing.update(channeling_model=result['config'].channeling_model,propagation=result['config'].propagation)
             self.persist();return existing
         s=result['settings'];cfg=result['config'];stamp=result.get('metadata',{}).get('calculation_utc','')
-        element=getattr(cfg,'ionizing_element','Ni')
+        from .multisite_results import ionizing_label
+        element=ionizing_label(result)
         if cfg.model=='multisite':
             from .multisite_results import material
             element=material(result)
@@ -190,14 +191,15 @@ class ProjectWorkspace(ProjectSession):
                 index=widget.findData(value)
                 if index>=0:
                     with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(index)
-            with QtCore.QSignalBlocker(view.choice):view.choice.setCurrentText(state.get('zoom',view.choice.itemText(0)))
-            with QtCore.QSignalBlocker(prb.energy):prb.energy.setValue(state.get('energy_ev',result['config'].l3))
+            note=view.restore_zoom(state.get('zoom'),state.get('zoom_energy_ev'))
+            if note:notes.append(note)
+            with QtCore.QSignalBlocker(prb.energy):prb.energy.setValue(state.get('energy_ev',float(result['spectra']['energy_ev'][0])))
             with QtCore.QSignalBlocker(prb.fixed):prb.fixed.setChecked(bool(state.get('locked',False)))
             view.component_diagnostic.setCurrentIndex(1 if state.get('component_diagnostic')=='relative' else 0)
             self.maps_view.component_mode.setCurrentIndex(1 if state.get('map_signal_mode')=='asymmetry' else 0)
             if result['config'].model=='multisite':
                 view.multisite_controls.restore_options(state.get('multisite_selection',{}))
-                self.maps_view.restore_map_options(state.get('angular_selection',{}))
+            self.maps_view.restore_map_options(state.get('angular_selection',{}))
             view.advanced.setChecked(bool(state.get('advanced',False)));view.redraw()
             if notes:view.display_note.setText(' '.join(notes))
         sources=source_status(result);warnings=result.get('project_warnings',[])

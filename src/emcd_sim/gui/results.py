@@ -21,7 +21,7 @@ def mdff_label(result):
             return result['metadata'].get('scientific_status','RESEARCH / APPROXIMATE')+'; approximate atomic '+result['config'].ionizing_element+' 2p-3d model; physically unvalidated parameters'
         kind='XMCD-effective approximation' if result['config'].model=='xmcd' else 'imported dipole tensor'
         return result['metadata'].get('scientific_status','RESEARCH / APPROXIMATE')+'; '+result['config'].ionizing_element+' '+result['config'].core_edge+' '+kind
-    return 'XMCD-effective, native axis' if result['config'].model=='xmcd' else 'Atomic 2p-3d approximation, non-DFT, not quantitative metallic Ni'
+    return 'XMCD-effective, native axis' if result['config'].model=='xmcd' else 'Atomic 2p-3d approximation, non-DFT, not quantitatively calibrated'
 
 
 def geometry_description(result):
@@ -102,7 +102,7 @@ def method_result(result,method):
     return dict(b,maps=maps,method='difference',metadata=metadata)
 
 
-def _draw_eels_diagnostics(fig,result,zoom='Full spectrum',method=None,display=None):
+def _draw_eels_diagnostics(fig,result,zoom='Full spectrum',method=None,display=None,zoom_energy=None):
     display=display or DisplaySettings()
     fig.clear();cfg=result['config'];axes=fig.subplots(3,1,sharex=True)
     methods=result.get('methods',{result.get('method','bloch'):result});method=method or result.get('method','bloch')
@@ -120,7 +120,7 @@ def _draw_eels_diagnostics(fig,result,zoom='Full spectrum',method=None,display=N
             s,meta=lookup[name];e=r['spectra']['energy_ev']
             for i,(key,label) in enumerate(curves):
                 if key in s:lines.extend(ax.plot(e,s[key],label=name+': '+label,lw=1.1,ls='None' if len(e)==2 else ('--' if name=='fft-multislice' else '-'),marker='o' if len(e)==2 else None,color='C'+str(i)))
-        for energy in (cfg.l3,cfg.l2):ax.axvline(energy,color='.5',ls=':',lw=.7)
+        for energy in dict.fromkeys(value for _,value in selected_samples(cfg) if np.isfinite(value)):ax.axvline(energy,color='.5',ls=':',lw=.7)
         if any(r['metadata']['alpha'] is not None for r in chosen.values()):ax.axvspan(*cfg.window,color='gold',alpha=.2)
         ax.axhline(0,color='.7',lw=.5);ax.set_ylabel(units,fontsize=8);ax.grid(alpha=.15)
         if ax is not axes[0]:
@@ -128,18 +128,19 @@ def _draw_eels_diagnostics(fig,result,zoom='Full spectrum',method=None,display=N
         legend=ax.legend(fontsize=7,ncols=2,loc='upper right')
         for proxy,line in zip(legend.get_lines(),lines):proxy.set_picker(5);legends.append((proxy,line))
     axes[-1].set_xlabel('Declared imported energy loss (eV)' if cfg.model=='imported' else ('Native energy loss (eV)' if cfg.model=='xmcd' else 'Atomic model energy loss (eV)'))
-    axes[-1].set_xlim((e[0],e[-1]) if zoom not in ('L3 zoom','L2 zoom') else ((cfg.l3-5,cfg.l3+5) if zoom=='L3 zoom' else (cfg.l2-5,cfg.l2+5)))
+    selected=zoom_energy if zoom_energy is not None else dict(selected_samples(cfg)).get(zoom.removesuffix(' zoom')) if zoom.endswith(' zoom') else None
+    axes[-1].set_xlim((e[0],e[-1]) if selected is None else (selected-5,selected+5))
     factors=', '.join(name+' alpha='+('%.9g'%r['metadata']['alpha'] if r['metadata']['alpha'] is not None else 'disabled') for name,r in chosen.items())
     note='; '.join(dict.fromkeys(meta.get('warning','') for _,meta in normalized if meta.get('warning')))
-    fig.suptitle(cfg.channeling_model.title()+' Channeling | '+units+' | '+factors+'\n'+('Selected L3/L2 samples only; full EELS not calculated.' if len(e)==2 else (note or 'Common reference; corrected = processed magnetic + residual even; solid BW / dashed MS')),fontsize=10)
+    fig.suptitle(cfg.channeling_model.title()+' Channeling | '+units+' | '+factors+'\n'+('Selected declared samples only; full EELS not calculated.' if cfg.energy_scope=='edges' else (note or 'Common reference; corrected = processed magnetic + residual even; solid BW / dashed MS')),fontsize=10)
     if cfg.model=='imported':fig.suptitle(fig._suptitle.get_text()+'\n'+mdff_label(result),fontsize=10)
     fig._emcd_display_metadata=dict(kind='spectra',normalization=[meta for _,meta in normalized],zoom=zoom)
     return legends
 
 
-def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,component_mode='raw',diagnostics=False,selection=('total',None),normalization='weighted',compared=(),quantity=0,include_total=False):
+def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,component_mode='raw',diagnostics=False,selection=('total',None),normalization='weighted',compared=(),quantity=0,include_total=False,zoom_energy=None):
     """Two primary panels; legacy normalization is an explicit diagnostic."""
-    if diagnostics or display is not None:return _draw_eels_diagnostics(fig,result,zoom,method,display)
+    if diagnostics or display is not None:return _draw_eels_diagnostics(fig,result,zoom,method,display,zoom_energy)
     from .component_display import components,readouts
     cfg=result['config'];multisite=cfg.model=='multisite'
     from .multisite_results import spectral_series,covered_segments,QUANTITIES,selection_description
@@ -181,14 +182,15 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
         else:ax.text(.5,.5,'No modeled samples for this selection; excluded/unmodeled is not physical zero.',ha='center',va='center',wrap=True,transform=ax.transAxes,fontsize=8)
         if not fields:
             for v in dict.fromkeys(v for _,v in samples):ax.axvline(v,color='.6',ls=':',lw=.6)
-    selected=dict(samples).get(zoom.removesuffix(' zoom')) if zoom.endswith(' zoom') else None
+    selected=zoom_energy if zoom_energy is not None else dict(samples).get(zoom.removesuffix(' zoom')) if zoom.endswith(' zoom') else None
     limits=(selected-5,selected+5) if selected is not None else (float(e[0]),float(e[-1]))
     if len(e)==1:limits=result['metadata'].get('imported_mdff',{}).get('energy_bounds_ev',(float(e[0])-1,float(e[0])+1))
     axes[-1].set_xlim(limits)
     from .component_display import MODES
-    element=', '.join(dict.fromkeys(g['metadata']['element'] for g in result['groups'].values())) if multisite else getattr(cfg,'ionizing_element','Ni')
+    from .multisite_results import ionizing_label
+    element=ionizing_label(result)
     title=f'{MODES.get(component_mode, "Magnetic-only / Nonmagnetic Asymmetry diagnostics")} | {cfg.channeling_model.title()} Channeling | {method} | {element} {list(result["settings"].zone)}, {result["settings"].thickness:g} nm'
-    if points:title+='\nSelected native '+ '/'.join(k for k,_ in selected_samples(cfg))+' samples only; full EELS spectrum not calculated'
+    if cfg.energy_scope=='edges':title+='\nSelected native '+ '/'.join(k for k,_ in selected_samples(cfg))+' samples only; full EELS spectrum not calculated'
     elif spectral_coverage_label(result)=='Calculated energy subset':title+='\nCalculated energy subset; full native range not covered'
     title+='\n'+geometry_description(result)
     title+='\n'+zoom+'; actual calculated energy samples'
@@ -241,13 +243,17 @@ def draw_component_maps(fig,result,edge,method=None,signal_mode='raw',group_id=N
         units=(label.replace('paired difference','difference')+' (a.u.)') if signal_mode=='raw' and method!='difference' else meta['units']
         fig.colorbar(im,ax=ax,shrink=.7).set_label(units)
         if not np.isfinite(v).any():ax.text(.1,.5,'All pixels undefined / masked',transform=ax.transAxes)
-    e=dict(selected_samples(r['config']))[edge]
+    from .multisite_results import energy_sample_index,total_energy_samples
+    sample_index=energy_sample_index(r,dict(selected_samples(r['config']))[edge]);e=float(r['spectra']['energy_ev'][sample_index])
+    sample=next(item for item in total_energy_samples(r) if item['index']==sample_index)
     sampling=f'Angular Grid: {qx.shape[1]} x {qx.shape[0]}; q spacing: {dx:.6g}, {dy:.6g} Å⁻¹'
     scope=('Group Mean: ' if normalization=='mean' else 'Group Contribution: ')+group_id if group_id is not None else ('Total Results' if r['config'].model=='multisite' else '')
-    fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | '+(scope+' | ' if scope else '')+f'{edge} {e:.4f} eV\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry\n'+sampling,fontsize=10)
+    energy_label=sample['label'] if group_id is None else f'{edge} {e:.4f} eV'
+    fig.suptitle(f'{MODES[signal_mode]} | {r["config"].channeling_model.title()} Channeling | {method} | '+(scope+' | ' if scope else '')+energy_label+'\n'+geometry_description(r)+'\nFull-field mirrored-point EMCD; not detector-integrated asymmetry\n'+sampling,fontsize=10)
     if r['config'].model=='imported':fig.suptitle(fig._suptitle.get_text()+'\n'+mdff_label(r),fontsize=10)
     fig._emcd_display_metadata=dict(kind='primary angular components',edge=edge,method=method,**meta,shared_color_scale=True,
-        angular_grid_shape=list(qx.shape),q_spacing_inv_angstrom=[float(dx),float(dy)],display_interpolation='nearest')
+        angular_grid_shape=list(qx.shape),q_spacing_inv_angstrom=[float(dx),float(dy)],display_interpolation='nearest',
+        energy_ev=e,sample_index=sample_index,sample_aliases=sample['keys'])
     if r['config'].model=='multisite':fig._emcd_display_metadata.update(scope=scope,energy_ev=e,
         group_id=group_id,normalization=normalization if group_id is not None else 'total_mean_per_selected_atom',
         selected_atom_count=r['metadata']['multisite']['selected_atom_count'],
@@ -319,12 +325,12 @@ class ResultsView(QtWidgets.QWidget):
             self.map_scope=QtWidgets.QComboBox();self.map_scope.setAccessibleName('Angular result scope')
             for title,key in [('Total Results','total'),('Group Contribution (n/N)','weighted'),('Group Mean (per atom)','mean')]:self.map_scope.addItem(title,key)
             self.map_scope.hide();row.addWidget(self.map_scope);self.map_scope.currentIndexChanged.connect(self.update_map_choices)
-        self.choice=QtWidgets.QComboBox();self.choice.addItems(['L3','L2'] if kind=='maps' else (['Exit intensity','Depth average'] if kind=='diffraction' else ['Full spectrum','L3 zoom','L2 zoom']));row.addWidget(self.choice)
+        self.choice=QtWidgets.QComboBox();self.choice.addItems([] if kind=='maps' else (['Exit intensity','Depth average'] if kind=='diffraction' else ['Full spectrum']));row.addWidget(self.choice)
         if kind=='maps':
             self.choice.setAccessibleName('Angular group / energy')
             for box in (self.map_scope,self.choice):
                 box.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon);box.setMinimumContentsLength(16)
-        self.method=QtWidgets.QComboBox();row.addWidget(self.method);self.method.currentIndexChanged.connect(self.redraw)
+        self.method=QtWidgets.QComboBox();row.addWidget(self.method);self.method.currentIndexChanged.connect(self.update_map_choices if kind=='maps' else self.redraw)
         self.choice.setVisible(kind!='comparison');self.method.setVisible(kind!='comparison')
         self.field=QtWidgets.QComboBox();self.field.addItem('All six fields',None)
         for title,key in [('Magnetic odd','I_mag'),('Magnetic paired','D_mag'),('Nonmagnetic paired','D_nonmag'),('Nonmagnetic even','I_nonmag'),('Total +M','I_plus'),('Raw paired A-B','D_raw'),('Corrected paired A-B','D_corrected'),('Residual even','D_nonmag_residual')]:self.field.addItem(title,key)
@@ -413,14 +419,16 @@ class ResultsView(QtWidgets.QWidget):
                 for i in (1,2):self.map_scope.model().item(i).setEnabled(available)
                 if fresh or not available:
                     with QtCore.QSignalBlocker(self.map_scope):self.map_scope.setCurrentIndex(0)
-                self.update_map_choices(redraw=False)
             else:
-                with QtCore.QSignalBlocker(self.choice):
-                    self.choice.clear();self.choice.addItems(list(result['maps']))
+                with QtCore.QSignalBlocker(self.map_scope):self.map_scope.setCurrentIndex(0)
         elif self.kind=='eels':
+            from .multisite_results import total_energy_samples
+            energies=total_energy_samples(result,maps_only=False)
             with QtCore.QSignalBlocker(self.choice):
                 self.choice.clear();self.choice.addItem(spectral_coverage_label(result))
-                self.choice.addItems([label+' zoom' for label,value in selected_samples(result['config']) if np.isfinite(value)])
+                for sample in energies:
+                    unique=sum(s['edge_label']==sample['edge_label'] for s in energies)==1
+                    self.choice.addItem((sample['edge_label'] if unique else sample['label'])+' zoom',sample['energy_ev'])
         if not multisite:self.normalization.set_result(result)
         from .propagation import METHOD_NAMES
         options=list(result.get('methods',{result.get('method','bloch'):result}))
@@ -428,35 +436,72 @@ class ResultsView(QtWidgets.QWidget):
         self.method.blockSignals(True);self.method.clear()
         for key in options:self.method.addItem(METHOD_NAMES.get(key,'BW / MS overlay'),key)
         if self.kind=='eels':self.choice.setItemText(0,spectral_coverage_label(result))
-        self.method.blockSignals(False);self.redraw()
-    def update_map_choices(self,*_,redraw=True):
-        if self.result is None or self.result['config'].model!='multisite':return
-        from .multisite_results import angular_choices
-        previous=self.choice.currentData()
+        self.method.blockSignals(False)
+        if self.kind=='maps':self.update_map_choices(redraw=False,preserve=not fresh)
+        self.redraw()
+    def map_result(self):
+        return self.result.get('methods',{}).get(self.method.currentData(),self.result)
+    def update_map_choices(self,*_,redraw=True,preserve=True):
+        if self.result is None:return
+        from .multisite_results import angular_choices,energy_sample_index
+        current=self.map_result();previous=self.map_options() if preserve else {}
         with QtCore.QSignalBlocker(self.choice):
             self.choice.clear()
-            for label,data in angular_choices(self.result,self.map_scope.currentData()!='total'):self.choice.addItem(label,data)
-            index=next((i for i in range(self.choice.count()) if previous is not None and tuple(self.choice.itemData(i))==tuple(previous)),-1)
-            if index>=0:self.choice.setCurrentIndex(index)
+            samples=dict(selected_samples(current['config']))
+            for label,data in angular_choices(current,self.map_scope.currentData()!='total' and current['config'].model=='multisite'):
+                self.choice.addItem(label,data)
+                energy=float(current['spectra']['energy_ev'][energy_sample_index(current,samples[data[1]])])
+                self.choice.setItemData(self.choice.count()-1,energy,QtCore.Qt.ItemDataRole.UserRole+1)
+                aliases=[key for key,value in samples.items() if value==energy]
+                self.choice.setItemData(self.choice.count()-1,'Saved energy: '+repr(energy)+' eV\nSample aliases: '+', '.join(aliases),QtCore.Qt.ItemDataRole.ToolTipRole)
+            # Changing scope preserves the energy, but never merges different groups.
+            target_gid=previous.get('group_id') if self.map_scope.currentData()!='total' else None
+            index=next((i for i in range(self.choice.count()) if self.choice.itemData(i)[0]==target_gid and self.choice.itemData(i,QtCore.Qt.ItemDataRole.UserRole+1)==previous.get('energy_ev')),-1)
+            if index<0 and target_gid is None and previous.get('energy_ev') is not None:
+                index=next((i for i in range(self.choice.count()) if self.choice.itemData(i,QtCore.Qt.ItemDataRole.UserRole+1)==previous['energy_ev']),-1)
+            if index>=0 or previous.get('energy_ev') is not None:self.choice.setCurrentIndex(index)
         self.choice.setToolTip('Select the actual saved group and energy. Total Results uses total maps; the spectra selector is independent. Only modeled, saved group maps are listed.')
         if redraw:self.redraw()
     def map_options(self):
-        selection=self.choice.currentData() or (None,self.choice.currentText())
-        return dict(scope=self.map_scope.currentData(),group_id=selection[0],edge=selection[1])
+        selection=self.choice.currentData() or (None,None)
+        return dict(scope=self.map_scope.currentData(),group_id=selection[0],edge=selection[1],
+            energy_ev=self.choice.currentData(QtCore.Qt.ItemDataRole.UserRole+1),method=self.method.currentData())
     def restore_map_options(self,options):
+        if not options:return
+        from .multisite_results import energy_sample_index
+        method=options.get('method',self.method.currentData());mi=self.method.findData(method)
+        if mi>=0:
+            with QtCore.QSignalBlocker(self.method):self.method.setCurrentIndex(mi)
         index=self.map_scope.findData(options.get('scope','total'))
-        self.map_scope.setCurrentIndex(index if index>=0 and self.map_scope.model().item(index).isEnabled() else 0)
+        available=index>=0 and self.map_scope.model().item(index).isEnabled() and mi>=0
+        with QtCore.QSignalBlocker(self.map_scope):self.map_scope.setCurrentIndex(index if available else 0)
         self.update_map_choices(redraw=False)
-        index=next((i for i in range(self.choice.count()) if tuple(self.choice.itemData(i))==(options.get('group_id'),options.get('edge'))),-1)
-        if index>=0:self.choice.setCurrentIndex(index)
+        current=self.map_result();energy=options.get('energy_ev')
+        if energy is None:energy=dict(selected_samples(current['config'])).get(options.get('edge'))
+        try:energy=float(current['spectra']['energy_ev'][energy_sample_index(current,energy)]) if energy is not None else None
+        except ValueError:energy=None
+        index=next((i for i in range(self.choice.count()) if self.choice.itemData(i)[0]==options.get('group_id') and self.choice.itemData(i,QtCore.Qt.ItemDataRole.UserRole+1)==energy),-1) if available and energy is not None else -1
+        self.choice.setCurrentIndex(index)
         self.redraw()
+        if index<0:self.display_note.setText('Saved angular scope/energy is unavailable. Choose an available selection explicitly; no substitute was selected.')
+    def restore_zoom(self,label,energy=None):
+        from .multisite_results import energy_sample_index
+        if energy is None and label and label.endswith(' zoom'):
+            energy=dict(selected_samples(self.result['config'])).get(label.removesuffix(' zoom'))
+        if energy is not None:
+            try:energy=float(self.result['spectra']['energy_ev'][energy_sample_index(self.result,energy)])
+            except ValueError:energy=None
+            index=self.choice.findData(energy) if energy is not None else -1
+        else:index=self.choice.findText(label or '')
+        with QtCore.QSignalBlocker(self.choice):self.choice.setCurrentIndex(max(0,index))
+        return 'Saved spectral zoom unavailable; showing the actual calculated range.' if index<0 and label and label.endswith(' zoom') else ''
     def redraw(self,*_):
         if self.result is None:return
         method=self.method.currentData() or self.result.get('method','bloch')
         if self.result['config'].model=='multisite' and self.kind in ('eels','comparison'):
             from .multisite_results import draw_totals,description
             options=self.multisite_controls.options() if self.kind=='eels' else {}
-            self.proxies=(draw_eels(self.figure,self.result,self.choice.currentText(),method,component_mode=self.component_mode.currentData(),**options)
+            self.proxies=(draw_eels(self.figure,self.result,self.choice.currentText(),method,component_mode=self.component_mode.currentData(),zoom_energy=self.choice.currentData(),**options)
                 if self.kind=='eels' else draw_totals(self.figure,self.result,method,self.kind,self.choice.currentText(),**options))
             if self.kind=='eels':
                 from .multisite_results import spectral_series,selection_description
@@ -476,7 +521,8 @@ class ResultsView(QtWidgets.QWidget):
         try:
             if self.kind=='maps':
                 local=self.result['config'].model=='multisite'
-                option=self.map_options() if local else dict(edge=self.choice.currentText(),group_id=None,scope='total')
+                option=self.map_options()
+                if option['edge'] is None:raise ValueError('No saved angular energy is selected')
                 if local and option['scope']!='total' and option['group_id'] is None:raise ValueError('No modeled group angular maps were saved')
                 draw_maps(self.figure,self.result,option['edge'],method,self.field.currentData() if advanced else None,display if advanced else None,
                     signal_mode=self.component_mode.currentData(),group_id=option['group_id'],normalization=option['scope'])
@@ -491,7 +537,7 @@ class ResultsView(QtWidgets.QWidget):
             elif self.kind=='comparison':draw_comparison(self.figure,self.result,display)
             else:
                 relative=advanced and self.component_diagnostic.currentData()=='relative'
-                self.proxies=draw_eels(self.figure,self.result,self.choice.currentText(),method,display if advanced and not relative else None,component_mode='relative' if relative else self.component_mode.currentData(),diagnostics=advanced and not relative)
+                self.proxies=draw_eels(self.figure,self.result,self.choice.currentText(),method,display if advanced and not relative else None,component_mode='relative' if relative else self.component_mode.currentData(),diagnostics=advanced and not relative,zoom_energy=self.choice.currentData())
             from .component_display import TOOLTIPS
             self.component_mode.setToolTip(TOOLTIPS[self.component_mode.currentData()])
             self.display_note.setText('Display only; simulation arrays unchanged. '+('Explicit advanced diagnostics.' if advanced else TOOLTIPS[self.component_mode.currentData()]))
@@ -502,7 +548,8 @@ class ResultsView(QtWidgets.QWidget):
             self.figure.clear();self.figure.subplots().text(.05,.6,'Normalization unavailable: '+str(exc),wrap=True);self.display_note.setText(str(exc));self.figure._emcd_display_metadata=dict(unavailable=str(exc),derived_visualization_only=True)
         if self.kind=='eels' and hasattr(self.owner,'comparison'):self.owner.comparison.setPlainText(comparison_text(self.result,display.windows))
         if self.kind=='eels':
-            selected=self.result['config'].l2 if self.choice.currentText()=='L2 zoom' else self.result['config'].l3
+            selected=self.choice.currentData()
+            if selected is None:selected=next((value for _,value in selected_samples(self.result['config']) if np.isfinite(value)),float(self.result['spectra']['energy_ev'][0]))
             self.prb_benchmark.set_context(self.result,method,display.windows,selected)
         if self.figure._suptitle is not None:self.figure._suptitle.set_wrap(True)
         self.presentation.capture()
