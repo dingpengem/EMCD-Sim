@@ -2,8 +2,6 @@
 
 ## Unreleased development source — crystallographic groups and direction workflow
 
-- Expose the existing selected-energy request subset for Global XMCD: All declared samples, L3 only or L2 only. Preserve full source declarations, amplitudes, Material M and saved selection; do not modify scattering kernels. This enables bounded native Ni SC/DC acceptance at one source-defined energy. Previous development candidates and historical validation records remain unchanged.
-
 - Prepare local dev4: full-basis diffraction preview no longer requires an inherited target to survive systematic-absence filtering (Fe₃O₄ [017], cutoff 2: 59 beams, absent 200 target). Retain valid orientation, two-beam-target and 121-beam safeguards. Set ordinary fresh/reset/Automatic cutoffs to beam 2.5 and potential 2.0 Å⁻¹; retain explicit saved values and the matched historical reference preset.
 - Retire optional post-edge A/B correction from the GUI and force it off in new requests. Convert enabled legacy flags only in working settings with a notice; retain original files until Save and preserve historical results. Keep required MDFF physics and source/frame validation.
 - Prevent wheel edits to focused parameter spin boxes and closed selectors, forwarding page scrolling while preserving explicit edits, dropdown-list scrolling, 3D zoom and plot gestures. Give group MDFFs an explicit numerical-preview action, show validated XMCD input spectra when missing declarations block tensors, and bind reversed group previews through the existing physical-pair validator. No general tensor rotation, scattering-kernel or numerical-reference changes; dev1/dev2/dev3 remain unchanged.

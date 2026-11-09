@@ -21,18 +21,6 @@ def validate_before_resources(structure,settings,cfg,requested=None):
         raise ValueError('Energy loss must be below incident electron energy')
 
 
-def request_energy_grid(provider,cfg,requested=None):
-    """Validate the full source first, then select declared diagnostic samples."""
-    energy=provider.energy_grid(requested)
-    if requested is None and cfg.energy_scope=='edges' and cfg.selected_edges:
-        declared=getattr(cfg,'provider_declaration',{}).get('selected_ev') or dict(L3=cfg.l3,L2=cfg.l2)
-        if any(label not in declared or not np.isclose(value,declared[label],rtol=0,atol=1e-9)
-               or not np.any(np.isclose(energy,value,rtol=0,atol=1e-9)) for label,value in cfg.selected_edges):
-            raise ValueError('Requested samples must match the validated native source edge selections')
-        energy=np.unique([value for _,value in cfg.selected_edges])
-    return energy
-
-
 def calculate_prepared(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
     def stage(s):
         if cancelled():raise Cancelled()
@@ -41,7 +29,7 @@ def calculate_prepared(structure,settings,cfg,progress,cancelled,*,energy_ev=Non
     provider=prepare_provider(cfg)
     reason=provider.material_reason(structure)
     if reason:raise ValueError(reason)
-    energy=request_energy_grid(provider,cfg,energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
+    energy=provider.energy_grid(energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
     if settings.target not in hkl or settings.target==(0,0,0):raise ValueError('Select a nonzero target in the finite diffraction basis')
     memory=64*cfg.grid**2*len(hkl)**2/2**20
     declared=provider.declared
