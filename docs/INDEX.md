@@ -19,7 +19,7 @@
 |[Recalculated Ni example provenance](images/ni017_flipm_recomputed/README.md)|Fresh 9/30 nm spectra, twelve portraits, conventional versus fixed-detector Flip-M|
 |[Changelog](CHANGELOG.md)|Version/milestone and documentation history|
 
-Current user guides describe the MDFF interface shipped in **v0.8.1-beta.2**, package version `0.8.1b2`, built from `88dc9ec` (Windows numeric version `0.8.1.2`). Published beta.1 has an older interface; use its tag-specific documentation for that binary. Historical development EXE `aaa69a1` embedded `0.8.1b1` and is distinct from the rebuilt beta.2 package. Older validation and acceptance documents retain their milestone-specific source/artifact identities; current beta.2 checks and historical results are distinguished in the [release notes](RELEASE_NOTES_0_8_1_BETA_2.md).
+Current README, Quick Start, User Guide and MDFF workflow instructions describe the **local v0.9.0-beta.1 candidate, not a publication**. See [candidate release notes](RELEASE_NOTES_0_9_0_BETA_1.md) for scoped evidence and remaining verification. Published v0.8 binaries retain their tagged documentation. Historical acceptance/release records below keep their original source, artifact and verification identities.
 
 ## Scientific validation and acceptance
 

@@ -6,6 +6,10 @@
 
 The Windows Research Beta is [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), package version `0.8.1b2`. It includes the MDFF editor redesign and explicit XMCD selection repair. Earlier beta.1 assets and their matching documentation remain available.
 
+## Local v0.9 release candidate
+
+This checkout's [Quick Start](QUICK_START.md) and [User Guide](USER_GUIDE.md) describe the **unpublished v0.9.0-beta.1 candidate**. Use the supplied `EMCD-Sim-v0.9.0-beta.1-Windows-RC1.zip`, its existing checksum file and matching `EMCD-Sim-v0.9.0-beta.1-Corresponding-Source-RC1.zip`; do not look for an unpublished GitHub asset. Extract the complete folder, install the same Microsoft runtime prerequisite below, and keep `_internal` beside the EXE. No development Python environment is needed. Exact source/dependencies are in `_internal/build_info.json` and the existing manifest; clean-PC/VM acceptance remains unverified. The source kit contains both `EMCD-Sim-source.zip` and the matching dependency source/replacement materials. For published v0.8 binaries, the filenames and release links below remain historical version-specific instructions.
+
 ## Windows binary installation
 
 On Windows 10/11 x64, first install the **official Microsoft x64 Visual C++ v14 Redistributable, 14.44.35211 or newer**, directly from [Microsoft's runtime page](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) ([official x64 download](https://aka.ms/vc14/vc_redist.x64.exe)). The package includes no Microsoft runtime DLL copies or installer. Windows supplies the UCRT/API sets. A missing `MSVCP140.dll` or `VCRUNTIME140*.dll` means this prerequisite needs installation/repair; do not copy DLLs from download sites.

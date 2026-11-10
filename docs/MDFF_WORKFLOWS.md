@@ -2,12 +2,12 @@
 
 [Home](../README.md) | [Installation](INSTALL_WINDOWS.md) | [Quick Start](QUICK_START.md) | [User manual](USER_GUIDE.md)
 
-This guide describes the **Configure MDFF...** dialog shipped in [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2). The published beta.1 interface is older; use its tag-specific documentation for that binary. See [release status and validation history](RELEASE_NOTES_0_8_1_BETA_2.md#publication-status) for the beta.2 package and its recorded verification.
+This guide describes the current **v0.9.0-beta.1 local candidate**. Published v0.8 binary instructions remain in their [tagged guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/MDFF_WORKFLOWS.md). See [candidate evidence and limits](RELEASE_NOTES_0_9_0_BETA_1.md).
 
 <a id="development-group-direction-workflow"></a>
-## Development source: grouped directions and MDFF
+## Material-owned Global and group workflow
 
-The following applies only to `feat/v0.9.0-crystal-grouping`. It is not in the previously accepted v0.9.0-beta.1 EXE/source kit (`6b917ed`) or a published release. Remaining versioned single-element examples below are retained for compatibility.
+Open **Material → 3D Structure Viewer… → Site groups → Configure MDFF…**. The workspace's explicit Global/group context does not change the active magnetization mode. Target M is inherited read-only. Complete validation/acknowledgements and **Done**, then outer **Apply and Close**. The following is the candidate workflow; later single-element construction examples retain their model-specific scope.
 
 **CIF import → automatic structural groups → explicit Local M and MDFF → supported direction change → Apply → Save/Open → Recalculate.**
 
@@ -31,16 +31,16 @@ In the latest development source, **Material → 3D Structure Viewer → Site Gr
 
 XMCD construction and Manual's existing **Verified axis rotation** mode consume Material M for preview and provider generation. Atomic's **source quantization axis** comes from its explicitly declared complete orbital/spin frame; the target must be compatible with that frame or its validated physical reversal pair. Manual explicit frames and imported sources likewise retain their independent source-axis/frame declarations. A Material direction alone never supplies an anisotropic tensor's missing orientation. Incompatible targets block preview/submission with guidance to the group's MDFF Editor or a compatible source. Atomic previews select the same validated pair member as submission.
 
-This Material-control cleanup is source-only: it is **not** in the unchanged `windows-crystal-groups-dev1` candidate built from `effb755`, nor in a published release. Existing project fields retain their meanings; old per-model direction drafts cannot override restored Material M.
+The current local candidate includes this workflow; earlier candidate artifacts and published binaries remain unchanged. Existing project fields retain their meanings; old per-model direction drafts cannot override restored Material M.
 
 - Open the **3D Structure Viewer** from Settings, then **Site groups**. Symmetry groups retain original ASE indices and provenance; ordinary CIF import supplies neither magnetic order nor MDFF. Select a whole group in the table. The selected-group summary shows its count, Accepted M, any unapplied draft/input, and existing MDFF status. Atom picking is needed only to edit membership.
-- Enable Local mode and explicitly configure the requested ionizing groups through **Configure MDFF for Group…**. Global M stays locked. Keep element/edge, source identity, relative amplitudes, tensor frame, magnetic states and modeled energy windows consistent. Declare requested samples/windows explicitly; coverage is checked without extrapolation. Non-ionizing draft rows can be removed without changing the crystal used for elastic scattering.
-- Enter a direction and choose **Update direction**, then **Apply**. The first action stages a draft; the second accepts a consistent configuration. With an explicitly supplied, validated reversal pair, an antiparallel direction selects the complete opposite physical tensor state. Real tensor components may also be reversal-odd; complex conjugation is not a general reversal rule. Source bytes, full frames and amplitudes are preserved. Unsupported Z→X changes remain rejected for fixed-frame sources; use the group's editor or a compatible validated source. No missing pair or arbitrary rotation is inferred.
+- Enable Local mode and explicitly configure the requested ionizing groups through **Configure MDFF…**. Global M stays locked. Keep element/edge, source identity, relative amplitudes, tensor frame, magnetic states and modeled energy windows consistent. Declare requested samples/windows explicitly; coverage is checked without extrapolation. Turn off Ionize for excluded groups; their atoms remain in the elastic crystal.
+- Enter a direction and choose **Update direction**, then **Apply and Close**. The first action stages a draft; the second accepts a consistent configuration. With an explicitly supplied, validated reversal pair, an antiparallel direction selects the complete opposite physical tensor state. Real tensor components may also be reversal-odd; complex conjugation is not a general reversal rule. Source bytes, full frames and amplitudes are preserved. Unsupported Z→X changes remain rejected for fixed-frame sources; use the group's editor or a compatible validated source. No missing pair or arbitrary rotation is inferred.
 - Failed Apply leaves accepted state intact and retains the draft. Cancel discards unaccepted changes. The MDFF Editor refreshes its selected physical pair when required; group direction changes are distinct from editing tensor entries. Save requires pending configured-group edits to be applied or cancelled. Save/Open retains accepted group direction, provider pair selection, frames and provenance; recalculation uses that restored configuration, not disabled Global M.
 
 Use **File → Save / Save As / Close Project / Open** in development source; configuration can be saved before calculating. Preserve external inputs that are not portable attachments. Saved arrays can remain viewable when missing/changed sources block a rerun. No manually authored project JSON is required.
 
-See the [step-by-step user guide](USER_GUIDE.md#development-site-groups). magCIF and general tensor rotation remain future work. Prior broad source-guard verification is **incomplete**; no full regression or new candidate build is claimed here.
+See the [step-by-step user guide](USER_GUIDE.md#development-site-groups). magCIF and general tensor rotation remain future work. Broad application-regression/source-guard coverage remains **incomplete**; focused passes do not replace it. Candidate build and native-inspection scope is reported separately.
 
 ## Choose a construction method
 

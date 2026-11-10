@@ -1,74 +1,42 @@
 # EMCD-Sim
 
-Research software for **electron magnetic circular dichroism (EMCD)**, core-loss EELS, and dynamical electron diffraction in transmission electron microscopy. EMCD-Sim connects crystal geometry, elastic propagation, a declared mixed dynamic form factor (MDFF), and virtual detectors to examine magnetization reversal and model sensitivity.
+Research software for electron magnetic circular dichroism (EMCD), core-loss EELS, and dynamical electron diffraction in transmission electron microscopy.
 
-**Development source only:** `feat/v0.9.0-crystal-grouping` adds automatic crystallographic groups and compatible group-direction Apply/Save/Open/recalculation. See the [development workflow](docs/USER_GUIDE.md#development-site-groups). These additions are absent from the previously accepted v0.9.0-beta.1 EXE/source kit at `6b917ed` and are not a published release. Candidate integration/building is a separate step; broad source-guard verification remains incomplete. The release links below retain their original version-specific meaning.
+**v0.9.0-beta.1 Windows Research Beta — local release candidate, not published.** This source includes multi-site calculations and the completed crystallographic-grouping, Material/MDFF, sampling, results and persistence workflows. See the [candidate release notes and verification limits](docs/RELEASE_NOTES_0_9_0_BETA_1.md). Previously accepted development binaries do not acquire these changes automatically.
 
-[Published Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) | [Installation](docs/INSTALL_WINDOWS.md) | [First calculation](docs/QUICK_START.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md) | [User manual](docs/USER_GUIDE.md)
+[Published v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) | [Installation](docs/INSTALL_WINDOWS.md) | [Quick Start](docs/QUICK_START.md) | [User Guide](docs/USER_GUIDE.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md)
 
-**Windows Research Beta v0.8.1-beta.2.** The [release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) includes the MDFF update below. Install the official Microsoft x64 v14 runtime first; see [installation and accompanying Qt sources](docs/INSTALL_WINDOWS.md) and [release notes](docs/RELEASE_NOTES_0_8_1_BETA_2.md). Earlier beta.1 assets remain unchanged.
+## Capabilities
 
-## Main capabilities
-
-| Area | Implemented scope |
+| Area | Current scope |
 | --- | --- |
-| Structure and geometry | CIF import, oriented reciprocal indexing, excitation errors, diffraction previews, projected zone-axis interaction, and virtual detectors. Elastic-preview eligibility is separate from MDFF eligibility. |
-| Elastic scattering | Bundled Adaptive Dirac-Pade neutral-atom factors for Z=1-118; named Ni Lobato compatibility route for historical projects. Ordered, fully occupied multi-element crystals can support elastic diffraction. |
-| Propagation | Bloch-wave and FFT Multislice, with Single or Double Channeling and matched BW/MS comparisons. |
-| Inelastic response | XMCD-constrained MDFF, approximate Atomic Ionization MDFF, or Manual tensor construction, including a two-edge Lorentzian spectrum and advanced imported tensor exchange. |
-| Inspection and projects | Source/tensor previews, reversal and even/odd views, stale-state warnings, completed-project save/reopen, Results Browser, and figure/CSV/NPZ exports. |
+| Structure | ASE/CIF import; general 3D viewer; crystallographic orbit suggestions with original atom indices, Wyckoff/provenance information and manual magnetic subgroup editing. Ordinary CIFs supply neither magnetic order nor MDFF. |
+| Elastic scattering | Adaptive Dirac-Pade neutral Z=1–118; Ni Lobato compatibility for historical calculations; explicit finite diffraction support and geometry. |
+| Inelastic response | Independent element/site-group XMCD-constrained, synthetic Atomic Ionization, or Manual tensor providers; explicit magnetic reversal pairs and independent modeled energy windows. |
+| Propagation | BW and FFT Multislice Single/Double Channeling. Independent localized ionization events sum incoherently; elastic paths within each event remain coherent. BW/MS comparison mode is available for Single Channeling. |
+| Results and projects | Shared Global/Local Total, Element, Group Mean, weighted Group Contribution and comparison views; numerical/figure export; multiple saved calculations, restoration and two-run comparison. |
 
-MDFF execution requires an eligible fully occupied single-element crystal with supported equivalent ionization sites. A CIF does not supply electronic transitions. Selecting a preparation element in a mixed crystal does not implement a multi-element MDFF sum.
+## Current workflow
 
-## New MDFF configuration and parameter editor
+1. **Material → Open CIF…**, then **3D Structure Viewer… → Site groups**. Inspect suggested structural groups and original atom indices. Split or assign magnetic groups manually where necessary.
+2. Select **Global Magnetization Mode** or **Local Site Magnetization Mode**. Material owns target M; MDFF Configuration displays that target read-only. Local mode locks Global M. Exclude non-ionizing groups without removing their atoms from the elastic structure.
+3. Use **Configure MDFF…** in the explicit Global/group context. Supply compatible source/model parameters, magnetic-state declarations and full tensor frames. Complete validation/acknowledgement, **Done**, and outer **Apply and Close**. Failed Apply retains accepted settings and the draft; Cancel discards unaccepted changes.
+4. Set geometry, propagation, sampling, detectors and resources explicitly. Default uniform sampling requests 241 points per modeled source window and inserts exact selected energies. **Full angular maps at selected energies** uses detector support elsewhere; **Full angular field at every energy (advanced)** is a separate opt-in. The angular detector grid is not the MS FFT mesh.
+5. **Run EMCD / EELS**. Automatic internal BLAS limits are verified for the calculation and restored afterward; users need no environment-variable workaround. Manual outer workers remain subject to CPU/memory admission. Progress reports actual work and elapsed time; **Cancel** stops cooperatively.
+6. Inspect Results without recalculating. Save the complete project with **File → Save / Save As…**; restore a run or compare exactly two calculations from **Project Results**. Export controls are beside the corresponding results.
 
-Open **Model > Configure MDFF...** to use the same three choices for every crystal:
+Use the [Quick Start](docs/QUICK_START.md) for a deliberately small first case. Extract the complete Windows package and keep `_internal` beside `EMCD-Sim.exe`. Install the documented Microsoft x64 v14 runtime separately. Python, Conda and WIEN2k are not required to run the EXE. The accompanying source kit contains the matching application source and required dependency sources/replacement instructions.
 
-- **XMCD-constrained MDFF:** select one five-column XAS/XMCD source, validate it, and declare its element, edges, magnetic axis, convention, provenance, and relative scale as required. Preview displays the original input columns and the actual calculation-provider tensor. Ambiguous input requires explicit choices for both edge energies; default or inherited numbers do not qualify.
-- **Atomic Ionization MDFF:** prepare a cubic, independent-electron Sc-Zn 2p-to-3d L2,3 model through an element-aware editor. Edit references, Gaussian width, magnetization/frame, crystal-field and exchange splitting, spin-resolved holes, and radial input. Generic electronic defaults are labeled synthetic, not inferred material properties. Elemental edge references do not predict chemical shifts.
-- **Manual tensor:** edit nine complex entries of a constant Hermitian positive-semidefinite tensor, or construct an L2,3 spectrum from two independent integrated-strength tensors and Lorentzian profiles. Advanced source exchange retains imported tensor workflows. Invalid drafts are rejected without silently repairing matrices or executing old input.
+## Scientific and verification limits
 
-Per-element drafts, parameter explanations, frame diagrams, component plots, and numerical previews make assumptions inspectable before calculation. A schematic is not a numerical spectrum; a tensor preview is not detector EELS. See [construction methods, inputs, defaults, units, and examples](docs/MDFF_WORKFLOWS.md).
+Signals preserve declared relative provider amplitudes; they are not automatically calibrated cross-element intensities, electron counts, or magnetic moments. Synthetic Atomic/Manual inputs do not establish quantitative Fe₃O₄, NiFe₂O₄ or Cr spectra. The model retains finite ZOLZ, projected IAM and continuous-depth localized ionization approximations. General beam/FFT/depth/detector convergence and complex-condition BW/MS convergence are incomplete. Magnetization direction is not a complete anisotropic tensor frame; unsupported fixed-source rotations remain rejected. General tensor rotation, magCIF and automatic magnetic-order inference are absent.
 
-## Installation to a first result
-
-For a published binary, download the complete Windows ZIP and supplied checksum from the [beta.2 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), verify it, and extract the entire `EMCD-Sim` folder. Keep `_internal` beside `EMCD-Sim.exe`. Binary users need neither Python, Conda, WIEN2k, nor an existing project JSON. Use the documentation for that binary version.
-
-For the new editor, install beta.2 or [install current main from source](docs/INSTALL_WINDOWS.md#source-installation). Then:
-
-1. Choose **File > New** for the bundled Ni structure, or **Open CIF...** for a supported structure.
-2. Set zone and target. Open **Configure MDFF...**, choose a model, and validate its inputs.
-3. Use the small, explicitly coarse [Quick Start](docs/QUICK_START.md) profile.
-4. Update the MDFF preview, run, and inspect EELS and selected-energy maps.
-5. Use **File > Save Project** to create a completed project folder. Reopen the whole folder and select **Use These Settings** before rerunning.
-
-The [installation guide](docs/INSTALL_WINDOWS.md) separates binary use from source/build setup, and explains extraction, platform status, source reconnection, and troubleshooting.
-
-## Scientific methods and limits
-
-Bloch-wave propagation diagonalizes a finite reciprocal-space elastic generator. FFT Multislice propagates through a sampled projected independent-atom potential. Single Channeling includes incoming elastic channeling; Double Channeling also includes depth-distributed inelastic transitions and outgoing propagation at reduced electron energy. It does not mean two inelastic events. The convention is `forward_born_dagger_g_minus_h_v1`, with intensity `Re Tr(RT)`.
-
-XMCD supplies an axisymmetric effective response constrained by intensities, not full complex core-to-band DFT data. Atomic Ionization is cubic and independent-electron, not a full multiplet or band calculation. Manual tensors are phenomenological input, not automatically calibrated material responses. Relative intensities are not absolute electron counts or experimental signal-to-noise predictions.
-
-There is no general multi-element/inequivalent-site MDFF, noncollinear magnetic texture, AFM/SDW material model, or certified quantitative Fe spectroscopy. Convergence requires separate basis, potential, FFT, depth/slice, and detector studies. BW/MS agreement does not eliminate shared approximations. [Planned work](docs/INDEX.md#experimental-and-planned-work) is separate from implemented functionality.
-
-Windows x64 is the tested packaged platform. The beta.2 EXE passed an application-created synthetic Fe fixture project, application restart, and recalculation on the development host; independent clean-machine installation remains unverified. Linux/macOS packages are not supplied or certified. Recorded Linux interpreter-shutdown and macOS Qt-modal CI problems remain limitations.
-
-**Validation status — v0.8.1-beta.2:** Release source `88dc9ec` passed **21 focused packaging/safeguard checks**, and the packaged Windows EXE passed native verification of XMCD ambiguity rejection, explicit Fe 710/723 eV preview/calculation, and normal saving, restart, reopening, and recalculation. The XMCD ambiguity issue identified in the earlier full-suite run was fixed in `4f15a4d`; the repair passed **four focused regression cases** with the original failed assertion preserved. **A complete full-suite rerun was not performed on the final release.** Historical test results and the prerelease-specific validation exception are documented in [validation history and release status](docs/RELEASE_NOTES_0_8_1_BETA_2.md).
-
-Earlier v0.6.1 binaries used a superseded magnetic-sign convention. Preserve original arrays/provenance and revalidate signed results; opening a project does not upgrade its physics. Historical [Ni Lobato examples](docs/images/ni017_flipm_recomputed/README.md) retain their original provider and are not relabeled as Adaptive calculations.
+The current candidate has bounded numerical/native evidence, **not a new complete regression pass**. Historical failed/incomplete application-regression and source-guard coverage remains recorded separately. Original-size Fe₃O₄ MS completion and independent clean-PC/VM acceptance remain unverified. See [release evidence](docs/RELEASE_NOTES_0_9_0_BETA_1.md) before interpreting readiness. Linux/macOS packages are not certified.
 
 ## Documentation and citation
 
-| Document | Purpose |
-| --- | --- |
-| [Installation](docs/INSTALL_WINDOWS.md) / [Quick Start](docs/QUICK_START.md) | Setup and a small first calculation. |
-| [MDFF workflows](docs/MDFF_WORKFLOWS.md) | Construction methods, parameter meanings, synthetic example, preview, and project creation. |
-| [User manual](docs/USER_GUIDE.md) / [Tutorial](docs/TUTORIAL.md) | Controls, propagation, detectors, normalization, and interpretation. |
-| [Atomic parameter reference](docs/ATOMIC_PARAMETER_EDITOR.md) / [Manual spectral model](docs/MANUAL_L23_TENSOR_MODEL.md) | Detailed definitions and implementation-era evidence. |
-| [Physics](docs/PHYSICS.md) / [Units](docs/PHYSICAL_UNITS.md) / [Limitations](docs/USER_GUIDE.md#scientific-limitations-and-responsible-interpretation) | Equations, conventions, and responsible use. |
-| [Beta.2 notes](docs/RELEASE_NOTES_0_8_1_BETA_2.md) / [Changelog](docs/CHANGELOG.md) / [Index](docs/INDEX.md) | Full feature update, compatibility, accurate validation history, and references. |
+[Physics and references](docs/PHYSICS.md) · [Units](docs/PHYSICAL_UNITS.md) · [Changelog](docs/CHANGELOG.md) · [Documentation index](docs/INDEX.md). Historical published-binary instructions remain available at their release tags. Earlier magnetic-sign conventions and unknown provenance must not be silently relabeled as current.
 
-Cite the repository, exact release/commit, MDFF source, elastic provider, and numerical configuration. No software-paper DOI is claimed. Existing theory/normalization references are in [Physics: references and historical records](docs/PHYSICS.md#references-and-historical-records).
+Cite the exact release/commit, crystal, MDFF source and declarations, elastic provider and numerical settings. No software-paper DOI or universal material calibration is claimed.
 
-Application source is [MIT](LICENSE). Adaptive coefficients have separate [Apache-2.0 licensing](src/emcd_sim/data/adaptive_dirac_pade_2026/LICENSE), [NOTICE](src/emcd_sim/data/adaptive_dirac_pade_2026/NOTICE), and provenance. Edge-reference data and dependencies retain their own licenses. The [Qt distribution notes](packaging/assets/qt-licenses/README.txt) describe retained components, the accompanying source kit and replacement rights; application licensing does not override dependency terms.
+Application source is [MIT](LICENSE). Adaptive coefficients retain their [Apache-2.0 license](src/emcd_sim/data/adaptive_dirac_pade_2026/LICENSE), [NOTICE](src/emcd_sim/data/adaptive_dirac_pade_2026/NOTICE) and provenance. Dependency licenses apply separately; see [Qt redistribution and source arrangements](packaging/assets/qt-licenses/README.txt).

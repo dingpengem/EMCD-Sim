@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.9.0-beta.1 — local Windows Research Beta release candidate (not published)
+
+- Consolidate the multi-site BW/MS Single/Double, crystallographic grouping, Material-owned Global/Local M, native per-group MDFF, results, project/history and export workflows. Magnetic grouping, ionization participation and source/frame declarations remain explicit.
+- Include normal-startup verified single-thread control for both OpenBLAS runtimes, bounded four-worker execution, response/depth progress and cooperative cancellation (`62cb49a`). Four workers are not universally faster.
+- Honor selected-energy full maps and detector support elsewhere in Local MS Double; preserve explicit all-energy full-field evaluation and internal FFT support (`daa5089`). The original Fe₃O₄ query count changes from 2,286,387 planned to 57,378 expected, not a measured original-size runtime improvement.
+- Resolve both focused current-source resource/default test failures, without changing memory policy or numerical tolerances. Thirteen distinct directly relevant cases passed; historical failed/incomplete broad regression and source-guard status remains unchanged.
+- Include shared Results layout/selection fixes, effective sampling captions, persistence, and generic saved-input freshness comparisons. Consolidate current user instructions; retain version-specific historical records below. See [release-note draft and scoped evidence](RELEASE_NOTES_0_9_0_BETA_1.md).
+
+
 ## Unreleased development source — crystallographic groups and direction workflow
 
 - Restore uniform source-range sampling (241 requested points plus exact selected energies) as the new-project default. Keep native and selected-only sampling explicit and independent of selected-energy angular maps. Single Channeling evaluates only nonzero detector support elsewhere, prepares group tensors/phases and reciprocal vectors once, and retains bounded blocks, source checks and the unchanged tensor kernel. Save/Open preserves explicit old native/full-field choices. These changes are development source, not updates to earlier candidates or published releases.
@@ -114,7 +123,7 @@ complete complex DFT-derived MDFF or universal numerical convergence.
 
 ## Historical development entries (preserved)
 
-# Unreleased ? generalized Multislice final scientific review
+# Unreleased → generalized Multislice final scientific review
 
 - Five targeted [111] detector-only controls identify potential/beam support as
   the dominant raw-intensity sensitivity; passing final MS increments do not
@@ -126,7 +135,7 @@ complete complex DFT-derived MDFF or universal numerical convergence.
 - [GO for bounded research merge](GENERALIZED_MULTISLICE_MERGE_READINESS.md),
   not unrestricted convergence. No merge, release, Atomic 3D or Windows rebuild.
 
-# Unreleased ? generalized EMCD end-to-end validation
+# Unreleased → generalized EMCD end-to-end validation
 
 - Normal source-GUI Single/Double BW/MS acceptance across [001], [017], [117],
   [111] and [710], including Bragg alignment, coherent EELS/maps and projects.
@@ -137,7 +146,7 @@ complete complex DFT-derived MDFF or universal numerical convergence.
 - No solver-model/default/version change, Atomic 3D work, merge or Windows rebuild.
   See [validation and review disposition](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md).
 
-# Unreleased ? generalized Projected ZOLZ development
+# Unreleased → generalized Projected ZOLZ development
 
 - Shared crystallographic orientation, exact integer reciprocal basis and
   structure-derived IAM Fourier potential; no production [017]/[117] geometry imports.

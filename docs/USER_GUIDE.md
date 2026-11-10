@@ -2,11 +2,9 @@
 
 [Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [Index](INDEX.md)
 
-This manual combines retained control/physics references with the MDFF interface shipped in [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), package version `0.8.1b2`, built from `88dc9ec`. See [current MDFF workflows](MDFF_WORKFLOWS.md) and [release/validation status](RELEASE_NOTES_0_8_1_BETA_2.md). For the older beta.1 binary, use its [tag-specific manual](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.1/docs/USER_GUIDE.md). Independent clean-machine installation and Linux/macOS packaged support remain unverified.
+This manual describes the local **v0.9.0-beta.1 Windows Research Beta candidate**, not a published release. Use the [release notes](RELEASE_NOTES_0_9_0_BETA_1.md) for evidence and remaining verification limits. Published v0.8 binaries retain their [tag-specific instructions](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/USER_GUIDE.md).
 
-**Development-source addition:** the [Site Group workflow below](#development-site-groups) describes `feat/v0.9.0-crystal-grouping`, not a published binary. The accepted v0.9.0-beta.1 candidate at `6b917ed` does not contain these later grouping/direction/usability changes. Versioned v0.8 controls and project instructions elsewhere in this manual remain compatibility references; use the development workflow for current source controls.
-
-The dev3 Settings sections are **Material**, **Zone Axis & Diffraction**, **Microscope & Sample**, **Propagation Method**, **Shared Calculation Settings**, **Virtual Detectors**, and **Output Settings**, in that order. MDFF editing is reached only through **Material → 3D Structure Viewer → Site groups → Configure MDFF…**. Its explicit Global/group context does not switch the active magnetic mode; the target direction is inherited read-only from Material. The three native models remain available in both contexts, with scrollable content and fixed action buttons. See [participation, normalization and draft handling](MDFF_WORKFLOWS.md#development-group-direction-workflow) before running multi-element calculations. The historical section table below documents the released v0.8 interface, not dev3.
+Material owns Global/group target directions. The shared MDFF workspace is reached through **Material → 3D Structure Viewer… → Site groups → Configure MDFF…**. The selected Global/group context is explicit; it does not itself switch magnetic mode. MDFF target M is read-only. Full source-axis and tensor-frame declarations remain separate. Independent clean-PC/VM installation and Linux/macOS packaged support remain unverified.
 
 > **Legacy magnetic results:** earlier released v0.6.1 packages used a superseded Born/MDFF convention. Preserve their raw arrays, source and convention; revalidate signed magnetic results before comparison. Loading a project does not update its physics. Missing convention metadata is unknown/legacy-unverified.
 
@@ -15,24 +13,23 @@ Use the [Quick Start](QUICK_START.md) for a small first run and the [Tutorial](T
 <a id="find-your-way-around"></a>
 ## 1. Interface and layout
 
-The main window has three adjustable regions: **Settings**, the central **Diffraction viewer**, and **EMCD Results**. The bottom **Project Results / Results Browser** lists runs. Blue headers and chevrons collapse sections; scroll Settings to reach controls. Use **Maximize / restore viewer**, **Maximize / restore results**, splitter handles and **View → Restore Default Layout** to adapt to the monitor. Layout preferences are independent of scientific project parameters.
+The four familiar regions remain: upper-left **Settings**, upper-center diffraction preview/viewer, upper-right **EMCD Results**, and lower **Project Results**. Collapse sections, scroll panels, resize splitters, or use **Maximize / restore viewer/results**. File contains project actions; settings, results and calculation management stay in their panels.
 
-|Settings section|Purpose|
-|---|---|
-|A. Crystal Structure|Select FCC Ni, load/inspect CIF|
-|B. Zone Axis & Diffraction|Orientation, target, tilt, Bragg alignment and interaction mode|
-|C. Microscope & Sample|Voltage and thickness|
-|D. MDFF Model|Source, magnetic axis, model parameters and validation|
-|E. Propagation Method|Single/Double, BW/MS/Both and MS-only controls|
-|F. Shared Calculation Settings|Automatic/Manual numerics, physical support, sampling and resources|
-|Virtual detectors|A/B positions, radius and visibility|
-|G. Output Settings|Current-figure, preview and completed-result exports|
+| Settings section | Purpose |
+| --- | --- |
+| Material | Open/inspect CIF; 3D viewer, Site groups and MDFF workspace |
+| Zone Axis & Diffraction | Orientation, target, tilt and Bragg alignment |
+| Microscope & Sample | Voltage and thickness |
+| Propagation Method | Single/Double; BW/MS; MS-specific settings |
+| Shared Calculation Settings | Numerical support, energy/angular sampling and resources |
+| Virtual Detectors | A/B positions, radius and visibility |
+| Output Settings | Output controls; plot exports remain near Results |
 
 Results include **Diffraction**, **EMCD Angular Maps**, **Virtual Detector EELS**, **Magnetic / Nonmagnetic**, **Calculation Information**, and additional saved diffraction/comparison views when available. Disabled views generally lack calculated data; enabling a display cannot manufacture missing maps or spectra.
 
-In development source, Results controls wrap and the panel scrolls when its contents exceed the available height. Narrow angular views stack the maps while keeping their physical aspect ratio. Long comparison legends have dedicated space below the curves. The canvas heading retains the selected scope and actual energy; **Display details / diagnostics / export** provides the complete caption and figure toolbar. Figure exports include the full context at readable dimensions. These layout changes do not change data, color limits, normalization, or earlier accepted EXEs.
+Results controls wrap and the panel scrolls when its contents exceed the available height. Narrow angular views stack the maps while keeping their physical aspect ratio. Long comparison legends have dedicated space below the curves. The canvas heading retains the selected scope and actual energy; **Display details / diagnostics / export** provides the complete caption and figure toolbar. Figure exports include the full context at readable dimensions. Layout changes do not change data, color limits or normalization.
 
-In development source, Global and Local Site Group results use the same primary plots: detector A/B EELS above magnetic/nonmagnetic A−B components, and the same paired angular-map display. **Signal Display** switches between raw intensity and conventional **EMCD Asymmetry (%)**; this percentage can include nonmagnetic diffraction asymmetry and is distinct from reversal-odd intensity. Local results start at **Total Results**. The compact spectrum selector adds Element, Group, and Group Comparison views from saved arrays; Group Contribution uses the total selected-atom denominator, while Group Mean is nonadditive. Angular maps have their own explicit **Angular result scope**: Total Results, Group Contribution (n/N), or Group Mean (per atom). The group/energy selector identifies the actual saved group, edge and energy. Total selections list each actual saved energy once, in energy order, with applicable edge/element labels. Group-origin aliases remain in optional details and exports. Distinct energies remain separate even if rounded labels or arrays match; labels use extra precision when needed. Independent windows are identified as modeled-channel aggregates. Older saved aliases restore by scope and actual energy; unavailable selections are reported rather than replaced with another energy. Spectral Group Comparison does not change angular scope. Group map colors share a range across saved groups/energies in the chosen units; percentages remain nonadditive. Additional raw/reversal-state quantities remain available in the spectrum selector. Unmodeled energy gaps are not connected. Source details, normalization definitions, diagnostics and exports remain under **Display details / diagnostics / export**. These presentation changes do not alter saved arrays or imply that an earlier accepted EXE includes them.
+Global and Local Site Group results use the same primary plots: detector A/B EELS above magnetic/nonmagnetic A−B components, and the same paired angular-map display. **Signal Display** switches between raw intensity and conventional **EMCD Asymmetry (%)**; this percentage can include nonmagnetic diffraction asymmetry and is distinct from reversal-odd intensity. Local results start at **Total Results**. The compact spectrum selector adds Element, Group, and Group Comparison views from saved arrays; Group Contribution uses the total selected-atom denominator, while Group Mean is nonadditive. Angular maps have their own explicit **Angular result scope**: Total Results, Group Contribution (n/N), or Group Mean (per atom). The group/energy selector identifies the actual saved group, edge and energy. Total selections list each actual saved energy once, in energy order, with applicable edge/element labels. Group-origin aliases remain in optional details and exports. Distinct energies remain separate even if rounded labels or arrays match; labels use extra precision when needed. Independent windows are identified as modeled-channel aggregates. Older saved aliases restore by scope and actual energy; unavailable selections are reported rather than replaced with another energy. Spectral Group Comparison does not change angular scope. Group map colors share a range across saved groups/energies in the chosen units; percentages remain nonadditive. Additional raw/reversal-state quantities remain available in the spectrum selector. Unmodeled energy gaps are not connected. Source details, normalization definitions, diagnostics and exports remain under **Display details / diagnostics / export**. Presentation changes do not alter saved arrays. Previously accepted EXEs remain unchanged.
 
 ![Historical v0.7.0 Windows application with collapsible settings, diffraction viewer and results](images/v070b1/gui_overview.png)
 
@@ -40,26 +37,21 @@ In development source, Global and Local Site Group results use the same primary 
 
 ## 2. Structure import
 
-**FCC Ni default** creates the conventional cubic Ni reference, a = 3.524 Å. **Load CIF…** reads a CIF through ASE; **Inspect structure…** reports source hash, cell, sites and warnings. The GUI file-import route is CIF, not a general browser for every ASE-supported format.
+**File → New Project** starts with conventional FCC Ni (3.524 Å). **Material → Open CIF…** imports the actual ASE/CIF cell; **Inspect structure…** reports the cell, original indices and warnings. Do not silently replace a user's lattice with the historical reference cell.
 
-Reciprocal geometry can be inspected more broadly than inelastic scattering. The bundled Adaptive provider supports neutral Z=1–118; unsupported provider/species combinations produce explicit geometry-only messages. Disordered/partial occupancies and unsupported cells are not silently replaced. The original Ni providers require the verified conventional FCC Ni structure. In the retained legacy single-element route, opt-in imported tensors and declared approximate atomic sources additionally support eligible full-occupancy, translation-equivalent ionization sites. The development group route is described below. Importing an arbitrary CIF does not construct a material-specific MDFF or validate its magnetic response.
+The viewer can display structures beyond calculation eligibility. Ordered, fully occupied sites are required for the ionization calculation; disorder/partial occupancy is not silently approximated. Adaptive elastic factors support neutral Z=1–118, separately from MDFF eligibility. Legacy reference-Ni adapters retain their reference restrictions; explicitly declared generalized providers and Local groups retain their own validation. CIF import does not construct a material-specific magnetic response.
 
 <a id="development-site-groups"></a>
-### Development source: Site Groups and local magnetization
+### Site Groups, Material directions and MDFF acceptance
 
-These controls are in the separate, resizable **3D Structure Viewer**, opened from the existing **Settings** panel. The main Settings / Diffraction Preview / Results / Calculation History layout is unchanged.
-
-Latest development source makes **Material → 3D Structure Viewer → Site Groups** authoritative for target M. For the legacy Global workflow, edit **Global Material M (x y z)** there and choose **Apply**; **Cancel** leaves the accepted direction unchanged. In Local mode this Global field is locked. All three MDFF models show the applicable target read-only. Source magnetic-axis declarations and complete tensor/orbital frames remain separate physical inputs; importing or switching models cannot silently change Material M. XMCD and Manual's existing verified-axis construction use the Material direction directly. Atomic's declared full frame and imported tensors require compatible axes or explicitly validated reversal pairs; no arbitrary frame rotation is inferred. This cleanup is not in the unchanged `windows-crystal-groups-dev1` EXE built from `effb755`.
-
-Settings peer sections now use consistent collapsible headings: **Material**, **Zone Axis & Diffraction**, **Microscope & Sample**, **MDFF Configuration**, **Propagation Method**, **Shared Calculation Settings**, **Virtual Detectors**, and **Output Settings**. Their layout and functions are retained.
-
-1. Use **Open CIF…**. The importer proposes crystallographic groups using symmetry orbits while retaining original ASE indices. The inverse-spinel Fe3O4 example has Fe(A) 8a/8 atoms, Fe(B) 16d/16 atoms and O 32e/32 atoms. Read the recorded tolerance, labels and provenance. Partial/disordered or ambiguous inputs retain warnings/manual fallback; no magnetic order, moment magnitude or MDFF is inferred from ordinary CIF.
-2. Open **Site groups**. Select a group once in its table; individual atom picking is only for assigning/removing members. Counts, Wyckoff labels and existing MDFF status appear in the table. Resize columns or use its horizontal scrollbar; full ASE indices are also in the cell tooltip. The panel itself scrolls so the direction and MDFF controls remain reachable. Existing user groups are not silently replaced by suggestions.
-3. Enable **Local Site Magnetization Mode** to edit directions explicitly in crystal Cartesian coordinates. Global M is locked in Local mode; Global mode retains the legacy interpretation and local drafts. Arrows show normalized directions, not calibrated moments. For each requested ionizing group, use **Configure MDFF for Group…** and the existing native XMCD, Atomic or Manual controls. Supply valid sources, full tensor frames, explicit physical states and energy coverage. A direction alone does not define an anisotropic frame. Structural rows may stay unconfigured; they cannot execute as ionizing groups. Remove unneeded draft ionizing rows deliberately (for example O in an Fe-only loss calculation); this does not remove oxygen from the complete elastic crystal.
-4. To change an existing group, inspect **Accepted M** first. Typing in the direction field is only input. **Update direction** stages the group-wide draft and updates its arrows; the summary then shows **Draft M (unapplied)** separately from Accepted M. The MDFF line reuses the existing validation status. **Apply** accepts all compatible group direction/provider bindings together. Same-axis inputs and explicitly validated physical reversal pairs are supported. A reversal selects the supplied opposite state without changing source tensors, amplitudes, axis/frame declarations or another group. Unsupported Z→X changes with fixed-frame data remain rejected; use that group's MDFF Editor or a compatible validated source. The draft remains available, and accepted settings are unchanged on failure. **Cancel** discards unaccepted edits.
-5. After Apply, use **File → Save / Save As**. Development projects can preserve configuration before a calculation; they are not restricted to completed results. Unapplied changes on configured local groups must be applied or cancelled before saving. Keep the complete project and required external sources; not all spectroscopy data are automatically embedded. **Close Project → Open** restores accepted directions, pair selections, frames and provenance. Reopening alone performs no simulation. Inspect the restored configuration, then **Run EMCD / EELS** to recalculate. Saved result browsing is separate from **Restore Settings from Selected Run…** in the lower calculation-history panel.
-
-magCIF and general tensor rotation remain future work. These development changes have focused and native source-GUI evidence, not full regression or new candidate/release acceptance. The earlier source-guard verification remains **incomplete**. See [grouping logic and limitations](CRYSTALLOGRAPHIC_GROUPING.md), [MDFF workflow details](MDFF_WORKFLOWS.md#development-group-direction-workflow) and [direction/provider conventions](PHASE2_GROUP_MAGNETIZATION_MDFF.md).
+1. Import the CIF and open **3D Structure Viewer… → Site groups**. Automatic groups describe crystallographic orbits, with original ASE indices, Wyckoff/provenance and tolerance information. They assign neither M nor MDFF. Supercell display replicas refer to original atoms and do not create additional ionization sites.
+2. Inspect membership. If magnetic inequivalence differs from crystallographic equivalence, select original atoms and use the existing group creation/assignment/removal controls to form disjoint magnetic subgroups. Renaming a group does not split its membership. No magnetic equivalence is inferred.
+3. Choose **Global Magnetization Mode** or **Local Site Magnetization Mode**. Global retains its legacy physical interpretation. Local locks Global M and uses independently declared crystal-Cartesian directions; switching back preserves local drafts. Global-mode local rows are explicitly inactive, not evidence that the Global provider is missing.
+4. Enable **Ionize** only for participating groups. Excluded atoms remain in the complete elastic crystal. For example, Fe-only loss from Fe₃O₄ uses N=24 selected Fe atoms, not all 56 atoms. Structural groups may remain unconfigured when excluded; active missing inputs must block Run by group name.
+5. Select a whole group once to edit its direction. **Update direction** stages the group-wide draft; inspect **Accepted M** versus **Draft M (unapplied)**. Arrows are normalized directions, not calibrated moment magnitudes. Direction alone does not define an anisotropic tensor frame.
+6. Choose **Configure MDFF…** in the explicit Global/group context. Supply compatible models/sources, units/scales, full frames, magnetic-state declarations and modeled energy windows. Validate sources and required acknowledgements, inspect preview, then **Done** and outer **Apply and Close**. Done/preview alone does not accept Material settings.
+7. Direction and provider are accepted atomically. Failed Apply preserves the old accepted configuration and the editable draft; Cancel discards unapplied edits. A supported reversal selects the explicitly validated physical pair member. No missing pair, tensor values or arbitrary frame rotation are invented. Unsupported fixed-source Z→X changes remain rejected; use the group's editor or a compatible source.
+8. Save/Open preserves accepted directions, provider selection, frames, source identity and provenance; recalculation uses the restored configuration. Pending configured-group edits must be Applied or Cancelled before saving. General tensor rotation and magCIF remain future work.
 
 ## 3. Diffraction settings
 
@@ -123,22 +115,15 @@ Integration is `sum(weights * intensity) * dq²` using fixed fractional circle/p
 
 ## 7. Magnetization settings
 
-For development Local Site Magnetization, use the [Site Group workflow](#development-site-groups). The legacy Global M below is inactive/locked in that mode and does not override local directions or full tensor frames.
+Edit target M in **Material → 3D Structure Viewer… → Site groups**. Global mode uses one accepted crystal-Cartesian direction. Local mode uses each participating group's direction and locks Global M. The MDFF workspace inherits the selected target read-only; source quantization axes and complete tensor frames remain independent declarations.
 
-**Crystal Cartesian M axis** is a finite nonzero direction, normalized internally. For cubic Ni, `0 0 1` specifies crystal [001]. Its local components change with the proper orientation transform; it is not implicitly beam-aligned. This prescription does not establish the specimen surface normal, magnetic domain structure or equilibrium orientation.
+Global reversal exchanges every participating provider's complete physical +M/−M pair together. It does not replace an AFM/noncollinear configuration with uniform M or assume reversal is complex conjugation. Synthetic ferrimagnetic/AFM configurations do not by themselves establish calibrated moments or a required detector EMCD sign.
 
-The XMCD model reverses eta in the crystal frame before `R T Rᵀ`. Atomic reversal uses its transition/spin convention. Each calculation retains +M/−M spectra at unchanged detectors. Absolute experimental polarization/magnetic handedness is not independently calibrated; declare source conventions intentionally.
-
-<a id="xmcd-constrained-effective-mdff"></a>
 ## 8. MDFF models
 
-Current main uses **Model > Configure MDFF...** with **XMCD-constrained MDFF**, **Atomic Ionization MDFF**, and **Manual tensor**. The [MDFF workflow guide](MDFF_WORKFLOWS.md) describes each implemented construction method, inputs, units/defaults, assumptions, previews, and completed-project persistence, with an existing-input synthetic Fe example.
+**Configure MDFF…** offers **XMCD-constrained MDFF**, **Atomic Ionization MDFF**, and **Manual tensor**. Sources/models must validate for the actual element, sites, axis/frame and energy coverage. Independent providers may serve different groups of the same element. See [construction details](MDFF_WORKFLOWS.md).
 
-The Atomic editor implements the declared cubic Sc-Zn 2p-to-3d L2,3 model with element-specific drafts and explicitly synthetic electronic defaults. Manual tensor includes constant density, an L2,3 Lorentzian spectrum from integrated strength matrices, and advanced imported source exchange. General single-element/equivalent-site eligibility remains separate from menu visibility or CIF import. None supplies arbitrary multi-element or complex magnetic structures.
-
-For ambiguous XMCD, select both native L3/L2 energies explicitly; default or inherited numbers do not count. A validated JSON selection initializes the visible fields, whose later edits remain authoritative. Source changes clear previous selection state; verified saved declarations restore the intended energies. Update preview after relevant edits. The provider shown by XMCD preview is the calculation provider, not a separate source.
-
-Use **File > Save Project** after a successful calculation to create a new complete project folder; an existing project JSON is not required. Open the whole folder and choose **Use These Settings** before rerunning. Preserve external sources and all project files; saved arrays can remain viewable when rerunning is blocked by a missing source.
+XMCD is an axisymmetric effective response, not complete complex ab-initio MDFF. Atomic is the declared cubic independent-electron Sc–Zn L2,3 model with synthetic electronic defaults. Manual tensors must be Hermitian PSD with explicit units, normalization, frames and reversal assumptions. None infers magnetic order, oxidation state or calibrated material spectroscopy from CIF.
 
 ### Historical Ni controls (compatibility reference)
 
@@ -169,56 +154,54 @@ MS-only controls are in panel E; they hide/disable appropriately for BW and reta
 
 <a id="development-source-shared-and-solver-specific-settings"></a>
 <a id="automatic-and-manual-numerical-settings"></a>
-## 11. Automatic and Manual numerical settings
+## 11. Numerical settings and independent grids
 
-**Automatic** selects deterministic starting values and performs configuration/FFT-support checks without trial scattering calculations. Inspect **View Numerical Parameters**; do not assume a literature/research profile was matched merely because the material or zone name agrees. **Manual (Advanced)** exposes explicit support/sampling controls. Preserve and report actual effective values, including numerical-selection metadata.
+**General settings (editable)** exposes explicit numerical controls. Retained reference/legacy selection modes have their documented narrow meaning; a preset name is not convergence evidence. Saved effective values survive restoration. The angular preset caption names a preset only when its defining values match; otherwise it reports, for example, **Custom – 9×9**, without applying 97×97.
 
-**Dev4 development source:** fresh/reset Beam / MDFF basis cutoff is **2.5 Å⁻¹**, and Potential Fourier cutoff is **2.0 Å⁻¹**. Ordinary Automatic starts use these values; matched historical reference presets remain explicitly distinguished. Saved explicit cutoffs survive reopening. The table below retains released v0.8 starting values. Scrolling over focused numeric controls or closed selectors scrolls the page without editing parameters; use typing, keyboard arrows or step buttons to edit.
+| Control | Normal starting value | Meaning |
+| --- | ---: | --- |
+| Beam / MDFF basis cutoff | 2.5 Å⁻¹ | Retained diffraction/MDFF beam support |
+| Potential Fourier cutoff | 2.0 Å⁻¹ | Elastic potential harmonics; separate from beam radius |
+| Angular / detector grid | 97×97 | Requested physical q samples for maps and detector integration |
+| Energy sampling points | 241 | Uniform request per modeled window, plus exact selected energies |
+| Depth integration nodes | 64 | Depth quadrature/coherence samples |
+| Aperture boundary subpixels | 64 | Fractional detector-boundary area integration |
+| FFT grid | 32×32 starting mesh | Internal MS potential/wave mesh; geometry can require larger support |
+| Max slice step | 2 nm | Upper bound on propagation substeps, not guaranteed actual step |
+| Memory budget | 2048 MiB | Estimated process-peak admission allowance |
 
-|Control|Released starting value|Role|
-|---|---:|---|
-|Voltage / thickness|300 kV / 30 nm|Physical inputs; set explicitly for each study|
-|Beam / MDFF basis cutoff|3.2 Å⁻¹|Shared retained hkl support|
-|Potential Fourier cutoff|2.5 Å⁻¹|Shared elastic potential harmonics, norm(g−g′) cutoff|
-|Debye–Waller B|0 Å²|Shared IAM damping parameter; not comprehensive TDS|
-|Angular / detector grid|97×97|Physical q samples, independent of FFT mesh|
-|Map halfwidth|1 Å⁻¹|Inelastic q extent; must contain apertures|
-|Energy sampling points|241|Full-spectrum request, with native feature insertions|
-|Depth integration nodes|64|Shared depth/coherence sampling; not “64 propagation steps”|
-|Aperture boundary subpixels|64|Fractional boundary-area approximation|
-|FFT grid|32×32 starting mesh|MS only; Automatic can enlarge to support geometry|
-|Max slice step|2 nm|MS upper bound, editable 0.001–10 nm|
-|Memory budget|2048 MiB|Estimated process-peak admission allowance|
+For depth interval `t/(N_depth−1)`, MS uses `ceil(interval/max_step)` substeps. Record effective dimensions, actual step, beam count and detector sampling. Reducing angular queries does not reduce the internal FFT mesh. These starting values are not universal scientific recommendations.
 
-Automatic can resolve different values for a narrowly matched reference or required FFT support. Existing saved configurations and explicit slice overrides must be inspected; starting values are not a universal production recommendation. Old projects without a numerical-mode field restore explicit settings in Manual.
+Wheel scrolling over focused parameters or closed selectors does not edit them; typing, keyboard editing and explicit step buttons remain available. Plots and the 3D viewer retain their intended wheel interaction.
 
-**Max slice step remains editable in Automatic and Manual.** Explicit user overrides are retained across mode selection. Actual propagation distance between depth planes is split into `ceil(interval/max_step)` equal substeps, where `interval = t/(N_depth−1)`. Record requested and actual step when applicable. A warning above the 0.04 nm advisory reference does not claim a universal convergence threshold or force a smaller step. The actual interval may already be smaller; inspect metadata. The 200,000-step safety bound still applies.
-
-Research refinement must separate beam support, potential cutoff, FFT sampling, depth integration, MS step, q grid/extent, aperture weighting and energy sampling. This manual changes none of them.
-
-<a id="parallel-workers-and-pre-run-risk"></a>
 ## 12. Worker parallelism and resource safety
 
-**Parallel Workers** is independent of Automatic/Manual Numerical Settings. **Automatic (Recommended)** applies the existing evidence-scoped resource policy. **Manual** requests 1–4 detector workers; native BLAS/LAPACK threading is separate from that count and the calculation QThread. Unsupported/unsafe manual requests are blocked rather than silently replaced.
+**Parallel Workers → Automatic (Recommended)** applies existing CPU/memory policy; **Manual** requests 1–4 outer detector workers. Single Channeling has no parallel detector executor and uses one. Double Channeling reuses incoming/outgoing work across groups. Four workers are not universally faster.
 
-Budgets are **512, 1024, 2048, 4096 or 8192 MiB**. **Resource estimate** separates dense-kernel and estimated process memory, additional allocations, retained results and worker concurrency. It checks available physical RAM and a conservative 50% available-RAM limit, with margin/reserve. The budget is neither a required allocation nor a guarantee of native stability. A rejected configuration is not automatically run with fewer beams, lower precision, a coarser grid or a different solver.
+For supported normal-threading OpenBLAS runtimes, execution automatically sets and verifies one internal thread in both NumPy and SciPy, then restores prior limits after workers join. Normal users do not need BLAS/OpenMP environment overrides. Unsupported control remains a visible rejection, not a fabricated verified state or silent manual-worker reduction.
 
-Read statuses such as **UNVERIFIED COMBINATION**, support errors or **Memory admission rejected** before Run. A caution is not a convergence certificate; successful admission is not a universal crash guarantee. Close competing memory-heavy jobs or explicitly revise supported settings, recording every scientific change. Do not enlarge memory limits merely to hide a missing convergence check.
+**Resource estimate** includes current RSS, concurrent reservations, allocation margin and reserve, and checks the selected budget plus the existing available-RAM guard. Automatic workers may be limited by admission; manual requests are rejected rather than silently coarsening physics or changing solvers. Admission is not convergence or a universal native-stability guarantee.
+
+Progress reports the current stage, completed response batches/depth planes where available, elapsed time and a busy state. Reduction/integration follows response completion; an elapsed timer alone is not completed work. **Cancel** is cooperative; wait for owned workers to stop and the GUI to return idle before running again.
 
 <a id="development-source-energy-dependent-angular-sampling"></a>
 <a id="energy-sampling"></a>
-## 13. Energy sampling
+## 13. Energy sampling and angular evaluation
 
-**Spectral coverage** offers:
+**Energy sampling** independently offers:
 
-- **Selected L3/L2 samples only (not full EELS):** evaluate exactly the selected energies; display points, not a fabricated white-line shape.
-- **Full native energy-resolved spectrum:** use the native source range with the requested number of evenly spaced samples, inserting selected L3/L2 energies if absent. A 241-point request normally becomes 243 evaluated energies. This is not necessarily every original source sample.
+- **Entire energy range → uniform sampling** (default): request 241 points in each declared modeled source window and insert exact selected samples. Actual merged count depends on windows and existing coincidences; 241 becoming 243 is an example, not a rule.
+- **All native source energies**: retain supported native source samples and valid selected energies.
+- **Selected energies only**: evaluate only declared selected samples. Two points are not a resolved white-line spectrum.
 
-For each requested loss, the model/source and scattering response are evaluated; full Double spectra are not interpolated from two selected-edge calculations. The source tensor uses interpolation of the **original tabulated spectral input**, a different operation. Extrapolation beyond its source range is not allowed. There is no silent experimental energy shift or extra smoothing.
+Provider coverage is checked within each participating channel's required window. Excluded/unmodeled channels are distinct from missing data. Do not extrapolate, invent spectral tails, or connect unsupported gaps. Output is a modeled partial core-edge spectrum, with original relative amplitudes.
 
-**Calculate angular maps** requests full fields only at selected L3/L2 samples. Other spectral energies integrate nonzero physical detector support on the unchanged q grid. With maps off, detector-only support is used at every energy. No non-selected full-field maps are manufactured or exported. These savings do not establish energy/grid convergence.
+**Full angular maps at selected energies** evaluates the full angular grid only at distinct selected energies and detector-support coordinates elsewhere. With maps off, all energies use nonzero fractional-detector support. This applies to BW/MS Single and Double. **Full angular field at every energy (advanced)** explicitly requests full-grid work everywhere; only selected maps are retained. Full/native spectral sampling does not enable that option.
+
+The counter is unique energy–detector-coordinate work, not FFT grid cells or group/magnetic-state contractions. For constant active support it is `N_selected*N_grid + (N_energy−N_selected)*N_detector_support`. Equal-energy group aliases do not duplicate a response. Excluded channels may require no response; metadata records actual evaluations. Existing source interpolation is not angular/spectral-response interpolation.
 
 <a id="first-simulation-fcc-ni-017-exact-200-bragg"></a>
+
 ## 14. EELS and EMCD calculation
 
 The [Quick Start](QUICK_START.md) supplies a small Manual Ni example. In general: set crystal/frame and physical geometry → set fixed apertures → validate model/axis → choose channeling and propagation → review effective numerics/resources → **Preview diffraction** → **Run EMCD / EELS**.
@@ -286,48 +269,28 @@ That optional control is retained here as a historical v0.8 reference. **Dev4 re
 <a id="project-management"></a>
 ## 18. Project management
 
-**Published v0.8 compatibility reference:** the completed-result workflow below is retained for that binary. Development source additionally saves uncalculated configuration through **File → Save / Save As**, as described in the [Site Group workflow](#development-site-groups).
+**File → New Project / Open Project… / Save / Save As… / Close Project** manages complete multi-calculation projects, including uncalculated accepted configuration. Use Save As for a separate study and preserve the entire folder. Portable editor attachments and source identity are retained where supported; arbitrary external sources are not automatically embedded. No manually edited JSON is required.
 
-**File → New** clears the selected result and restores released starting controls; explicitly review physical/MDFF values for the next job. **Save Project / Save Project As...** acts on a **completed selected result**, not arbitrary uncalculated Current Inputs. Choose a parent directory and new folder name. Replacing an existing project requires explicit confirmation and verified save logic; make independent backups.
-
-A project contains `project.json`, `input_parameters.json`, `metadata.json`, `structure.json`, `comparison_metadata.json`, `validity.json`, the three NPZ bundles and optional structure/display files. Keep the complete folder. Source paths/checksums, configuration, coordinate frame, original arrays and method labels are preserved. Save/view does not silently regenerate science.
-
-**Open Project...** loads saved plotting context without the original source or a new solver run. Missing/changed external sources can disable **rerunning** while saved arrays remain viewable. **Results → Locate Original Source...** requires the recorded SHA256. **Import Existing Result** handles supported legacy exports read-only. Unsupported/corrupt/checksum-mismatched data produce errors rather than trusting arrays as a current calculation.
+After calculation, **Keep as New Calculation** preserves earlier runs. Replacing/deleting a run requires the corresponding explicit action. Saved arrays remain viewable when an external source is missing/changed, but rerun must remain blocked until the correct source validates. Opening a project does not upgrade its physics or source declarations.
 
 <a id="save-reopen-and-reconnect-inputs"></a>
-Current Inputs and saved results are separate. **Use These Settings** explicitly restores configuration; viewing alone does not replace controls. Editing Current Inputs makes previews/results stale relative to those inputs, but does not modify a completed result's original settings or arrays. Save that result under its actual provenance, then run a new case if new inputs are intended.
+Current inputs and saved results remain separate. A real input change marks the displayed result stale; reverting an exactly supported comparison restores matching status. Insufficient historical comparison evidence is **unavailable**, not automatically stale or matching. Read-only viewing does not change original arrays. Pending configured Material/MDFF drafts must be Applied or Cancelled before save/run.
 
-## 19. Results Browser and comparisons
+## 19. Calculation history and comparisons
 
-The bottom **Project Results / Results Browser** can filter and select runs. **View Selected** or double-click displays saved data. **Use These Settings** restores controls; **Compare Selected** / **Compare Selected Results** compares compatible saved contexts without rerunning. The compact layout moves secondary commands into **More actions**.
+The lower **Project Results** panel lists runs from the active project. **View Results** displays arrays; **Restore Settings from Selected Run…** explicitly changes working inputs; **Delete Selected Calculation…** removes that run from the working project, committed on Save. Preserve independent copies before deletion.
 
-**Import Result**, **Open Folder**, **Details**, **Rename**, **Locate Project** and **Remove From Browser** manage references/display identity. Removing a browser entry does not delete its scientific folder. The index stores paths to saved runs, not an independent backup; unsaved in-memory results should be saved before exit.
+Select exactly two distinct active-project runs for **Compare Calculations**, a separate resizable dialog. Review physical/numerical differences, normalization and common-scale choices. More actions remain near history, not duplicated across top-level settings menus. Comparing or switching Total/Element/Group views does not calculate new science.
 
 <a id="compare-two-conditions"></a>
-Use separate project names for thickness/tilt/model changes. Review recorded differences, denominators and shared-scale options before comparing. There is no released one-click general thickness/mistilt sweep or automatic convergence campaign. Source-only research drivers and their checkpoints are not GUI controls.
+There is no general automatic thickness/convergence sweep in this workflow.
 
 <a id="export-figures-and-data"></a>
 ## 20. Export formats
 
-|Action|What is written|
-|---|---|
-|Export current plot PNG / SVG…|The current live diffraction figure, including visible overlays|
-|Results → Export Current Figure / Export Figure|Displayed result figure; supported result exports include display metadata/JSON sidecars|
-|Save elastic preview…|A new subfolder containing the last completed elastic preview, not EELS|
-|Export completed EMCD / EELS...|A new complete project/numerical/figure bundle with raw/percentage spectra retained|
-|Export derived NPZ/CSV + metadata|Derived result views together with preserved raw arrays, definitions, masks and provenance|
+Use the corresponding Results figure toolbar and **Display details / diagnostics / export** for figure/data exports; no duplicate top-menu workflow is required. Export the displayed Total/Element/Group/Comparison selection without recalculating. CSV retains numerical precision, signal definitions, source/magnetic metadata, actual energies and active/excluded channel information. Group Mean is per group atom; additive Group Contribution and Element contributions use Total's fixed selected-atom denominator. Do not peak-normalize independent sources for a scientific comparison.
 
-Current project arrays are:
-
-- `virtual_detector_eels.npz`: method-prefixed spectra, for example `bloch__energy_ev`, `bloch__I_A_plus`, `bloch__I_A_minus`, `bloch__I_B_plus`, `bloch__I_B_minus`.
-- `angular_maps.npz`: q grids, fractional weights, calculated edge fields and coherence with method/edge prefixes.
-- `diffraction_pattern.npz`: retained hkl/frame, excitation errors, ZA coordinates, depths and amplitudes, with applicable FFT data.
-
-Ordinary completed-result exports additionally include `<method>_spectra.csv`, `<method>_signal_display.csv`, `signal_display.npz`, `figure_display.json`, EELS figures and calculated L3/L2 figures. Method IDs include `bloch` and `fft-multislice`. The raw four spectra, raw differences and percentage definitions survive display switching. Derived-export bundles use their own explicit `run0__raw__...` / derived prefixes and metadata; inspect keys rather than assuming formats are interchangeable.
-
-Conventional aliases such as `prb_relative_dichroism_percent` / `emcd_asymmetry_percent` use the raw +M sum. `magnetic_only_percent` / even-imbalance diagnostics use `N_A+N_B`. Use the tutorial's separately defined common-S_AB contributions when exact reconstruction of conventional percentages is needed. Do not rename a denominator or infer it solely from “%”.
-
-PNG/SVG files are visualizations, not full scientific backups. Preserve CSV/NPZ, source hashes and configuration. Exporting a figure does not change underlying arrays, solver settings or saved research results. No automatic experimental electron-count conversion is performed.
+Figure export preserves full context and readable dimensions. Advanced existing NPZ/project exports retain original arrays and provenance. Unsupported windows remain unmodeled; no spectral interpolation across gaps or invented tails is added. Keep the complete project for restoring configuration and multiple calculations; a figure or CSV alone is not a project backup.
 
 ## 21. Troubleshooting
 
@@ -355,7 +318,7 @@ Check actual structure, frame, signed hkl, magnetization and detector geometry f
 
 Keep raw reversal-even/odd fields separate from paired maps and normalization. Exact target Bragg is not physical beam isolation; a Thales circle does not enforce uniform signal or raw magnetic antisymmetry. Native energies, absolute handedness and arbitrary intensities require independent experimental calibration. Mean- and sum-normalized percentages differ by a factor two. Experimental SNR requires a count/dose/efficiency/background/noise model and correct variance propagation for the measurement estimator.
 
-Independent clean-machine Windows installation remains untested. Linux CI has unresolved hash/line-ending and interpreter-shutdown issues; macOS is not certified by this release. These do not erase the bounded passed native Windows acceptance.
+Independent clean-machine Windows installation remains untested. Linux/macOS are not certified by this candidate. General beam-basis and complex-condition BW/MS convergence remain incomplete; continuous-depth localized ionization and synthetic/effective tensors do not establish quantitative Fe₃O₄/NiFe₂O₄ spectra or magnetic-moment accuracy. General tensor rotation and magCIF remain absent. See the candidate release notes for scoped evidence and incomplete broad verification.
 
 <a id="what-the-application-calculates"></a>
 <a id="forward-born-convention-correction-and-historical-results"></a>
@@ -363,7 +326,9 @@ Independent clean-machine Windows installation remains untested. Linux CI has un
 
 Current convention is **forward_born_dagger_g_minus_h_v1**, with `Re Tr(RT)`, conjugated forward transition modes and corrected Double site phase. Earlier same-index signed results cannot automatically be combined with it. Some intermediate corrected source commits still had old version labels, so exact commit/convention metadata takes precedence. Keep unknown metadata unknown; never relabel old arrays as corrected.
 
-|Identity|Current public Windows package|
+Current candidate identity is **v0.9.0-beta.1 / 0.9.0b1 / 0.9.0.1**; exact committed source is embedded in `_internal/build_info.json` and the existing manifest. It is not published. See [candidate notes](RELEASE_NOTES_0_9_0_BETA_1.md). The table below preserves the historical published package identity.
+
+|Identity|Historical published Windows package|
 |---|---|
 |Display / Python / Windows numeric version|v0.8.1-beta.2 / 0.8.1b2 / 0.8.1.2|
 |Release tag target|`88dc9ecaed4871043c96a6aa05f0972e23b3b93d`; see [beta.2 release notes](RELEASE_NOTES_0_8_1_BETA_2.md)|
