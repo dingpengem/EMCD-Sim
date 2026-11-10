@@ -9,6 +9,56 @@ from .forward_pipeline import MultiSiteForwardSettings
 from .propagation import resolve_fft_configuration
 
 
+def configuration_equal(left,right,*,portable_source=False):
+    """Use the existing persistence representation for unset values/containers."""
+    import json
+    from .project_configuration import _encode_config
+    def value(cfg):
+        data=_encode_config(cfg)
+        # Called for already-validated group references. Moving a portable
+        # attachment does not change its declared contents or parameters.
+        if portable_source and data.get('source_sha256'):data['source']=''
+        return json.loads(json.dumps(data,allow_nan=False))
+    return value(left)==value(right)
+
+
+def saved_inputs_match(result,signature):
+    """Compare validated effective Local inputs; None means missing evidence."""
+    from .project_configuration import _records
+    state=result.get('configuration');previous=result.get('gui_multisite_input')
+    if state is not None:
+        old_groups=[(r['group_id'],r['element'],tuple(r['indices']),r['magnetization'],r['multiplicity'],r['mdff_reference'])
+                    for r in _records(state) if r.get('enabled',True)]
+    elif previous is not None:old_groups=previous[0]
+    else:return None
+    groups,windows,reverse,excluded,energy=signature
+    old={row[0]:row for row in old_groups};new={row[0]:row for row in groups}
+    if old.keys()!=new.keys():return False
+    for gid,a in old.items():
+        b=new[gid]
+        if (a[1]!=b[1] or tuple(a[2])!=tuple(b[2]) or tuple(a[3])!=tuple(b[3]) or a[4]!=b[4]
+                or not configuration_equal(a[5],b[5],portable_source=True)):return False
+    meta=result['metadata'].get('multisite',{});channels=meta.get('channels')
+    if channels is None or 'global_reversal' not in meta:return None
+    if reverse!=meta['global_reversal']:return False
+    if not np.array_equal(energy,result['spectra']['energy_ev']):return False
+    current=dict(windows)
+    for gid,channel in channels.items():
+        if channel['omitted_by_request']!=(gid not in current):return False
+        if gid in current:
+            w=current[gid];e=np.asarray(energy)
+            if tuple(channel['modeled_window_ev'])!=tuple(w.bounds_ev):return False
+            if not np.array_equal(channel['active_energy_mask'],(e>=w.bounds_ev[0]) & (e<=w.bounds_ev[1])):return False
+    participation=result['metadata'].get('ionization_participation')
+    if participation is not None:
+        old_excluded={(r['group_id'],r['element'],tuple(r['indices'])) for r in participation['excluded_structural_groups']}
+        if old_excluded!={(gid,element,tuple(indices)) for gid,element,indices in excluded}:return False
+    elif previous is not None and len(previous)>3:
+        if set(previous[3])!=set(excluded):return False
+    elif excluded:return None
+    return True
+
+
 def forward_settings(window):
     """Read shared numerical/detector controls, never the legacy MDFF or M."""
     if window.spin['grid'].value()%2 == 0:raise ValueError('Choose an odd angular / detector grid size')
@@ -81,5 +131,5 @@ def applied_inputs(window, cfg):
     cfg = resolve_fft_configuration(window.structure,window.settings(),cfg)
     signature = (tuple((g.group_id,g.element,g.indices,g.magnetization,g.multiplicity,g.mdff_reference) for g in sites.groups),
                  tuple(windows.items()),editor.reverse_magnetization,
-                 tuple((r[0],r[1],r[2]) for r in editor.rows() if r[0] in editor.excluded_groups))
+                 tuple((r[0],r[1],r[2]) for r in editor.rows() if r[0] in editor.excluded_groups),tuple(plan['energy_ev']))
     return cfg,sites,windows,editor.reverse_magnetization,signature

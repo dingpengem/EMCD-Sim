@@ -450,14 +450,17 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if self.emcd_result and self.emcd_result.get('structure_snapshot'):
                 from .project_io import structures_match
                 structure_matches=structures_match(self.emcd_result['structure_snapshot'],self.structure)
-            config_matches=self.emcd_result is not None and self.emcd_result['config']==cfg
-            if sites is not None:config_matches=config_matches and self.emcd_result.get('gui_multisite_input')==signature
+            from .multisite_run import configuration_equal,saved_inputs_match
+            config_matches=self.emcd_result is not None and configuration_equal(self.emcd_result['config'],cfg)
+            if sites is not None and config_matches:config_matches=saved_inputs_match(self.emcd_result,signature)
             if self.emcd_result and cfg.model==self.emcd_result['config'].model=='atomic' and not hasattr(cfg,'provider_schema'):
                 old=asdict(self.emcd_result['config']);new=asdict(cfg)
                 for key in ('source','source_sha256'):old.pop(key);new.pop(key)
                 config_matches=old==new
-            fresh=self.emcd_result is not None and self.emcd_result['settings']==s and config_matches and structure_matches
-            if sites is None:reason=reason or self.input_source_reason()
+            fresh=self.emcd_result is not None and self.emcd_result['settings']==s and structure_matches and config_matches
+            if sites is None:
+                source_reason=self.input_source_reason();reason=reason or source_reason
+                if source_reason:fresh=False
         except Exception as exc:
             reason=reason or str(exc);fresh=False;self.memory_label.setText('Calculation unavailable: '+str(exc))
             self.invalidate_on_source_error(exc)
@@ -465,7 +468,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 reason='';self.memory_label.setText(str(exc)+'; resources checked when calculation starts.')
         self.emcd_button.setEnabled(not reason and not self.busy);self.emcd_button.setToolTip(reason or 'Run the selected incoming-wave propagation and shared EMCD/EELS contraction')
         if self.emcd_result:
-            text=self.emcd_result['config'].channeling_model.title()+' Channeling | '+('Completed-run geometry and spectra; inputs match.' if fresh else 'STALE RESULT — current inputs differ; showing saved geometry and spectra.')
+            text=self.emcd_result['config'].channeling_model.title()+' Channeling | '+('Completed-run geometry and spectra; inputs match.' if fresh else 'Saved input comparison unavailable; showing saved geometry and spectra.' if fresh is None else 'STALE RESULT — current inputs differ; showing saved geometry and spectra.')
             for view in (self.maps_view,self.eels_view,self.diffraction_view,self.overview_view):view.label.setText(text)
         current_marker='\n\nCurrent EMCD propagation:';saved_marker='\n\nCompleted EMCD run (snapshot):'
         base=self.info.toPlainText().split(current_marker)[0].split(saved_marker)[0]
