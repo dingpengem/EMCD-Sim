@@ -132,7 +132,9 @@ def restore_configuration(w,state):
             w.set_values(values);w.detectors=np.asarray(c.centers);w.sync_detectors();w.sync_za()
             for widget,value in ((w.angular_maps,c.angular_maps),(w.row_projection,c.systematic_row)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(value)
-            w.worker_count.setValue(c.parallel_workers);w._saved_global_config=state.get('global_config')
+            w.worker_count.setValue(c.parallel_workers)
+            w.worker_count.setEnabled(c.worker_mode=='manual')
+            w._saved_global_config=state.get('global_config')
         drafts=state.get('metadata',{}).get('gui_drafts')
         if drafts:
             w.set_material_magnetization(tuple(float(v) for v in drafts['global_axis'].replace(',',' ').split()))

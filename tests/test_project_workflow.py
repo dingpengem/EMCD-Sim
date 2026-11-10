@@ -231,6 +231,16 @@ def test_unavailable_global_atomic_provider_is_not_saved_as_legacy_ni(window,app
     assert restored['config'].source_sha256==digest and not restored['ready_for_calculation']
 
 
+@pytest.mark.parametrize('mode,count',[('manual',1),('manual',2),('automatic',4)])
+def test_local_restore_worker_count_editability_matches_mode(window,tmp_path,mode,count):
+    r=result_fixture(tmp_path)
+    state=dict(r['configuration'],config=replace(r['config'],worker_mode=mode,parallel_workers=count))
+    restore_configuration(window,state)
+    assert window.worker_mode.currentIndex()==(mode=='manual')
+    assert window.worker_count.value()==count
+    assert window.worker_count.isEnabled()==(mode=='manual')
+
+
 def test_restored_numerical_settings_and_requested_grid_are_not_replaced(window,tmp_path):
     from emcd_sim.gui.multisite_run import applied_inputs
     w=window;r=result_fixture(tmp_path);restore_configuration(w,r['configuration'])
