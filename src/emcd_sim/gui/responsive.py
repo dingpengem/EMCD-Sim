@@ -4,6 +4,7 @@ from textwrap import fill
 from PySide6 import QtCore, QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.gridspec import GridSpec
+from matplotlib.ticker import ScalarFormatter
 
 
 class ResponsiveCanvas(FigureCanvasQTAgg):
@@ -103,7 +104,7 @@ class FigurePresentation:
         self.original()
         # Keep every scope/energy identifier. Full context remains in Details
         # and figure exports; the canvas shows a wrapped identifying heading.
-        chars = max(32, int(width / 7))
+        chars = max(28, int(width / 8))
         heading = self.full_title if exporting else self.full_title.split('\n')[0]
         self.title.set_text('\n'.join(fill(line, chars, break_on_hyphens=False) for line in heading.split('\n')))
         self.title.set_fontsize(10)
@@ -133,6 +134,9 @@ class FigurePresentation:
                 ax.set_position([x/w,y/h,side/w,side/h])
                 colorbar = ax.images[0].colorbar
                 if colorbar is not None:
+                    formatter=ScalarFormatter(useMathText=True)
+                    formatter.set_powerlimits((0,0))
+                    colorbar.formatter=formatter;colorbar.update_ticks()
                     colorbar.ax.set_axes_locator(None)
                     colorbar.ax.set_box_aspect(None)
                     colorbar.ax.set_position([(x+side+.12)/w,y/h,.10/w,side/h])
