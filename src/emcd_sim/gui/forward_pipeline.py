@@ -271,6 +271,7 @@ def _multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detect
         for _,loss in cfg.selected_edges:full|=np.isclose(energy,loss,rtol=0,atol=1e-9)
     result=dict(total={},weighted_sum={},groups={g.group_id:{} for g in sites.groups},diagnostics=[])
     contraction_seconds=0.;reduction_seconds=0.
+    tensor_preparation_seconds=0.
     def integrate(target,part,block_cfg,block_energy,selection,support):
         reduced=_multisite_detector_data(part,block_cfg,block_energy,qx,qy,weights,support)
         if not target:target.update(spectra={key:np.empty(len(energy)) for key in reduced['spectra']},maps={},qx=qx,qy=qy,weights=weights)
@@ -289,6 +290,7 @@ def _multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detect
                 method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.memory_budget_mib,
                 prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled,execution_workers=workers)
             contraction_seconds+=perf_counter()-before;before=perf_counter()
+            tensor_preparation_seconds+=raw.get('timings',{}).get('tensor_preparation_seconds',0.)
             integrate(result['total'],raw['total'],block_cfg,block_energy,selection,support)
             integrate(result['weighted_sum'],raw['weighted_sum'],block_cfg,block_energy,selection,support)
             for group in sites.groups:
@@ -304,7 +306,8 @@ def _multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detect
             del raw
     result['diagnostics'].sort(key=lambda row:row['energy_index'])
     result['metadata']['outgoing_energy_ev']=(1000*model.elastic.microscope.acceleration_kv-energy).tolist()
-    result['timings']=dict(outgoing_response_and_mdff_seconds=contraction_seconds,detector_reduction_seconds=reduction_seconds)
+    result['timings']=dict(outgoing_response_and_mdff_seconds=contraction_seconds,detector_reduction_seconds=reduction_seconds,
+                           tensor_preparation_seconds=tensor_preparation_seconds)
     return result
 
 

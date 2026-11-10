@@ -5,6 +5,7 @@ Independent localized sites/events are intensity sums, never amplitude sums.
 """
 from dataclasses import dataclass
 from collections.abc import Mapping
+from time import perf_counter
 import numpy as np
 from .geometry import Microscope, electron_wavelength_angstrom, characteristic_qz_angstrom_inv
 from .physical_elastic import PhysicalElasticModel
@@ -47,6 +48,7 @@ class PreparedBlochIncoming:
     states: BlochStates
     z: np.ndarray
     fields: np.ndarray
+    hamiltonian: np.ndarray | None = None
 
     @property
     def values(self):return self.states.values
@@ -61,12 +63,13 @@ def prepare_incoming_bloch(elastic,thickness_nm,depth_steps=257,*,cancelled=None
     check_cancelled(cancelled)
     if not np.isfinite(thickness_nm) or thickness_nm<0 or not isinstance(depth_steps,int) or depth_steps<2:
         raise ValueError('Finite nonnegative thickness and at least two depth nodes required')
-    states=BlochStates.solve(elastic.hamiltonian_nm_inv(),elastic.beams.hkl.index((0,0,0)))
+    hamiltonian=elastic.hamiltonian_nm_inv()
+    states=BlochStates.solve(hamiltonian,elastic.beams.hkl.index((0,0,0)))
     check_cancelled(cancelled)
     z=np.linspace(0,float(thickness_nm),depth_steps);fields=states.ket(z)
     check_cancelled(cancelled)
-    for value in (states.values,states.vectors,z,fields):value.setflags(write=False)
-    return PreparedBlochIncoming(elastic,float(thickness_nm),depth_steps,states,z,fields)
+    for value in (states.values,states.vectors,z,fields,hamiltonian):value.setflags(write=False)
+    return PreparedBlochIncoming(elastic,float(thickness_nm),depth_steps,states,z,fields,hamiltonian)
 
 
 def dipole_kernel(q_cycles):
@@ -128,12 +131,7 @@ def depth_response(incoming, outgoing, kernel, thickness_nm, *, method='analytic
     return result
 
 
-def outgoing_elastic(elastic, detector_q_xy, energy_ev, beams=None):
-    """Exit reciprocal Bloch field at E0-loss, carrier k_in_perp+q_detector.
-
-    Uses the forward H; the reciprocal state is U_out(z-t)e000. No incoming
-    eigenvectors are reused. Transverse momentum is held, not absolute tilt.
-    """
+def _outgoing_microscope(elastic, detector_q_xy, energy_ev):
     kv = elastic.microscope.acceleration_kv-float(energy_ev)/1000
     if not np.isfinite(energy_ev) or energy_ev <= 0 or kv <= 0:
         raise ValueError('Energy loss must lie between zero and incident energy')
@@ -142,8 +140,69 @@ def outgoing_elastic(elastic, detector_q_xy, energy_ev, beams=None):
         raise ValueError('Detector direction must be a finite reciprocal pair')
     carrier = elastic.microscope.incident_k_xy+q
     tilt = tuple(carrier*electron_wavelength_angstrom(kv)*1000)
-    return PhysicalElasticModel(elastic.crystal, Microscope(kv, tilt),
+    return Microscope(kv,tilt)
+
+
+def outgoing_elastic(elastic, detector_q_xy, energy_ev, beams=None):
+    """Exit reciprocal field at E0-loss; transverse carrier, not tilt, is held.
+
+    Uses the forward H; the reciprocal state is U_out(z-t)e000. Outgoing
+    eigenvectors are solved independently, never borrowed from incoming states.
+    """
+    return PhysicalElasticModel(elastic.crystal, _outgoing_microscope(elastic,detector_q_xy,energy_ev),
                                 elastic.beams if beams is None else beams, elastic.potential)
+
+
+@dataclass(frozen=True)
+class PreparedBlochOutgoing:
+    """One loss energy's reference Hamiltonian shared across detector batches."""
+    elastic: object
+    energy_ev: float
+    beams: object
+    hamiltonian: np.ndarray
+    g: np.ndarray
+    wavelength: float
+
+
+def prepare_outgoing_bloch(elastic, energy_ev, *, outgoing_beams=None, prepared_incoming=None, cancelled=None):
+    check_cancelled(cancelled)
+    ob=elastic.beams if outgoing_beams is None else outgoing_beams
+    microscope=_outgoing_microscope(elastic,(0.,0.),energy_ev)
+    wavelength=electron_wavelength_angstrom(microscope.acceleration_kv)
+    # F_(g-h) and the declared potential cutoff do not depend on electron loss
+    # or detector direction. Reuse only for the same validated elastic basis.
+    if (prepared_incoming is not None and prepared_incoming.elastic is elastic
+            and prepared_incoming.hamiltonian is not None and ob is elastic.beams):
+        factor=lambda kv:(1.+1000*kv/510998.95)*electron_wavelength_angstrom(kv)
+        # Basis/potential extinctions were already checked by this elastic
+        # object. Their energy-independent tests need not be repeated per loss.
+        g=elastic.reciprocal_vectors_xy
+        h=prepared_incoming.hamiltonian*(factor(microscope.acceleration_kv)/factor(elastic.microscope.acceleration_kv))
+        carrier=microscope.incident_k_xy
+        np.fill_diagonal(h,-10*np.pi*wavelength*(np.sum((g+carrier)**2,axis=1)-np.dot(carrier,carrier)))
+    else:
+        eo=outgoing_elastic(elastic,(0.,0.),energy_ev,ob)
+        g=eo.reciprocal_vectors_xy;h=eo.hamiltonian_nm_inv()
+    check_cancelled(cancelled)
+    h.setflags(write=False);g.setflags(write=False)
+    return PreparedBlochOutgoing(elastic,float(energy_ev),ob,h,g,wavelength)
+
+
+def _numerical_site_responses(a,b,kernel,phases,thickness_nm,cancelled,paired_fields=None):
+    """Unchanged trapezoid rule, batching independent site amplitudes separately."""
+    out=[]
+    # Explicit GEMM avoids einsum's repeated-index contraction falling back
+    # to a strided C loop. Each row still represents one depth, each column
+    # one site/component; sites are squared independently below.
+    ab=(a[:,:,None]*b[:,None,:]).reshape(len(a),-1) if paired_fields is None else paired_fields
+    for start in range(0,len(phases),8):
+        check_cancelled(cancelled)
+        k=kernel[None,...]*phases[start:start+8,...,None]
+        matrix=k.transpose(1,2,0,3).reshape(ab.shape[1],-1)
+        v=(ab @ matrix).reshape(len(a),len(k),3).transpose(1,0,2)
+        outer=v[:,:,:,None]*v[:,:,None,:].conj()
+        out.extend((outer[:,1:]+outer[:,:-1]).sum(axis=1)*thickness_nm/(2*(len(a)-1)))
+    return np.asarray(out)
 
 
 def equivalent_site_phases(incoming_hkl,outgoing_hkl,positions):
@@ -162,7 +221,7 @@ def equivalent_site_phases(incoming_hkl,outgoing_hkl,positions):
 
 
 def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoing_beams=None,
-        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None,cancelled=None,ionization_sites=None):
+        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None,cancelled=None,ionization_sites=None,prepared_outgoing=None,timings=None):
     """Detector-resolved integrated Cartesian response (pixels,3,3).
 
     Average over equivalent Ni basis sites, continuous uniform depth density,
@@ -175,18 +234,19 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
     positions = elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)
     return double_channeling_group_responses(elastic,energy_ev,q_xy,thickness_nm,{'sites':positions},
         outgoing_beams=outgoing_beams,method=method,depth_steps=depth_steps,memory_budget_mib=memory_budget_mib,
-        outgoing_potential=outgoing_potential,prepared_incoming=prepared_incoming,cancelled=cancelled)['sites']
+        outgoing_potential=outgoing_potential,prepared_incoming=prepared_incoming,cancelled=cancelled,
+        prepared_outgoing=prepared_outgoing,timings=timings)['sites']
 
 
 def double_channeling_group_responses(elastic, energy_ev, q_xy, thickness_nm, positions_by_group, *, outgoing_beams=None,
-        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None,cancelled=None):
+        method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None,cancelled=None,prepared_outgoing=None,timings=None):
     """Per-group mean Cartesian responses, sharing incoming/outgoing Bloch states.
 
     positions_by_group supplies fractional positions already validated against
     the complete elastic crystal by the calling material adapter. Each response
     averages independent events within its group; no inter-group amplitudes or
     multiplicity factors are included. Depth integration and contraction use
-    exactly the legacy single-group implementation.
+    the same equations and quadrature as the legacy single-group implementation.
     """
     check_cancelled(cancelled)
     q_xy = np.asarray(q_xy, float)
@@ -211,31 +271,62 @@ def double_channeling_group_responses(elastic, energy_ev, q_xy, thickness_nm, po
                 raise ValueError('Prepared incoming Bloch fields do not match elastic object, thickness or depth grid')
             incoming=prepared_incoming
         else:incoming = BlochStates.solve(elastic.hamiltonian_nm_inv(), elastic.beams.hkl.index((0,0,0)))
+        before=perf_counter()
         site_phases={key:equivalent_site_phases(elastic.beams.hkl,ob.hkl,positions)
                      for key,positions in positions_by_group.items()}
+        phase_seconds=perf_counter()-before
         gi = elastic.reciprocal_vectors_xy
         result = {key:np.empty((len(q_xy),3,3),complex) for key in positions_by_group}
         qz = -characteristic_qz_angstrom_inv(energy_ev, elastic.microscope.acceleration_kv)
-        eo = outgoing_elastic(elastic, (0., 0.), energy_ev, ob)
-        reference_h = eo.hamiltonian_nm_inv()
-        go = eo.reciprocal_vectors_xy
-        wavelength = electron_wavelength_angstrom(eo.microscope.acceleration_kv)
+        before=perf_counter()
+        prepared_outgoing=prepared_outgoing or prepare_outgoing_bloch(elastic,energy_ev,outgoing_beams=ob,
+            prepared_incoming=prepared_incoming,cancelled=cancelled)
+        if (prepared_outgoing.elastic is not elastic or prepared_outgoing.energy_ev!=float(energy_ev)
+                or prepared_outgoing.beams is not ob):
+            raise ValueError('Prepared outgoing Bloch reference does not match elastic object, energy or basis')
+        reference_h=prepared_outgoing.hamiltonian;go=prepared_outgoing.g;wavelength=prepared_outgoing.wavelength
+        preparation_seconds=perf_counter()-before
+        if method not in ('numerical','analytic'):raise ValueError('Depth method must be analytic or numerical')
+        if not np.isfinite(thickness_nm) or thickness_nm<0:raise ValueError('Thickness must be finite nonnegative')
+        if method=='numerical' and (not isinstance(depth_steps,int) or depth_steps<2):
+            raise ValueError('At least two depth nodes required')
+        z=np.linspace(0,float(thickness_nm),depth_steps) if method=='numerical' else None
+        a=incoming.ket(z) if method=='numerical' else None
+        eigen_seconds=field_seconds=site_seconds=kernel_seconds=0.
         for p, q in enumerate(q_xy):
             check_cancelled(cancelled)
+            before=perf_counter()
             h = reference_h + np.diag(-20*np.pi*wavelength*(go @ q))
             if not outgoing_potential:
                 h = np.diag(np.diag(h))
             outgoing = BlochStates.solve(h, ob.hkl.index((0,0,0)))
+            eigen_seconds+=perf_counter()-before
             check_cancelled(cancelled)
+            before=perf_counter()
             transfer = np.empty((ni,no,3))
             transfer[..., :2] = q+go[None, :, :]-gi[:, None, :]
             transfer[..., 2] = qz
             kernel = dipole_kernel(transfer)
+            kernel_seconds+=perf_counter()-before
+            before=perf_counter()
+            b=outgoing.ket(z-thickness_nm).conj() if method=='numerical' else None
+            paired_fields=(a[:,:,None]*b[:,None,:]).reshape(len(a),-1) if method=='numerical' else None
+            field_seconds+=perf_counter()-before
+            before=perf_counter()
             for key,(phases,site_weights) in site_phases.items():
                 check_cancelled(cancelled)
-                result[key][p] = sum(weight*depth_response(incoming, outgoing, kernel*phase[..., None], thickness_nm,
-                    method=method, depth_steps=depth_steps, cancelled=cancelled) for phase,weight in zip(phases,site_weights))
+                if method=='numerical':
+                    responses=_numerical_site_responses(a,b,kernel,phases,thickness_nm,cancelled,paired_fields)
+                    result[key][p]=np.einsum('s,sab->ab',site_weights,responses)
+                else:
+                    result[key][p] = sum(weight*depth_response(incoming, outgoing, kernel*phase[..., None], thickness_nm,
+                        method=method, depth_steps=depth_steps, cancelled=cancelled) for phase,weight in zip(phases,site_weights))
+            site_seconds+=perf_counter()-before
         check_cancelled(cancelled)
+        if timings is not None:
+            timings.update(site_phase_preparation_seconds=phase_seconds,outgoing_reference_seconds=preparation_seconds,
+                outgoing_eigensystem_seconds=eigen_seconds,outgoing_depth_fields_seconds=field_seconds,
+                site_depth_response_seconds=site_seconds,transfer_kernel_seconds=kernel_seconds)
         return result
 
 

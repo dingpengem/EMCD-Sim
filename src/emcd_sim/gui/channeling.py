@@ -1,10 +1,10 @@
 """GUI adapters to the existing channeling kernels; no scattering model here."""
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
-import sys,threading
-from time import perf_counter
+import sys,threading,os
+from time import perf_counter,thread_time
 import numpy as np
-from ..double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch
+from ..double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch,prepare_outgoing_bloch
 from ..multislice_double_channeling import ProjectedFFT, incident_fields, multislice_double_channeling_response
 from ..single_channeling_tensor import _tensor_angular_maps, historical_ni_site_phase_matrix
 from ..mdff_edges import selected_samples
@@ -47,7 +47,7 @@ def worker_count(n,method):
     return min(4,max(1,int(1200/(dense+40)))) if method=='bloch' else 4
 
 
-def map_detector_batches(response,batches,workers,method,cancelled):
+def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics=None):
     """Ordered legacy thread execution with cooperative failure/cancellation.
 
     response(batch, task_cancelled) owns its scratch arrays. Stop queued and
@@ -61,8 +61,15 @@ def map_detector_batches(response,batches,workers,method,cancelled):
     if method=='bloch' and sys.platform=='win32' and workers>1 and native_backend_info()['threads']!=1:
         raise ValueError('Parallel Windows BW requires verified single-thread native BLAS; no calculation started.')
     stop=threading.Event();errors=[];error_lock=threading.Lock()
+    start=perf_counter();active=peak=started=0;busy=cpu=queue_seconds=0.;threads=set()
     def task_cancelled():return stop.is_set() or (cancelled is not None and cancelled())
-    def execute(batch):
+    def execute(batch,submitted):
+        nonlocal active,peak,started,busy,cpu,queue_seconds
+        before=perf_counter();before_cpu=thread_time()
+        if diagnostics is not None:
+            with error_lock:
+                active+=1;started+=1;peak=max(peak,active);threads.add(threading.get_ident())
+                queue_seconds+=before-submitted
         try:
             check_cancelled(task_cancelled)
             return response(batch,task_cancelled)
@@ -71,17 +78,29 @@ def map_detector_batches(response,batches,workers,method,cancelled):
                 if not errors:errors.append(exc)
             stop.set()
             raise
-    with bw_executor_guard(method,task_cancelled):
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures=[]
-            try:
-                for batch in batches:futures.append(pool.submit(execute,batch))
-                return [future.result() for future in futures]
-            except BaseException as exc:
-                stop.set()
-                for future in futures:future.cancel()
-                if errors and isinstance(exc,Exception):raise errors[0]
-                raise
+        finally:
+            if diagnostics is not None:
+                with error_lock:
+                    active-=1;busy+=perf_counter()-before;cpu+=thread_time()-before_cpu
+    try:
+        with bw_executor_guard(method,task_cancelled):
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futures=[]
+                try:
+                    for batch in batches:futures.append(pool.submit(execute,batch,perf_counter()))
+                    return [future.result() for future in futures]
+                except BaseException as exc:
+                    stop.set()
+                    for future in futures:future.cancel()
+                    if errors and isinstance(exc,Exception):raise errors[0]
+                    raise
+    finally:
+        if diagnostics is not None:
+            diagnostics.update(executor='ThreadPoolExecutor',process_id=os.getpid(),requested_workers=workers,
+                worker_thread_ids=sorted(threads),max_concurrent_tasks=peak,started_tasks=started,
+                wall_seconds=perf_counter()-start,summed_task_seconds=busy,
+                summed_thread_cpu_seconds=cpu,summed_queue_seconds=queue_seconds,active_tasks_after_join=active,
+                data_transfer='Shared in-process arrays; no process spawning or serialization')
 
 
 EVALUATION_POLICY='full_at_selected_edges_detector_only_elsewhere'
@@ -163,12 +182,14 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             if values.min() < -1e-8*max(1.,values.max()):raise ValueError('Negative tensor-derived inelastic intensity: check conventions/phase')
             diagnostic['mdff_contraction_seconds']=perf_counter()-start_contract
         else:
+            outgoing_bw=prepare_outgoing_bloch(elastic,float(e),prepared_incoming=incoming_bw,cancelled=cancelled) if method=='bloch' else None
             def response(batch,task_cancelled):
                 if task_cancelled():raise Cancelled()
                 if method=='bloch':
                     r=double_channeling_response(elastic,float(e),batch,settings.thickness,
                         method='analytic' if cfg.systematic_row else 'numerical',depth_steps=cfg.depth,
-                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,cancelled=task_cancelled,**site_arguments)
+                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,
+                        prepared_outgoing=outgoing_bw,cancelled=task_cancelled,**site_arguments)
                     return r,None
                 grid,incoming=prepared_incoming
                 r,diag=multislice_double_channeling_response(elastic,float(e),batch,settings.thickness,
@@ -183,7 +204,9 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
             batches=([query[i:i+32] for i in range(0,len(query),32)] if method=='fft-multislice'
                      else [a for a in np.array_split(query,min(workers,len(query))) if len(a)])
             start_response=perf_counter()
-            responses=map_detector_batches(response,batches,workers,method,cancelled)
+            execution={}
+            responses=map_detector_batches(response,batches,workers,method,cancelled,diagnostics=execution)
+            diagnostic['executor']=execution
             r=np.concatenate([item[0] for item in responses])
             if method=='fft-multislice':
                 for key in ('incoming_norm_error','outgoing_norm_error','incoming_max_excluded_population','outgoing_max_excluded_population'):

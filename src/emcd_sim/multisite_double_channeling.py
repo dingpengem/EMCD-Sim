@@ -5,6 +5,7 @@ incoming/outgoing propagation, Coulomb factors, site phases, depth integration
 and tensor contraction are supplied by the existing BW/MS backends.
 """
 import numpy as np
+from time import perf_counter
 
 from .cancellation import check_cancelled
 from .double_channeling import (prepare_incoming_bloch, double_channeling_group_responses,
@@ -49,6 +50,7 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
     qx,qy=np.asarray(qx,float),np.asarray(qy,float)
     if qx.shape!=qy.shape or not qx.size or not np.isfinite(qx).all() or not np.isfinite(qy).all():
         raise ValueError('Require matching finite nonempty detector query arrays')
+    before=perf_counter()
     tensors={}
     for group in sites.groups:
         mask=plan['active'][group.group_id]
@@ -58,6 +60,7 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
             if reverse_magnetization:pair=pair[::-1]
             tensors[group.group_id]={ie:tuple(t.tensor_angstrom2_per_ev[j] for t in pair)
                                      for j,ie in enumerate(np.flatnonzero(mask))}
+    tensor_preparation_seconds=perf_counter()-before
     if propagation=='bloch':
         incoming=prepared_incoming if prepared_incoming is not None else prepare_incoming_bloch(
             model.elastic,thickness_nm,depth_steps,cancelled=cancelled)
@@ -80,6 +83,12 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
             diagnostics.append(diagnostic)
             continue
         selected_positions={group.group_id:positions[list(group.indices)] for group in active}
+        before=perf_counter()
+        outgoing=None
+        if propagation=='bloch':
+            from .double_channeling import prepare_outgoing_bloch
+            outgoing=prepare_outgoing_bloch(model.elastic,loss,prepared_incoming=incoming,cancelled=cancelled)
+        diagnostic['outgoing_preparation_seconds']=perf_counter()-before
         def batches():
             # The shared executor validates the worker count before iterating.
             # Enough tasks to use small pools without exceeding legacy bounds.
@@ -92,9 +101,10 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
             check_cancelled(task_cancelled)
             details=None
             if propagation=='bloch':
+                details={}
                 responses=double_channeling_group_responses(model.elastic,loss,points,thickness_nm,selected_positions,
                     method=method,depth_steps=depth_steps,memory_budget_mib=memory_budget_mib,
-                    prepared_incoming=incoming,cancelled=task_cancelled)
+                    prepared_incoming=incoming,prepared_outgoing=outgoing,cancelled=task_cancelled,timings=details)
             else:
                 from .multislice_double_channeling import multislice_double_channeling_group_responses
                 responses,details=multislice_double_channeling_group_responses(model.elastic,loss,points,thickness_nm,selected_positions,
@@ -104,6 +114,7 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
             # Cartesian responses remain local to the worker. Only compact
             # group intensities and diagnostics wait for ordered collection.
             values={}
+            before=perf_counter()
             for group in active:
                 check_cancelled(task_cancelled)
                 pair=np.stack([intensities_from_response(responses[group.group_id],tensor)
@@ -111,12 +122,17 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
                 if not np.isfinite(pair).all() or pair.min() < -1e-10*max(float(np.max(abs(pair))),1e-30):
                     raise ValueError('Negative or nonfinite multi-site double-channeling intensity')
                 values[group.group_id]=pair
+            if propagation=='bloch':details['tensor_contraction_seconds']=perf_counter()-before
             return sl,values,details
-        results=map_detector_batches(response,batches(),workers,propagation,cancelled)
+        execution={}
+        results=map_detector_batches(response,batches(),workers,propagation,cancelled,diagnostics=execution)
+        diagnostic['executor']=execution
         diagnostic['workers']=min(workers,len(results))
         for sl,values,details in results:
             check_cancelled(cancelled)
-            if details is not None:
+            if propagation=='bloch':
+                for key,value in details.items():diagnostic[key]=diagnostic.get(key,0.)+value
+            elif details is not None:
                 for key in ('incoming_norm_error','outgoing_norm_error','incoming_max_excluded_population',
                             'outgoing_max_excluded_population','estimated_working_mib','dense_working_mib'):
                     diagnostic[key]=max(diagnostic.get(key,0.),details[key])
@@ -139,6 +155,7 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
         outgoing_energy_ev=(1000*model.elastic.microscope.acceleration_kv-energy).tolist(),
         response_normalization='Per-group site mean with depth integral; multiplicity applied once; no extra thickness factor')
     result['diagnostics']=diagnostics
+    result['timings']=dict(tensor_preparation_seconds=tensor_preparation_seconds)
     return result
 
 
