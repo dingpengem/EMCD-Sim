@@ -48,12 +48,15 @@ def test_comparison_legends_have_space_without_changing_curves(app,tmp_path):
     fig=Figure(layout='constrained');canvas=ResponsiveCanvas(fig)
     ax=fig.subplots();x=np.array([1.,2.,4.])
     lines=[ax.plot(x,x*i,label=f'Long declared site group {i} · arbitrary element / edge | Detector A')[0] for i in range(1,7)]
-    ax.legend();fig.suptitle('Group Comparison | original intensity scale')
+    legend=ax.legend();proxy=legend.get_lines()[0];proxy.set_picker(5)
+    fig.suptitle('Group Comparison | original intensity scale')
     presentation=FigurePresentation(canvas,'eels',QtWidgets.QLabel());canvas.resize(430,900);presentation.capture()
     axes=list(fig.axes);canvas.draw();canvas.print_figure(tmp_path/'comparison.png')
     canvas.resize(900,900);presentation.update();canvas.draw()
     assert fig.axes==axes and ax.get_legend() is None
     assert len(presentation.legends)==1
+    assert legend in fig.axes[-1].get_children()
+    assert legend.get_lines()[0] is proxy and proxy.get_picker()==5
     for i,line in enumerate(lines,1):
         np.testing.assert_array_equal(line.get_xdata(),x)
         np.testing.assert_array_equal(line.get_ydata(),x*i)

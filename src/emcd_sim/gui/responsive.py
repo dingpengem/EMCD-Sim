@@ -75,7 +75,8 @@ class FigurePresentation:
                 if legend is not None and (len(labels) > 4 or any(len(s) > 35 for s in labels)):
                     legend.remove()
                     space = fig.add_subplot();space.set_axis_off()
-                    self.legends.append((ax, space, handles, labels))
+                    space.add_artist(legend)
+                    self.legends.append((ax, space, legend, labels))
         self.map_titles = [(ax, ax.get_title()) for ax in self.maps]
         self.narrow = None
         self.update()
@@ -153,9 +154,12 @@ class FigurePresentation:
                 ax.set_subplotspec(grid[row, 0]);row += 1
                 entry = next((v for v in self.legends if v[0] is ax), None)
                 if entry:
-                    _, space, handles, labels = entry
+                    _, space, legend, labels = entry
                     space.set_subplotspec(grid[row, 0]);row += 1
-                    space.legend(handles, [fill(s, max(24, chars-8), break_on_hyphens=False) for s in labels], loc='center left', fontsize=8, frameon=False)
+                    legend.set_bbox_to_anchor((0,.5),transform=space.transAxes)
+                    legend.set_loc('center left');legend.set_frame_on(False)
+                    for text,label in zip(legend.get_texts(),labels):
+                        text.set_text(fill(label,max(24,chars-8),break_on_hyphens=False))
         for ax, label in self.labels:
             ax.set_ylabel(fill(label, width=18 if narrow else 26))
         if not exporting:
