@@ -396,11 +396,11 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     extra=(16*len(energy)*int(support.sum())*(2*len(sites.groups)+12)
            +576*len(energy)*len(sites.groups)
            +methods_count*64*len(selections)*qx.size*(len(sites.groups)+2)
-           +methods_count*256*len(energy)*(len(sites.groups)+2))/2**20 if double else 0.
+           +methods_count*256*len(energy)*(len(sites.groups)+2))/2**20 if double and cfg.propagation!='bloch' else 0.
     # Include retained multi-site arrays BEFORE worker admission, so the
     # existing automatic memory limit sees the complete calculation footprint.
     info=numerical_info(structure,settings,cfg,hkl=hkl,ionization_sites=sites,
-        additional_retained_working_mib=extra)
+        additional_retained_working_mib=extra,detector_support_pixels=int(detector_support.sum()))
     if double:info['multisite_additional_working_mib']=extra
     working=info['estimated_working_mib']
     z=np.linspace(0,settings.thickness,cfg.depth)

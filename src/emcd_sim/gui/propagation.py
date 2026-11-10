@@ -27,6 +27,37 @@ def multisite_memory_terms(cfg, group_count):
         group_detector_spectra=methods*256*energies*(group_count+2)/2**20)
 
 
+def multisite_bw_double_memory_terms(cfg, group_count, detector_pixels=None):
+    """Retained results and one live response/reduction block; no E*full-grid cache.
+
+    GUI preflight may use the full grid as an upper bound on aperture support.
+    Execution supplies the actual support. Selected aliases retain separate map
+    arrays, but their equal energies are evaluated only once.
+    """
+    pixels=cfg.grid**2;energies=cfg.energy_points
+    selected=len({float(e) for _,e in cfg.selected_edges}) if cfg.angular_maps else 0
+    # Programmatic calls without explicit selections resolve them before work;
+    # preflight conservatively allows every energy to be selected in that case.
+    if cfg.angular_maps and not cfg.selected_edges:selected=energies
+    selected=min(energies,selected)
+    detector=pixels if detector_pixels is None else detector_pixels
+    if not 0<=detector<=pixels:raise ValueError('Invalid detector support size')
+    if cfg.angular_evaluation=='selected':
+        block_pixels=max(min(selected,MULTISITE_ENERGY_BATCH)*pixels,
+            min(energies-selected,MULTISITE_ENERGY_BATCH)*detector)
+    else:block_pixels=energies*pixels
+    aliases=(len(cfg.selected_edges) if cfg.selected_edges else selected) if cfg.angular_maps else 0
+    return dict(
+        multisite_energy_block=16*block_pixels*(2*group_count+12)/2**20,
+        # Fractional integration fills the original full grid even when only
+        # aperture pixels were propagated: plane + two-detector product.
+        detector_reduction_work=(32*(min(energies,MULTISITE_ENERGY_BATCH)
+            if cfg.angular_evaluation=='selected' else energies)*pixels+16*pixels)/2**20,
+        provider_tensors=576*energies*group_count/2**20,
+        selected_group_maps=128*aliases*pixels*(group_count+2)/2**20,
+        group_detector_spectra=256*energies*(group_count+2)/2**20)
+
+
 def projected_geometry_for(settings,crystal=None,fft_generators=None):
     if crystal is None:
         return ProjectedGeometry.from_crystal(fcc_nickel(),settings.zone,settings.target,generators=fft_generators)
@@ -42,7 +73,7 @@ def resolve_fft_configuration(structure,settings,cfg):
     return replace(cfg,fft_generators=tuple(tuple(int(v) for v in h) for h in cell))
 
 
-def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True,ionization_sites=None,additional_retained_working_mib=0.):
+def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True,ionization_sites=None,additional_retained_working_mib=0.,detector_support_pixels=None):
     if not np.isfinite(additional_retained_working_mib) or additional_retained_working_mib<0:
         raise ValueError('Finite nonnegative additional retained memory required')
     if ionization_sites is not None:
@@ -134,6 +165,33 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             ms_group=288*min(32,pixels)*(count-1)/2**20
             bw_work+=bw_group;ms_work+=ms_group
             info['multisite_group_response_working_mib']=dict(bloch=bw_group,fft_multislice=ms_group)
+        if cfg.propagation in ('bloch','both'):
+            from ..double_channeling import bloch_response_memory_terms
+            counts=(tuple(len(g.indices) for g in ionization_sites.groups) if ionization_sites is not None
+                    else (len(structure.atoms),))
+            # Multi-site tasks cap pixels at 64. The legacy Global scheduler
+            # splits the entire query among workers; bound each by that query.
+            task_pixels=min(64,pixels) if ionization_sites is not None else pixels
+            bw_terms=bloch_response_memory_terms(n,n,cfg.depth,task_pixels,counts,
+                'analytic' if cfg.systematic_row else 'numerical')
+            bw_dense=bw_terms['analytic_mode_integrals'];bw_work=sum(bw_terms.values())
+            if cfg.propagation=='bloch':
+                # Complete-crystal Hamiltonians, incoming fields/coherence,
+                # atomic-potential assembly and query coordinates are shared.
+                shared=(64*n*n*len(structure.atoms)+16*cfg.depth*n*n
+                        +128*(n*n+cfg.depth*n)+64*pixels)/2**20
+                if ionization_sites is not None:
+                    result_terms=multisite_bw_double_memory_terms(cfg,len(counts),detector_support_pixels)
+                else:
+                    from ..mdff_edges import selected_samples
+                    result_terms=dict(provider_tensors=576*cfg.energy_points/2**20,
+                        selected_group_maps=128*len(selected_samples(cfg))*pixels/2**20 if cfg.angular_maps else 0.,
+                        group_detector_spectra=256*cfg.energy_points/2**20,
+                        detector_responses=160*pixels/2**20)
+                info['retained_results_working_mib']=shared+sum(result_terms.values())+additional_retained_working_mib
+                info['memory_breakdown_mib']=dict(shared_preparation=shared,**result_terms,
+                    per_worker_scratch=bw_work,concurrent_scratch=execution['effective_workers']['bloch']*bw_work)
+                info['bloch_worker_memory_mib']=bw_terms
         engines=[];densities=[]
         if cfg.propagation in ('bloch','both'):engines.append(execution['effective_workers']['bloch']*bw_work);densities.append(bw_dense)
         if cfg.propagation in ('fft-multislice','both'):engines.append(execution['effective_workers']['fft-multislice']*ms_work);densities.append(ms_dense)

@@ -238,6 +238,32 @@ def double_channeling_response(elastic, energy_ev, q_xy, thickness_nm, *, outgoi
         prepared_outgoing=prepared_outgoing,timings=timings)['sites']
 
 
+def bloch_response_memory_terms(ni, no, depth_steps, pixels, site_counts, method):
+    """Conservative live-array bounds for one detector task (MiB).
+
+    Numerical depth integration forms (depth, ni*no) fields and batches at
+    most eight site phases. Only analytic mode integrals form (ni*no)**2.
+    The workspace allowance and process-level safety margins are unchanged.
+    """
+    if method not in ('analytic','numerical'):
+        raise ValueError('Depth method must be analytic or numerical')
+    pair=ni*no;sites=sum(site_counts);batch=min(8,max(site_counts))
+    numerical=method=='numerical'
+    return {key:value/2**20 for key,value in dict(
+        analytic_mode_integrals=80*pair**2 if not numerical else 0,
+        # cycles, unique/sort workspace, complex phases and exponentiation;
+        # retain all groups' phases while preparing the next group.
+        site_phases=64*pair*sites+24*pair,
+        eigensystems_and_transfer=128*(ni*ni+no*no+pair),
+        depth_fields=64*depth_steps*(ni+no+12),
+        paired_depth_fields=16*depth_steps*pair if numerical else 0,
+        # k, its transposed contiguous GEMM matrix, previous batch, v, outer
+        # products and trapezoid arithmetic can overlap during reassignment.
+        site_contraction=(192*batch*pair+1024*depth_steps*batch+288*sites) if numerical else 0,
+        responses=160*pixels*len(site_counts),
+        native_workspace_reserve=8*2**20).items()}
+
+
 def double_channeling_group_responses(elastic, energy_ev, q_xy, thickness_nm, positions_by_group, *, outgoing_beams=None,
         method='analytic', depth_steps=257, memory_budget_mib=2048, outgoing_potential=True,prepared_incoming=None,cancelled=None,prepared_outgoing=None,timings=None):
     """Per-group mean Cartesian responses, sharing incoming/outgoing Bloch states.
@@ -260,10 +286,9 @@ def double_channeling_group_responses(elastic, energy_ev, q_xy, thickness_nm, po
     positions_by_group={key:np.asarray(positions,float) for key,positions in positions_by_group.items()}
     if any(p.ndim!=2 or p.shape[1:]!=(3,) or not len(p) or not np.isfinite(p).all() for p in positions_by_group.values()):
         raise ValueError('Groups require finite nonempty explicit fractional positions')
-    # Mode-pair integral + complex temporaries, numerical propagation and output.
-    dense = 80*(ni*no)**2/2**20
-    working = dense+(128*(ni*no+depth_steps*(ni+no+12))+144*len(q_xy)*len(positions_by_group)
-                     +64*ni*no*sum(len(p) for p in positions_by_group.values()))/2**20+8
+    terms=bloch_response_memory_terms(ni,no,depth_steps,len(q_xy),
+        tuple(len(p) for p in positions_by_group.values()),method)
+    dense=terms['analytic_mode_integrals'];working=sum(terms.values())
     with reserve_memory(working, memory_budget_mib, dense_mib=dense):
         if prepared_incoming is not None:
             if (not isinstance(prepared_incoming,PreparedBlochIncoming) or prepared_incoming.elastic is not elastic
