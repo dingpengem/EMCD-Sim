@@ -241,6 +241,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
     def sync_angular_resolution(self,*_):
         n=self.spin['grid'].value();index=self.angular_resolution.findData(n)
         with QtCore.QSignalBlocker(self.angular_resolution):
+            self.angular_resolution.setItemText(self.angular_resolution.findData(None),f'Custom – {n}×{n}')
             self.angular_resolution.setCurrentIndex(index if index>=0 else 3)
 
     def setup_stage_b(self):

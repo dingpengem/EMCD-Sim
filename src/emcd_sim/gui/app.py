@@ -148,6 +148,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         changed=any(self.spin[key].value()!=float(value) for key,value in values.items())
         for key,value in values.items():
             with QtCore.QSignalBlocker(self.spin[key]):self.spin[key].setValue(float(value))
+        if 'grid' in values and hasattr(self,'angular_resolution'):self.sync_angular_resolution()
         if changed:self.mark_project_dirty()
 
     def sync_za(self):

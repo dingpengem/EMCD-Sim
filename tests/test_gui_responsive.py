@@ -14,6 +14,52 @@ from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.responsive import FlowLayout, ResponsiveCanvas, CollapsibleSection
 
 
+def test_map_reflow_and_export_preserve_saved_samples(app,tmp_path):
+    from matplotlib.figure import Figure
+    from emcd_sim.gui.responsive import FigurePresentation
+    fig=Figure(layout='constrained');canvas=ResponsiveCanvas(fig)
+    values=np.ma.array(np.arange(81).reshape(9,9),mask=False);values.mask[0,0]=True
+    images=[]
+    for ax in fig.subplots(1,2):
+        im=ax.imshow(values,vmin=-80,vmax=80,aspect='equal');images.append(im)
+        fig.colorbar(im,ax=ax).set_label('a.u.')
+        ax.set_title('Magnetic reversal-odd component')
+    heading='Raw | Double Channeling | Total Results | arbitrary edge · 1234.56789 eV'
+    fig.suptitle(heading+'\nComplete saved scientific context')
+    caption=QtWidgets.QLabel();presentation=FigurePresentation(canvas,'maps',caption)
+    canvas.resize(420,800);presentation.capture();canvas.draw()
+    assert '1234.56789' in fig._suptitle.get_text() and 'Total Results' in fig._suptitle.get_text()
+    assert caption.text()==presentation.full_title
+    assert [im.axes.get_subplotspec().rowspan.start for im in images]==[0,1]
+    title=fig._suptitle.get_text();size=fig.get_size_inches().copy()
+    canvas.print_figure(tmp_path/'maps.png')
+    assert fig._suptitle.get_text()==title
+    np.testing.assert_array_equal(fig.get_size_inches(),size)
+    for im in images:
+        np.testing.assert_array_equal(im.get_array().data,values.data)
+        np.testing.assert_array_equal(im.get_array().mask,values.mask)
+        assert im.get_clim()==(-80,80) and im.axes.get_aspect()==1
+    canvas.close()
+
+
+def test_comparison_legends_have_space_without_changing_curves(app,tmp_path):
+    from matplotlib.figure import Figure
+    from emcd_sim.gui.responsive import FigurePresentation
+    fig=Figure(layout='constrained');canvas=ResponsiveCanvas(fig)
+    ax=fig.subplots();x=np.array([1.,2.,4.])
+    lines=[ax.plot(x,x*i,label=f'Long declared site group {i} · arbitrary element / edge | Detector A')[0] for i in range(1,7)]
+    ax.legend();fig.suptitle('Group Comparison | original intensity scale')
+    presentation=FigurePresentation(canvas,'eels',QtWidgets.QLabel());canvas.resize(430,900);presentation.capture()
+    axes=list(fig.axes);canvas.draw();canvas.print_figure(tmp_path/'comparison.png')
+    canvas.resize(900,900);presentation.update();canvas.draw()
+    assert fig.axes==axes and ax.get_legend() is None
+    assert len(presentation.legends)==1
+    for i,line in enumerate(lines,1):
+        np.testing.assert_array_equal(line.get_xdata(),x)
+        np.testing.assert_array_equal(line.get_ydata(),x*i)
+    canvas.close()
+
+
 @pytest.fixture(scope='module')
 def app():
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])

@@ -254,6 +254,28 @@ def test_restored_numerical_settings_and_requested_grid_are_not_replaced(window,
     assert state['metadata']['numerical_selection']['mode']=='manual'
 
 
+def test_sampling_caption_tracks_effective_grid_without_applying_presets(window,tmp_path):
+    from PySide6.QtTest import QSignalSpy
+    w=window;r=result_fixture(tmp_path)
+    restore_configuration(w,r['configuration'])
+    assert w.angular_resolution.currentText()=='Custom – 9×9'
+    before=capture_configuration(w)
+    grid_changes=QSignalSpy(w.spin['grid'].valueChanged)
+    preset_changes=QSignalSpy(w.angular_resolution.currentIndexChanged)
+    w.project_dirty=False
+    w.sync_angular_resolution()
+    assert grid_changes.count()==preset_changes.count()==0 and not w.project_dirty
+    assert w.forward_settings(prepare=False)==before['config']
+    w.spin['grid'].setValue(33)
+    assert w.angular_resolution.currentData()==33
+    w.spin['grid'].setValue(11)
+    assert w.angular_resolution.currentText()=='Custom – 11×11'
+    w.angular_resolution.setCurrentIndex(w.angular_resolution.findData(97))
+    assert w.spin['grid'].value()==97 and w.angular_resolution.currentData()==97
+    restore_configuration(w,r['configuration'])
+    assert w.spin['grid'].value()==9 and w.angular_resolution.currentText()=='Custom – 9×9'
+
+
 @pytest.mark.skipif(sys.platform!='win32' or os.environ.get('QT_QPA_PLATFORM')!='windows',reason='Explicit native Windows project workflow')
 def test_native_windows_project_history_and_menus(window,app,tmp_path,monkeypatch):
     w=window;assert app.platformName()=='windows'

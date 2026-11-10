@@ -58,6 +58,25 @@ class FigurePresentation:
         self.specs = [(ax, ax.get_subplotspec()) for ax in fig.axes]
         self.labels = [(ax, ax.get_ylabel()) for ax in fig.axes]
         self.maps = [ax for ax in fig.axes if ax.images] if self.kind == 'maps' else []
+        if self.maps:
+            fig.set_layout_engine(None)
+        self.map_legend = None
+        if self.maps and self.maps[0].get_legend() is not None:
+            handles, labels = self.maps[0].get_legend_handles_labels()
+            for ax in self.maps:
+                legend = ax.get_legend()
+                if legend is not None:legend.remove()
+            self.map_legend = fig.legend(handles, labels, loc='lower center', fontsize=7, frameon=False)
+        self.legends = []
+        if self.kind == 'eels':
+            for ax, _ in self.specs:
+                legend = ax.get_legend()
+                handles, labels = ax.get_legend_handles_labels()
+                if legend is not None and (len(labels) > 4 or any(len(s) > 35 for s in labels)):
+                    legend.remove()
+                    space = fig.add_subplot();space.set_axis_off()
+                    self.legends.append((ax, space, handles, labels))
+        self.map_titles = [(ax, ax.get_title()) for ax in self.maps]
         self.narrow = None
         self.update()
 
@@ -71,24 +90,77 @@ class FigurePresentation:
             ax.set_ylabel(label)
 
     def update(self):
-        narrow = self.canvas.width() < 650
-        if narrow == self.narrow or self.title is None:
+        width = self.canvas.width()
+        size = (width, self.canvas.height())
+        if size == self.narrow or self.title is None:
             return
-        self.narrow = narrow
+        self.narrow = size
+        self.reflow(width)
+
+    def reflow(self, width, exporting=False):
+        narrow = width < 650
         self.original()
-        if not narrow:
-            return
-        first = self.full_title.split('\n')[0]
-        if len(first) > 90:
-            first = ' | '.join(first.split(' | ')[:3])
-        self.title.set_text(first)
-        if len(self.maps) == 2 and all(ax.images[0].colorbar is not None for ax in self.maps):
-            grid = GridSpec(2, 2, figure=self.canvas.figure, width_ratios=[1, .05])
-            for row, ax in enumerate(self.maps):
-                ax.set_subplotspec(grid[row, 0])
-                ax.images[0].colorbar.ax.set_subplotspec(grid[row, 1])
+        # Keep every scope/energy identifier. Full context remains in Details
+        # and figure exports; the canvas shows a wrapped identifying heading.
+        chars = max(32, int(width / 7))
+        heading = self.full_title if exporting else self.full_title.split('\n')[0]
+        self.title.set_text('\n'.join(fill(line, chars, break_on_hyphens=False) for line in heading.split('\n')))
+        self.title.set_fontsize(10)
+        for ax, label in self.map_titles:
+            labels = [text for text in ax.texts if text.get_gid()=='beam-index-label']
+            for text in labels:text.set_visible(not narrow and len(labels)<=12)
+        omitted = any(not text.get_visible() for ax in self.maps for text in ax.texts if text.get_gid()=='beam-index-label')
+        self.caption.setText(self.full_title+('\nBeam-index labels hidden to keep this map readable; beam markers and geometry are retained.' if omitted else ''))
+        if self.map_legend is not None:self.map_legend.set_ncols(1 if narrow else 3)
+        if self.maps:
+            # Equal-aspect images and colorbars need explicit shared slots.
+            # Nested colorbar GridSpecs otherwise squeeze the maps at high DPI.
+            fig = self.canvas.figure
+            cols = 1 if narrow else min(3, len(self.maps))
+            rows = (len(self.maps)+cols-1)//cols
+            w, h = fig.get_size_inches()
+            top = .22*len(self.title.get_text().split('\n'))+.25
+            side = max(.5, min(w/cols-1.6, (h-top-.55)/rows-.85))
+            grid = GridSpec(rows, cols, figure=fig)
+            self.title.set_y(.99)
+            for i, ax in enumerate(self.maps):
+                row, col = divmod(i, cols)
+                ax.set_subplotspec(grid[row, col])
+                x = col*w/cols+.75
+                y = h-top-.45-row*(side+.85)-side
+                ax.set_title(fill(self.map_titles[i][1],max(20,int(side*13))),fontsize=10)
+                ax.set_position([x/w,y/h,side/w,side/h])
+                colorbar = ax.images[0].colorbar
+                if colorbar is not None:
+                    colorbar.ax.set_axes_locator(None)
+                    colorbar.ax.set_box_aspect(None)
+                    colorbar.ax.set_position([(x+side+.12)/w,y/h,.10/w,side/h])
+                    offset=colorbar.ax.yaxis.get_offset_text()
+                    offset.set_horizontalalignment('left');offset.set_x(0)
+        legend_height = 0
+        if self.legends:
+            axes = [ax for ax, _ in self.specs]
+            ratios = []
+            for ax in axes:
+                entry = next((v for v in self.legends if v[0] is ax), None)
+                ratios.append(3)
+                if entry:
+                    rows = sum(len(fill(s, max(24, chars-8)).split('\n')) for s in entry[3])
+                    ratios.append(max(.8, rows*.19));legend_height += rows*15+18
+            grid = GridSpec(len(ratios), 1, figure=self.canvas.figure, height_ratios=ratios)
+            row = 0
+            for ax in axes:
+                ax.set_subplotspec(grid[row, 0]);row += 1
+                entry = next((v for v in self.legends if v[0] is ax), None)
+                if entry:
+                    _, space, handles, labels = entry
+                    space.set_subplotspec(grid[row, 0]);row += 1
+                    space.legend(handles, [fill(s, max(24, chars-8), break_on_hyphens=False) for s in labels], loc='center left', fontsize=8, frameon=False)
         for ax, label in self.labels:
-            ax.set_ylabel(fill(label, width=12))
+            ax.set_ylabel(fill(label, width=18 if narrow else 26))
+        if not exporting:
+            height = (max(420, len(self.maps)*(width-65)+100) if narrow and self.maps else 420) + legend_height
+            self.canvas.setMinimumHeight(height)
 
     @contextmanager
     def export(self):
@@ -96,8 +168,10 @@ class FigurePresentation:
         # precisely the same on-screen artists, geometry and compact caption.
         fig = self.canvas.figure
         size = fig.get_size_inches().copy()
-        self.original()
         fig.set_size_inches(max(size[0], 10), max(size[1], 8), forward=False)
+        if self.maps:
+            fig.set_size_inches(max(size[0], 10), 5.5, forward=False)
+        if self.title is not None:self.reflow(1100, exporting=True)
         try:
             yield
         finally:

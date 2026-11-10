@@ -2,6 +2,7 @@
 from pathlib import Path
 from PySide6 import QtCore,QtWidgets
 from .multisite_results import QUANTITIES
+from .responsive import FlowLayout
 
 
 class MultisiteSpectraControls(QtWidgets.QWidget):
@@ -10,8 +11,8 @@ class MultisiteSpectraControls(QtWidgets.QWidget):
     def __init__(self):
         super().__init__();self.result = None
         layout = QtWidgets.QVBoxLayout(self);layout.setContentsMargins(0,0,0,0);layout.setSpacing(3)
-        row = QtWidgets.QHBoxLayout();layout.addLayout(row)
-        self.selection = QtWidgets.QComboBox();row.addWidget(self.selection,1)
+        row = FlowLayout();layout.addLayout(row)
+        self.selection = QtWidgets.QComboBox();row.addWidget(self.selection)
         self.normalization = QtWidgets.QComboBox();self.normalization.addItems(['Group Contribution (n/N, additive)','Group Mean (per atom, nonadditive)'])
         layout.addWidget(self.normalization)
         self.normalization.setToolTip('Weighted group/element curves use the total selected-atom denominator. Group means are diagnostic and not additive.')
@@ -23,7 +24,7 @@ class MultisiteSpectraControls(QtWidgets.QWidget):
             fields=fields or [field for _,panel in PANELS for field in panel]
             text='\n'.join(key+': '+DEFINITIONS[key] for key,_ in fields)
             self.quantity.setItemData(i,text+'\nThe active ±M configuration and its simultaneous global reversal are complete provider states.',QtCore.Qt.ItemDataRole.ToolTipRole)
-        row.addWidget(self.quantity,1)
+        row.addWidget(self.quantity)
         self.groups = QtWidgets.QListWidget();self.groups.setMaximumHeight(78);layout.addWidget(self.groups)
         self.include_total = QtWidgets.QCheckBox('Include total spectrum');layout.addWidget(self.include_total)
         self.include_total.setToolTip('Overlay the normalized total. Group means remain nonadditive; weighted groups use the total denominator.')
@@ -93,6 +94,7 @@ class MultisiteSpectraControls(QtWidgets.QWidget):
         self.groups.setVisible(mode == 'compare');self.normalization.setVisible(mode in ('group','compare'))
         self.include_total.setVisible(mode == 'compare')
         self.normalization.setEnabled(mode in ('group','compare'))
+        self.selection.setToolTip(self.selection.currentData(QtCore.Qt.ItemDataRole.ToolTipRole) or self.selection.currentText())
         self.quantity.setToolTip(self.quantity.currentData(QtCore.Qt.ItemDataRole.ToolTipRole) or '')
         if self.result is not None:
             options = self.options()

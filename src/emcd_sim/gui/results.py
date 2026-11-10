@@ -238,9 +238,12 @@ def draw_component_maps(fig,result,edge,method=None,signal_mode='raw',group_id=N
     for ax,(label,v) in zip(axes,values.items()):
         im=ax.imshow(v,origin='lower',extent=extent,interpolation='nearest',aspect='equal',cmap=colormaps['RdBu_r'].with_extremes(bad='#c8c8c8'),vmin=-limit,vmax=limit)
         decorate_reciprocal_map(ax,r['model'],extent,target_hkl=r['settings'].target,zone_axis=r['settings'].zone)
+        beam_labels={str(hkl) for hkl in getattr(getattr(r['model'].elastic,'beams',None),'hkl',())}
+        for text in ax.texts:
+            if text.get_text() in beam_labels:text.set_gid('beam-index-label')
         ax.plot(*r['model'].elastic.crystal.g_vector(r['settings'].target)[:2],'s',mfc='none',mec='crimson',ms=8)
         ax.set_title(label,fontsize=10)
-        units=(label.replace('paired difference','difference')+' (a.u.)') if signal_mode=='raw' and method!='difference' else meta['units']
+        units='a.u.' if signal_mode=='raw' and method!='difference' else meta['units']
         fig.colorbar(im,ax=ax,shrink=.7).set_label(units)
         if not np.isfinite(v).any():ax.text(.1,.5,'All pixels undefined / masked',transform=ax.transAxes)
     from .multisite_results import energy_sample_index,total_energy_samples
@@ -319,7 +322,10 @@ from .responsive import FlowLayout, CollapsibleSection, FigurePresentation
 class ResultsView(QtWidgets.QWidget):
     def __init__(self,parent,kind):
         super().__init__();self.owner=parent;self.kind=kind;self.result=None;self.proxies=[]
-        layout=QtWidgets.QVBoxLayout(self);self.label=QtWidgets.QLabel('No completed EMCD calculation.');self.label.setWordWrap(True);layout.addWidget(self.label)
+        outer=QtWidgets.QVBoxLayout(self);outer.setContentsMargins(0,0,0,0)
+        self.scroll=QtWidgets.QScrollArea();self.scroll.setWidgetResizable(True);self.scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        content=QtWidgets.QWidget();self.scroll.setWidget(content);outer.addWidget(self.scroll)
+        layout=QtWidgets.QVBoxLayout(content);self.label=QtWidgets.QLabel('No completed EMCD calculation.');self.label.setWordWrap(True);layout.addWidget(self.label)
         row=FlowLayout();layout.addLayout(row)
         if kind=='maps':
             self.map_scope=QtWidgets.QComboBox();self.map_scope.setAccessibleName('Angular result scope')
@@ -362,7 +368,7 @@ class ResultsView(QtWidgets.QWidget):
         self.figure=Figure(layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure)
         self.navigation=NavigationToolbar2QT(self.canvas,self)
         self.canvas.setMinimumSize(280,160)
-        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Expanding)
+        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Ignored)
         self.multisite_banner=QtWidgets.QLabel();self.multisite_banner.setWordWrap(True);self.multisite_banner.hide()
         layout.addWidget(self.multisite_banner);layout.addWidget(self.canvas,1)
         self.details_section=CollapsibleSection('Display details / diagnostics / export',expanded=False);self.details_section.setObjectName('results_details_'+kind);self.details_toggle=self.details_section.header;self.details_body=self.details_section.body;details=QtWidgets.QVBoxLayout(self.details_body);details.setContentsMargins(0,0,0,0)
@@ -373,6 +379,8 @@ class ResultsView(QtWidgets.QWidget):
             details.addWidget(self.multisite_controls.sources)
         self.full_caption=QtWidgets.QLabel();self.full_caption.setWordWrap(True);self.full_caption.setTextFormat(QtCore.Qt.TextFormat.PlainText);details.addWidget(self.full_caption)
         details.addWidget(self.navigation)
+        self.navigation.setMinimumWidth(0)
+        self.navigation.setSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored,QtWidgets.QSizePolicy.Policy.Fixed)
         self.presentation=FigurePresentation(self.canvas,kind,self.full_caption)
         layout.insertWidget(1,self.details_section)
         self.choice.currentTextChanged.connect(self.redraw);self.canvas.mpl_connect('pick_event',self.pick)
