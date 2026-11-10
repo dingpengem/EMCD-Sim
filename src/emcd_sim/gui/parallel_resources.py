@@ -1,14 +1,76 @@
-"""Read-only native introspection and evidence-scoped detector-worker policy.
-
-No propagation, diagonalization, MDFF evaluation or BLAS thread mutation.
-"""
-import ctypes,hashlib,os,platform,sys
+"""Native thread introspection, scoped control and detector-worker policy."""
+import ctypes,hashlib,os,platform,sys,threading
+from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
 import numpy as np
 
 IMPLICATED_DLL_SHA256='63c857e738469261263c764a36be9436ebdeaa272e340a828f42047a97131080'
 MAX_WORKERS=4
+_blas_control_lock=threading.RLock()
+
+
+def _blas_runtimes():
+    # Import the LAPACK consumer before taking the execution snapshot. NumPy
+    # and SciPy wheels can load DIFFERENT OpenBLAS runtimes. Rediscover on each
+    # request rather than caching the first library seen by a GUI preview.
+    import scipy.linalg
+    import scipy
+    runtimes=[]
+    for package in (np,scipy):
+        folder=Path(package.__file__).resolve().parent.parent/(package.__name__+'.libs')
+        for path in sorted(set(folder.glob('*openblas*.dll'))|set(folder.glob('*openblas*.so*'))):
+            library=ctypes.CDLL(str(path))
+            for prefix,suffix in ((p,s) for p in ('scipy_openblas_','openblas_') for s in ('64_','','_')):
+                try:
+                    get=getattr(library,prefix+'get_num_threads'+suffix)
+                    set_threads=getattr(library,prefix+'set_num_threads'+suffix)
+                    parallel=getattr(library,prefix+'get_parallel'+suffix)
+                    config=getattr(library,prefix+'get_config'+suffix)
+                except AttributeError:continue
+                get.argtypes=[];get.restype=ctypes.c_int
+                set_threads.argtypes=[ctypes.c_int];set_threads.restype=None
+                parallel.argtypes=[];parallel.restype=ctypes.c_int
+                config.argtypes=[];config.restype=ctypes.c_char_p
+                runtimes.append((get,set_threads,dict(library=str(path),configuration=config().decode(),
+                    threads=int(get()),parallel=int(parallel()))))
+                break
+            else:
+                raise ValueError('Cannot verify OpenBLAS control API: '+str(path))
+    return runtimes
+
+
+@contextmanager
+def calculation_blas_guard(cancelled=None):
+    """Limit both wheel runtimes for the entire calculation; restore after join.
+
+    OpenBLAS normal threading uses process-wide setters. Serialize requests
+    while limits are active. OpenMP/unknown implementations are not asserted
+    controllable through this API. Nested detector dispatch is reentrant.
+    """
+    from ..cancellation import check_cancelled
+    while not _blas_control_lock.acquire(timeout=.05):check_cancelled(cancelled)
+    previous=[]
+    try:
+        check_cancelled(cancelled)
+        runtimes=_blas_runtimes()
+        if not runtimes or any(info['parallel'] not in (0,1) for _,_,info in runtimes):
+            raise ValueError('Automatic single-thread BLAS control unavailable for this numerical runtime.')
+        for get,set_threads,info in runtimes:
+            previous.append((get,set_threads,int(get())))
+            set_threads(1)
+            if int(get())!=1:raise ValueError('Single-thread BLAS verification failed: '+info['library'])
+        yield [dict(info,threads=int(get())) for get,_,info in runtimes]
+    finally:
+        try:
+            restoration_error=None
+            for get,set_threads,count in reversed(previous):
+                try:
+                    set_threads(count)
+                    if int(get())!=count:raise RuntimeError('Could not restore native BLAS thread limit')
+                except Exception as exc:restoration_error=exc
+            if restoration_error is not None:raise restoration_error
+        finally:_blas_control_lock.release()
 
 
 @lru_cache(maxsize=1)
@@ -53,6 +115,12 @@ def native_backend_info():
                 r=rows[0];result.update(backend=r.get('internal_api','Unknown'),version=r.get('version') or 'Unknown',
                     threads=r.get('num_threads'),library=r.get('filepath'))
         except ImportError:pass
+    try:
+        rows=[info for _,_,info in _blas_runtimes()]
+        result['runtimes']=rows
+        result['automatic_thread_control']=bool(rows) and all(row['parallel'] in (0,1) for row in rows)
+    except (OSError,ValueError,ImportError):
+        result['runtimes']=[];result['automatic_thread_control']=False
     return result
 
 
@@ -79,12 +147,12 @@ def worker_plan(settings,cfg,n,*,native=None):
         if cfg.channeling_model=='single' and count!=1:
             blocked=True;risk='UNVERIFIED COMBINATION';messages.append('Single Channeling has no parallel detector executor; request 1 or Automatic.')
         if cfg.channeling_model=='double' and method=='bloch' and native.get('platform')=='win32':
-            if count>1 and native.get('threads')!=1:
+            if count>1 and native.get('threads')!=1 and not native.get('automatic_thread_control',False):
                 blocked=True
                 if matched and n==27 and count==4 and native.get('threads')==12:
                     risk='KNOWN UNSAFE';messages.append('4 BW workers with 12 OpenBLAS threads previously caused a native crash in this matching Windows configuration.')
                 else:
-                    risk='UNVERIFIED COMBINATION';messages.append('Concurrent Windows BW workers require verified single-thread BLAS. Choose 1 or restart with OPENBLAS_NUM_THREADS=1 before NumPy loads. No runtime thread limit is changed.')
+                    risk='UNVERIFIED COMBINATION';messages.append('Concurrent Windows BW workers require verified single-thread BLAS. Automatic control is unavailable for this runtime; choose 1 worker or use a supported numerical runtime. No calculation started.')
             elif not (matched and (count==1 and native.get('threads') in (1,12) or count==4 and native.get('threads')==1)):
                 if risk!='KNOWN UNSAFE':risk='UNVERIFIED COMBINATION'
         elif cfg.channeling_model=='double':risk='UNVERIFIED COMBINATION'
@@ -93,6 +161,8 @@ def worker_plan(settings,cfg,n,*,native=None):
         messages.append('Native backend/thread count Unknown; this combination is not verified safe.')
     if risk=='UNVERIFIED COMBINATION' and not blocked:
         messages.append('Conservative execution allowed with a caution; passing memory admission is not native-stability certification.')
+    if native.get('automatic_thread_control'):
+        messages.append('Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop.')
     return dict(mode=mode,requested_workers='Automatic' if mode=='automatic' else requested,
         policy_version='parallel-workers-v1',
         effective_workers=effective,native=native,risk=risk,blocked=blocked,

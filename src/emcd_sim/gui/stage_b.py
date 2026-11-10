@@ -37,6 +37,20 @@ class EMCDWorker(QtCore.QThread):
         if requested:self.cancellation_times.setdefault('acknowledged',time.perf_counter())
         return requested
     def run(self):
+        from .parallel_resources import calculation_blas_guard,native_backend_info
+        logger=logging.getLogger('emcd_sim.gui')
+        try:
+            with calculation_blas_guard(self.cancelled) as native:
+                logger.info('Calculation verified BLAS runtimes=%s',native)
+                self._run_calculation()
+        except Cancelled:pass
+        except Exception as exc:
+            logger.exception('Calculation BLAS control failed')
+            if not self.cancelled():self.failed.emit(str(exc))
+        finally:
+            logger.info('Calculation BLAS limits restored=%s',native_backend_info().get('runtimes'))
+            self.cancellation_times['stopped']=time.perf_counter()
+    def _run_calculation(self):
         try:
             calculation_start=time.perf_counter()
             logging.getLogger('emcd_sim.gui').info('Calculate method=%s model=%s sha256=%s', self.config.propagation, self.config.model, self.config.source_sha256)
@@ -555,11 +569,19 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             self.error(str(exc));return
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.emcd_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0)
         self._run_numerical_selection=self.numerical_selection_snapshot()
+        self._emcd_started=time.perf_counter();self._emcd_stage_text='Preparing calculation'
+        self._emcd_elapsed_timer=QtCore.QTimer(self);self._emcd_elapsed_timer.setInterval(1000)
+        self._emcd_elapsed_timer.timeout.connect(self.emcd_progress_status);self._emcd_elapsed_timer.start()
         local=dict(sites=sites,energy_windows=windows,reverse_magnetization=reverse,input_signature=signature) if sites is not None else {}
         self.worker=EMCDWorker(structure,s,cfg,**local);self.worker.execution_policy=assessment['execution'];self.worker.stage.connect(self.emcd_stage);self.worker.result.connect(self.emcd_completed);self.worker.failed.connect(self.emcd_failed);self.worker.finished.connect(self.emcd_finished);self.worker.start()
     def emcd_stage(self,message):
         # Queued progress from before Cancel must not hide the pending request.
-        if not self.worker.isInterruptionRequested():self.statusBar().showMessage(message)
+        if not self.worker.isInterruptionRequested():
+            self._emcd_stage_text=message;self.emcd_progress_status()
+    def emcd_progress_status(self):
+        elapsed=time.perf_counter()-self._emcd_started
+        message='Cancelling; waiting for running workers to stop' if self.worker.isInterruptionRequested() else self._emcd_stage_text
+        self.statusBar().showMessage(f'{message} | elapsed {elapsed:.0f} s')
     def emcd_failed(self,message):
         if not self.worker.isInterruptionRequested():self.preview_failed(message)
     def emcd_completed(self,result):
@@ -579,6 +601,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale();self.emcd_ready.emit()
         logging.getLogger('emcd_sim.gui').info('Result display setup elapsed_seconds=%.6f (canvas painting may be deferred)',time.perf_counter()-display_start)
     def emcd_finished(self):
+        self._emcd_elapsed_timer.stop();self._emcd_elapsed_timer.deleteLater()
         self.finished();self.emcd_stale()
         if self.worker.isInterruptionRequested():
             self.run_outcome='cancelled';self.worker.cancellation_times['idle']=time.perf_counter()

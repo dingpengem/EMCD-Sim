@@ -1,5 +1,5 @@
 """GUI adapters to the existing channeling kernels; no scattering model here."""
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor,wait,FIRST_COMPLETED
 from contextlib import contextmanager
 import sys,threading,os
 from time import perf_counter,thread_time
@@ -28,8 +28,8 @@ def bw_executor_guard(method,cancelled):
     """Serialize Windows BW detector executors, including independent requests.
 
     The Windows NumPy OpenBLAS runtime can access-violate when concurrent
-    outgoing eigh calls use its native thread pool. Do not change global BLAS
-    settings or scientific inputs. Waiting for another request is cancellable.
+    outgoing eigh calls use its native thread pool. Scoped BLAS control is
+    handled separately. Waiting for another request is cancellable.
     """
     if method!='bloch' or sys.platform!='win32':
         yield;return
@@ -47,7 +47,7 @@ def worker_count(n,method):
     return min(4,max(1,int(1200/(dense+40)))) if method=='bloch' else 4
 
 
-def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics=None):
+def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics=None,progress=None):
     """Ordered legacy thread execution with cooperative failure/cancellation.
 
     response(batch, task_cancelled) owns its scratch arrays. Stop queued and
@@ -55,11 +55,9 @@ def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics
     originating exception even if an earlier batch subsequently cancels.
     """
     from ..cancellation import check_cancelled
-    from .parallel_resources import MAX_WORKERS,native_backend_info
+    from .parallel_resources import MAX_WORKERS,calculation_blas_guard
     if type(workers) is not int or not 1<=workers<=MAX_WORKERS:
         raise ValueError('Unsupported detector worker count')
-    if method=='bloch' and sys.platform=='win32' and workers>1 and native_backend_info()['threads']!=1:
-        raise ValueError('Parallel Windows BW requires verified single-thread native BLAS; no calculation started.')
     stop=threading.Event();errors=[];error_lock=threading.Lock()
     start=perf_counter();active=peak=started=0;busy=cpu=queue_seconds=0.;threads=set()
     def task_cancelled():return stop.is_set() or (cancelled is not None and cancelled())
@@ -83,12 +81,21 @@ def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics
                 with error_lock:
                     active-=1;busy+=perf_counter()-before;cpu+=thread_time()-before_cpu
     try:
-        with bw_executor_guard(method,task_cancelled):
+        with calculation_blas_guard(task_cancelled) as native, bw_executor_guard(method,task_cancelled):
+            if diagnostics is not None:diagnostics['native_runtimes']=native
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 futures=[]
                 try:
                     for batch in batches:futures.append(pool.submit(execute,batch,perf_counter()))
-                    return [future.result() for future in futures]
+                    pending=set(futures);order={f:i for i,f in enumerate(futures)};results=[None]*len(futures);completed=0
+                    if progress:progress(0,len(futures))
+                    while pending:
+                        check_cancelled(task_cancelled)
+                        done,pending=wait(pending,timeout=.1,return_when=FIRST_COMPLETED)
+                        for future in done:
+                            results[order[future]]=future.result();completed+=1
+                        if done and progress:progress(completed,len(futures))
+                    return results
                 except BaseException as exc:
                     stop.set()
                     for future in futures:future.cancel()

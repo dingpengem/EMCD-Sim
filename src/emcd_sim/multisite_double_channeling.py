@@ -5,6 +5,7 @@ incoming/outgoing propagation, Coulomb factors, site phases, depth integration
 and tensor contraction are supplied by the existing BW/MS backends.
 """
 import numpy as np
+import threading
 from time import perf_counter
 
 from .cancellation import check_cancelled
@@ -21,7 +22,7 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
                                    reverse_magnetization=False, cancelled=None,
                                    propagation='bloch',prepared_grid=None,fft_grid=32,
                                    potential_cutoff=2.2,slice_step_nm=.04,systematic_row=False,
-                                   execution_workers=None):
+                                   execution_workers=None,progress=None):
     """Mean per selected atom; explicit reversal pairs share each group response.
 
     The plan is prepared_multisite_spectrum output from preflight. Window
@@ -85,14 +86,28 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
         selected_positions={group.group_id:positions[list(group.indices)] for group in active}
         before=perf_counter()
         outgoing=None
+        if progress:progress(f'{propagation} Double: energy {ie+1}/{len(energy)} ({loss:g} eV); preparing outgoing response')
         if propagation=='bloch':
             from .double_channeling import prepare_outgoing_bloch
             outgoing=prepare_outgoing_bloch(model.elastic,loss,prepared_incoming=incoming,cancelled=cancelled)
         diagnostic['outgoing_preparation_seconds']=perf_counter()-before
+        size=min(batch_size,max(1,int(np.ceil(len(queries)/workers))))
+        batch_count=int(np.ceil(len(queries)/size))
+        progress_lock=threading.Lock();planes=completed=0;last_update=0.
+        def report(done=None,total=None):
+            nonlocal planes,completed,last_update
+            if progress is None:return
+            with progress_lock:
+                if done is None:planes+=1
+                else:completed=done
+                now=perf_counter()
+                if done is not None or now-last_update>=.25:
+                    detail=f'; depth planes {planes}/{batch_count*depth_steps}' if propagation!='bloch' else ''
+                    progress(f'{propagation} Double: energy {ie+1}/{len(energy)} ({loss:g} eV); response batches {completed}/{batch_count}'+detail)
+                    last_update=now
         def batches():
             # The shared executor validates the worker count before iterating.
             # Enough tasks to use small pools without exceeding legacy bounds.
-            size=min(batch_size,max(1,int(np.ceil(len(queries)/workers))))
             for start in range(0,len(queries),size):
                 sl=slice(start,start+size)
                 yield sl,queries[sl]
@@ -110,7 +125,8 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
                 responses,details=multislice_double_channeling_group_responses(model.elastic,loss,points,thickness_nm,selected_positions,
                     fft_grid=fft_grid,potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=systematic_row,
                     depth_steps=depth_steps,slice_step_nm=slice_step_nm,batch_pixels=batch_size,
-                    memory_budget_mib=memory_budget_mib,prepared_grid=prepared_grid,prepared_incoming=incoming,cancelled=task_cancelled)
+                    memory_budget_mib=memory_budget_mib,prepared_grid=prepared_grid,prepared_incoming=incoming,cancelled=task_cancelled,
+                    progress=report if progress is not None else None)
             # Cartesian responses remain local to the worker. Only compact
             # group intensities and diagnostics wait for ordered collection.
             values={}
@@ -125,7 +141,8 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
             if propagation=='bloch':details['tensor_contraction_seconds']=perf_counter()-before
             return sl,values,details
         execution={}
-        results=map_detector_batches(response,batches(),workers,propagation,cancelled,diagnostics=execution)
+        results=map_detector_batches(response,batches(),workers,propagation,cancelled,diagnostics=execution,progress=report)
+        if progress:progress(f'{propagation} Double: energy {ie+1}/{len(energy)}; reducing completed responses')
         diagnostic['executor']=execution
         diagnostic['workers']=min(workers,len(results))
         for sl,values,details in results:

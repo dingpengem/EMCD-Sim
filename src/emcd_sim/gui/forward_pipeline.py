@@ -288,7 +288,7 @@ def _multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detect
             raw=contract_multisite_bloch_double(model,sites,block_plan,qx.ravel()[support],qy.ravel()[support],
                 crystal_to_microscope=rotation,thickness_nm=thickness_nm,depth_steps=cfg.depth,
                 method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.memory_budget_mib,
-                prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled,execution_workers=workers)
+                prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled,execution_workers=workers,progress=stage)
             contraction_seconds+=perf_counter()-before;before=perf_counter()
             tensor_preparation_seconds+=raw.get('timings',{}).get('tensor_preparation_seconds',0.)
             integrate(result['total'],raw['total'],block_cfg,block_energy,selection,support)
@@ -434,7 +434,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                     crystal_to_microscope=rotation,thickness_nm=settings.thickness,depth_steps=cfg.depth,
                     method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.memory_budget_mib,
                     prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled,
-                    execution_workers=info['execution']['effective_workers'][method])
+                    execution_workers=info['execution']['effective_workers'][method],progress=stage)
             elif double:
                 from ..multisite_double_channeling import contract_multisite_ms_double
                 grid,fields=prepared_fft
@@ -443,7 +443,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                     fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,slice_step_nm=cfg.slice_step,
                     systematic_row=cfg.systematic_row,memory_budget_mib=cfg.memory_budget_mib,
                     prepared_grid=grid,prepared_incoming=fields,reverse_magnetization=reverse_magnetization,cancelled=cancelled,
-                    execution_workers=info['execution']['effective_workers'][method])
+                    execution_workers=info['execution']['effective_workers'][method],progress=stage)
             else:
                 raw=_multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,qy,weights,detector_support,
                     rotation,settings.thickness,reverse_magnetization,stage,cancelled)

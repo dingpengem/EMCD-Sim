@@ -289,7 +289,7 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
 def multislice_double_channeling_group_responses(elastic,energy_ev,q_xy,thickness_nm,positions_by_group,*,
         fft_grid=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,
         depth_steps=257,slice_step_nm=.04,outgoing_beams=None,outgoing_potential=True,
-        batch_pixels=32,memory_budget_mib=2048,prepared_grid=None,prepared_incoming=None,projected_geometry=None,cancelled=None):
+        batch_pixels=32,memory_budget_mib=2048,prepared_grid=None,prepared_incoming=None,projected_geometry=None,cancelled=None,progress=None):
     """Group-mean responses sharing complete-crystal incoming/outgoing fields.
 
     The caller validates actual fractional site assignments against the elastic
@@ -374,6 +374,7 @@ def multislice_double_channeling_group_responses(elastic,energy_ev,q_xy,thicknes
                 out_norm=max(out_norm,float(np.max(abs(np.sum(magnitude,axis=-1)-1))))
                 outgoing_leak=max(outgoing_leak,float(np.max(np.sum(magnitude[:,~keep_o],axis=-1))))
                 if iz:reciprocal=plan.advance(reciprocal,n,-dz,cancelled=cancelled)
+                if progress:progress()
         check_cancelled(cancelled)
         diagnostics=dict(incoming_norm_error=norm_error,outgoing_norm_error=out_norm,
             incoming_max_excluded_population=incoming_leak,outgoing_max_excluded_population=outgoing_leak,

@@ -60,10 +60,12 @@ def test_group_responses_against_forward_site_events_and_shared_fields(monkeypat
         if dz<0:outgoing_steps.append(1)
         return original(self,coefficients,steps,dz,**kwargs)
     monkeypatch.setattr(ms.FFTSplitStep,'advance',advance)
+    completed_planes=[]
     responses,diagnostics=ms.multislice_double_channeling_group_responses(model.elastic,710.,queries,.12,
         {'one':positions[:1],'two':positions[1:]},fft_grid=12,potential_cutoff=.6,
         systematic_row=row_reduction,row_reduction=row_reduction,depth_steps=5,slice_step_nm=.01,
-        prepared_grid=grid,prepared_incoming=incoming,batch_pixels=1)
+        prepared_grid=grid,prepared_incoming=incoming,batch_pixels=1,progress=lambda:completed_planes.append(1))
+    assert len(completed_planes)==len(queries)*5
     assert len(outgoing_steps)==len(queries)*(5-1)
     for name,selected in [('one',positions[:1]),('two',positions[1:])]:
         expected=np.mean([direct_site_intensity(model.elastic,grid,incoming,710.,queries,p,tensor) for p in selected],axis=0)
