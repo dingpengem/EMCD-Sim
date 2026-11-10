@@ -257,14 +257,15 @@ def _multisite_single_detector_data(model,structure,sites,coherence,plan,cfg,qx,
     return result
 
 
-def _multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detector_support,
-                                      rotation,thickness_nm,incoming,workers,reverse_magnetization,stage,cancelled):
-    """Schedule existing BW DC responses on selected maps or detector support.
+def _multisite_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detector_support,
+                                   rotation,thickness_nm,incoming,workers,reverse_magnetization,stage,cancelled,
+                                   *,propagation='bloch',prepared_fft=None,potential_cutoff=None):
+    """Schedule existing BW/MS DC responses on selected maps or detector support.
 
     Each energy is evaluated once; complete-crystal incoming fields are shared
     across blocks. Reduction retains original fractional weights and group means.
     """
-    from ..multisite_double_channeling import contract_multisite_bloch_double
+    from ..multisite_double_channeling import contract_multisite_bloch_double,contract_multisite_ms_double
     from .propagation import MULTISITE_ENERGY_BATCH
     energy=plan['energy_ev'];full=np.zeros(len(energy),bool)
     if cfg.angular_maps:
@@ -281,14 +282,22 @@ def _multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detect
         candidates=np.flatnonzero(full==is_full);support=np.ones(qx.size,bool) if is_full else detector_support
         for start in range(0,len(candidates),MULTISITE_ENERGY_BATCH):
             selection=candidates[start:start+MULTISITE_ENERGY_BATCH];block_energy=energy[selection]
-            stage(f'BW Double Channeling: {"selected maps" if is_full else "detector support"}; energies {start+1}–{start+len(selection)}/{len(candidates)}, {int(support.sum())} pixels')
+            stage(f'{propagation} Double Channeling: {"selected maps" if is_full else "detector support"}; energies {start+1}–{start+len(selection)}/{len(candidates)}, {int(support.sum())} pixels')
             block_plan=dict(plan,energy_ev=block_energy,active={gid:mask[selection] for gid,mask in plan['active'].items()})
             block_cfg=replace(cfg,angular_maps=cfg.angular_maps and is_full,selected_edges=tuple((label,loss) for label,loss in cfg.selected_edges if np.any(np.isclose(block_energy,loss,rtol=0,atol=1e-9))))
             before=perf_counter()
-            raw=contract_multisite_bloch_double(model,sites,block_plan,qx.ravel()[support],qy.ravel()[support],
-                crystal_to_microscope=rotation,thickness_nm=thickness_nm,depth_steps=cfg.depth,
-                method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.memory_budget_mib,
-                prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled,execution_workers=workers,progress=stage)
+            common=dict(crystal_to_microscope=rotation,thickness_nm=thickness_nm,depth_steps=cfg.depth,
+                memory_budget_mib=cfg.memory_budget_mib,reverse_magnetization=reverse_magnetization,
+                cancelled=cancelled,execution_workers=workers,progress=stage)
+            if propagation=='bloch':
+                raw=contract_multisite_bloch_double(model,sites,block_plan,qx.ravel()[support],qy.ravel()[support],
+                    method='analytic' if cfg.systematic_row else 'numerical',prepared_incoming=incoming,**common)
+            else:
+                grid,fields=prepared_fft
+                raw=contract_multisite_ms_double(model,sites,block_plan,qx.ravel()[support],qy.ravel()[support],
+                    prepared_grid=grid,prepared_incoming=fields,fft_grid=cfg.fft_grid,
+                    potential_cutoff=potential_cutoff,
+                    slice_step_nm=cfg.slice_step,systematic_row=cfg.systematic_row,**common)
             contraction_seconds+=perf_counter()-before;before=perf_counter()
             tensor_preparation_seconds+=raw.get('timings',{}).get('tensor_preparation_seconds',0.)
             integrate(result['total'],raw['total'],block_cfg,block_energy,selection,support)
@@ -424,10 +433,11 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
             psi=waves[method]
             coherence=coherence_from_amplitudes(z,psi)
             stage('Contracting '+method+' multi-site '+cfg.channeling_model.title()+' Channeling')
-            reduced_double=double and method=='bloch' and cfg.angular_evaluation=='selected'
+            reduced_double=double and cfg.angular_evaluation=='selected'
             if reduced_double:
-                raw=_multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detector_support,
-                    rotation,settings.thickness,incoming,info['execution']['effective_workers'][method],reverse_magnetization,stage,cancelled)
+                raw=_multisite_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detector_support,
+                    rotation,settings.thickness,incoming,info['execution']['effective_workers'][method],reverse_magnetization,stage,cancelled,
+                    propagation=method,prepared_fft=prepared_fft,potential_cutoff=settings.potential_cutoff)
             elif double and method=='bloch':
                 from ..multisite_double_channeling import contract_multisite_bloch_double
                 raw=contract_multisite_bloch_double(model,sites,plan,qx.ravel()[support],qy.ravel()[support],

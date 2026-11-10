@@ -76,8 +76,16 @@ def test_memory_uses_actual_manual_concurrency_and_rejects_without_reduction(mon
     four=numerical_info(Structure.nickel(),primary(),replace(cfg,parallel_workers=4))
     assert one['bw_beams']==four['bw_beams']==27
     assert four['estimated_process_peak_mib']>one['estimated_process_peak_mib']
+    # The approved live-allocation estimate fits 512 MiB at 120 MiB RSS.
+    # Leave headroom for one worker, but not four, at a realistic higher RSS.
+    monkeypatch.setattr('emcd_sim.gui.memory_budget.memory_snapshot',lambda:dict(available_ram_mib=32768,process_rss_mib=360))
+    accepted=numerical_info(Structure.nickel(),primary(),replace(cfg,memory_budget_mib=512))
+    assert accepted['estimated_process_peak_mib']<512 and not accepted['execution']['blocked']
     rejected=numerical_info(Structure.nickel(),primary(),replace(cfg,parallel_workers=4,memory_budget_mib=512),enforce_execution=False)
+    assert rejected['estimated_process_peak_mib']>512
     assert rejected['execution']['risk']=='RESOURCE REJECTED' and rejected['execution']['effective_workers']['bloch']==4
+    with pytest.raises(ValueError,match='Memory admission rejected'):
+        numerical_info(Structure.nickel(),primary(),replace(cfg,parallel_workers=4,memory_budget_mib=512))
 
 
 def test_legacy_configuration_defaults_workers_without_overwriting_values():
@@ -112,14 +120,21 @@ def test_execution_plan_change_rejected_before_solver(monkeypatch):
 
 def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
     from emcd_sim.gui.app import MainWindow
+    from test_material_mdff_workflow import xmcd_draft
     import emcd_sim.gui.parallel_resources as module
     monkeypatch.setattr(module,'native_backend_info',lambda:native())
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with patch('numpy.linalg.eigh',side_effect=AssertionError('Preflight must not solve')),patch('emcd_sim.gui.stage_b.EMCDWorker') as factory:
         w=MainWindow(workspace=tmp_path/'workspace')
         try:
-            w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True);w.channeling_box.setCurrentIndex(1)
-            assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,3.2,2.5)
+            # Accept through the current Material-owned MDFF workflow. Hidden
+            # compatibility widgets alone no longer configure a runnable source.
+            viewer=xmcd_draft(w,lattice=3.524)
+            assert w.mdff_dialog.apply_configuration() is not None
+            viewer.apply_groups()
+            assert w._accepted_global_mdff is not None
+            w.channeling_box.setCurrentIndex(1)
+            assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,2.5,2.0)
             assert w.settings()==Settings()
             assert w.spin['grid'].value()==97 and w.memory_budget.currentData()==2048
             assert not w.shared_resources_group.isHidden()
@@ -131,7 +146,7 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
             assert 'Retained beams: 21' in w.memory_label.text()
             w.spin['kv'].setValue(200);assert 'Voltage: 200' in w.memory_label.text()
             w.new_project()
-            assert w.settings().voltage==300 and w.settings().beam_cutoff==3.2 and w.settings().potential_cutoff==2.5 and w.worker_mode.currentIndex()==0
+            assert w.settings()==Settings() and w.worker_mode.currentIndex()==0
         finally:w.close();app.processEvents()
 
 

@@ -15,6 +15,15 @@ energies supply their own detector integrals without duplicate response work.
 Weights are computed once; original coordinates, energy samples and reductions
 are retained. Single evaluates both original reversal tensors, not a sign proxy.
 
+In current development source this policy also applies to Local multi-site MS
+Double Channeling. Spectral sampling (uniform, native, or selected energies) is
+independent of angular evaluation. “Full angular field at every energy
+(advanced)” remains an explicit opt-in. Detector-only evaluation changes the
+requested outgoing detector coordinates, not the internal FFT propagation grid.
+For constant active-channel support, unique energy–pixel work is
+`N_selected * N_grid + (N_energy - N_selected) * N_detector_support`; equal-energy
+map aliases and site-group contributions do not multiply that query count.
+
 ## Matched configuration and scope
 
 There were no saved physical input records in the current GUI workspace. The

@@ -207,6 +207,71 @@ def test_windows_weighting_and_one_complete_crystal_context(tmp_path,monkeypatch
         assert only['metadata']['multisite']['selected_atom_count']==3
 
 
+@pytest.mark.parametrize('channel',['single','double'])
+@pytest.mark.parametrize('reverse',[False,True])
+def test_selected_ms_queries_match_full_evaluation(tmp_path,monkeypatch,channel,reverse):
+    """Actual query coordinates, not retained-map count or the FFT mesh size."""
+    structure,settings,sites,_=simple_system(tmp_path,element='Cr')
+    energy=np.array([710.,713.,716.,719.,723.])
+    cfg=configuration(propagation='fft-multislice',channeling_model=channel,angular_maps=True,
+        selected_edges=(('first',710.),('same-energy-alias',710.),('last',723.)))
+    queries={}
+    def record(losses,x,y):
+        points=set(zip(np.asarray(x).ravel(),np.asarray(y).ravel()))
+        for loss in np.atleast_1d(losses):queries.setdefault(float(loss),set()).update(points)
+    if channel=='double':
+        original=ms.multislice_double_channeling_group_responses
+        def response(*args,**kwargs):
+            record(args[1],args[2][:,0],args[2][:,1])
+            return original(*args,**kwargs)
+        monkeypatch.setattr(ms,'multislice_double_channeling_group_responses',response)
+    else:
+        from emcd_sim import multisite_single_channeling as single
+        original=single._group_intensity_pair
+        def response(*args,**kwargs):
+            record(args[3],args[5],args[6])
+            return original(*args,**kwargs)
+        monkeypatch.setattr(single,'_group_intensity_pair',response)
+    selected=calculate_multisite(structure,settings,sites,cfg,energy_ev=energy,reverse_magnetization=reverse)
+    support=np.logical_or.reduce([w>0 for w in selected['weights'].values()])
+    qx,qy=selected['qx'],selected['qy']
+    full_points=set(zip(qx.ravel(),qy.ravel()))
+    aperture_points=set(zip(qx[support],qy[support]))
+    assert 0<len(aperture_points)<len(full_points)
+    assert set(queries)==set(energy)
+    assert all(points==(full_points if loss in (710.,723.) else aperture_points) for loss,points in queries.items())
+    expected=2*qx.size+3*int(support.sum())
+    assert sum(map(len,queries.values()))==expected
+    assert sum(d['evaluated_pixels'] for d in selected['metadata']['angular_evaluation'])==expected
+    assert selected['metadata']['detector_evaluation']=='full_grid_selected_energies'
+    queries.clear()
+    full=calculate_multisite(structure,settings,sites,replace(cfg,angular_evaluation='all'),
+                            energy_ev=energy,reverse_magnetization=reverse)
+    assert all(points==full_points for points in queries.values())
+    assert sum(map(len,queries.values()))==len(energy)*qx.size
+    assert full['metadata']['detector_evaluation']=='full_grid_all_energies'
+    entries=[(selected,full),(selected['weighted_sum'],full['weighted_sum'])]
+    entries.extend((selected['groups'][g.group_id],full['groups'][g.group_id]) for g in sites.groups)
+    for actual,reference in entries:
+        for key in RAW_KEYS+PARITY_KEYS:
+            np.testing.assert_allclose(actual['spectra'][key],reference['spectra'][key],rtol=3e-13,atol=1e-17)
+        assert actual['maps'].keys()==reference['maps'].keys()
+        for label in actual['maps']:
+            for key in ('I_plus','I_minus','I_mag','I_nonmag'):
+                np.testing.assert_allclose(actual['maps'][label][key],reference['maps'][label][key],rtol=3e-13,atol=1e-17)
+    for detector in ('A','B'):
+        np.testing.assert_array_equal(selected['weights'][detector],full['weights'][detector])
+        np.testing.assert_array_equal(selected['weights'][detector]>0,full['weights'][detector]>0)
+    for group in sites.groups:
+        np.testing.assert_array_equal(selected['metadata']['multisite']['channels'][group.group_id]['active_energy_mask'],
+                                      full['metadata']['multisite']['channels'][group.group_id]['active_energy_mask'])
+    for key in RAW_KEYS:
+        expected=sum(g.multiplicity*selected['groups'][g.group_id]['spectra'][key] for g in sites.groups)/2
+        np.testing.assert_allclose(selected['spectra'][key],expected,rtol=3e-13,atol=1e-17)
+    spectra=selected['spectra']
+    np.testing.assert_allclose(spectra['D_mag'],spectra['M_A']-spectra['M_B'],rtol=3e-13,atol=1e-17)
+
+
 def test_group_split_merge_invariance(tmp_path):
     structure,settings,sites,_=simple_system(tmp_path)
     whole=sites.groups[0]

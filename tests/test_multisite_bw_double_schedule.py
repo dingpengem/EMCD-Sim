@@ -1,4 +1,4 @@
-"""BW DC query scheduling/reduction only; the response solver is not executed."""
+"""Shared BW/MS DC query scheduling; the response solver is not executed."""
 from types import SimpleNamespace
 import weakref
 import numpy as np
@@ -9,11 +9,12 @@ from emcd_sim.multisite_spectrum import _empty_group_intensities,_spectrum_resul
 
 
 @pytest.mark.parametrize('maps,reverse',[(True,False),(False,True)])
-def test_selected_bw_double_support_and_reduction(monkeypatch,maps,reverse):
+@pytest.mark.parametrize('propagation',['bloch','fft-multislice'])
+def test_selected_double_support_and_reduction(monkeypatch,maps,reverse,propagation):
     energy=np.unique(np.r_[np.linspace(831.271,848.698,35),840.])
     group=SimpleNamespace(group_id='site',element='Ni',indices=(0,1,2,3),multiplicity=4,
                           magnetization=(0,0,1),normalization='mean_per_selected_atom')
-    sites=SimpleNamespace(groups=(group,));incoming=object();calls=[];previous=[]
+    sites=SimpleNamespace(groups=(group,));incoming=object();fft=object();fields=object();calls=[];previous=[]
     plan=dict(energy_ev=energy,sources={'site':{}},active={'site':np.ones(len(energy),bool)},
               metadata=dict(channels={'site':{}},coverage_mode='common'))
     model=SimpleNamespace(elastic=SimpleNamespace(microscope=SimpleNamespace(acceleration_kv=300.)))
@@ -29,8 +30,12 @@ def test_selected_bw_double_support_and_reduction(monkeypatch,maps,reverse):
         return base+odd,base-odd
     def solver(actual_model,actual_sites,block,x,y,**kwargs):
         assert actual_model is model and actual_sites is sites
-        assert kwargs['prepared_incoming'] is incoming and kwargs['execution_workers']==1
-        assert kwargs['depth_steps']==64 and kwargs['method']=='numerical'
+        assert kwargs['execution_workers']==1 and kwargs['depth_steps']==64
+        if propagation=='bloch':
+            assert kwargs['prepared_incoming'] is incoming and kwargs['method']=='numerical'
+        else:
+            assert kwargs['prepared_incoming'] is fields and kwargs['prepared_grid'] is fft
+            assert kwargs['potential_cutoff']==.6 and kwargs['slice_step_nm']==cfg.slice_step
         assert kwargs['reverse_magnetization'] is reverse
         assert all(ref() is None for ref in previous), 'Previous response block retained'
         assert len(block['energy_ev'])<=16
@@ -42,9 +47,11 @@ def test_selected_bw_double_support_and_reduction(monkeypatch,maps,reverse):
         result['diagnostics']=[dict(energy_ev=float(e),evaluated_pixels=len(x),required_pixels=len(x)) for e in block['energy_ev']]
         previous[:]=[weakref.ref(result['total']['plus']),weakref.ref(groups['site']['plus'])]
         return result
-    monkeypatch.setattr('emcd_sim.multisite_double_channeling.contract_multisite_bloch_double',solver)
-    result=forward._multisite_bw_double_detector_data(model,sites,plan,cfg,qx,qy,weights,support,
-        np.eye(3),9.,incoming,1,reverse,lambda s:None,lambda:False)
+    name='contract_multisite_bloch_double' if propagation=='bloch' else 'contract_multisite_ms_double'
+    monkeypatch.setattr('emcd_sim.multisite_double_channeling.'+name,solver)
+    result=forward._multisite_double_detector_data(model,sites,plan,cfg,qx,qy,weights,support,
+        np.eye(3),9.,incoming,1,reverse,lambda s:None,lambda:False,
+        propagation=propagation,prepared_fft=(fft,fields),potential_cutoff=.6)
     counts={float(e):pixels for block,pixels in calls for e in block}
     assert len(counts)==len(energy)==sum(len(block) for block,_ in calls)
     assert all(pixels==(qx.size if maps and e in energy[[0,-1]] else support.sum()) for e,pixels in counts.items())
