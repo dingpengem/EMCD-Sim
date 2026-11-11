@@ -1,8 +1,9 @@
 # Changelog
 
-## v0.9.0-beta.1 — local Windows Research Beta release candidate (not published)
+## v0.9.0-beta.1 — Windows Research Beta (prerelease)
 
-- RC2: reserve measured, wrapping legend rows in shared EELS views, including narrow/DPI-scaled comparisons. Keep full curve identification in figure exports and preserve legend hide/show state, including curves split across modeled energy windows. RC1 remains separate; this is an unpublished candidate revision, not a beta-version change.
+- Finalize current installation, Quick Start and Tutorial with the verified small 3.520 Å Ni Global workflow, current Viewer/MDFF acceptance controls, Local magnetic-subgroup/exclusion guidance and retained native illustrations. Packaged use needs neither Conda nor manual BLAS variables. Rebuild matching source/packages after this documentation-only change; numerical RC2 evidence remains separate.
+- RC2: reserve measured, wrapping legend rows in shared EELS views, including narrow/DPI-scaled comparisons. Keep full curve identification in figure exports and preserve legend hide/show state, including curves split across modeled energy windows. RC1 and RC2 remain separate local preparation records, not beta-version changes.
 - Consolidate the multi-site BW/MS Single/Double, crystallographic grouping, Material-owned Global/Local M, native per-group MDFF, results, project/history and export workflows. Magnetic grouping, ionization participation and source/frame declarations remain explicit.
 - Include normal-startup verified single-thread control for both OpenBLAS runtimes, bounded four-worker execution, response/depth progress and cooperative cancellation (`62cb49a`). Four workers are not universally faster.
 - Honor selected-energy full maps and detector support elsewhere in Local MS Double; preserve explicit all-energy full-field evaluation and internal FFT support (`daa5089`). The original Fe₃O₄ query count changes from 2,286,387 planned to 57,378 expected, not a measured original-size runtime improvement.

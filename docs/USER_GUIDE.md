@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [Index](INDEX.md)
 
-This manual describes the local **v0.9.0-beta.1 Windows Research Beta candidate**, not a published release. Use the [release notes](RELEASE_NOTES_0_9_0_BETA_1.md) for evidence and remaining verification limits. Published v0.8 binaries retain their [tag-specific instructions](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/USER_GUIDE.md).
+This manual describes **v0.9.0-beta.1 Windows Research Beta**, a prerelease. Use the [release notes](RELEASE_NOTES_0_9_0_BETA_1.md) for evidence and remaining verification limits. Older v0.8 binaries retain their [tag-specific instructions](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/USER_GUIDE.md).
 
 Material owns Global/group target directions. The shared MDFF workspace is reached through **Material → 3D Structure Viewer… → Site groups → Configure MDFF…**. The selected Global/group context is explicit; it does not itself switch magnetic mode. MDFF target M is read-only. Full source-axis and tensor-frame declarations remain separate. Independent clean-PC/VM installation and Linux/macOS packaged support remain unverified.
 

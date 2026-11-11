@@ -1,46 +1,36 @@
-# First calculation — v0.9 Research Beta candidate
+# Quick Start — v0.9.0-beta.1 Windows Research Beta
 
-[Home](../README.md) | [User Guide](USER_GUIDE.md) | [MDFF workflows](MDFF_WORKFLOWS.md) | [Candidate status](RELEASE_NOTES_0_9_0_BETA_1.md)
+[Home](../README.md) · [Install](INSTALL_WINDOWS.md) · [Complete Tutorial](TUTORIAL.md) · [User Guide](USER_GUIDE.md)
 
-These instructions describe the current local v0.9.0-beta.1 candidate, not the published v0.8 binary. For that binary use its [tagged Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/QUICK_START.md). This is a coarse functional example, not convergence or quantitative spectroscopy.
+Use the complete extracted Windows package. Python, Conda and manual BLAS environment variables are unnecessary. This is the already verified **small Global Ni BW Single** workflow, not a convergence or calibration recipe.
 
-## 1. Material and accepted Global MDFF
+1. Launch **EMCD-Sim.exe**; choose **File → New Project**.
+2. In **Material**, click **Open CIF…** and select `_internal/examples/Ni_FCC_a3.52.cif`. **Inspect structure…** should show four Ni sites in a cubic **3.520 Å** cell, not the built-in 3.524 Å default.
+3. Open **3D Structure Viewer… → Site groups**. Select **Global Magnetization Mode** and set **Global Material M (x y z)** to `0 0 1`.
+4. Click **Configure MDFF…**. In **Global Material configuration**, choose **XMCD-constrained MDFF**. Browse `_internal/data/wien2k_ni/Ni_fm.xmcd`, click **Validate source / native features**, and use **831.271 / 848.698 eV** as its L3/L2 selections. These are this file's native features, not generic tabulated Ni energies.
+5. Complete the visible convention acknowledgement and source declarations: Ni, L2,3, eta=beta=1, relative reference 1, `physical_source_unvalidated`, truthful source/provenance and effective-XMCD limitations. [Tutorial](TUTORIAL.md#2-set-material-global-m-and-accept-its-mdff) supplies the exact diagnostic declarations. Target M is read-only in MDFF Configuration. Choose **Done**, then the Viewer's **Apply and Close**. Preview alone does not accept the configuration. Inactive local rows may remain unconfigured.
+6. Set the following in the existing Settings panel:
 
-1. Extract the complete Windows folder, install the [Microsoft runtime prerequisite](INSTALL_WINDOWS.md), and launch `EMCD-Sim.exe`.
-2. Choose **File → New Project**. Use the existing conventional FCC Ni default (3.524 Å), or explicitly import your Ni CIF through **Material → Open CIF…** and retain its actual cell. Do not substitute one cell for another when reproducing a study.
-3. Open **Material → 3D Structure Viewer… → Site groups**. Choose **Global Magnetization Mode** and enter **Global Material M (x y z)** as `0 0 1`.
-4. Choose the **Global** context in **Configure MDFF…** and select **XMCD-constrained MDFF**. Browse the packaged `_internal/data/wien2k_ni/Ni_fm.xmcd` (source checkout: `data/wien2k_ni/Ni_fm.xmcd`). Use only a source appropriate for the selected material.
-5. Validate the source, inspect its actual native features, and complete the visible magnetic-axis, handedness and edge acknowledgements. Keep eta/beta at 1 for this example. Review **Use explicit material declarations** and its provenance, assumptions, scientific status and reference-scale fields; supply truthful declarations. Ambiguous edge selections must be explicit. Do not replace the file's native energies with generic tabulated Ni edges.
-6. Generate the MDFF preview if desired, then **Done** and the Viewer's **Apply and Close**. Preview/Done alone does not accept Material configuration. Global readiness must refer to the accepted Global provider; inactive local structural rows need not be configured.
+| Section / control | Value |
+| --- | --- |
+| Microscope & Sample | **200 kV**, **10 nm** |
+| Orientation / ZA options | `0 1 7`, target `2 0 0`, **Full finite ZOLZ**, **Apply orientation / target** |
+| Tilt X / Y | **−7.124812628 / 0 mrad**, for this actual 3.520 Å cell |
+| Channeling Model / Propagation Method | **Single Channeling / Bloch-wave** |
+| Numerical settings mode | **General settings (editable)** |
+| Beam / MDFF cutoff; potential cutoff | **2.5 / 2.0 Å⁻¹**; effective **21 beams** |
+| Angular grid; depth nodes; aperture subpixels | **9×9; 64; 64** |
+| Map halfwidth | **1 Å⁻¹** |
+| Energy sampling | **Selected energies only**, two actual samples |
+| Angular evaluation | **Full angular maps at selected energies** on; advanced all-energy field off |
+| Workers / budget | **Manual, 1 worker; 2048 MiB** |
+| Virtual detectors | **Restore Thales A/B**, radius **0.09 Å⁻¹** |
 
-For Local calculations instead, define original-index memberships and directions, enable ionization only for participating groups, configure each provider, then Apply. Ordinary CIF grouping assigns no M or MDFF. Oxygen may remain elastic-only. See the [group workflow](USER_GUIDE.md#development-site-groups).
+Thales centers are approximately `(0.2840909091, ±0.2840909091) Å⁻¹`. Review the effective request. Do not apply another sampling preset afterward; **Custom – 9×9** is the correct caption for these settings.
 
-## 2. A deliberately small calculation
+7. Click **Run EMCD / EELS**. **Preview diffraction** is a separate optional calculation. After completion, inspect **EMCD Angular Maps** and **Virtual Detector EELS**. Two energy samples do not form a resolved spectrum. Raw ±M, reversal-even/odd and conventional A−B have different definitions.
+8. Choose **File → Save As…** to retain a separate project folder. **Close Project → Open Project…** restores saved data without recalculation. Keep new runs rather than replacing an original. Export numerical data from **Results → Export Results…** or the selected-spectra CSV button. Use **Display details / diagnostics / export → toolbar → Export Figure…** for a figure; open the toolbar overflow if needed.
 
-In **Zone Axis & Diffraction → Orientation / ZA options**, set nominal zone `0 0 1`, target `2 0 0`, and **Apply orientation / target**. Set tilt to `−5, +7 mrad`, voltage **200 kV** and thickness **0.2 nm**. Restore Thales A/B for this actual geometry; inspect detector coverage.
+For **Local Site Magnetization Mode**, configure each participating group explicitly. Use original ASE indices; split crystallographic groups manually if magnetic sublattices differ. Uncheck **Ionize / Group ID** for oxygen or other non-ionizing groups, keeping those atoms elastic. Local mode locks Global M; no implicit Global MDFF or magnetic order is supplied. [Tutorial](TUTORIAL.md#4-local-site-groups-and-non-ionizing-atoms) explains group creation, accepted/draft directions and validated reversal pairs.
 
-In **Propagation Method**, choose **Single Channeling**, **Bloch-wave**. In **Shared Calculation Settings → Numerical Settings**, use **General settings (editable)** and enter:
-
-| Control | Coarse value |
-| --- | ---: |
-| Beam / MDFF basis cutoff | 0.6 Å⁻¹ |
-| Potential Fourier cutoff | 1.2 Å⁻¹ |
-| Explicit target systematic-row approximation | Off |
-| Angular / detector grid points (odd) | 9 |
-| Depth integration nodes | 5 |
-| Aperture boundary subpixels | 4 |
-| Map halfwidth | 0.7 Å⁻¹ |
-| Energy sampling | Selected energies only |
-| Full angular maps at selected energies | On |
-| Full angular field at every energy (advanced) | Off |
-| Parallel Workers | Manual; requested workers 1 |
-
-This example deliberately overrides the normal **Entire energy range → uniform sampling** default of 241 requested points plus exact selections. Two selected samples are points, not a resolved EELS spectrum. Angular grid, FFT grid, depth nodes and aperture subpixels are independent controls. Review resource admission without silently coarsening an existing research configuration.
-
-## 3. Run, inspect and retain
-
-**Run EMCD / EELS** executes the accepted configuration; **Preview diffraction** is a separate optional elastic calculation. Progress reports current work and elapsed time. Cancel is cooperative; wait for idle before another run. Internal NumPy/SciPy BLAS control is automatic and verified; do not configure environment variables for normal use.
-
-Start with **Total Results**. Raw +M/−M, reversal-even/odd, conventional A−B and magnetic/nonmagnetic A−B have different definitions. Local Group Contribution is additive using the same denominator as Total; Group Mean is per group atom and is not additive. Energy gaps remain unmodeled.
-
-Use **File → Save As…** to save a separate complete project, then reopen it. Subsequent results can be kept with **Keep as New Calculation**. **Project Results** provides **Restore Settings from Selected Run…**, **Delete Selected Calculation…**, and the two-calculation comparison dialog. Figure/data export and details remain near Results. Saved arrays can be viewed when an external source is unavailable, but rerun must remain blocked until the correct source validates.
+The full [Tutorial](TUTORIAL.md) includes illustrations, normal Save/Open/export steps, diagnostics and scientific limitations. Historical v0.8 menu instructions belong to their [tagged guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/QUICK_START.md).

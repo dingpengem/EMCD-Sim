@@ -1,6 +1,6 @@
-# v0.9.0-beta.1 — Windows Research Beta candidate notes
+# v0.9.0-beta.1 — Windows Research Beta release notes
 
-**Draft for local review; not published, tagged or release-accepted.** Python version `0.9.0b1`, display `v0.9.0-beta.1`, Windows numeric version `0.9.0.1`. Local and remote read-only tag inspection on 2026-11-10 found no v0.9 tags; beta.1 remains unused. The proposed tag must identify the exact reviewed RC commit embedded in `_internal/build_info.json` and the existing build manifest, not an older accepted candidate or an untested main-branch commit.
+**Prerelease / Windows Research Beta, not a stable or quantitatively calibrated release.** Python version `0.9.0b1`, display `v0.9.0-beta.1`, Windows numeric version `0.9.0.1`. The release tag must identify the exact source embedded in `_internal/build_info.json`, the existing build manifest and the matching corresponding-source archive. Final user-guide/packaged-README changes follow verified RC2 without changing its numerical implementation; matching packages are built from that final documentation commit.
 
 ## User-visible scope
 
@@ -42,8 +42,8 @@ Independent clean-PC/VM Windows acceptance is unverified; Linux/macOS packages a
 
 ## Local package and proposed publication assets
 
-- `EMCD-Sim-v0.9.0-beta.1-Windows-RC2.zip` — complete portable folder, EXE and `_internal`. RC1 remains preserved separately.
-- `EMCD-Sim-v0.9.0-beta.1-Corresponding-Source-RC2.zip` — exact committed application source plus matching Qt/PySide/Shiboken sources and build/replacement instructions.
+- `EMCD-Sim-v0.9.0-beta.1-Windows.zip` — complete portable folder, EXE and `_internal`. Local RC1/RC2 artifacts remain preserved separately.
+- `EMCD-Sim-v0.9.0-beta.1-Corresponding-Source.zip` — exact committed application source (including installation, Quick Start, Tutorial and illustrations) plus matching Qt/PySide/Shiboken sources and build/replacement instructions.
 - Existing manifest/checksums and dependency licenses are retained. Qt PDF/Virtual Keyboard stay excluded; the required external Microsoft runtime is not bundled. spglib and Adaptive factor licensing/provenance remain included. Dependencies are not upgraded.
 
-The source remains on the feature branch. Main integration, any tag creation and publication are **not performed** by this preparation. The original main worktree's unrelated changes must remain intact. See [Quick Start](QUICK_START.md), [User Guide](USER_GUIDE.md), [installation](INSTALL_WINDOWS.md) and [changelog](CHANGELOG.md).
+RC1/RC2 preparation was local and did not itself publish. Publication must integrate the intended source without discarding the original main worktree's unrelated work; its local branch need not be synchronized. Exact main/tag/build identities are recorded in the GitHub prerelease and packaged metadata. See [installation](INSTALL_WINDOWS.md), [Quick Start](QUICK_START.md), [Tutorial](TUTORIAL.md), [User Guide](USER_GUIDE.md) and [changelog](CHANGELOG.md).

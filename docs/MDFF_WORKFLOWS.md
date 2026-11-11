@@ -2,7 +2,7 @@
 
 [Home](../README.md) | [Installation](INSTALL_WINDOWS.md) | [Quick Start](QUICK_START.md) | [User manual](USER_GUIDE.md)
 
-This guide describes the current **v0.9.0-beta.1 local candidate**. Published v0.8 binary instructions remain in their [tagged guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/MDFF_WORKFLOWS.md). See [candidate evidence and limits](RELEASE_NOTES_0_9_0_BETA_1.md).
+This guide describes **v0.9.0-beta.1 Windows Research Beta**. Older v0.8 binary instructions remain in their [tagged guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/MDFF_WORKFLOWS.md). See [release evidence and limits](RELEASE_NOTES_0_9_0_BETA_1.md).
 
 <a id="development-group-direction-workflow"></a>
 ## Material-owned Global and group workflow

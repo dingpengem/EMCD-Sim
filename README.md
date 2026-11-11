@@ -2,9 +2,9 @@
 
 Research software for electron magnetic circular dichroism (EMCD), core-loss EELS, and dynamical electron diffraction in transmission electron microscopy.
 
-**v0.9.0-beta.1 Windows Research Beta — local release candidate, not published.** This source includes multi-site calculations and the completed crystallographic-grouping, Material/MDFF, sampling, results and persistence workflows. See the [candidate release notes and verification limits](docs/RELEASE_NOTES_0_9_0_BETA_1.md). Previously accepted development binaries do not acquire these changes automatically.
+**[v0.9.0-beta.1 Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1) — prerelease.** Download the complete Windows ZIP from its release assets. This version includes multi-site calculations and crystallographic-grouping, Material/MDFF, sampling, results and persistence workflows. See the [release notes and verification limits](docs/RELEASE_NOTES_0_9_0_BETA_1.md). Older binaries do not acquire these changes automatically.
 
-[Published v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2) | [Installation](docs/INSTALL_WINDOWS.md) | [Quick Start](docs/QUICK_START.md) | [User Guide](docs/USER_GUIDE.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md)
+[Windows download](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/EMCD-Sim-v0.9.0-beta.1-Windows.zip) | [Installation](docs/INSTALL_WINDOWS.md) | [Quick Start](docs/QUICK_START.md) | [Tutorial](docs/TUTORIAL.md) | [User Guide](docs/USER_GUIDE.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md)
 
 ## Capabilities
 
@@ -31,7 +31,7 @@ Use the [Quick Start](docs/QUICK_START.md) for a deliberately small first case. 
 
 Signals preserve declared relative provider amplitudes; they are not automatically calibrated cross-element intensities, electron counts, or magnetic moments. Synthetic Atomic/Manual inputs do not establish quantitative Fe₃O₄, NiFe₂O₄ or Cr spectra. The model retains finite ZOLZ, projected IAM and continuous-depth localized ionization approximations. General beam/FFT/depth/detector convergence and complex-condition BW/MS convergence are incomplete. Magnetization direction is not a complete anisotropic tensor frame; unsupported fixed-source rotations remain rejected. General tensor rotation, magCIF and automatic magnetic-order inference are absent.
 
-The current candidate has bounded numerical/native evidence, **not a new complete regression pass**. Historical failed/incomplete application-regression and source-guard coverage remains recorded separately. Original-size Fe₃O₄ MS completion and independent clean-PC/VM acceptance remain unverified. See [release evidence](docs/RELEASE_NOTES_0_9_0_BETA_1.md) before interpreting readiness. Linux/macOS packages are not certified.
+The Research Beta has bounded numerical/native evidence, **not a new complete regression pass**. Historical failed/incomplete application-regression and source-guard coverage remains recorded separately. Original-size Fe₃O₄ MS completion and independent clean-PC/VM acceptance remain unverified. See [release evidence](docs/RELEASE_NOTES_0_9_0_BETA_1.md) before interpreting readiness. Linux/macOS packages are not certified.
 
 ## Documentation and citation
 

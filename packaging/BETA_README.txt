@@ -1,7 +1,21 @@
-EMCD-Sim v0.9.0-beta.1 — Windows Research Beta local release candidate RC2
-NOT PUBLISHED. Exact committed source, dependencies and build time are in
+EMCD-Sim v0.9.0-beta.1 — Windows Research Beta (PRERELEASE)
+Exact committed source, dependencies and build time are in
 _internal/build_info.json and the existing build manifest. Prior development
 candidates remain separate; this is not independent clean-PC/VM acceptance.
+
+START HERE
+Download EMCD-Sim-v0.9.0-beta.1-Windows.zip from the release Assets:
+https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1
+Use Extract All, keep the complete EMCD-Sim folder, and double-click
+EMCD-Sim.exe beside _internal. Do not run inside the ZIP or copy only the EXE.
+Install the official Microsoft runtime below if needed. Python/Conda and
+manual OpenBLAS/OMP environment settings are NOT required for ordinary use.
+Installation:
+https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/INSTALL_WINDOWS.md
+Quick Start:
+https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/QUICK_START.md
+Tutorial (with bundled-input paths and native illustrations):
+https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/TUTORIAL.md
 
 INSTALLATION AND REDISTRIBUTION
 Extract the complete EMCD-Sim folder; keep _internal beside EMCD-Sim.exe.
@@ -9,7 +23,7 @@ Windows 10/11 x64. Python, Conda and WIEN2k are not required at runtime.
 Install Microsoft's official x64 Visual C++ v14 runtime (14.44.35211 or newer):
 https://aka.ms/vc14/vc_redist.x64.exe . The runtime/installer is not bundled.
 Use a writable project/export folder and retain the supplied SHA256SUMS.txt.
-The matching Corresponding-Source-RC2 ZIP contains EMCD-Sim-source.zip plus
+The matching Corresponding-Source ZIP contains EMCD-Sim-source.zip plus
 matching Qt/PySide/Shiboken dependency sources and replacement instructions.
 See _internal/licenses/qt/SOURCE_AND_REPLACEMENT.md and component licenses.
 Unused Qt PDF and Virtual Keyboard components are excluded. ASE, spglib and
