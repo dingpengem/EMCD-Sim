@@ -12,26 +12,26 @@ You need an Apple Silicon Mac with macOS 15+ and the [standalone ARM64 Research 
 
 Create **Documents → EMCD-Sim Examples** in Finder. In Applications, Control-click **EMCD-Sim** → **Show Package Contents**, and **copy** (do not move or edit) these files into that folder:
 
-- \`Contents/Resources/examples/Ni_FCC_a3.52.cif\` — four FCC Ni atoms, \`a=3.520 Å\`.
-- \`Contents/Resources/data/wien2k_ni/Ni_fm.xmcd\` — example five-column Ni XMCD source.
+- `Contents/Resources/examples/Ni_FCC_a3.52.cif` — four FCC Ni atoms, `a=3.520 Å`.
+- `Contents/Resources/data/wien2k_ni/Ni_fm.xmcd` — example five-column Ni XMCD source.
 
 Keep the original files in the app. Save simulation projects separately in Documents.
 
 ## 2. Import Ni and accept its MDFF
 
-1. Open **File → New Project**. Under **Material → Open CIF…**, select your \`Ni_FCC_a3.52.cif\` copy. **Inspect structure…** should show four Ni atoms and a 3.520 Å cubic cell (not the built-in 3.524 Å reference).
+1. Open **File → New Project**. Under **Material → Open CIF…**, select your `Ni_FCC_a3.52.cif` copy. **Inspect structure…** should show four Ni atoms and a 3.520 Å cubic cell (not the built-in 3.524 Å reference).
 2. Open **3D Structure Viewer… → Site groups**, select **Global Magnetization Mode**, and set **Global Material M (x y z) = 0 0 1**.
-3. Choose **Configure MDFF…** and check that the context is **Global Material configuration**. Select **XMCD-constrained MDFF** and browse to your \`Ni_fm.xmcd\` copy.
+3. Choose **Configure MDFF…** and check that the context is **Global Material configuration**. Select **XMCD-constrained MDFF** and browse to your `Ni_fm.xmcd` copy.
 4. Choose **Validate source / native features**. Use the actual selected features **L₃ = 831.271 eV** and **L₂ = 848.698 eV**; set **eta = beta = 1**. These are source-specific features, not universally tabulated Ni edges.
 5. Complete the visible declarations truthfully:
 
 | MDFF field | Value for this example |
 | --- | --- |
-| Declared element / core-loss edge | \`Ni\` / \`L2,3\` |
-| Source / provenance | \`Ni_fm.xmcd; supplied five-column Ni source\` |
-| Physical assumptions / limits | \`Effective axisymmetric XMCD-derived Ni diagnostic; not quantitatively calibrated for this CIF\` |
-| Relative tensor reference | \`1\` (relative, not an absolute cross section) |
-| Scientific status | \`physical_source_unvalidated\` |
+| Declared element / core-loss edge | `Ni` / `L2,3` |
+| Source / provenance | `Ni_fm.xmcd; supplied five-column Ni source` |
+| Physical assumptions / limits | `Effective axisymmetric XMCD-derived Ni diagnostic; not quantitatively calibrated for this CIF` |
+| Relative tensor reference | `1` (relative, not an absolute cross section) |
+| Scientific status | `physical_source_unvalidated` |
 | Convention acknowledgement | Review M axis, RP/LP convention and L₂/L₃ assignments, then check the corresponding declaration |
 
 6. Click **Done** to return to the 3D Viewer. Then click **Apply and Close** in the Viewer. Both are required to accept the configuration; preview alone does not make it active.
