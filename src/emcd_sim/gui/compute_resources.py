@@ -14,25 +14,24 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
         form=QtWidgets.QVBoxLayout(self);form.setContentsMargins(0,0,0,0)
         form.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
         self.hardware=QtWidgets.QLabel();self.hardware.setWordWrap(True);form.addWidget(self.hardware)
-        def controls():
-            body=QtWidgets.QWidget();rows=QtWidgets.QFormLayout(body);rows.setContentsMargins(0,0,0,0)
-            rows.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);form.addWidget(body)
-            return rows
-        cpu=controls()
+        def row(caption,field):
+            label=QtWidgets.QLabel(caption);line=QtWidgets.QHBoxLayout()
+            line.addWidget(label);line.addWidget(field,1);form.addLayout(line)
+            return label
         self.worker_mode=QtWidgets.QComboBox();self.worker_mode.addItems(['Auto (recommended)','Manual'])
         self.worker_count=QtWidgets.QSpinBox();self.worker_count.setRange(1,MAX_WORKERS);self.worker_count.setValue(1)
         self.worker_count.setAccessibleName('Requested CPU workers')
-        cpu.addRow('CPU Workers',self.worker_mode);cpu.addRow('Requested workers',self.worker_count)
-        self.worker_caption=cpu.labelForField(self.worker_count)
+        row('CPU Workers',self.worker_mode)
+        self.worker_caption=row('Requested workers',self.worker_count)
         self.workers=QtWidgets.QLabel('Effective workers: Pending');self.workers.setWordWrap(True);form.addWidget(self.workers)
-        memory=controls()
         self.memory_mode=QtWidgets.QComboBox();self.memory_mode.addItems(['Auto (recommended)','Manual'])
         self.memory_budget=QtWidgets.QSpinBox();self.memory_budget.setRange(1,2**31-1)
         self.memory_budget.setValue(DEFAULT_BUDGET_MIB);self.memory_budget.setSuffix(' MiB')
         self.memory_budget.setAccessibleName('Requested memory budget (MiB)')
         self.memory_budget.setToolTip('Total process-peak budget. Manual values are never raised automatically; scientific settings are unchanged.')
-        memory.addRow('Memory Budget',self.memory_mode);memory.addRow('Requested memory budget',self.memory_budget)
-        self.memory_caption=memory.labelForField(self.memory_budget)
+        row('Memory Budget',self.memory_mode)
+        self.memory_caption=QtWidgets.QLabel('Requested memory budget')
+        form.addWidget(self.memory_caption);form.addWidget(self.memory_budget)
         self.budget=QtWidgets.QLabel('Effective memory budget: Pending');self.budget.setWordWrap(True);form.addWidget(self.budget)
         self.estimate=QtWidgets.QLabel('Current Calculation Estimate\nAdmission: Pending')
         self.estimate.setWordWrap(True);form.addWidget(self.estimate)
@@ -52,9 +51,8 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
         try:
             for label in self._labels:
                 label.setMinimumHeight(max(label.fontMetrics().height(),label.heightForWidth(max(1,label.width()))))
-            widgets=[self];parent=self.parentWidget()
-            if parent is not None and hasattr(parent,'presentation_section'):
-                widgets.extend((parent,parent.parentWidget(),parent.presentation_section))
+            widgets=[self]
+            if hasattr(self,'presentation_section'):widgets.append(self.presentation_section)
             # Recompute the enclosing minimums too: Qt otherwise retains the
             # old short Pending-label height after a live estimate is filled.
             for widget in widgets:

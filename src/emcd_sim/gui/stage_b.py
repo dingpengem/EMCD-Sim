@@ -165,16 +165,11 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self._numerical_cache=None
         self.emcd_stale()
 
-    def shared_group(self,title,*,form=True):
+    def shared_group(self,title):
         section=CollapsibleSection(title,expanded=False);section.setObjectName('shared_'+title.replace(' ','_'));self.form.addRow(section)
         group=QtWidgets.QGroupBox();group.setAccessibleName(title);group.setFlat(True);body=QtWidgets.QVBoxLayout(section.body);body.setContentsMargins(0,0,0,0);body.addWidget(group);group.presentation_section=section
-        self.form=QtWidgets.QFormLayout(group) if form else QtWidgets.QVBoxLayout(group)
-        if form:self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
-        else:
-            self.form.setContentsMargins(0,0,0,0)
-            self.form.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
-            body.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
-            section.layout().setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
+        self.form=QtWidgets.QFormLayout(group)
+        self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         return group
 
     def numerical_controls(self):
@@ -227,9 +222,14 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.form=shared_form
         self.correction_notice=QtWidgets.QLabel('Optional post-edge A/B correction was disabled for new calculations. Historical results retain their original settings.')
         self.correction_notice.setWordWrap(True);self.correction_notice.hide();self.form.addRow(self.correction_notice)
-        self.shared_resources_group=self.shared_group('Compute Resources',form=False)
         from .compute_resources import ComputeResourcesPanel
-        self.compute_resources=ComputeResourcesPanel(self);self.form.addWidget(self.compute_resources)
+        self.compute_resources=ComputeResourcesPanel(self)
+        section=CollapsibleSection('Compute Resources',self.compute_resources,expanded=True)
+        section.setObjectName('shared_Compute_Resources')
+        section.layout().setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
+        self.form.addRow(section)
+        self.shared_resources_group=self.compute_resources
+        self.compute_resources.presentation_section=section
         self.worker_mode=self.compute_resources.worker_mode;self.worker_count=self.compute_resources.worker_count
         self.memory_budget=self.compute_resources.memory_budget;self.memory_mode=self.compute_resources.memory_mode
         self.memory_label=self.compute_resources.explanation
