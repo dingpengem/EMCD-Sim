@@ -1,0 +1,18 @@
+{
+  "pyside_version": "6.12.0",
+  "timebase_numer": 125,
+  "timebase_denom": 3,
+  "native_cpu_seconds": 0.200258,
+  "getrusage_cpu_seconds": 0.20053699999999997,
+  "clock_validation": "PASS",
+  "waits": {
+    "qwait": {
+      "worker_cpu_seconds": 0.16686958400000002,
+      "wall_seconds": 0.5340648750425316
+    },
+    "event_loop": {
+      "worker_cpu_seconds": 0.483446791,
+      "wall_seconds": 0.4961672500357963
+    }
+  }
+}

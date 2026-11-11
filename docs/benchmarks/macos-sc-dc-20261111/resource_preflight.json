@@ -1,0 +1,660 @@
+[
+  {
+    "backend": "bloch",
+    "channeling": "single",
+    "request": 1,
+    "assessment_seconds": 0.018733042001258582,
+    "effective_workers": {
+      "bloch": 1
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 5.18536376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 544.3098297119141,
+    "process_rss_mib": 409.828125,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "bloch",
+    "channeling": "single",
+    "request": 2,
+    "assessment_seconds": 0.01718545804033056,
+    "effective_workers": {
+      "bloch": 1
+    },
+    "blocked": true,
+    "reason": [
+      "Single Channeling has no parallel detector executor; request 1 or Automatic.",
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 5.18536376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 544.3098297119141,
+    "process_rss_mib": 409.828125,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "bloch",
+    "channeling": "single",
+    "request": 4,
+    "assessment_seconds": 0.012939292006194592,
+    "effective_workers": {
+      "bloch": 1
+    },
+    "blocked": true,
+    "reason": [
+      "Single Channeling has no parallel detector executor; request 1 or Automatic.",
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 5.18536376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 544.3098297119141,
+    "process_rss_mib": 409.828125,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "bloch",
+    "channeling": "single",
+    "request": 6,
+    "assessment_seconds": 0.01199579198146239,
+    "effective_workers": {
+      "bloch": 1
+    },
+    "blocked": true,
+    "reason": [
+      "Single Channeling has no parallel detector executor; request 1 or Automatic.",
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 5.18536376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 544.3098297119141,
+    "process_rss_mib": 409.828125,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "bloch",
+    "channeling": "single",
+    "request": 8,
+    "assessment_seconds": 0.012331042031291872,
+    "effective_workers": {
+      "bloch": 1
+    },
+    "blocked": true,
+    "reason": [
+      "Single Channeling has no parallel detector executor; request 1 or Automatic.",
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 5.18536376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 544.3098297119141,
+    "process_rss_mib": 409.828125,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "bloch",
+    "channeling": "single",
+    "request": "auto",
+    "assessment_seconds": 0.01163633301621303,
+    "effective_workers": {
+      "bloch": 1
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop.",
+      "Auto bloch: 1 worker(s), CPU starting capacity 6, estimated independent tasks 1. Single Channeling has no detector executor"
+    ],
+    "estimated_working_mib": 5.18536376953125,
+    "memory_budget_mib": 850,
+    "estimated_process_peak_mib": 544.3098297119141,
+    "process_rss_mib": 409.828125,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "bloch",
+    "channeling": "double",
+    "request": 1,
+    "assessment_seconds": 0.014368790958542377,
+    "effective_workers": {
+      "bloch": 1
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 16.185203552246094,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 558.0908794403076,
+    "process_rss_mib": 409.859375,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "per_worker_scratch": 10.930656433105469,
+      "concurrent_scratch": 10.930656433105469
+    },
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "bloch",
+    "channeling": "double",
+    "request": 2,
+    "assessment_seconds": 0.011113415996078402,
+    "effective_workers": {
+      "bloch": 2
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 27.115859985351562,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 571.7541999816895,
+    "process_rss_mib": 409.859375,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "per_worker_scratch": 10.930656433105469,
+      "concurrent_scratch": 21.861312866210938
+    },
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "bloch",
+    "channeling": "double",
+    "request": 4,
+    "assessment_seconds": 0.011100917006842792,
+    "effective_workers": {
+      "bloch": 4
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 48.9771728515625,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 599.0964660644531,
+    "process_rss_mib": 409.875,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "per_worker_scratch": 10.930656433105469,
+      "concurrent_scratch": 43.722625732421875
+    },
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "bloch",
+    "channeling": "double",
+    "request": 6,
+    "assessment_seconds": 0.010986667010001838,
+    "effective_workers": {
+      "bloch": 6
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 70.83848571777344,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 626.4231071472168,
+    "process_rss_mib": 409.875,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "per_worker_scratch": 10.930656433105469,
+      "concurrent_scratch": 65.58393859863281
+    },
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "bloch",
+    "channeling": "double",
+    "request": 8,
+    "assessment_seconds": 0.010943916975520551,
+    "effective_workers": {
+      "bloch": 8
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 92.69979858398438,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 653.7497482299805,
+    "process_rss_mib": 409.875,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "per_worker_scratch": 10.930656433105469,
+      "concurrent_scratch": 87.44525146484375
+    },
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "bloch",
+    "channeling": "double",
+    "request": "auto",
+    "assessment_seconds": 0.011458916997071356,
+    "effective_workers": {
+      "bloch": 4
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop.",
+      "Auto bloch: 4 worker(s), CPU starting capacity 6, estimated independent tasks 4. Backend batch granularity and parallel/shared work ratio, bounded by available CPU capacity. Memory admission may reduce Auto only."
+    ],
+    "estimated_working_mib": 48.9771728515625,
+    "memory_budget_mib": 850,
+    "estimated_process_peak_mib": 599.1120910644531,
+    "process_rss_mib": 409.890625,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "per_worker_scratch": 10.930656433105469,
+      "concurrent_scratch": 43.722625732421875
+    },
+    "fft_storage_working_mib": 0.0,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "single",
+    "request": 1,
+    "assessment_seconds": 0.015968583000358194,
+    "effective_workers": {
+      "fft-multislice": 1
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 6.84161376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 546.4738922119141,
+    "process_rss_mib": 409.921875,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "single",
+    "request": 2,
+    "assessment_seconds": 0.01581758400425315,
+    "effective_workers": {
+      "fft-multislice": 1
+    },
+    "blocked": true,
+    "reason": [
+      "Single Channeling has no parallel detector executor; request 1 or Automatic.",
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 6.84161376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 546.4895172119141,
+    "process_rss_mib": 409.9375,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "single",
+    "request": 4,
+    "assessment_seconds": 0.01593233400490135,
+    "effective_workers": {
+      "fft-multislice": 1
+    },
+    "blocked": true,
+    "reason": [
+      "Single Channeling has no parallel detector executor; request 1 or Automatic.",
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 6.84161376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 546.4895172119141,
+    "process_rss_mib": 409.9375,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "single",
+    "request": 6,
+    "assessment_seconds": 0.01591254200320691,
+    "effective_workers": {
+      "fft-multislice": 1
+    },
+    "blocked": true,
+    "reason": [
+      "Single Channeling has no parallel detector executor; request 1 or Automatic.",
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 6.84161376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 546.4895172119141,
+    "process_rss_mib": 409.9375,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "single",
+    "request": 8,
+    "assessment_seconds": 0.015748417004942894,
+    "effective_workers": {
+      "fft-multislice": 1
+    },
+    "blocked": true,
+    "reason": [
+      "Single Channeling has no parallel detector executor; request 1 or Automatic.",
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 6.84161376953125,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 546.4895172119141,
+    "process_rss_mib": 409.9375,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "single",
+    "request": "auto",
+    "assessment_seconds": 0.015862250002101064,
+    "effective_workers": {
+      "fft-multislice": 1
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop.",
+      "Auto fft-multislice: 1 worker(s), CPU starting capacity 6, estimated independent tasks 1. Single Channeling has no detector executor"
+    ],
+    "estimated_working_mib": 6.84161376953125,
+    "memory_budget_mib": 850,
+    "estimated_process_peak_mib": 546.4895172119141,
+    "process_rss_mib": 409.9375,
+    "memory_breakdown_mib": null,
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 1.74005126953125
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "double",
+    "request": 1,
+    "assessment_seconds": 0.016338374989572912,
+    "effective_workers": {
+      "fft-multislice": 1
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 23.360260009765625,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 567.200325012207,
+    "process_rss_mib": 410.0,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "fft_storage": 1.65625,
+      "concurrent_scratch": 16.449462890625,
+      "preparation_headroom": 0.0
+    },
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "double",
+    "request": 2,
+    "assessment_seconds": 0.01610333297867328,
+    "effective_workers": {
+      "fft-multislice": 2
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 39.809722900390625,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 587.7621536254883,
+    "process_rss_mib": 410.0,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "fft_storage": 1.65625,
+      "concurrent_scratch": 32.89892578125,
+      "preparation_headroom": 0.0
+    },
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "double",
+    "request": 4,
+    "assessment_seconds": 0.01635658397572115,
+    "effective_workers": {
+      "fft-multislice": 4
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 72.70864868164062,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 628.8858108520508,
+    "process_rss_mib": 410.0,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "fft_storage": 1.65625,
+      "concurrent_scratch": 65.7978515625,
+      "preparation_headroom": 0.0
+    },
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "double",
+    "request": 6,
+    "assessment_seconds": 0.016200709040276706,
+    "effective_workers": {
+      "fft-multislice": 6
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 105.60757446289062,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 670.0094680786133,
+    "process_rss_mib": 410.0,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "fft_storage": 1.65625,
+      "concurrent_scratch": 98.69677734375,
+      "preparation_headroom": 0.0
+    },
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "double",
+    "request": 8,
+    "assessment_seconds": 0.016037833003792912,
+    "effective_workers": {
+      "fft-multislice": 8
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop."
+    ],
+    "estimated_working_mib": 138.50650024414062,
+    "memory_budget_mib": 1024,
+    "estimated_process_peak_mib": 711.1331253051758,
+    "process_rss_mib": 410.0,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "fft_storage": 1.65625,
+      "concurrent_scratch": 131.595703125,
+      "preparation_headroom": 0.0
+    },
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  },
+  {
+    "backend": "fft-multislice",
+    "channeling": "double",
+    "request": "auto",
+    "assessment_seconds": 0.016571832995396107,
+    "effective_workers": {
+      "fft-multislice": 6
+    },
+    "blocked": false,
+    "reason": [
+      "Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.",
+      "Conservative execution allowed with a caution; passing memory admission is not native-stability certification.",
+      "Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop.",
+      "Auto fft-multislice: 6 worker(s), CPU starting capacity 6, estimated independent tasks 8. Backend batch granularity and parallel/shared work ratio, bounded by available CPU capacity. Memory admission may reduce Auto only."
+    ],
+    "estimated_working_mib": 105.60757446289062,
+    "memory_budget_mib": 850,
+    "estimated_process_peak_mib": 670.0094680786133,
+    "process_rss_mib": 410.0,
+    "memory_breakdown_mib": {
+      "shared_preparation": 1.33050537109375,
+      "provider_tensors": 0.13238525390625,
+      "selected_group_maps": 2.297119140625,
+      "group_detector_spectra": 0.058837890625,
+      "detector_responses": 1.435699462890625,
+      "fft_storage": 1.65625,
+      "concurrent_scratch": 98.69677734375,
+      "preparation_headroom": 0.0
+    },
+    "fft_storage_working_mib": 1.65625,
+    "coherence_working_mib": 1.72265625,
+    "retained_results_working_mib": 5.254547119140625
+  }
+]

@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-11",
+  "windows_branch_requested": "feat/windows-adaptive-compute",
+  "windows_source_requested": "527a29063c0f2d76c67fba7117303bcd7f16e7f4",
+  "windows_branch_lookup": "No matching remote branch returned by git ls-remote",
+  "windows_source_fetch": "remote error: upload-pack: not our ref 527a29063c0f2d76c67fba7117303bcd7f16e7f4",
+  "windows_report": "docs/WINDOWS_SC_DC_RESOURCE_BENCHMARK.md absent from fetched origin/main",
+  "windows_numeric_and_timing_comparison": "INCOMPLETE; no authentic matched reference available",
+  "native_cpu_calibration": {
+    "rusage_raw_tick_delta": 4800818,
+    "getrusage_cpu_seconds": 0.200035,
+    "timebase_numer": 125,
+    "timebase_denom": 3
+  },
+  "wait_calibration_seconds": {
+    "qwait": {
+      "wall": 0.5194587910082191,
+      "worker_cpu": 0.179037459
+    },
+    "sleep": {
+      "wall": 0.5356952500296757,
+      "worker_cpu": 0.541491166
+    },
+    "event_loop": {
+      "wall": 0.49496891599847004,
+      "worker_cpu": 0.499025292
+    }
+  },
+  "historical_timing_exclusion": "QtTest.qWait trials and the earlier 93.4-second Quick Start time are not valid scientific performance baselines; scientific numerical arrays remained unchanged. The validated native QEventLoop controller is used for accepted timings.",
+  "quick_start_numerical_identity": {
+    "arrays_compared": 24,
+    "status": "PASS",
+    "bitwise_equal": true,
+    "reference": "Accepted published-app Quick Start spectrum and full selected-map exports"
+  }
+}

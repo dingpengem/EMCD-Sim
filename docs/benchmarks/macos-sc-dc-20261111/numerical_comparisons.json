@@ -1,0 +1,142 @@
+[
+  {
+    "run_id": "bw-dc-auto-v2",
+    "reference": "bw-dc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "bw-dc-manual-1-v2",
+    "reference": "bw-dc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "bw-dc-manual-2-v2",
+    "reference": "bw-dc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "bw-dc-manual-4-v2",
+    "reference": "bw-dc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "bw-dc-manual-6-v2",
+    "reference": "bw-dc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "bw-dc-manual-8-v2",
+    "reference": "bw-dc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "bw-sc-auto-v2",
+    "reference": "bw-sc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "bw-sc-manual-1-v2",
+    "reference": "bw-sc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "ms-dc-auto-v2",
+    "reference": "ms-dc-manual-1-v3",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "ms-dc-manual-1-v3",
+    "reference": "ms-dc-manual-1-v3",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "ms-dc-manual-2-v2",
+    "reference": "ms-dc-manual-1-v3",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "ms-dc-manual-4-v2",
+    "reference": "ms-dc-manual-1-v3",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "ms-sc-auto-v2",
+    "reference": "ms-sc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  },
+  {
+    "run_id": "ms-sc-manual-1-v2",
+    "reference": "ms-sc-manual-1-v2",
+    "status": "PASS",
+    "bitwise_equal": true,
+    "max_absolute_difference": 0.0,
+    "max_scale_relative_difference": 0.0,
+    "rtol": 1e-10,
+    "scale_relative_atol": 1e-12
+  }
+]

@@ -23,6 +23,8 @@ Current Installation, Quick Start, Tutorial, User Guide and MDFF instructions de
 
 ## Scientific validation and acceptance
 
+- [Native macOS Single/Double Channeling resource benchmark](MACOS_SC_DC_RESOURCE_BENCHMARK.md): published ARM64 app, controlled workers, measured RSS/footprint, Auto policy and Windows comparison boundaries.
+
 - [Neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md): bundled Apache-2.0 Z=1–118 Adaptive default, named Ni Lobato compatibility, external Z=1–98 table and strict Mott limits, CIF indexing and [local acceptance](acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md).
 
 - [v0.9.0-beta.1 prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1): [current scoped evidence and remaining limitations](RELEASE_NOTES_0_9_0_BETA_1.md).
