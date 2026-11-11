@@ -1,10 +1,13 @@
 # Windows SC/DC resource benchmark — 11 November 2026
 
 **PASS: all 16 complete, fresh-process calculations and their result round trips.**
-For this representative Ni request, sampled Single Channeling (SC) memory was
+For this representative Windows source/API Ni request, sampled Single Channeling (SC) memory was
 lower than Double Channeling (DC). The previously higher SC *estimate* included
 a full-map beam-pair workspace that the production adapter never allocates.
 The correction changes admission accounting, not scientific sampling or physics.
+
+See the [matched Windows/macOS comparison](#matched-windowsmacos-full-workload-comparison)
+for the separate analysis of the completed published-app macOS dataset.
 
 This is a Windows source/API benchmark using the production calculation entry
 point and existing Windows build environment. It is not a new packaged-GUI,
@@ -296,7 +299,7 @@ not staged or committed; this report and the focused source/tests are the
 Git deliverables.
 
 **Does Single Channeling actually use more memory than Double Channeling?**
-Not in these sampled, matched Ni runs. SC required less incremental RSS; its
+Not in these sampled, matched Windows Ni runs. SC required less incremental RSS; its
 former larger estimate was caused by charging a hypothetical full-map scratch
 workspace despite bounded contraction. This does not establish a universal
 SC<DC theorem: result retention, basis size, FFT/depth settings, groups, worker
@@ -310,3 +313,257 @@ previously incomplete source-guard coverage and new packaged acceptance are
 **INCOMPLETE / not run**. This source correction is not contained in the
 preserved dev6 binary. No new release or general performance guarantee follows
 from this benchmark.
+
+## Matched Windows/macOS full-workload comparison
+
+This comparison was added **after all 16 Windows measurements completed**.
+No existing run was interrupted, restarted, reconfigured or invalidated; no
+EMCD calculation was added to fill a comparison gap. This section changes
+documentation only, not either platform's kernels or resource policy.
+
+The complete macOS [report](https://github.com/dingpengem/EMCD-Sim/blob/6475afed8d133fe39773c08701b216312cd455d5/docs/MACOS_SC_DC_RESOURCE_BENCHMARK.md)
+and [structured results](https://github.com/dingpengem/EMCD-Sim/blob/6475afed8d133fe39773c08701b216312cd455d5/docs/benchmarks/macos-sc-dc-20261111/benchmark_results.json)
+are pinned to benchmark-branch commit
+`6475afed8d133fe39773c08701b216312cd455d5` on
+`feat/macos-sc-dc-resource-benchmark`. Its 15 records contain **14 completed
+full workloads and one incomplete attempt**, not 15 completed runs. The tested
+macOS application remains published source
+`03dc8f8d1f0374984c9fc81866eaa32ce48008d0`.
+The macOS report's unavailable-Windows paragraph predates the Windows branch
+push; the comparison below now uses the genuine retained Windows evidence.
+
+### Matching and exclusions
+
+All 16 Windows saved projects were checked against the macOS common
+configuration, active provider declaration and per-run execution fields:
+
+- Registered CIF SHA256:
+  `ad8372ef427a95957a6182d5a7b7f5aaea5899e1464eb0afa8e540ff2f47d67d`.
+  Registered XMCD SHA256:
+  `bb9bdd478d54cc8de60403409f4d90e63deb11a64891bbac6754f867be14deda`.
+  These are existing source identities, not new hash gates.
+- Four occupied Ni sites, a=3.520 Å; Global +z; identical acknowledged XMCD
+  element/edge, handedness, tensor convention, relative reference, eta/beta,
+  selected features, normalization and reversal assumptions.
+- Identical 200 kV/10 nm, [017]/(200), full finite ZOLZ, exact tilt and
+  2.5/2.0 Å⁻¹ cutoffs; 21 common beams; B=0 and the same elastic model.
+- All **243 actual energies**, two **97×97** full selected fields, 64 depth
+  nodes, 64 boundary subpixels, exact Thales apertures and 57,860 evaluated
+  pixels per calculation (2×9409 + 241×162). No checkpoints were reused.
+- MS mesh **32×32**, projected generators (200)/(1,7,−1), maximum step 2 nm,
+  actual step 10/63 nm and 63 intervals. Saved Windows depths agree with
+  z_i=10i/63 nm; the existing trapezoid/reverse propagation schedule matches
+  the documented macOS schedule. Propagation/channeling modes are matched
+  individually, never SC against DC or BW against MS.
+
+Inactive atomic-model parameters, sigma/radial controls and the disabled
+post-edge window do not define this XMCD calculation. They were not used to
+reject an otherwise scientifically identical pair. Resource controls and
+platform-local source paths are experimental/context differences, not changes
+to the source bytes or scientific request.
+
+The Windows primary selections remain those already used above: corrected
+SC rows `C` and fresh DC serial controls `R`. They are not newly selected by
+their cross-platform ratios. `bw-sc/bw-dc/ms-sc-manual-1-v2` and
+`ms-dc-manual-1-v3` are the corresponding macOS baselines. Windows `W2/W4`
+match the same backend's `manual-2-v2/manual-4-v2`; Windows `A` matches that
+backend's `auto-v2`, with different effective DC workers explicitly retained.
+
+| Comparison/evidence | Classification |
+| --- | --- |
+| Four primary baselines and four DC Manual 2/4 pairs | MATCHED full scientific inputs and equal requested/effective workers |
+| Four Auto pairs | MATCHED full scientific inputs and Auto mode; DC workers differ, so not equal-worker comparisons |
+| Four earlier Windows `I` duplicates | Also full-workload matches to the same macOS one-worker baselines; retained, not substituted for the primary Windows controls |
+| macOS BW Manual 6/8 | Completed but UNMATCHED: Windows did not run these counts; no new run or ratio invented |
+| `ms-dc-manual-1-v2` | INCOMPLETE cancelled attempt; excluded, with successful `v3` used instead |
+| Old macOS 93.4 s Quick Start and 98.548 s qWait trial | INVALID scientific-performance references due to the external controller; neither is used below |
+| Reduced diagnostics or SC requests blocked above one worker | Not completed full workloads; excluded from performance pairing |
+
+For traceability, the earlier Windows `I` timings BW SC/DC and MS SC/DC were
+6.238/76.523/4.386/332.937 s. Matching them to the same complete macOS baselines
+would give T_Mac/T_Windows=0.219/0.196/0.292/0.406. Those observations remain
+in the inventory; the narrower primary ratios below must not erase this
+substantial Windows run-to-run variation. Initial SC memory estimates also
+belong to the obsolete Windows estimator, not the corrected model.
+
+### Equal-worker timing and memory
+
+All primary rows requested and executed **Manual 1 worker on both platforms**.
+Windows used 8192 MiB and macOS 1024 MiB Manual caps. Both admitted the full
+request without sampling changes; these caps are not allocations. Thus workers
+and science match, but budgets, execution environments and hardware are not
+a controlled hardware-only experiment.
+
+T_Mac/T_Windows below 1 means the recorded Mac case took less reported time;
+it is not an architecture or BLAS speedup attribution.
+
+| Matched full backend | Windows seconds | macOS seconds | T_Mac / T_Windows |
+| --- | ---: | ---: | ---: |
+| BW SC | 1.724 | **1.365** | 0.792 |
+| BW DC | 25.131 | 14.970 | 0.596 |
+| MS SC | 1.580 | 1.279 | 0.810 |
+| MS DC | 252.754 | 135.037 | 0.534 |
+
+All memory below is MiB. Windows DC Run† retains the reconstruction scope
+explained earlier; macOS final totals are the captured finalized admission
+estimates. Baselines are each harness's recorded initial RSS, not a common
+admission-time timestamp. Sampled peaks cover the calculation window, not GUI
+rendering. Every row used verified single-thread calculation BLAS.
+
+| Backend / platform | Estimated working arrays | Estimated process peak | Initial RSS | Sampled calculation peak | Increment | Budget |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| BW SC / Windows | 3.786 | 250.08 | 117.19 | 121.15 | 3.96 | 8192 |
+| BW SC / macOS | 5.185 | 423.92 | 301.09 | 311.22 | 10.13 | 1024 |
+| BW DC / Windows | 16.187 | 265.93† | 117.26 | 123.44 | 6.18 | 8192 |
+| BW DC / macOS | 16.185 | 401.64 | 253.70 | 275.25 | 21.55 | 1024 |
+| MS SC / Windows | 5.442 | 252.27 | 117.12 | 121.66 | 4.54 | 8192 |
+| MS SC / macOS | 6.842 | 408.32 | 271.83 | 287.25 | 15.42 | 1024 |
+| MS DC / Windows | 40.664 | 296.78† | 117.69 | 142.14 | 24.45 | 8192 |
+| MS DC / macOS | 23.360 | 432.87 | 278.38 | 288.00 | 9.63 | 1024 |
+
+Equal-worker DC scaling is separate from Auto. Requested=effective on both
+platforms at each listed count; the same respective 8192/1024 MiB Manual caps
+and one-thread BLAS apply.
+
+| Backend / workers on each platform | Windows seconds | macOS seconds | T_Mac / T_Windows | Within-platform speedup W / Mac vs its primary Manual 1 |
+| --- | ---: | ---: | ---: | ---: |
+| BW DC / 2 | 24.916 | 14.576 | 0.585 | 1.01× / 1.03× |
+| BW DC / 4 | 34.095 | 20.775 | 0.609 | 0.74× / 0.72× |
+| MS DC / 2 | 136.062 | 92.910 | 0.683 | 1.86× / 1.45× |
+| MS DC / 4 | 140.395 | 78.065 | 0.556 | 1.80× / 1.73× |
+
+For these scaling rows, each paired memory cell is **Windows / macOS**:
+
+| Backend / workers | Working bound | Process estimate | Initial RSS | Calculation peak RSS | Incremental RSS |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| BW DC / 2 | 27.117 / 27.116 | 279.26† / 476.75 | 117.03 / 316.17 | 125.37 / 315.52 | 8.34 / −0.66 |
+| BW DC / 4 | 48.979 / 48.977 | 306.92† / 426.22 | 117.47 / 240.53 | 130.52 / 270.89 | 13.05 / 30.36 |
+| MS DC / 2 | 60.073 / 39.810 | 320.68† / 446.42 | 117.33 / 268.27 | 145.97 / 290.50 | 28.64 / 22.23 |
+| MS DC / 4 | 98.889 / 72.709 | 369.65† / 488.23 | 117.85 / 270.22 | 156.17 / 307.75 | 38.32 / 37.53 |
+
+The negative macOS BW-2 increment is retained: calculation-window residency
+fell below its earlier initial RSS. It is not a negative allocation or a value
+to clamp to zero. The Mac-only 6/8 BW cases took 19.145/20.155 s and add no
+equal-worker Windows ratio.
+
+### Auto default-experience comparison
+
+Both platforms requested **Auto CPU and Auto memory** in these rows. These
+ratios describe the measured defaults, not equal-worker scaling. SC still
+executes one outer worker; Auto DC chooses different counts.
+
+| Full backend | Effective workers W / Mac | Seconds W / Mac | T_Mac / T_Windows | Budget MiB W / Mac |
+| --- | ---: | ---: | ---: | ---: |
+| BW SC | 1 / 1 | 2.395 / 1.219 | 0.509 | 6871 / 699 |
+| BW DC | 5 / 4 | 35.398 / 17.176 | 0.485 | 6870 / 793 |
+| MS SC | 1 / 1 | 2.104 / 1.242 | 0.590 | 6858 / 699 |
+| MS DC | 5 / 6 | 152.668 / 79.339 | 0.520 | 6813 / 765 |
+
+The complete paired Auto memory scopes, again **Windows / macOS**, are:
+
+| Backend | Working bound | Process estimate | Initial RSS | Calculation peak RSS | Incremental RSS |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| BW SC | 3.786 / 5.185 | 250.14 / 405.31 | 117.26 / 270.94 | 120.74 / 297.34 | 3.48 / 26.41 |
+| BW DC | 59.909 / 48.977 | 320.35† / 493.27 | 116.98 / 305.20 | 132.74 / 318.19 | 15.76 / 12.98 |
+| MS SC | 5.442 / 6.842 | 252.66 / 445.33 | 117.44 / 308.59 | 121.67 / 341.20 | 4.23 / 32.61 |
+| MS DC | 118.298 / 105.608 | 393.84† / 536.38 | 117.42 / 278.08 | 162.26 / 315.28 | 44.84 / 37.20 |
+
+Neither scheduler selected the fastest observed DC setting on its machine.
+Windows BW favored Manual 1/2, and Mac BW favored Manual 1/2; Windows MS's
+lowest observed time was Manual 2, Mac MS's Manual 4. This is evidence about
+these observations, not a reason to install material-specific rules or retune
+either policy to make platform ratios agree.
+
+### What memory and timing differences do—and do not—show
+
+The Mac is an Apple M2 Pro, **6P+4E / 16 GiB**; Windows is an i7-1365U,
+hybrid 10 physical/12 logical / 32 GiB. macOS 26.3.1 uses packaged Python
+3.11.16, NumPy 2.4.6/SciPy 1.17.1 with **Apple Accelerate**. Windows uses
+Python 3.11.17 and the NumPy/SciPy **OpenBLAS** runtimes recorded earlier.
+Both verified single-thread calculation/detector BLAS. Mac GUI default mode
+is Automatic, whereas Windows restores numerical runtimes to 12 threads;
+neither default is the calculation's BLAS thread count.
+
+Windows timed the production source/API call including scoped BLAS entry/exit
+and final admission, without Qt canvases. Mac timed the frozen GUI app's
+scientific worker inside its existing BLAS guard, excluding display/save;
+that same process still contained the GUI/restored-state/probe footprint.
+The timing boundaries are close but not identical. No hardware-only or
+library-only causal ranking follows from those totals. Existing phase timers
+also warn against such attribution: primary BW-SC tensor contraction was
+1.173 s Windows versus 1.220 s Mac despite the lower Mac total time.
+
+The corrected Mac harness uses a normal native Qt event loop. The earlier
+**93.4-second Quick Start is not used as scientific timing**, and the 98.548 s
+qWait trial is also invalid for that purpose. The application kernel was not
+accelerated by that harness correction. Windows calls `calculate` directly;
+its progress callback does not wait, and only the separate RSS thread calls
+`Event.wait(.02)`. It has no `QtTest.qWait`, GUI controller sleep or analogous
+worker-blocking wait loop. A separate, non-scientific 0.5 s CPU-loop check
+observed 0.484 s thread CPU without the sampler and 0.500 s with it; the sampler
+made 12 readings. This supports absence of comparable starvation, **not** a
+precise zero-overhead claim. No EMCD workload was rerun for that check.
+
+Windows working set and Mac `proc_pid_rusage` resident RSS have OS-specific
+sharing, residency and compression behavior. Mac physical footprint is a
+different metric and is not substituted for RSS or Windows commit. The Mac
+reported Warning pressure, roughly 3 GiB available RAM and about 4 GiB of
+pre-existing swap during primary baselines; Windows had about 15 GiB available
+RAM. Those conditions and different process contents prevent interpreting the
+higher Mac total RSS as a kernel allocation, leak or architecture effect.
+Both 20 ms-target samplers can miss brief peaks; Mac's native pthread sampler
+is GIL-independent, while Windows' small sampling loop is a Python thread.
+
+SC/DC conclusions must retain the memory definition:
+
+- **BW:** Windows sampled SC/DC total RSS=0.981 and incremental=0.642. Mac
+  total RSS=1.131, although its SC increment was only 10.125 MiB versus DC's
+  21.547 MiB. Mac SC began about 47.4 MiB higher. Its larger SC total does not
+  establish intrinsically larger SC calculation storage.
+- **MS:** Windows sampled total ratio=0.856 and incremental=0.186. Mac total
+  ratio=0.997, with increments 15.422 MiB SC and 9.625 MiB DC. Incremental RSS
+  is a change in process residency, not a complete allocation ledger, so it
+  cannot establish the opposite intrinsic ordering either.
+- Working-array bounds put SC below DC on both platforms, but the bounds are
+  not identical models. The published Mac SC planner includes additional
+  coherence temporaries and site-phase allowance; Windows' corrected planner
+  retains a smaller coherence allowance. Mac's Global MS-DC planner uses
+  explicit response/result terms and preparation-stage lifetime accounting;
+  Windows retains the looser legacy Global MS allowances described above.
+  Some Mac energy-dependent retention terms use requested 241 while Windows
+  plans actual 243; that explains the small BW-DC bound difference (~0.0016
+  MiB), not a different calculated energy grid. These are accounting
+  differences, not measured architectural memory efficiencies. No policy was
+  changed to force equality.
+
+The final process estimates exceed primary sampled calculation RSS by about
+129–155 MiB Windows and 113–145 MiB Mac. The shared 128 MiB reserve, 25% margin,
+different admission RSS timestamps and conservative array terms explain much
+of that gap. They do not prove precise allocation accounting or general peak
+safety. Exact allocation-stack attribution remains INCOMPLETE.
+
+### Numerical status and targeted follow-ups
+
+The existing scale-aware comparison of **43 numerical BW-SC arrays** with
+authentic published macOS Quick Start exports remains valid: full 243-energy
+spectra, selected full maps and intentional masks match within the recorded
+tolerances. The new Mac benchmark report independently states its corrected
+BW-SC baseline is bit-for-bit equal to those Quick Start arrays. Thus there is
+authentic matched BW-SC numerical evidence, not an inference from timings.
+That comparison allowed rtol 1e−9 with raw-scale absolute tolerances and separate
+energy/percentage handling; it did not require cross-platform bitwise equality.
+
+For **BW DC, MS SC and MS DC**, the Mac branch publishes compact within-platform
+comparison results, not the raw spectra/maps. Those checks and Windows' own
+worker comparisons pass, but **direct cross-platform numerical equivalence is
+INCOMPLETE** for those three backends. Requesting their authentic Manual-1 NPZ
+or CSV exports is the smallest next step; it requires no new calculation.
+
+Other targeted follow-ups, if separately authorized, are matching frozen-app
+measurement contexts/timer boundaries, directly recording the complete Windows
+Run admission snapshot, and allocation-lifetime attribution for differing
+coherence/MS bounds. Statistical/power/thermal repeatability and instrumentation
+overhead have not been isolated. No expensive run or missing worker count was
+silently repeated here. The four primary science/worker matches and separate
+Auto comparisons are available; universal platform superiority, unmeasured
+numerical equivalence, convergence and quantitative Ni calibration are not.
