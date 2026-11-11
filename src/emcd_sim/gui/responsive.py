@@ -498,7 +498,14 @@ class ResponsiveLayout(QtCore.QObject):
     def fit_screen(self, screen):
         if screen is None or self.window.isMaximized():
             return
-        area = screen.availableGeometry().adjusted(8, 8, -8, -8)
+        try:
+            area = screen.availableGeometry().adjusted(8, 8, -8, -8)
+        except RuntimeError:
+            # QScreen is borrowed from Qt and can disappear between the
+            # screen-change signal and this delayed layout callback.
+            if self.screen is screen:
+                self.screen = None
+            return
         w = self.window
         w.layout().invalidate()
         w.layout().activate()

@@ -62,3 +62,16 @@ def test_deferred_screen_fit_stops_with_its_window(app,tmp_path,monkeypatch):
     w.project_dirty=False;w.close();w.deleteLater()
     app.sendPostedEvents(None,QtCore.QEvent.Type.DeferredDelete);QtTest.QTest.qWait(250)
     assert not errors
+
+
+def test_deferred_screen_fit_tolerates_retired_screen(window,app,monkeypatch):
+    import sys
+    class RetiredScreen:
+        def availableGeometry(self):
+            raise RuntimeError('Internal C++ object (QScreen) already deleted')
+    errors=[];monkeypatch.setattr(sys,'excepthook',lambda *exc:errors.append(exc))
+    layout=window.responsive
+    layout.screen=RetiredScreen()
+    layout.screen_changed()
+    QtTest.QTest.qWait(250)
+    assert layout.screen is None and not errors
