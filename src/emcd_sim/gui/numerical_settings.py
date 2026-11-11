@@ -79,11 +79,11 @@ class NumericalSettingsUI:
         self.apply_numerical_visibility()
 
     def numerical_snapshot(self):
-        return dict({key:self.spin[key].value() for key in NUMERICAL_KEYS},memory_budget_mib=self.memory_budget.currentData())
+        return dict({key:self.spin[key].value() for key in NUMERICAL_KEYS},memory_budget_mib=self.memory_budget.value())
 
     def set_numerical_values(self, values):
         self.set_values({k:v for k,v in values.items() if k in NUMERICAL_KEYS})
-        with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setCurrentIndex(self.memory_budget.findData(values['memory_budget_mib']))
+        with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setValue(values['memory_budget_mib'])
         with QtCore.QSignalBlocker(self.angular_resolution):self.sync_angular_resolution()
 
     def apply_numerical_visibility(self):
@@ -95,7 +95,7 @@ class NumericalSettingsUI:
         self.shared_resources_group.presentation_section.setVisible(True)
         for key in NUMERICAL_KEYS:self.spin[key].setEnabled(manual)
         self.sync_sampling_controls()
-        self.memory_budget.setEnabled(True);self.angular_resolution.setEnabled(manual)
+        self.compute_resources._sync();self.angular_resolution.setEnabled(manual)
         self.numerical_details.setVisible(not manual)
         self.sync_solver_controls()
 
@@ -132,7 +132,9 @@ class NumericalSettingsUI:
                     centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value())
                 s=self.settings()
                 atoms=self.structure.atoms
-                key=json.dumps(dict(settings=asdict(replace(s,beam_cutoff=0,potential_cutoff=0)),cfg=asdict(cfg),
+                physical=asdict(cfg)
+                for name in ('memory_budget_mib','memory_mode','resource_allocation','worker_mode','parallel_workers'):physical.pop(name,None)
+                key=json.dumps(dict(settings=asdict(replace(s,beam_cutoff=0,potential_cutoff=0)),cfg=physical,
                     cell=atoms.cell.array.tolist(),positions=atoms.get_scaled_positions().tolist(),species=atoms.get_chemical_symbols(),
                     occupancy=atoms.info.get('occupancy',{})),sort_keys=True)
                 if getattr(self,'_restore_auto_once',False):
@@ -145,7 +147,7 @@ class NumericalSettingsUI:
                         if provenance['source']=='Matching reference configuration' and self._slice_step_override!=.04:
                             provenance.update(source='Reference configuration with explicit slice-step override',
                                 status='User override — convergence not established')
-                    values['memory_budget_mib']=self.memory_budget.currentData()
+                    values['memory_budget_mib']=self.memory_budget.value()
                     self.set_numerical_values(values);self.numerical_provenance=provenance;self._numerical_cache=key
                 self.numerical_status.setText(self.numerical_provenance['source']+'\n'+self.numerical_provenance['status'])
             else:

@@ -287,7 +287,7 @@ def _multisite_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detector_
             block_cfg=replace(cfg,angular_maps=cfg.angular_maps and is_full,selected_edges=tuple((label,loss) for label,loss in cfg.selected_edges if np.any(np.isclose(block_energy,loss,rtol=0,atol=1e-9))))
             before=perf_counter()
             common=dict(crystal_to_microscope=rotation,thickness_nm=thickness_nm,depth_steps=cfg.depth,
-                memory_budget_mib=cfg.memory_budget_mib,reverse_magnetization=reverse_magnetization,
+                memory_budget_mib=cfg.calculation_memory_budget_mib,reverse_magnetization=reverse_magnetization,
                 cancelled=cancelled,execution_workers=workers,progress=stage)
             if propagation=='bloch':
                 raw=contract_multisite_bloch_double(model,sites,block_plan,qx.ravel()[support],qy.ravel()[support],
@@ -321,7 +321,7 @@ def _multisite_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detector_
 
 
 def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None,
-                       cancelled=lambda:False,*,energy_ev=None,energy_windows=None,reverse_magnetization=False):
+                       cancelled=lambda:False,*,energy_ev=None,energy_windows=None,reverse_magnetization=False,execution_policy=None):
     """Multi-site Single or Double Channeling with BW or FFT Multislice.
 
     Supply a common energy_ev covered by ALL providers, or energy_windows
@@ -351,6 +351,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
 
     stage('Validating multi-site assignments and required MDFF coverage')
     cfg=cfg or MultiSiteForwardSettings()
+    if execution_policy is None:cfg=replace(cfg,resource_allocation=None)
     if not isinstance(cfg,MultiSiteForwardSettings) or cfg.model!='multisite' or cfg.channeling_model not in ('single','double'):
         raise ValueError('MultiSiteForwardSettings with Single or Double Channeling required')
     double=cfg.channeling_model=='double'
@@ -391,31 +392,29 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
         raise ValueError('Selected map labels must be unique with energies on the common grid')
     cfg=replace(cfg,energy_points=len(energy),selected_edges=tuple(selections))
     cfg=resolve_fft_configuration(structure,settings,cfg)
-    elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row)
     _,rotation,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
     if settings.target==(0,0,0) or settings.target not in hkl:
         raise ValueError('Select a nonzero target in the finite diffraction basis')
+    # The same request-aware admission is used by the panel and Run, before
+    # potential assembly/incoming propagation. Recheck current headroom while
+    # retaining a GUI Run's finalized allocation exactly.
+    info=numerical_info(structure,settings,cfg,hkl=hkl,ionization_sites=sites)
+    if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
+        raise ValueError('Resources changed after Run admission; review Compute Resources and Run again')
+    from .parallel_resources import bind_allocation
+    cfg=bind_allocation(cfg,info)
+    elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row)
     model=EMCDSimulation(elastic,{k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),centers)},
                          sites.groups[0].magnetization)
     qx,qy,weights,detector_support,_=angular_schedule(model,cfg,energy)
     support=np.ones(qx.size,bool) if cfg.angular_maps else detector_support
-    # Account for retained group/total arrays and full-energy query work in
-    # addition to the existing conservative propagation/kernel estimates.
-    methods_count=2 if cfg.propagation=='both' else 1
-    extra=(16*len(energy)*int(support.sum())*(2*len(sites.groups)+12)
-           +576*len(energy)*len(sites.groups)
-           +methods_count*64*len(selections)*qx.size*(len(sites.groups)+2)
-           +methods_count*256*len(energy)*(len(sites.groups)+2))/2**20 if double and cfg.propagation!='bloch' else 0.
-    # Include retained multi-site arrays BEFORE worker admission, so the
-    # existing automatic memory limit sees the complete calculation footprint.
-    info=numerical_info(structure,settings,cfg,hkl=hkl,ionization_sites=sites,
-        additional_retained_working_mib=extra,detector_support_pixels=int(detector_support.sum()))
-    if double:info['multisite_additional_working_mib']=extra
+    if int(detector_support.sum())!=info['detector_support_pixels']:
+        raise ValueError('Detector support changed after resource admission')
     working=info['estimated_working_mib']
     z=np.linspace(0,settings.thickness,cfg.depth)
     methods={};fft_info={}
     reserved=info['retained_results_working_mib'] if double else working
-    with reserve_memory(reserved,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
+    with reserve_memory(reserved,cfg.calculation_memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
         for method in ('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,):
             stage('Preparing '+method+' complete-crystal propagation')
             start=perf_counter()
@@ -442,7 +441,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                 from ..multisite_double_channeling import contract_multisite_bloch_double
                 raw=contract_multisite_bloch_double(model,sites,plan,qx.ravel()[support],qy.ravel()[support],
                     crystal_to_microscope=rotation,thickness_nm=settings.thickness,depth_steps=cfg.depth,
-                    method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.memory_budget_mib,
+                    method='analytic' if cfg.systematic_row else 'numerical',memory_budget_mib=cfg.calculation_memory_budget_mib,
                     prepared_incoming=incoming,reverse_magnetization=reverse_magnetization,cancelled=cancelled,
                     execution_workers=info['execution']['effective_workers'][method],progress=stage)
             elif double:
@@ -451,7 +450,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
                 raw=contract_multisite_ms_double(model,sites,plan,qx.ravel()[support],qy.ravel()[support],
                     crystal_to_microscope=rotation,thickness_nm=settings.thickness,depth_steps=cfg.depth,
                     fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,slice_step_nm=cfg.slice_step,
-                    systematic_row=cfg.systematic_row,memory_budget_mib=cfg.memory_budget_mib,
+                    systematic_row=cfg.systematic_row,memory_budget_mib=cfg.calculation_memory_budget_mib,
                     prepared_grid=grid,prepared_incoming=fields,reverse_magnetization=reverse_magnetization,cancelled=cancelled,
                     execution_workers=info['execution']['effective_workers'][method],progress=stage)
             else:

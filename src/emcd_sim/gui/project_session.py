@@ -30,8 +30,7 @@ def capture_configuration(w):
     common=dict(propagation=('bloch','fft-multislice','both')[w.propagation_box.currentIndex()],
         channeling_model=('single','double')[w.channeling_box.currentIndex()],**w.sampling_fields(),
         centers=tuple(tuple(p) for p in w.detectors),systematic_row=w.row_projection.isChecked(),
-        correction=False,memory_budget_mib=w.memory_budget.currentData(),
-        worker_mode=('automatic','manual')[w.worker_mode.currentIndex()],parallel_workers=w.worker_count.value(),fft_generators=w.saved_fft_generators())
+        correction=False,**w.compute_resources.settings(),fft_generators=w.saved_fft_generators())
     for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step'):common[key]=w.spin[key].value()
     if w.magnetization_mode=='local':cfg=MultiSiteForwardSettings(**common)
     else:
@@ -122,8 +121,7 @@ def restore_configuration(w,state):
                 with QtCore.QSignalBlocker(widget):widget.setText(text)
             for widget,value in ((w.propagation_box,('bloch','fft-multislice','both').index(c.propagation)),
                 (w.channeling_box,('single','double').index(c.channeling_model)),
-                (w.elastic_provider_box,w.elastic_provider_box.findData(s.elastic_provider)),(w.basis_mode,w.basis_mode.findData(s.basis_mode)),
-                (w.memory_budget,w.memory_budget.findData(c.memory_budget_mib)),(w.worker_mode,0 if c.worker_mode=='automatic' else 1)):
+                (w.elastic_provider_box,w.elastic_provider_box.findData(s.elastic_provider)),(w.basis_mode,w.basis_mode.findData(s.basis_mode))):
                 if value<0:raise ValueError('Saved numerical/provider setting is unavailable')
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(value)
             values=dict(kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,tx=s.tilt[0],ty=s.tilt[1])
@@ -132,8 +130,7 @@ def restore_configuration(w,state):
             w.set_values(values);w.detectors=np.asarray(c.centers);w.sync_detectors();w.sync_za()
             for widget,value in ((w.angular_maps,c.angular_maps),(w.row_projection,c.systematic_row)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(value)
-            w.worker_count.setValue(c.parallel_workers)
-            w.worker_count.setEnabled(c.worker_mode=='manual')
+            w.compute_resources.restore(c)
             w._saved_global_config=state.get('global_config')
         drafts=state.get('metadata',{}).get('gui_drafts')
         if drafts:

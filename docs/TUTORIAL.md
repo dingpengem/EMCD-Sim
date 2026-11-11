@@ -68,6 +68,25 @@ Use the existing Settings sections in this order; it avoids carrying geometry fr
 | Memory budget | **2048 MiB** |
 | Virtual detectors | Click **Restore Thales A/B** after setting this geometry; set **Radius (Å⁻¹) = 0.09** |
 
+The **Windows adaptive-compute development candidate** combines resource controls
+and estimates in **Shared Calculation Settings → Compute Resources**. For this
+reproducible example choose CPU **Manual / 1** and Memory **Manual / 2048 MiB**.
+For other work, Auto CPU considers available physical/hybrid cores, detector task
+size and memory; Single Channeling uses one outer worker. Auto memory reserves
+half of current physical/commit/address-space headroom, rather than using
+installed RAM as free space. The effective budget is a total process-peak limit;
+the estimate includes baseline RSS, live reservations, a 25% allocation margin
+and 128 MiB reserve without counting resident reserved arrays twice.
+
+Manual requests are retained when switching to Auto and are never silently
+reduced or raised. Impossible requests remain blocked with a reason. Run refreshes
+the same allocator used by the preview, displays the finalized allocation and
+submits it unchanged. Native NumPy/SciPy BLAS limits are controlled internally
+and restored after all workers stop; no environment-variable setup is required.
+Outer worker count is distinct from observed simultaneous tasks and BLAS threads.
+Auto is a conservative heuristic, not a speedup guarantee. These controls are
+not present in the published v0.9.0-beta.1 package.
+
 This accepted case has **21 incident beams**, A/B centers approximately `(0.2840909091, ±0.2840909091) Å⁻¹`, zero B factor and no post-edge correction. Numerical q is crystallographic `g=1/d`; angular momentum transfer uses `Q=2πg` internally. Two selected energies are points, not a resolved EELS spectrum. The normal default is uniform energy sampling with exact selections inserted; this small example deliberately chooses selected-only.
 
 Review effective settings before Run. **Custom – 9×9** is the expected preset caption. Do not select “Standard” to change a caption: that would change sampling. The application manages BLAS limits internally; no Conda or BLAS environment-variable setup is needed.

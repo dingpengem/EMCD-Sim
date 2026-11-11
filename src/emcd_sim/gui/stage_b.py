@@ -68,7 +68,7 @@ class EMCDWorker(QtCore.QThread):
                 r=calculate(self.structure,self.settings,self.config,progress,self.cancelled,**kwargs)
             else:
                 r=calculate_multisite(self.structure,self.settings,self.sites,self.config,progress,self.cancelled,
-                    energy_windows=self.energy_windows,reverse_magnetization=self.reverse_magnetization)
+                    energy_windows=self.energy_windows,reverse_magnetization=self.reverse_magnetization,**kwargs)
                 r['gui_multisite_input']=self.input_signature
                 if self.input_signature and len(self.input_signature)>3:
                     r['metadata']['ionization_participation']=dict(
@@ -222,21 +222,14 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.form=shared_form
         self.correction_notice=QtWidgets.QLabel('Optional post-edge A/B correction was disabled for new calculations. Historical results retain their original settings.')
         self.correction_notice.setWordWrap(True);self.correction_notice.hide();self.form.addRow(self.correction_notice)
-        self.shared_resources_group=self.shared_group('Computational Resources')
-        from .memory_budget import BUDGETS_MIB,DEFAULT_BUDGET_MIB
-        self.memory_budget=QtWidgets.QComboBox()
-        for budget in BUDGETS_MIB:self.memory_budget.addItem(f'{budget} MiB',budget)
-        self.memory_budget.setCurrentIndex(BUDGETS_MIB.index(DEFAULT_BUDGET_MIB));self.memory_budget.currentIndexChanged.connect(self.emcd_stale)
-        self.form.addRow('Estimated process memory budget',self.memory_budget)
-        self.memory_budget.setToolTip('Shared maximum estimated working-memory allowance, not a required allocation. Checks available RAM and estimated process peak; never changes scientific settings to fit.')
-        self.worker_mode=QtWidgets.QComboBox();self.worker_mode.addItems(['Automatic (Recommended)','Manual'])
-        self.worker_count=QtWidgets.QSpinBox();self.worker_count.setRange(1,4);self.worker_count.setValue(1);self.worker_count.setEnabled(False)
-        self.form.addRow('Parallel Workers',self.worker_mode);self.form.addRow('Requested workers (Manual)',self.worker_count)
-        self.worker_mode.setToolTip('Separate from numerical settings. One calculation QThread schedules detector workers; native BLAS/LAPACK has its own threads. Unsafe or unsupported manual requests are blocked, not replaced.')
-        self.worker_mode.currentIndexChanged.connect(lambda index:(self.worker_count.setEnabled(index==1),self.emcd_stale()))
-        self.worker_count.valueChanged.connect(self.emcd_stale)
-        self.memory_label=QtWidgets.QLabel();self.memory_label.setWordWrap(True);self.form.addRow(self.memory_label)
-        self.memory_label.setToolTip('Diagnostic estimate for the selected solver(s), common basis, sampling and current RAM. The budget controls admission, never an automatic parameter reduction.')
+        self.shared_resources_group=self.shared_group('Compute Resources')
+        from .compute_resources import ComputeResourcesPanel
+        self.compute_resources=ComputeResourcesPanel(self);self.form.addRow(self.compute_resources)
+        self.worker_mode=self.compute_resources.worker_mode;self.worker_count=self.compute_resources.worker_count
+        self.memory_budget=self.compute_resources.memory_budget;self.memory_mode=self.compute_resources.memory_mode
+        self.memory_label=self.compute_resources.explanation
+        self.compute_resources.changed.connect(self.emcd_stale)
+        self.shared_resources_group.presentation_section.setChecked(True)
         self.form=shared_form
 
         # Physical approximations remain accessible in Automatic mode.
@@ -244,8 +237,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             row=self.shared_elastic_group.layout().takeRow(widget)
             if row.labelItem:self.form.addRow(row.labelItem.widget(),widget)
             else:self.form.addRow(widget)
-        self.memory_label.parentWidget().layout().removeWidget(self.memory_label)
-        self.resource_estimate=CollapsibleSection('Resource estimate',self.memory_label,expanded=False);self.resource_estimate.setObjectName('resource_estimate');self.form.addRow(self.resource_estimate)
+        # Keep the old attribute as an alias for callers, never a second panel.
+        self.resource_estimate=self.shared_resources_group.presentation_section
         self.setup_numerical_mode(shared_form)
 
     def set_angular_resolution(self,*_):
@@ -360,10 +353,10 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if dialog is not None and dialog.has_unapplied_edits():raise ValueError('Apply or Cancel the Global MDFF draft before calculation')
         cfg=getattr(self,'_accepted_global_mdff',None)
         if cfg is None:raise ValueError('Configure and Apply Global MDFF through Material → 3D Structure Viewer → Site Groups')
-        shared=dict(fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],
-            parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],
+        shared=dict(fft_generators=self.saved_fft_generators(),**self.compute_resources.settings(),
+            channeling_model=('single','double')[self.channeling_box.currentIndex()],
             **self.sampling_fields(),
-            systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),
+            systematic_row=self.row_projection.isChecked(),
             propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),
             slice_step=self.spin['slice_step'].value(),grid=self.spin['grid'].value(),
             depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
@@ -393,7 +386,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if not self.source_info:raise ValueError('Five-column XMCD: select a readable valid source file. '+self.source_status.text())
         if mode=='xmcd' and not self.declaration.isChecked():
             raise ValueError('Source conventions: confirm RP−LP about Material +M and the displayed L3/L2 assignments beside the source controls; parsing cannot establish these choices')
-        cfg=ForwardSettings(**self.sampling_fields(),fft_generators=self.saved_fft_generators(),worker_mode=('automatic','manual')[self.worker_mode.currentIndex()],parallel_workers=self.worker_count.value(),channeling_model=('single','double')[self.channeling_box.currentIndex()],systematic_row=self.row_projection.isChecked(),memory_budget_mib=self.memory_budget.currentData(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+        cfg=ForwardSettings(**self.sampling_fields(),fft_generators=self.saved_fft_generators(),**self.compute_resources.settings(),channeling_model=('single','double')[self.channeling_box.currentIndex()],systematic_row=self.row_projection.isChecked(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
@@ -450,10 +443,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if cfg.model=='atomic' and not hasattr(cfg,'provider_schema') and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
             from .propagation import numerical_info
             info=numerical_info(self.structure,s,replace(cfg,energy_points=count),enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
-            from .parallel_resources import preview_text
-            self.memory_label.setText(preview_text(s,cfg,info))
-            if sites is not None and cfg.channeling_model=='double':self.memory_label.setText(self.memory_label.text()+'\nInitial estimate; production admission includes retained multi-site arrays before propagation.')
-            if info.get('numerical_warnings'):self.memory_label.setText(self.memory_label.text()+'\n'+'\n'.join(info['numerical_warnings']))
+            self.compute_resources.show_estimate(cfg,info)
+            if info.get('numerical_warnings'):self.compute_resources.estimate.setToolTip('\n'.join(info['numerical_warnings']))
             if sites is not None:
                 groups=', '.join(g.group_id+' ('+g.mdff_reference.model+')' for g in sites.groups)
                 coverage='selected edge samples' if cfg.energy_scope=='edges' else 'full modeled-source coverage'
@@ -469,14 +460,14 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if sites is not None and config_matches:config_matches=saved_inputs_match(self.emcd_result,signature)
             if self.emcd_result and cfg.model==self.emcd_result['config'].model=='atomic' and not hasattr(cfg,'provider_schema'):
                 old=asdict(self.emcd_result['config']);new=asdict(cfg)
-                for key in ('source','source_sha256'):old.pop(key);new.pop(key)
+                for key in ('source','source_sha256','resource_allocation'):old.pop(key,None);new.pop(key,None)
                 config_matches=old==new
             fresh=self.emcd_result is not None and self.emcd_result['settings']==s and structure_matches and config_matches
             if sites is None:
                 source_reason=self.input_source_reason();reason=reason or source_reason
                 if source_reason:fresh=False
         except Exception as exc:
-            reason=reason or str(exc);fresh=False;self.memory_label.setText('Calculation unavailable: '+str(exc))
+            reason=reason or str(exc);fresh=False;self.compute_resources.pending('Calculation unavailable: '+str(exc))
             self.invalidate_on_source_error(exc)
             if str(exc) in ('Atomic draft ready for explicit preview or calculation','Manual draft ready for explicit preview or calculation'):
                 reason='';self.memory_label.setText(str(exc)+'; resources checked when calculation starts.')
@@ -548,11 +539,13 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 cfg,sites,windows,reverse,signature=applied_inputs(self,cfg)
                 reason=self.structure.elastic_reason_for(s.elastic_provider)
             else:
-                energy_grid(cfg);reason=material_reason(self.structure,cfg)
+                actual_energy=energy_grid(cfg);reason=material_reason(self.structure,cfg)
                 reason=reason or self.input_source_reason()
             if reason:raise ValueError(reason)
             from .propagation import numerical_info
-            assessment=numerical_info(self.structure,s,cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
+            planning_cfg=cfg if sites is not None else replace(cfg,energy_points=len(actual_energy))
+            assessment=numerical_info(self.structure,s,planning_cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
+            self.compute_resources.show_estimate(cfg,assessment)
             from .parallel_resources import require_supported
             from .runtime import build_info
             logger=logging.getLogger('emcd_sim.gui')
@@ -562,6 +555,8 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 {k:v for k,v in assessment.items() if k not in ('execution',)})
             for handler in logger.handlers:handler.flush()
             require_supported(assessment['execution'])
+            from .parallel_resources import bind_allocation
+            cfg=bind_allocation(cfg,assessment)
             structure=Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings)
             if sites is not None:sites.validate_structure(structure)
         except Exception as exc:

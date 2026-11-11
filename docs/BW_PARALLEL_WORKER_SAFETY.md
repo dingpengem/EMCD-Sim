@@ -1,5 +1,35 @@
 # BW parallel-worker safety: local diagnostic validation
 
+## Current Windows adaptive-compute development branch
+
+The unpublished adaptive-compute candidate replaces the old Resource Estimate
+and duplicate controls with **Compute Resources**. Independent Auto/Manual CPU
+and memory modes retain saved Manual requests. Windows CPU Set, affinity and
+Job information constrain usable concurrency; physical and hybrid core counts
+are used when available, with a conservative fallback if detection fails.
+Auto leaves CPU capacity for other work and limits concurrency by detector task
+granularity and live-memory admission. There is no four-worker allocation cap;
+unsupported Manual requests are rejected explicitly. Single Channeling has one
+outer worker. Higher worker counts are not a promise of higher performance.
+
+Auto memory uses half the currently available physical RAM, process commit and
+virtual-address headroom (the smallest limit), plus the current application
+baseline. Existing stage/live-array bounds, bounded energy batches and fractional
+detector support drive both preview and Run. Even one worker is rejected when it
+cannot fit. Run binds the admitted workers and budget without modifying the
+remembered Manual values or scientific request, then rechecks resources before
+propagation. Resident reserved arrays are not counted a second time in RSS.
+
+Both actual NumPy and SciPy BLAS runtimes are set to one thread and verified on
+calculation entry, then restored after worker completion, failure or cancellation.
+Windows BW executor safeguards remain in place. Existing project fields remain
+compatible: an absent memory mode means the historical fixed Manual budget.
+Simulation tests cover other hardware capacities; they do not establish native
+acceptance on those machines or general numerical convergence.
+
+The diagnostic record below describes historical controls/evidence, not the
+current adaptive policy. Published packages and recorded results are unchanged.
+
 This development change is local and unreleased. It does not change solver physics,
 precision, the published Beta, or the 204 production checkpoints.
 

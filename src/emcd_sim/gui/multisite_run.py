@@ -15,6 +15,7 @@ def configuration_equal(left,right,*,portable_source=False):
     from .project_configuration import _encode_config
     def value(cfg):
         data=_encode_config(cfg)
+        data.pop('resource_allocation',None)  # A completed Run's allocation is not a scientific input change.
         # Called for already-validated group references. Moving a portable
         # attachment does not change its declared contents or parameters.
         if portable_source and data.get('source_sha256'):data['source']=''
@@ -63,10 +64,9 @@ def forward_settings(window):
     """Read shared numerical/detector controls, never the legacy MDFF or M."""
     if window.spin['grid'].value()%2 == 0:raise ValueError('Choose an odd angular / detector grid size')
     cfg = MultiSiteForwardSettings(
-        fft_generators=window.saved_fft_generators(),worker_mode=('automatic','manual')[window.worker_mode.currentIndex()],
-        parallel_workers=window.worker_count.value(),channeling_model=('single','double')[window.channeling_box.currentIndex()],
+        fft_generators=window.saved_fft_generators(),**window.compute_resources.settings(),channeling_model=('single','double')[window.channeling_box.currentIndex()],
         **window.sampling_fields(),
-        systematic_row=window.row_projection.isChecked(),memory_budget_mib=window.memory_budget.currentData(),
+        systematic_row=window.row_projection.isChecked(),
         propagation=('bloch','fft-multislice','both')[window.propagation_box.currentIndex()],
         fft_grid=window.spin['fft_grid'].value(),slice_step=window.spin['slice_step'].value(),
         grid=window.spin['grid'].value(),depth=window.spin['depth'].value(),subpixels=window.spin['subpixels'].value(),

@@ -73,7 +73,7 @@ def resolve_fft_configuration(structure,settings,cfg):
     return replace(cfg,fft_generators=tuple(tuple(int(v) for v in h) for h in cell))
 
 
-def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True,ionization_sites=None,additional_retained_working_mib=0.,detector_support_pixels=None):
+def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_execution=True,ionization_sites=None,additional_retained_working_mib=0.,detector_support_pixels=None,resource_snapshot=None,native=None):
     if not np.isfinite(additional_retained_working_mib) or additional_retained_working_mib<0:
         raise ValueError('Finite nonnegative additional retained memory required')
     if ionization_sites is not None:
@@ -87,11 +87,26 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     if tuple(hkl)!=actual_geometry[2]:raise ValueError('Beam support changed during numerical preflight')
     n=len(hkl);pixels=cfg.grid**2;mesh=cfg.fft_grid**2
     from .parallel_resources import worker_plan,require_supported
-    execution=worker_plan(settings,cfg,n)
+    if detector_support_pixels is None:
+        from ..geometry import VirtualDetector
+        q=np.linspace(-cfg.halfwidth,cfg.halfwidth,cfg.grid);qx,qy=np.meshgrid(q,q,indexing='xy')
+        support=np.zeros(qx.shape,bool)
+        for center in cfg.centers:
+            support|=VirtualDetector(tuple(center),cfg.radius).integration_weights(qx,qy,mode='fractional',subpixels=cfg.subpixels)>0
+        detector_support_pixels=int(support.sum())
+    selected_maps=cfg.angular_maps and bool(getattr(cfg,'selected_edges',()) or cfg.model!='multisite')
+    task_pixels=pixels if selected_maps or (cfg.angular_maps and cfg.angular_evaluation=='all') else detector_support_pixels
+    if check_memory:
+        from .hardware_resources import hardware_snapshot
+        snapshot=hardware_snapshot() if resource_snapshot is None else resource_snapshot
+    else:snapshot=resource_snapshot
+    execution=worker_plan(settings,cfg,n,native=native,task_pixels=task_pixels,
+        hardware=snapshot if snapshot is not None and 'logical_processors' in snapshot else None)
     pair=16*(pixels if cfg.angular_maps else min(pixels,64))*n*n/2**20;dense=4*pair
     info=dict(bw_beams=n,fft_harmonics=0,potential_nonzero_harmonics=0,single_complex_pair_mib=pair,dense_working_estimate_mib=dense,
         fft_storage_working_mib=0.,coherence_working_mib=16*cfg.depth*n*n/2**20,propagation=cfg.propagation,
-        fft_grid=cfg.fft_grid,slice_step_nm=cfg.slice_step,depth_nodes=cfg.depth)
+        fft_grid=cfg.fft_grid,slice_step_nm=cfg.slice_step,depth_nodes=cfg.depth,
+        energy_samples=cfg.energy_points,incident_voltage_kv=settings.voltage)
     info['numerical_warnings']=[]
     if settings.basis_mode=='full' and not cfg.systematic_row:
         geo=projected_geometry_for(settings,actual_geometry[0],cfg.fft_generators)
@@ -192,6 +207,14 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
                 info['memory_breakdown_mib']=dict(shared_preparation=shared,**result_terms,
                     per_worker_scratch=bw_work,concurrent_scratch=execution['effective_workers']['bloch']*bw_work)
                 info['bloch_worker_memory_mib']=bw_terms
+        if ionization_sites is not None and cfg.propagation!='bloch':
+            # The same bounded adapter reduces MS and BW responses. Count
+            # live selected/detector energy blocks, not E*full-grid fiction.
+            result_terms=multisite_bw_double_memory_terms(cfg,len(ionization_sites.groups),detector_support_pixels)
+            shared=(64*n*n*len(structure.atoms)+128*(n*n+cfg.depth*n)+64*pixels)/2**20
+            info['retained_results_working_mib']=shared+sum(result_terms.values())+additional_retained_working_mib
+            info['memory_breakdown_mib']=dict(shared_preparation=shared,**result_terms,
+                per_worker_scratch=ms_work,concurrent_scratch=execution['effective_workers'].get('fft-multislice',1)*ms_work)
         engines=[];densities=[]
         if cfg.propagation in ('bloch','both'):engines.append(execution['effective_workers']['bloch']*bw_work);densities.append(bw_dense)
         if cfg.propagation in ('fft-multislice','both'):engines.append(execution['effective_workers']['fft-multislice']*ms_work);densities.append(ms_dense)
@@ -208,23 +231,36 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     info['memory_note']='Dense arrays plus FFT/depth storage, retained method results and coordinate/work arrays. Total process estimate adds current RSS, concurrent reservations, 25% allocation margin and 128 MiB reserve. Conservative estimate, not guaranteed peak RSS.'
     if check_memory:
         from .memory_budget import assess_memory
-        admission=assess_memory(info['estimated_working_mib'],cfg.memory_budget_mib,dense_mib=dense,reject=False)
+        allocation=cfg.resource_allocation
+        mode=cfg.memory_mode if allocation is None else 'manual'
+        budget=cfg.memory_budget_mib if allocation is None else allocation['memory_budget_mib']
+        def assess():return assess_memory(info['estimated_working_mib'],budget,dense_mib=dense,reject=False,mode=mode,snapshot=snapshot)
+        admission=assess()
         original_workers=dict(execution['effective_workers'])
-        while (admission.get('rejected') and cfg.worker_mode=='automatic' and cfg.channeling_model=='double'
-               and execution['effective_workers'].get('fft-multislice',1)>1):
-            execution['effective_workers']['fft-multislice']-=1
+        while (admission.get('rejected') and allocation is None and cfg.worker_mode=='automatic' and cfg.channeling_model=='double'
+               and any(count>1 for count in execution['effective_workers'].values())):
+            candidates=[method for method,count in execution['effective_workers'].items() if count>1]
+            method=max(candidates,key=lambda method:execution['effective_workers'][method]*(bw_work if method=='bloch' else ms_work))
+            execution['effective_workers'][method]-=1
             engines=[count*(bw_work if method=='bloch' else ms_work) for method,count in execution['effective_workers'].items()]
             info['estimated_working_mib']=max(engines)+info['retained_results_working_mib']+info['fft_storage_working_mib']
             info['detector_workers']=dict(execution['effective_workers'])
-            admission=assess_memory(info['estimated_working_mib'],cfg.memory_budget_mib,dense_mib=dense,reject=False)
+            admission=assess()
         if original_workers!=execution['effective_workers']:
             execution['messages'].append('Automatic detector-worker count was limited by the current memory budget/RAM; numerical settings are unchanged.')
         info.update(admission)
+        info['hardware']=snapshot
+        info['detector_support_pixels']=detector_support_pixels
+        info['requested_memory_budget_mib']=cfg.memory_budget_mib
+        info['memory_mode']=cfg.memory_mode
+        if 'memory_breakdown_mib' in info and cfg.channeling_model=='double':
+            info['memory_breakdown_mib']['concurrent_scratch']=max(execution['effective_workers'].values())*info['memory_breakdown_mib'].get('per_worker_scratch',0.)
         if admission.get('rejected'):
             # A native-thread caution is not permission to exceed memory limits.
             execution['messages']=[message for message in execution['messages']
                                    if not message.startswith('Conservative execution allowed')]
             execution.update(blocked=True,status='Blocked',risk='RESOURCE REJECTED')
+            if cfg.worker_mode=='automatic':execution['effective_workers']={method:0 for method in execution['effective_workers']}
             execution['messages'].append(admission['rejection_reason'])
             if info.get('memory_breakdown_mib'):
                 from .parallel_resources import memory_contributors

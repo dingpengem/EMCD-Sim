@@ -28,6 +28,16 @@ Use the complete extracted Windows package. Python, Conda and manual BLAS enviro
 
 Thales centers are approximately `(0.2840909091, ±0.2840909091) Å⁻¹`. Review the effective request. Do not apply another sampling preset afterward; **Custom – 9×9** is the correct caption for these settings.
 
+In the **Windows adaptive-compute development candidate**, use **Shared Calculation
+Settings → Compute Resources** for those Manual selections. New projects offer
+independent **Auto (recommended)** CPU and memory modes. The panel shows detected
+hardware, effective allocation, estimated process peak and admission separately.
+Auto retains your Manual values and never reduces scientific sampling. Older
+projects with a saved fixed memory budget retain Manual memory. Run refreshes
+available resources and submits its displayed allocation; admission may change
+as other applications consume RAM. These controls are development-source changes,
+not a change to the published v0.9.0-beta.1 Windows package.
+
 7. Click **Run EMCD / EELS**. **Preview diffraction** is a separate optional calculation. After completion, inspect **EMCD Angular Maps** and **Virtual Detector EELS**. Two energy samples do not form a resolved spectrum. Raw ±M, reversal-even/odd and conventional A−B have different definitions.
 8. Choose **File → Save As…** to retain a separate project folder. **Close Project → Open Project…** restores saved data without recalculation. Keep new runs rather than replacing an original. Export numerical data from **Results → Export Results…** or the selected-spectra CSV button. Use **Display details / diagnostics / export → toolbar → Export Figure…** for a figure; open the toolbar overflow if needed.
 

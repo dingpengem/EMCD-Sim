@@ -17,7 +17,7 @@ def fft_geometry(elastic,settings,cfg,*,cancelled=None):
         projected_geometry=projected_geometry_for(settings,elastic.crystal,cfg.fft_generators),
         systematic_row_hkl=settings.target if cfg.systematic_row else None,
         retained_hkl=elastic.beams.hkl if settings.basis_mode=='two-beam' else None,
-        memory_budget_mib=cfg.memory_budget_mib,cancelled=cancelled)
+        memory_budget_mib=cfg.calculation_memory_budget_mib,cancelled=cancelled)
 
 
 _windows_bw_lock=threading.Lock()
@@ -42,9 +42,9 @@ def bw_executor_guard(method,cancelled):
 
 
 def worker_count(n,method):
-    if method=='bloch' and sys.platform=='win32':return 1
-    dense=80*n**4/2**20
-    return min(4,max(1,int(1200/(dense+40)))) if method=='bloch' else 4
+    # Standalone callers have no complete request for CPU/memory admission.
+    # Production callers supply the shared, admitted execution_workers plan.
+    return 1
 
 
 def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics=None,progress=None):
@@ -58,6 +58,9 @@ def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics
     from .parallel_resources import MAX_WORKERS,calculation_blas_guard
     if type(workers) is not int or not 1<=workers<=MAX_WORKERS:
         raise ValueError('Unsupported detector worker count')
+    from .hardware_resources import cpu_capacity
+    if workers>cpu_capacity()['logical_processors']:
+        raise ValueError('Detector worker allocation exceeds current process CPU capacity')
     stop=threading.Event();errors=[];error_lock=threading.Lock()
     start=perf_counter();active=peak=started=0;busy=cpu=queue_seconds=0.;threads=set()
     def task_cancelled():return stop.is_set() or (cancelled is not None and cancelled())
@@ -195,7 +198,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
                 if method=='bloch':
                     r=double_channeling_response(elastic,float(e),batch,settings.thickness,
                         method='analytic' if cfg.systematic_row else 'numerical',depth_steps=cfg.depth,
-                        memory_budget_mib=cfg.memory_budget_mib,prepared_incoming=incoming_bw,
+                        memory_budget_mib=cfg.calculation_memory_budget_mib,prepared_incoming=incoming_bw,
                         prepared_outgoing=outgoing_bw,cancelled=task_cancelled,**site_arguments)
                     return r,None
                 grid,incoming=prepared_incoming
@@ -203,7 +206,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
                     fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
                     systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
                     projected_geometry=projected_geometry_for(settings,elastic.crystal,cfg.fft_generators),
-                    depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,memory_budget_mib=cfg.memory_budget_mib,
+                    depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,memory_budget_mib=cfg.calculation_memory_budget_mib,
                     prepared_grid=grid,prepared_incoming=incoming,cancelled=task_cancelled,**site_arguments)
                 return r,diag
             # MS chunks bound cancellation latency without retaining outgoing

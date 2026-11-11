@@ -6,7 +6,9 @@ from pathlib import Path
 import numpy as np
 
 IMPLICATED_DLL_SHA256='63c857e738469261263c764a36be9436ebdeaa272e340a828f42047a97131080'
-MAX_WORKERS=4
+# Serialization/widget integer limit, not an allocation recommendation. Actual
+# CPU, task and memory limits are resolved from each request below.
+MAX_WORKERS=2**31-1
 _blas_control_lock=threading.RLock()
 
 
@@ -96,11 +98,13 @@ def _numpy_blas():
     return None
 
 
-def native_backend_info():
+def native_backend_info(*,hardware=None):
     """Query the active NumPy runtime, not environment-variable/CPU guesses."""
+    from .hardware_resources import cpu_capacity
+    hardware=cpu_capacity() if hardware is None else hardware
     result=dict(backend='Unknown',version='Unknown',threads=None,library=None,sha256=None,
                 numpy_version=np.__version__,platform=sys.platform,machine=platform.machine(),
-                cpu_count=os.cpu_count(),calculation_threads=1)
+                cpu_count=hardware['logical_processors'],hardware=hardware,calculation_threads=1)
     found=_numpy_blas()
     if found:
         _,threads,info=found;result.update(info)
@@ -124,11 +128,24 @@ def native_backend_info():
     return result
 
 
-def worker_plan(settings,cfg,n,*,native=None):
+def worker_plan(settings,cfg,n,*,native=None,task_pixels=None,hardware=None):
     native=native_backend_info() if native is None else native
+    if hardware is not None:native=dict(native,hardware=hardware,cpu_count=hardware['logical_processors'])
     mode=cfg.worker_mode;requested=cfg.parallel_workers
     if mode not in ('automatic','manual') or type(requested) is not int or not 1<=requested<=MAX_WORKERS:
-        raise ValueError('Parallel Workers requires Automatic or Manual and an integer from 1 to 4.')
+        raise ValueError('CPU Workers requires Auto or Manual and a positive integer worker count.')
+    hardware=native.get('hardware',{})
+    logical=hardware.get('logical_processors') or native.get('cpu_count') or 1
+    physical=hardware.get('available_physical_cores')
+    classes=hardware.get('efficiency_classes',{})
+    if len(classes)>1:
+        fastest=max(map(int,classes))
+        capacity=sum(count if int(kind)==fastest else count*.5 for kind,count in classes.items())
+    else:capacity=physical if physical is not None else max(1,logical//2)
+    cpu_limit=min(logical,max(1,int(capacity)-1))
+    pixels=cfg.grid**2 if task_pixels is None else task_pixels
+    if type(pixels) is not int or pixels<0:raise ValueError('Nonnegative detector task capacity required')
+    allocation=getattr(cfg,'resource_allocation',None)
     methods=('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,)
     effective={};messages=[];blocked=False;risk='VALIDATED POLICY'
     matched=(native.get('sha256')==IMPLICATED_DLL_SHA256 and native.get('platform')=='win32'
@@ -139,11 +156,24 @@ def worker_plan(settings,cfg,n,*,native=None):
     if not matched:risk='UNVERIFIED COMBINATION'
     for method in methods:
         if cfg.channeling_model=='single':auto=1
-        elif method=='bloch':
-            dense=80*n**4/2**20
-            auto=1 if native.get('platform')=='win32' else min(4,max(1,int(1200/(dense+40))))
-        else:auto=min(MAX_WORKERS,native.get('cpu_count') or 1)
-        count=auto if mode=='automatic' else requested;effective[method]=count
+        else:
+            work=n**3*cfg.depth if method=='bloch' else cfg.fft_grid**2*cfg.depth*n*max(1,np.log2(cfg.fft_grid**2))
+            # Predictable granularity heuristic, not an automatic benchmark.
+            # Energies are processed sequentially, so they do not multiply
+            # detector concurrency. Memory admission can reduce Auto further.
+            tasks=max(1,pixels//32)
+            auto=min(cpu_limit,tasks,max(1,int(pixels*work/2_000_000))) if pixels else 0
+            if not native.get('automatic_thread_control') and native.get('threads')!=1:auto=min(auto,1)
+        count=auto if mode=='automatic' else requested
+        if allocation is not None:
+            count=allocation['effective_workers'][method]
+            if type(count) is not int or not 1<=count<=MAX_WORKERS:raise ValueError('Invalid accepted worker allocation')
+            if mode=='manual' and count!=requested:raise ValueError('Manual worker allocation must equal the request')
+        effective[method]=count
+        if count>logical:
+            blocked=True;messages.append(f'Requested {count} workers exceeds {logical} processors available to this process. Manual requests are not reduced.')
+        if count==0:
+            blocked=True;messages.append('No independent detector tasks can be admitted.')
         if cfg.channeling_model=='single' and count!=1:
             blocked=True;risk='UNVERIFIED COMBINATION';messages.append('Single Channeling has no parallel detector executor; request 1 or Automatic.')
         if cfg.channeling_model=='double' and method=='bloch' and native.get('platform')=='win32':
@@ -164,7 +194,8 @@ def worker_plan(settings,cfg,n,*,native=None):
     if native.get('automatic_thread_control'):
         messages.append('Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop.')
     return dict(mode=mode,requested_workers='Automatic' if mode=='automatic' else requested,
-        policy_version='parallel-workers-v1',
+        policy_version='adaptive-compute-v1',cpu_worker_limit=cpu_limit,available_logical_processors=logical,
+        detector_task_pixels=pixels,
         effective_workers=effective,native=native,risk=risk,blocked=blocked,
         status='Blocked' if blocked else ('Warning' if risk=='UNVERIFIED COMBINATION' else 'Supported'),
         messages=messages,policy='One calculation QThread; detector workers separate from native BLAS/LAPACK threads.',
@@ -173,6 +204,14 @@ def worker_plan(settings,cfg,n,*,native=None):
 
 def require_supported(plan):
     if plan['blocked']:raise ValueError(plan['risk']+': '+' '.join(plan['messages']))
+
+
+def bind_allocation(cfg, info):
+    """Freeze Run's selected resources, retaining both Manual requests."""
+    from dataclasses import replace
+    require_supported(info['execution'])
+    return replace(cfg,resource_allocation=dict(memory_budget_mib=info['memory_budget_mib'],
+        effective_workers=dict(info['execution']['effective_workers'])))
 
 
 def memory_contributors(info):

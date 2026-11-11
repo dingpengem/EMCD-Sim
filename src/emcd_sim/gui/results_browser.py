@@ -268,14 +268,15 @@ class ProjectWorkspace(ProjectSession):
         with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
         self.set_values(dict(kv=300,beam=2.5,potential=2.0))
         self.retire_post_edge();self._post_edge_disabled_on_restore=False;self.correction_notice.hide()
-        self.worker_mode.setCurrentIndex(0);self.worker_count.setValue(1)
+        from .emcd_forward import ForwardSettings
+        self.compute_resources.restore(ForwardSettings(memory_mode='automatic'))
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
         self._slice_step_override=None;self.set_values(dict(slice_step=2.))
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(1)
         self.apply_numerical_visibility()
         self.clear_selected();self.input_source_requirements=[];self.default_structure()
         from .memory_budget import DEFAULT_BUDGET_MIB
-        self.memory_budget.setCurrentIndex(self.memory_budget.findData(DEFAULT_BUDGET_MIB))
+        self.memory_budget.setValue(DEFAULT_BUDGET_MIB)
         self.spin['grid'].setValue(97)
         self.sync_angular_resolution()
         if hasattr(self,'mdff_dialog'):
@@ -298,8 +299,9 @@ class ProjectWorkspace(ProjectSession):
         frame_reason=frame_rerun_reason(r)
         if frame_reason:self.error(frame_reason);return
         if r.get('fft_recipe_error'):self.error(r['fft_recipe_error']);return
-        if c.worker_mode not in ('automatic','manual') or type(c.parallel_workers) is not int or not 1<=c.parallel_workers<=4:
-            self.error('Saved parallel-worker request is unsupported (Automatic/Manual, 1–4). Saved results remain viewable; inputs were not replaced or clamped.');return
+        if (c.worker_mode not in ('automatic','manual') or c.memory_mode not in ('automatic','manual')
+                or any(type(v) is not int or not 1<=v<=2**31-1 for v in (c.parallel_workers,c.memory_budget_mib))):
+            self.error('Saved resource request is unsupported. Saved results remain viewable; inputs were not replaced or clamped.');return
         try:structure=restore_structure(r.get('structure_snapshot'))
         except Exception as exc:self.error(str(exc));return
         if self.model_box.currentIndex()==2:self._remember_manual_state()
@@ -326,10 +328,7 @@ class ProjectWorkspace(ProjectSession):
             for widget,checked in ((self.row_projection,c.systematic_row),(self.angular_maps,c.angular_maps)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.mdff_stack.setCurrentIndex(self.model_box.currentIndex())
-            with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setCurrentIndex(self.memory_budget.findData(c.memory_budget_mib))
-            with QtCore.QSignalBlocker(self.worker_mode):self.worker_mode.setCurrentIndex(0 if c.worker_mode=='automatic' else 1)
-            with QtCore.QSignalBlocker(self.worker_count):self.worker_count.setValue(c.parallel_workers)
-            self.worker_count.setEnabled(c.worker_mode=='manual')
+            self.compute_resources.restore(c)
             values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial if c.radial is not None else .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
             values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()});self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()
             self.sync_angular_resolution()

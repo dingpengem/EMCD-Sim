@@ -50,8 +50,9 @@ def test_available_ram_and_invalid_measurement_fail_closed():
     with patch.object(memory, 'memory_snapshot', side_effect=OSError('unavailable')):
         with pytest.raises(ValueError, match='Cannot verify'):
             memory.assess_memory(1)
+    assert memory.assess_memory(1,3072,snapshot=SNAPSHOT)['memory_budget_mib']==3072
     with pytest.raises(ValueError, match='budget must be'):
-        memory.assess_memory(1, 3072, snapshot=SNAPSHOT)
+        memory.assess_memory(1, 0, snapshot=SNAPSHOT)
 
 
 def test_concurrent_reservations_and_cleanup_on_errors():
@@ -82,10 +83,11 @@ def test_gui_budget_selector_and_start_admission(tmp_path, monkeypatch):
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         w = MainWindow(workspace=tmp_path/'workspace')
-        assert w.memory_budget.currentData() == 2048
-        for i, budget in enumerate(memory.BUDGETS_MIB):
-            w.memory_budget.setCurrentIndex(i)
-            assert w.forward_settings().memory_budget_mib == budget
+        assert w.memory_budget.value() == 2048
+        w.memory_mode.setCurrentIndex(1)
+        for budget in (*memory.BUDGETS_MIB,3072):
+            w.memory_budget.setValue(budget)
+            assert w.compute_resources.settings()['memory_budget_mib'] == budget
         w.close()
     # A RAM change after UI preview is checked again at calculation entry.
     with patch.object(memory, 'memory_snapshot', return_value=dict(available_ram_mib=100, process_rss_mib=64)):

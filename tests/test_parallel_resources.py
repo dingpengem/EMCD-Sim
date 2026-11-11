@@ -27,7 +27,7 @@ def test_automatic_counts(method,channel):
     plan=worker_plan(primary(),cfg,27,native=native())
     assert not plan['blocked']
     for key,value in plan['effective_workers'].items():
-        assert value==(4 if key=='fft-multislice' and channel=='double' else 1)
+        assert value==1  # This fixture has 12 BLAS threads and no automatic control API.
 
 
 def test_known_unsafe_is_evidence_scoped_not_cutoff_rule():
@@ -40,7 +40,7 @@ def test_known_unsafe_is_evidence_scoped_not_cutoff_rule():
     assert not worker_plan(primary(),replace(cfg,parallel_workers=1),27,native=native(None))['blocked']
 
 
-@pytest.mark.parametrize('count',[0,5,1.5,True])
+@pytest.mark.parametrize('count',[0,-1,1.5,True])
 def test_invalid_manual_count_never_clamped(count):
     with pytest.raises(ValueError):worker_plan(primary(),replace(ForwardSettings(),worker_mode='manual',parallel_workers=count),27,native=native())
 
@@ -112,7 +112,7 @@ def test_execution_plan_change_rejected_before_solver(monkeypatch):
     from emcd_sim.gui import emcd_forward
     monkeypatch.setattr('emcd_sim.gui.parallel_resources.native_backend_info',lambda:native(1))
     solve=Mock();monkeypatch.setattr(emcd_forward,'_calculate',solve)
-    cfg=replace(ForwardSettings(),model='atomic',channeling_model='double')
+    cfg=replace(ForwardSettings(),model='atomic',channeling_model='double',l3=852.7,l2=870.)
     with pytest.raises(ValueError,match='Resources changed'):
         emcd_forward.calculate(Structure.nickel(),primary(),cfg,execution_policy={'effective_workers':{'bloch':4}})
     assert not solve.called
@@ -136,15 +136,15 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
             w.channeling_box.setCurrentIndex(1)
             assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,2.5,2.0)
             assert w.settings()==Settings()
-            assert w.spin['grid'].value()==97 and w.memory_budget.currentData()==2048
+            assert w.spin['grid'].value()==97 and w.memory_budget.value()==2048
             assert not w.shared_resources_group.isHidden()
             original=w.numerical_snapshot();w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(4)
             assert w.numerical_snapshot()==original and not w.emcd_button.isEnabled()
             errors=[];w.error=errors.append;w.start_emcd();assert errors and not factory.called and not w.busy
             w.worker_mode.setCurrentIndex(0);assert w.worker_count.value()==4
             w.numerical_mode.setCurrentIndex(1);w.spin['beam'].setValue(2.5)
-            assert 'Retained beams: 21' in w.memory_label.text()
-            w.spin['kv'].setValue(200);assert 'Voltage: 200' in w.memory_label.text()
+            assert w.compute_resources.info['bw_beams']==21
+            w.spin['kv'].setValue(200);assert w.compute_resources.info['incident_voltage_kv']==200
             w.new_project()
             assert w.settings()==Settings() and w.worker_mode.currentIndex()==0
         finally:w.close();app.processEvents()
@@ -159,10 +159,10 @@ def test_unsupported_saved_worker_request_is_not_clamped(tmp_path):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     w=MainWindow(workspace=tmp_path/'workspace');errors=[];w.error=errors.append
     try:
-        saved=load_project(fixture);saved['config']=replace(saved['config'],worker_mode='manual',parallel_workers=5)
+        saved=load_project(fixture);saved['config']=replace(saved['config'],worker_mode='manual',parallel_workers=2**31)
         old=w.settings();w.emcd_result=saved;w.use_result_settings()
         assert errors and 'not replaced or clamped' in errors[0] and w.settings()==old
-        assert saved['config'].parallel_workers==5
+        assert saved['config'].parallel_workers==2**31
     finally:w.close();app.processEvents()
 
 

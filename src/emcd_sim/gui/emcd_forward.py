@@ -67,6 +67,9 @@ class ForwardSettings:
     fft_grid: int=32
     slice_step: float=2.
     memory_budget_mib: int=2048
+    # Missing fields in historical projects retain their explicit fixed budget.
+    memory_mode: str='manual'
+    resource_allocation: dict|None=None
     channeling_model: str='single'
     energy_scope: str='full'
     energy_sampling: str='uniform'
@@ -76,6 +79,11 @@ class ForwardSettings:
     worker_mode: str='automatic'
     parallel_workers: int=1
     fft_generators: tuple|None=None
+
+    @property
+    def calculation_memory_budget_mib(self):
+        from .memory_budget import resource_budget
+        return resource_budget(self)
 
 
 # Historical imports remain aliases, not additional forward implementations.
@@ -88,20 +96,26 @@ from ..cancellation import Cancelled, check_cancelled
 
 def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
     check_cancelled(cancelled)
+    if execution_policy is None:cfg=replace(cfg,resource_allocation=None)
     from .forward_pipeline import validate_before_resources
     validate_before_resources(structure,settings,cfg,energy_ev)
     from .propagation import numerical_info,resolve_fft_configuration
     cfg=resolve_fft_configuration(structure,settings,cfg)
     from .memory_budget import reserve_memory
-    info=numerical_info(structure,settings,cfg)
+    from ..mdff_providers import prepare_provider
+    from .provider_preparation import provider_energy_grid
+    actual_energy=provider_energy_grid(prepare_provider(cfg),cfg,energy_ev)
+    info=numerical_info(structure,settings,replace(cfg,energy_points=len(actual_energy)))
     if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
         raise ValueError('Resources changed since preflight; Run again to review the new effective worker counts.')
     execution_policy=info['execution']
+    from .parallel_resources import bind_allocation
+    cfg=bind_allocation(cfg,info)
     check_cancelled(cancelled)
     # Double kernels make their own concurrent reservations. Reserve retained
     # GUI arrays here, after admitting the complete estimated working set.
     reserved=info['retained_results_working_mib'] if cfg.channeling_model=='double' else info['estimated_working_mib']
-    with reserve_memory(reserved,cfg.memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
+    with reserve_memory(reserved,cfg.calculation_memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
         result=_calculate(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,energy_checkpoint=energy_checkpoint,execution_policy=execution_policy)
         result['metadata']['execution']=execution_policy
         check_cancelled(cancelled)
