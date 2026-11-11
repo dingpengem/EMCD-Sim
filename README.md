@@ -32,7 +32,7 @@ The Windows and macOS binaries are distinct **Research Beta prereleases**, built
 5. **Run EMCD / EELS**. Automatic internal BLAS limits are verified for the calculation and restored afterward; users need no environment-variable workaround. Manual outer workers remain subject to CPU/memory admission. Progress reports actual work and elapsed time; **Cancel** stops cooperatively.
 6. Inspect Results without recalculating. Save the complete project with **File → Save / Save As…**; restore a run or compare exactly two calculations from **Project Results**. Export controls are beside the corresponding results.
 
-Use the platform-specific [Windows Quick Start](docs/QUICK_START.md) or [macOS Quick Start](docs/QUICK_START_MACOS.md) for a deliberately small first case. Keep the entire extracted package intact. Windows users should follow the Microsoft x64 v14 runtime instructions; Mac users need Apple Silicon and macOS 15+. Packaged users do not need Python, Conda or WIEN2k. See each release's matching corresponding-source and dependency notices.
+Use the platform-specific [Windows Quick Start](docs/QUICK_START.md) or [macOS Quick Start](docs/QUICK_START_MACOS.md) for a first case. The macOS guide now includes a packaged-app-validated 243-energy Ni spectrum and 97×97 selected-energy maps, with genuine figures and measured resources. Keep the entire extracted package intact. Windows users should follow the Microsoft x64 v14 runtime instructions; Mac users need Apple Silicon and macOS 15+. Packaged users do not need Python, Conda or WIEN2k. See each release's matching corresponding-source and dependency notices.
 
 ## Scientific and verification limits
 
