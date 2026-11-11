@@ -25,14 +25,17 @@ def test_supported_budgets_and_512_compatibility(budget):
 
 
 def test_larger_dense_kernel_admitted_only_with_larger_budget():
-    cfg = ForwardSettings(propagation='bloch',grid=33)
+    cfg = ForwardSettings(propagation='bloch',grid=33,channeling_model='double',
+        depth=1025,worker_mode='manual',parallel_workers=4)
     # Use a real large basis. Preflight intentionally rejects synthetic hkl
     # counts that disagree with the actual oriented diffraction geometry.
     settings = Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=3.2)
     assert cfg.memory_budget_mib == config_from_dict({}).memory_budget_mib == 2048
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         info = numerical_info(Structure.nickel(), settings, cfg)
-        assert info['dense_working_estimate_mib'] > 512
+        # Concurrent numerical-depth fields are live; a hypothetical full-grid
+        # Single kernel is not. This request genuinely needs the larger budget.
+        assert info['estimated_working_mib'] > 512
         assert info['estimated_process_peak_mib'] > info['estimated_working_mib']
         assert info['estimated_working_mib'] > info['dense_working_estimate_mib']
         with pytest.raises(ValueError, match='selected budget 512 MiB'):

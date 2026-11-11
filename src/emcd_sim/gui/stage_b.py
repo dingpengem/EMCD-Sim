@@ -68,7 +68,7 @@ class EMCDWorker(QtCore.QThread):
                 r=calculate(self.structure,self.settings,self.config,progress,self.cancelled,**kwargs)
             else:
                 r=calculate_multisite(self.structure,self.settings,self.sites,self.config,progress,self.cancelled,
-                    energy_windows=self.energy_windows,reverse_magnetization=self.reverse_magnetization)
+                    energy_windows=self.energy_windows,reverse_magnetization=self.reverse_magnetization,**kwargs)
                 r['gui_multisite_input']=self.input_signature
                 if self.input_signature and len(self.input_signature)>3:
                     r['metadata']['ionization_participation']=dict(

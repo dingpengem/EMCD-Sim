@@ -286,6 +286,24 @@ def multislice_double_channeling_response(elastic,energy_ev,q_xy,thickness_nm,*,
     return responses['sites'],diagnostics
 
 
+def multislice_response_memory_terms(ni,no,depth_steps,samples,pixels,site_count,group_count,*,batch_pixels=32,prepared_incoming=False):
+    """Live task allocations in MiB; caller-owned incoming FFT fields are shared.
+
+    Depth diagnostics retain power and excluded-power indexing temporaries;
+    each task also gathers its own contiguous retained incoming coefficients.
+    Unprepared calls additionally own the incoming propagation and FFT setup.
+    """
+    batch=min(batch_pixels,pixels)
+    return {key:value/2**20 for key,value in dict(
+        response_kernel=96*batch*ni*no,
+        depth_diagnostics=16*depth_steps*samples+32*depth_steps*ni,
+        incoming_preparation=0 if prepared_incoming else (48*depth_steps+160)*samples,
+        fft_batch_scratch=192*batch*samples,
+        group_responses=288*pixels*group_count,
+        site_phases=64*site_count*ni*no,
+        native_workspace_reserve=8*2**20).items()}
+
+
 def multislice_double_channeling_group_responses(elastic,energy_ev,q_xy,thickness_nm,positions_by_group,*,
         fft_grid=32,potential_cutoff=2.2,systematic_row=False,row_reduction=False,
         depth_steps=257,slice_step_nm=.04,outgoing_beams=None,outgoing_potential=True,
@@ -314,8 +332,9 @@ def multislice_double_channeling_group_responses(elastic,energy_ev,q_xy,thicknes
     if any(p.ndim!=2 or p.shape[1:]!=(3,) or not len(p) or not np.isfinite(p).all() for p in positions_by_group.values()):
         raise ValueError('Groups require finite nonempty explicit fractional positions')
     b=min(batch_pixels,len(q));sites=max(len(elastic.crystal.species),sum(len(p) for p in positions_by_group.values()))
-    dense=96*b*ni*no/2**20
-    working=(dense+(64*depth_steps*samples+192*b*samples+32*len(q)*9*len(positions_by_group)+64*sites*ni*no)/2**20+8)
+    terms=multislice_response_memory_terms(ni,no,depth_steps,samples,len(q),sites,len(positions_by_group),
+        batch_pixels=batch_pixels,prepared_incoming=prepared_incoming is not None)
+    dense=terms['response_kernel'];working=sum(terms.values())
     with reserve_memory(working,memory_budget_mib,dense_mib=dense) as admission:
         grid=prepared_grid if prepared_grid is not None else ProjectedFFT.build(elastic,grid_points=fft_grid,
             potential_cutoff=potential_cutoff,systematic_row=systematic_row,row_reduction=row_reduction,projected_geometry=projected_geometry,

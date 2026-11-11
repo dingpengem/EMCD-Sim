@@ -104,7 +104,8 @@ def calculation_blas_guard(cancelled=None):
             previous.append((get,set_threads,int(get())))
             set_threads(1)
             if int(get())!=1:raise ValueError('Single-thread BLAS verification failed: '+info['library'])
-        yield [dict(info,threads=int(get())) for get,_,info in runtimes]
+        yield [dict(info,threads=int(get()),**({'threading_mode':'single'}
+            if info.get('backend')=='Accelerate' else {})) for get,_,info in runtimes]
     finally:
         try:
             restoration_error=None
@@ -188,11 +189,14 @@ def worker_plan(settings,cfg,n,*,native=None):
     for method in methods:
         if cfg.channeling_model=='single':auto=1
         elif method=='bloch':
-            dense=80*n**4/2**20
-            auto=1 if native.get('platform')=='win32' else min(4,max(1,int(1200/(dense+40))))
+            from ..double_channeling import bloch_response_memory_terms
+            scratch=sum(bloch_response_memory_terms(n,n,cfg.depth,min(64,cfg.grid**2),(1,),
+                'analytic' if cfg.systematic_row else 'numerical').values())
+            auto=1 if native.get('platform')=='win32' else min(4,max(1,int(1200/(scratch+40))))
         else:auto=min(MAX_WORKERS,native.get('cpu_count') or 1)
         count=auto if mode=='automatic' else requested;effective[method]=count
         if cfg.channeling_model=='single' and count!=1:
+            effective[method]=1
             blocked=True;risk='UNVERIFIED COMBINATION';messages.append('Single Channeling has no parallel detector executor; request 1 or Automatic.')
         if cfg.channeling_model=='double' and method=='bloch' and native.get('platform')=='win32':
             if count>1 and native.get('threads')!=1 and not native.get('automatic_thread_control',False):
@@ -204,7 +208,9 @@ def worker_plan(settings,cfg,n,*,native=None):
             elif not (matched and (count==1 and native.get('threads') in (1,12) or count==4 and native.get('threads')==1)):
                 if risk!='KNOWN UNSAFE':risk='UNVERIFIED COMBINATION'
         elif cfg.channeling_model=='double':risk='UNVERIFIED COMBINATION'
-    if native.get('threads') is None:
+    if native.get('threads') is None and native.get('backend')=='Accelerate' and native.get('automatic_thread_control'):
+        messages.append('Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.')
+    elif native.get('threads') is None:
         if risk!='KNOWN UNSAFE':risk='UNVERIFIED COMBINATION'
         messages.append('Native backend/thread count Unknown; this combination is not verified safe.')
     if risk=='UNVERIFIED COMBINATION' and not blocked:
@@ -232,11 +238,14 @@ def preview_text(settings,cfg,info):
     p=info['execution'];native=p['native'];counts=', '.join(k+': '+str(v) for k,v in p['effective_workers'].items())
     peak=info.get('estimated_process_peak_mib')
     peak_text=f'{peak:.1f} MiB' if peak is not None else 'Unknown'
+    threads=(str(native['threads']) if native['threads'] is not None else
+        'Automatic (fixed count unavailable; execution uses verified single-thread mode)'
+        if native.get('backend')=='Accelerate' and native.get('automatic_thread_control') else 'Unavailable from runtime introspection')
     return (f'Voltage: {settings.voltage:g} kV | Beam cutoff: {settings.beam_cutoff:g} Å⁻¹ | Potential cutoff: {settings.potential_cutoff:g} Å⁻¹\n'
         f"Retained beams: {info['bw_beams']} / {info['fft_harmonics']} FFT harmonics | Propagation: {cfg.propagation} | {cfg.channeling_model.title()} Channeling\n"
         f"Energy samples: {cfg.energy_points} | Angular grid: {cfg.grid}×{cfg.grid}\n"
         f"Requested workers: {p['requested_workers']} | Effective workers: {counts}\n"
-        f"NumPy BLAS: {native['backend']} {native['version']} | BLAS threads: {native['threads'] if native['threads'] is not None else 'Unknown'} | CPUs: {native['cpu_count']}\n"
+        f"NumPy BLAS: {native['backend']} {native['version']} | BLAS threads: {threads} | CPUs: {native['cpu_count']}\n"
         f"Estimated peak RAM: {peak_text} | Budget: {cfg.memory_budget_mib} MiB\n"
         f"Available RAM: {info.get('available_ram_mib',0):.1f} MiB (50% guard); active reservations: {info.get('concurrent_reserved_working_mib',0):.1f} MiB. Dense bound: {info['dense_working_estimate_mib']:.1f} MiB.\n") + (
         f"Status: {p['status']} — {p['risk']}\n"+' '.join(p['messages'])+'\n'+p['policy']+

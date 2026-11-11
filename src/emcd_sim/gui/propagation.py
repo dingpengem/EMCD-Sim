@@ -86,11 +86,21 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     if hkl is None:hkl=actual_geometry[2]
     if tuple(hkl)!=actual_geometry[2]:raise ValueError('Beam support changed during numerical preflight')
     n=len(hkl);pixels=cfg.grid**2;mesh=cfg.fft_grid**2
+    if ionization_sites is not None and cfg.channeling_model=='double' and detector_support_pixels is None:
+        from ..geometry import VirtualDetector
+        axis=np.linspace(-cfg.halfwidth,cfg.halfwidth,cfg.grid)
+        qx,qy=np.meshgrid(axis,axis,indexing='xy')
+        supports=[VirtualDetector(tuple(center),cfg.radius).integration_weights(qx,qy,
+            mode='fractional',subpixels=cfg.subpixels)>0 for center in cfg.centers]
+        detector_support_pixels=int(np.logical_or.reduce(supports).sum())
     from .parallel_resources import worker_plan,require_supported
     execution=worker_plan(settings,cfg,n)
-    pair=16*(pixels if cfg.angular_maps else min(pixels,64))*n*n/2**20;dense=4*pair
+    # Both Global and Local Single kernels contract at most 64 pixels at once,
+    # even when selected maps retain a full angular grid.
+    pair=16*min(pixels,64)*n*n/2**20;dense=4*pair
     info=dict(bw_beams=n,fft_harmonics=0,potential_nonzero_harmonics=0,single_complex_pair_mib=pair,dense_working_estimate_mib=dense,
-        fft_storage_working_mib=0.,coherence_working_mib=16*cfg.depth*n*n/2**20,propagation=cfg.propagation,
+        # pair + adjacent-depth sum + weighted/divided trapezoid temporaries.
+        fft_storage_working_mib=0.,coherence_working_mib=64*cfg.depth*n*n/2**20,propagation=cfg.propagation,
         fft_grid=cfg.fft_grid,slice_step_nm=cfg.slice_step,depth_nodes=cfg.depth)
     info['numerical_warnings']=[]
     if settings.basis_mode=='full' and not cfg.systematic_row:
@@ -151,19 +161,22 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     multisite_terms=(multisite_memory_terms(cfg,len(ionization_sites.groups))
                      if ionization_sites is not None and cfg.channeling_model=='single' else {})
     additional_retained_working_mib+=sum(multisite_terms.values())
-    info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20+additional_retained_working_mib
+    info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*min(64,pixels)*n+64*n*n*len(structure.atoms))/2**20+additional_retained_working_mib
     info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+info['retained_results_working_mib']
     if cfg.channeling_model=='double':
         bw_dense=80*n**4/2**20
         bw_work=bw_dense+(128*(n*n+cfg.depth*(2*n+12))+144*pixels)/2**20+8
         samples=cfg.fft_grid if cfg.systematic_row else mesh
-        ms_dense=96*32*n*n/2**20
-        ms_work=ms_dense+(64*cfg.depth*samples+192*32*samples+32*32*9+64*len(structure.atoms)*n*n)/2**20+8
+        from ..multislice_double_channeling import multislice_response_memory_terms
+        ms_terms=multislice_response_memory_terms(n,n,cfg.depth,samples,min(32,pixels),
+            len(structure.atoms),len(ionization_sites.groups) if ionization_sites is not None else 1,
+            prepared_incoming=True)
+        ms_dense=ms_terms['response_kernel'];ms_work=sum(ms_terms.values())
         if ionization_sites is not None:
             count=len(ionization_sites.groups)
             bw_group=(144*min(64,pixels)*(count-1)+64*n*n*len(structure.atoms))/2**20
             ms_group=288*min(32,pixels)*(count-1)/2**20
-            bw_work+=bw_group;ms_work+=ms_group
+            bw_work+=bw_group
             info['multisite_group_response_working_mib']=dict(bloch=bw_group,fft_multislice=ms_group)
         if cfg.propagation in ('bloch','both'):
             from ..double_channeling import bloch_response_memory_terms
@@ -192,11 +205,28 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
                 info['memory_breakdown_mib']=dict(shared_preparation=shared,**result_terms,
                     per_worker_scratch=bw_work,concurrent_scratch=execution['effective_workers']['bloch']*bw_work)
                 info['bloch_worker_memory_mib']=bw_terms
+        if cfg.propagation=='fft-multislice':
+            if ionization_sites is not None:
+                result_terms=multisite_bw_double_memory_terms(cfg,len(ionization_sites.groups),detector_support_pixels)
+            else:
+                from ..mdff_edges import selected_samples
+                result_terms=dict(provider_tensors=576*cfg.energy_points/2**20,
+                    selected_group_maps=128*len(selected_samples(cfg))*pixels/2**20 if cfg.angular_maps else 0.,
+                    group_detector_spectra=256*cfg.energy_points/2**20,detector_responses=160*pixels/2**20)
+            shared=(64*n*n*len(structure.atoms)+16*cfg.depth*n*n+128*(n*n+cfg.depth*n)+64*pixels)/2**20
+            info['retained_results_working_mib']=shared+sum(result_terms.values())+additional_retained_working_mib
+            info['memory_breakdown_mib']=dict(shared_preparation=shared,**result_terms,
+                fft_storage=info['fft_storage_working_mib'],concurrent_scratch=execution['effective_workers']['fft-multislice']*ms_work)
+            info['multislice_worker_memory_mib']=ms_terms
         engines=[];densities=[]
         if cfg.propagation in ('bloch','both'):engines.append(execution['effective_workers']['bloch']*bw_work);densities.append(bw_dense)
         if cfg.propagation in ('fft-multislice','both'):engines.append(execution['effective_workers']['fft-multislice']*ms_work);densities.append(ms_dense)
         dense=max(densities);info['dense_working_estimate_mib']=dense
-        info['estimated_working_mib']=max(engines)+info['retained_results_working_mib']+info['fft_storage_working_mib']
+        # Depth quadrature finishes before detector tasks start; it is one
+        # preparation peak, not scratch replicated across detector workers.
+        preparation_headroom=max(0.,info['coherence_working_mib']-max(engines))
+        info['estimated_working_mib']=max(engines)+preparation_headroom+info['retained_results_working_mib']+info['fft_storage_working_mib']
+        if cfg.propagation=='fft-multislice':info['memory_breakdown_mib']['preparation_headroom']=preparation_headroom
         info['detector_workers']=dict(execution['effective_workers'])
     if multisite_terms:
         info['multisite_energy_batch_size']=min(cfg.energy_points,MULTISITE_ENERGY_BATCH)
@@ -211,14 +241,20 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
         admission=assess_memory(info['estimated_working_mib'],cfg.memory_budget_mib,dense_mib=dense,reject=False)
         original_workers=dict(execution['effective_workers'])
         while (admission.get('rejected') and cfg.worker_mode=='automatic' and cfg.channeling_model=='double'
-               and execution['effective_workers'].get('fft-multislice',1)>1):
-            execution['effective_workers']['fft-multislice']-=1
+               and any(count>1 for count in execution['effective_workers'].values())):
+            method=max((key for key,count in execution['effective_workers'].items() if count>1),
+                key=lambda key:execution['effective_workers'][key]*(bw_work if key=='bloch' else ms_work))
+            execution['effective_workers'][method]-=1
             engines=[count*(bw_work if method=='bloch' else ms_work) for method,count in execution['effective_workers'].items()]
-            info['estimated_working_mib']=max(engines)+info['retained_results_working_mib']+info['fft_storage_working_mib']
+            preparation_headroom=max(0.,info['coherence_working_mib']-max(engines))
+            info['estimated_working_mib']=max(engines)+preparation_headroom+info['retained_results_working_mib']+info['fft_storage_working_mib']
             info['detector_workers']=dict(execution['effective_workers'])
             admission=assess_memory(info['estimated_working_mib'],cfg.memory_budget_mib,dense_mib=dense,reject=False)
         if original_workers!=execution['effective_workers']:
-            execution['messages'].append('Automatic detector-worker count was limited by the current memory budget/RAM; numerical settings are unchanged.')
+            execution['messages'].append(f'Automatic detector-worker counts limited by the current memory budget/RAM: {original_workers} → {execution["effective_workers"]}; numerical settings are unchanged.')
+            if info.get('memory_breakdown_mib'):
+                info['memory_breakdown_mib']['concurrent_scratch']=max(engines)
+                if cfg.propagation=='fft-multislice':info['memory_breakdown_mib']['preparation_headroom']=preparation_headroom
         info.update(admission)
         if admission.get('rejected'):
             # A native-thread caution is not permission to exceed memory limits.

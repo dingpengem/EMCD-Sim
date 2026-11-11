@@ -321,7 +321,7 @@ def _multisite_double_detector_data(model,sites,plan,cfg,qx,qy,weights,detector_
 
 
 def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None,
-                       cancelled=lambda:False,*,energy_ev=None,energy_windows=None,reverse_magnetization=False):
+                       cancelled=lambda:False,*,energy_ev=None,energy_windows=None,reverse_magnetization=False,execution_policy=None):
     """Multi-site Single or Double Channeling with BW or FFT Multislice.
 
     Supply a common energy_ev covered by ALL providers, or energy_windows
@@ -402,14 +402,15 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
     # Account for retained group/total arrays and full-energy query work in
     # addition to the existing conservative propagation/kernel estimates.
     methods_count=2 if cfg.propagation=='both' else 1
-    extra=(16*len(energy)*int(support.sum())*(2*len(sites.groups)+12)
-           +576*len(energy)*len(sites.groups)
-           +methods_count*64*len(selections)*qx.size*(len(sites.groups)+2)
-           +methods_count*256*len(energy)*(len(sites.groups)+2))/2**20 if double and cfg.propagation!='bloch' else 0.
+    # Both DC backends use the same selected-map / bounded energy scheduler.
+    # numerical_info accounts for its live block and retained results once.
+    extra=0.
     # Include retained multi-site arrays BEFORE worker admission, so the
     # existing automatic memory limit sees the complete calculation footprint.
     info=numerical_info(structure,settings,cfg,hkl=hkl,ionization_sites=sites,
         additional_retained_working_mib=extra,detector_support_pixels=int(detector_support.sum()))
+    if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
+        raise ValueError('Resources changed since preflight; Run again to review the new effective worker counts.')
     if double:info['multisite_additional_working_mib']=extra
     working=info['estimated_working_mib']
     z=np.linspace(0,settings.thickness,cfg.depth)
