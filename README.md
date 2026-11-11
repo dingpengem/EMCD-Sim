@@ -2,9 +2,16 @@
 
 Research software for electron magnetic circular dichroism (EMCD), core-loss EELS, and dynamical electron diffraction in transmission electron microscopy.
 
-**[v0.9.0-beta.1 Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1) — prerelease.** Download the complete Windows ZIP from its release assets. This version includes multi-site calculations and crystallographic-grouping, Material/MDFF, sampling, results and persistence workflows. See the [release notes and verification limits](docs/RELEASE_NOTES_0_9_0_BETA_1.md). Older binaries do not acquire these changes automatically.
+## Download — Research Beta
 
-[Windows download](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/EMCD-Sim-v0.9.0-beta.1-Windows.zip) | [Installation](docs/INSTALL_WINDOWS.md) | [Quick Start](docs/QUICK_START.md) | [Tutorial](docs/TUTORIAL.md) | [User Guide](docs/USER_GUIDE.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md)
+| Platform | App download | Installation guide | Quick Start |
+| --- | --- | --- | --- |
+| **Windows 10/11 x64** | [Windows v0.9.0-beta.1 ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/EMCD-Sim-v0.9.0-beta.1-Windows.zip) | [Install on Windows](docs/INSTALL_WINDOWS.md) | [Windows Quick Start](docs/QUICK_START.md) |
+| **macOS Apple Silicon ARM64 (macOS 15+)** | [macOS v0.9.0-beta.1 ARM64 ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1-macos-arm64.1/EMCD-Sim-v0.9.0-beta.1-macos-arm64.1-macOS-ARM64.zip) | [Install on macOS](docs/INSTALL_MACOS.md) | [macOS Quick Start](docs/QUICK_START_MACOS.md) |
+
+The Windows and macOS binaries are distinct **Research Beta prereleases**, built from different source commits. Windows: `ef81576e2692c2c826bfbe2b89f21e00b05936e4`. macOS: `03dc8f8d1f0374984c9fc81866eaa32ce48008d0`. Packaged users do not need Python or Conda. **macOS is ad-hoc signed but not Apple notarized**; check the installation guide for first-launch limitations.
+
+[Windows release notes](docs/RELEASE_NOTES_0_9_0_BETA_1.md) · [macOS release notes](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1-macos-arm64.1/docs/RELEASE_NOTES_MACOS_ARM64_1.md) · [Complete Tutorial](docs/TUTORIAL.md) · [User Guide](docs/USER_GUIDE.md) · [MDFF workflows](docs/MDFF_WORKFLOWS.md)
 
 ## Capabilities
 
@@ -25,13 +32,13 @@ Research software for electron magnetic circular dichroism (EMCD), core-loss EEL
 5. **Run EMCD / EELS**. Automatic internal BLAS limits are verified for the calculation and restored afterward; users need no environment-variable workaround. Manual outer workers remain subject to CPU/memory admission. Progress reports actual work and elapsed time; **Cancel** stops cooperatively.
 6. Inspect Results without recalculating. Save the complete project with **File → Save / Save As…**; restore a run or compare exactly two calculations from **Project Results**. Export controls are beside the corresponding results.
 
-Use the [Quick Start](docs/QUICK_START.md) for a deliberately small first case. Extract the complete Windows package and keep `_internal` beside `EMCD-Sim.exe`. Install the documented Microsoft x64 v14 runtime separately. Python, Conda and WIEN2k are not required to run the EXE. The accompanying source kit contains the matching application source and required dependency sources/replacement instructions.
+Use the platform-specific [Windows Quick Start](docs/QUICK_START.md) or [macOS Quick Start](docs/QUICK_START_MACOS.md) for a deliberately small first case. Keep the entire extracted package intact. Windows users should follow the Microsoft x64 v14 runtime instructions; Mac users need Apple Silicon and macOS 15+. Packaged users do not need Python, Conda or WIEN2k. See each release's matching corresponding-source and dependency notices.
 
 ## Scientific and verification limits
 
 Signals preserve declared relative provider amplitudes; they are not automatically calibrated cross-element intensities, electron counts, or magnetic moments. Synthetic Atomic/Manual inputs do not establish quantitative Fe₃O₄, NiFe₂O₄ or Cr spectra. The model retains finite ZOLZ, projected IAM and continuous-depth localized ionization approximations. General beam/FFT/depth/detector convergence and complex-condition BW/MS convergence are incomplete. Magnetization direction is not a complete anisotropic tensor frame; unsupported fixed-source rotations remain rejected. General tensor rotation, magCIF and automatic magnetic-order inference are absent.
 
-The Research Beta has bounded numerical/native evidence, **not a new complete regression pass**. Historical failed/incomplete application-regression and source-guard coverage remains recorded separately. Original-size Fe₃O₄ MS completion and independent clean-PC/VM acceptance remain unverified. See [release evidence](docs/RELEASE_NOTES_0_9_0_BETA_1.md) before interpreting readiness. Linux/macOS packages are not certified.
+The Research Beta has bounded numerical/native evidence, **not a new complete regression pass**. Historical failed/incomplete application-regression and source-guard coverage remains recorded separately. Original-size Fe₃O₄ MS completion and independent clean-PC/VM acceptance remain unverified. See [release evidence](docs/RELEASE_NOTES_0_9_0_BETA_1.md) before interpreting readiness. Linux builds remain uncertified. The macOS ARM64 Research Beta has focused native M2 Pro acceptance, but not comprehensive human GUI/trackpad or multi-model Mac acceptance; authentic matched Windows/macOS numerical comparisons remain incomplete.
 
 ## Documentation and citation
 
