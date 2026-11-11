@@ -42,7 +42,11 @@ def calculate_prepared(structure,settings,cfg,progress,cancelled,*,energy_ev=Non
     # Direct integration requires full physical aperture coverage as well.
     if any(max(abs(np.asarray(p)))+cfg.radius>cfg.halfwidth for p in cfg.centers):raise ValueError('Map halfwidth must fully cover both physical detector apertures')
     from .propagation import propagate, compare_methods, numerical_info
-    info=numerical_info(structure,settings,cfg,hkl=hkl,check_memory=False)
+    # Report the resolved grid, not the requested uniform-point control. Keep
+    # cfg unchanged so legacy projects retain their original sampling request.
+    info=numerical_info(structure,settings,replace(cfg,energy_points=len(energy)),hkl=hkl,check_memory=False)
+    info.update(evaluated_energy_samples=len(energy),
+        requested_uniform_energy_points=cfg.energy_points if cfg.energy_sampling=='uniform' else None)
     memory=info['dense_working_estimate_mib']
     stage('Generating common +M and -M tensors');ts=provider.tensors(energy,R)
     z=np.linspace(0,settings.thickness,cfg.depth)

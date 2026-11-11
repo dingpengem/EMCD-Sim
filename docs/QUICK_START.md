@@ -44,3 +44,11 @@ not a change to the published v0.9.0-beta.1 Windows package.
 For **Local Site Magnetization Mode**, configure each participating group explicitly. Use original ASE indices; split crystallographic groups manually if magnetic sublattices differ. Uncheck **Ionize / Group ID** for oxygen or other non-ionizing groups, keeping those atoms elastic. Local mode locks Global M; no implicit Global MDFF or magnetic order is supplied. [Tutorial](TUTORIAL.md#4-local-site-groups-and-non-ionizing-atoms) explains group creation, accepted/draft directions and validated reversal pairs.
 
 The full [Tutorial](TUTORIAL.md) includes illustrations, normal Save/Open/export steps, diagnostics and scientific limitations. Historical v0.8 menu instructions belong to their [tagged guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/QUICK_START.md).
+
+In development source, new single-element result metadata distinguishes the
+requested `requested_uniform_energy_points` from `evaluated_energy_samples`.
+`numerics.energy_samples` now reports the evaluated count. For example, 241
+uniform points plus two distinct exact selected energies produce 243 samples.
+The saved sampling controls remain unchanged. Older results may contain only
+the historical `energy_samples` diagnostic; their actual energy array remains
+authoritative, and opening them does not rewrite their metadata.

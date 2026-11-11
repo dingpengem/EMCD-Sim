@@ -64,3 +64,25 @@ def test_resident_reserved_arrays_are_not_added_to_rss_twice(monkeypatch):
         info=memory_budget.assess_memory(10,512)
         assert info['estimated_process_peak_mib']==454.5
     assert memory_budget.assess_memory(10,512)['concurrent_calculations']==0
+
+
+@pytest.mark.parametrize('sampling,requested,actual',[('edges',241,2),('uniform',9,11)])
+def test_saved_energy_diagnostics_distinguish_request_from_evaluated_grid(tmp_path,sampling,requested,actual):
+    from emcd_sim.gui.emcd_forward import ForwardSettings,calculate
+    from emcd_sim.gui.geometry import Structure,Settings
+    from emcd_sim.gui.project_io import save_project,load_project
+    cfg=ForwardSettings(axis_declared=True,grid=9,depth=5,subpixels=8,
+        energy_scope='edges' if sampling=='edges' else 'full',energy_sampling=sampling,
+        energy_points=requested,worker_mode='manual',parallel_workers=1)
+    with calculation_blas_guard():
+        result=calculate(Structure.nickel(),Settings(thickness=.2,beam_cutoff=.9,potential_cutoff=1.8),cfg)
+    assert len(result['spectra']['energy_ev'])==actual
+    info=result['metadata']['numerics']
+    assert info['energy_samples']==info['evaluated_energy_samples']==actual
+    assert info['requested_uniform_energy_points']==(requested if sampling=='uniform' else None)
+    assert result['config'].energy_points==requested
+    save_project(result,tmp_path/'saved');restored=load_project(tmp_path/'saved')
+    assert restored['config'].energy_points==requested
+    for key in ('energy_samples','evaluated_energy_samples','requested_uniform_energy_points'):
+        assert restored['metadata']['numerics'][key]==info[key]
+    np.testing.assert_array_equal(restored['spectra']['energy_ev'],result['spectra']['energy_ev'])
