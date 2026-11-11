@@ -13,7 +13,7 @@ import numpy as np
 from PySide6 import QtCore, QtWidgets
 
 
-def run(output):
+def run(output, *, release=False):
     from ase.build import bulk
     from ase.io import write
     from ase.spacegroup import crystal
@@ -98,6 +98,8 @@ def run(output):
         w.detectors=np.array([[.2,.2],[.2,-.2]]);w.refresh()
     def calculate(w,name):
         print('Calculating:',name,flush=True)
+        if release:
+            w.worker_mode.setCurrentIndex(0);w.memory_mode.setCurrentIndex(0)
         w.refresh();w.emcd_stale()
         assert w.emcd_button.isEnabled(),w.emcd_button.toolTip()
         # No selected history row means the standard GUI retains a new run.
@@ -106,6 +108,10 @@ def run(output):
         w.start_emcd();assert w.busy
         wait(w);assert w.run_outcome=='completed',w.run_outcome
         r=w.emcd_result
+        if release:
+            final=w.resource_panel.finalized['info']
+            assert final['execution']['effective_workers']==r['metadata']['execution']['effective_workers']
+            assert final['memory_budget_mib']==r['config'].memory_budget_mib
         for value in r['spectra'].values():
             if isinstance(value,np.ndarray):assert np.isfinite(value).all()
         if r['config'].model=='multisite':
@@ -122,6 +128,7 @@ def run(output):
         w.grab().save(str(out/(name+'_window.png')))
         report['cases'][name]=dict(settings=asdict(r['settings']),config=asdict(r['config']),methods=list(r['methods']),execution=r.get('metadata',{}).get('execution'),
                                    fingerprints=fingerprints(r))
+        if release:report['cases'][name]['final_allocation_notice']=w.resource_panel.run_allocation_text
         return r
     def save_reopen(w,name):
         w.emcd_stale()
@@ -151,7 +158,14 @@ def run(output):
         assert len(ni.structure.atoms)==4
         ni.model_box.setCurrentIndex(0);ni.source_path.setText(str(root/'data/wien2k_ni/Ni_fm.xmcd'))
         ni.source_path.editingFinished.emit();ni.declaration.setChecked(True)
-        assert ni.mdff_dialog.apply_configuration() is not None,ni.mdff_dialog.status.text()
+        if release:
+            from PySide6 import QtTest
+            d=ni.open_mdff_context();app.processEvents()
+            QtTest.QTest.mouseClick(d.buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply),QtCore.Qt.MouseButton.LeftButton)
+            app.processEvents()
+            assert ni.structure_viewer.isVisible() and ni.structure_viewer.isActiveWindow() and not d.isVisible()
+            record('Ni: native MDFF Done click returns to active Viewer')
+        else:assert ni.mdff_dialog.apply_configuration() is not None,ni.mdff_dialog.status.text()
         ni.structure_viewer.apply_groups()
         ni.start_preview();wait(ni);assert ni.last_result is not None
         record('Ni CIF import and diffraction worker')
@@ -240,6 +254,10 @@ def run(output):
         assert cr.run_outcome=='cancelled',cr.run_outcome
         assert fingerprints(cr.emcd_result)==preserved and len(cr.browser.registry.records)==history
         record('Cr: cooperative real-worker cancellation preserves prior result/history')
+        if release:
+            cr.set_values(dict(grid=9,depth=3,subpixels=4,thickness=.1))
+            calculate(cr,'Cr_restart_after_cancel')
+            record('Cr: completed restart after cancellation')
         record('Cr: manual magnetic subgroups, opposite M, reversal-even/odd identities')
         retire(cr);cr=e=d=None;gc.collect()
 

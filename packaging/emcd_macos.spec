@@ -7,6 +7,7 @@ import sys
 from datetime import datetime, timezone
 from sysconfig import get_path
 from PyInstaller.utils.hooks import collect_dynamic_libs
+from PyInstaller.utils.hooks.qt import pyside6_library_info
 
 root = Path(SPECPATH).parent
 if sys.platform != 'darwin' or platform.machine() != 'arm64':
@@ -14,15 +15,23 @@ if sys.platform != 'darwin' or platform.machine() != 'arm64':
 sys.path[:0] = [str(root/'src'), str(root/'packaging')]
 from emcd_sim.gui.runtime import build_info
 from check_windows_metadata import LICENSE_DISTRIBUTIONS
-license_distributions=LICENSE_DISTRIBUTIONS+('PySide6_Pdf','PySide6_WebEngine','pyinstaller')
+# Exclude unused plugin roots before collecting their transitive frameworks.
+collect_plugins = pyside6_library_info.collect_plugins
+def mac_plugins(kind):
+    return [(source,target) for source,target in collect_plugins(kind)
+            if Path(source).name not in ('libqpdf.dylib','libqtvirtualkeyboardplugin.dylib')]
+pyside6_library_info.collect_plugins = mac_plugins
+license_distributions=LICENSE_DISTRIBUTIONS+('pyinstaller',)
 stage = Path(workpath)/'resources'
 stage.mkdir(parents=True, exist_ok=True)
 info = build_info()
 info.update(build_utc=datetime.now(timezone.utc).isoformat(), build_platform=platform.platform(), python=platform.python_version(),
-            architecture=platform.machine(), candidate='local macOS development candidate',
+            architecture=platform.machine(), candidate='macOS ARM64 Research Beta',
+            release_tag='v0.9.0-beta.1-macos-arm64.1',
             versions={n: version(n) for n in license_distributions})
 (stage/'build_info.json').write_text(json.dumps(info, indent=2), encoding='utf-8')
 datas = [(str(stage/'build_info.json'), '.'), (str(root/'LICENSE'), '.'),
+         (str(root/'packaging/assets/macos-licenses'), 'licenses/macos'),
          (str(root/'data/wien2k_ni/Ni_fm.xmcd'), 'data/wien2k_ni'),
          (str(root/'packaging/assets/examples'), 'examples'),
          (str(root/'tests/fixtures/Fe3O4_inverse_spinel.cif'), 'examples'),
@@ -36,7 +45,7 @@ if not python_license.is_file():raise ValueError('Python runtime LICENSE.txt is 
 datas.append((str(python_license),'licenses/python'))
 for record_path in (Path(sys.base_prefix)/'conda-meta').glob('*.json'):
     record=json.loads(record_path.read_text())
-    if record['name'] not in ('python','openssl','bzip2','libffi','libexpat','libzlib','zlib','sqlite','xz','readline'):continue
+    if record['name'] not in ('python','openssl','bzip2','libffi','libexpat','libzlib','zlib','sqlite','xz','ncurses','libcxx'):continue
     package=Path(record.get('extracted_package_dir') or record.get('link',{}).get('source',''))
     notices=package/'info/licenses'
     if not notices.is_dir():raise ValueError('Missing native runtime notices: '+str(record_path))
@@ -52,14 +61,18 @@ for name in license_distributions:
                 datas.append((str(path), 'licenses/'+name+'/'+str(entry.parent).split('.dist-info/', 1)[-1]))
 # License texts are shared; the Windows component inventory is deliberately excluded.
 for path in (root/'packaging/assets/qt-licenses').glob('*.txt'):
-    if path.name != 'README.txt':
+    if path.name in ('LGPL-3.0-only.txt','GPL-3.0-only.txt','GPL-2.0-only.txt','GFDL-1.3-no-invariants-only.txt',
+                     'qtbase-NOTICES.txt','qtsvg-NOTICES.txt','qtimageformats-NOTICES.txt','pyside-setup-NOTICES.txt'):
         datas.append((str(path), 'licenses/qt'))
 a = Analysis([str(root/'packaging/launcher_macos.py')], pathex=[str(root/'src'), str(root/'packaging')],
     binaries=collect_dynamic_libs('spglib'), datas=datas,
     hiddenimports=['matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg',
                    'ase.io.cif','ase.io.jsonio','ase.io.extxyz'],
     hooksconfig={'matplotlib': {'backends': ['Agg','QtAgg','svg']}},
-    excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow'],
+    excludes=['tkinter','readline','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow',
+              'PySide6.QtPdf','PySide6.QtPdfWidgets','PySide6.QtVirtualKeyboard',
+              'PySide6.QtQml','PySide6.QtQuick','PySide6.QtQuickWidgets','PySide6.QtQuickControls2',
+              'PySide6.QtOpenGL','PySide6.QtOpenGLWidgets'],
     noarchive=False)
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='EMCD-Sim', console=False,
@@ -67,5 +80,5 @@ exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='EMCD-Sim', console=Fa
 coll = COLLECT(exe, a.binaries, a.datas, name='EMCD-Sim')
 app = BUNDLE(coll, name='EMCD-Sim.app', bundle_identifier='org.emcd-sim.desktop',
              info_plist={'CFBundleShortVersionString':'0.9.0',
-                         'CFBundleVersion':'0.9.0.1', 'NSHighResolutionCapable':True, 'LSMinimumSystemVersion':'15.0',
-                         'NSHumanReadableCopyright':'EMCD-Sim contributors; local research candidate'})
+                         'CFBundleVersion':'0.9.0.2', 'NSHighResolutionCapable':True, 'LSMinimumSystemVersion':'15.0',
+                         'NSHumanReadableCopyright':'EMCD-Sim contributors; macOS ARM64 Research Beta'})
