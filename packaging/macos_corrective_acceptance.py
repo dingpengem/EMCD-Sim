@@ -6,7 +6,7 @@ RSS includes native allocations. Sampling is not an exact allocator high-water m
 from contextlib import contextmanager
 from dataclasses import asdict
 from pathlib import Path
-import gc,json,logging,sys,threading,time,traceback
+import gc,json,logging,sys,threading,time,traceback,resource
 import numpy as np
 from PySide6 import QtCore,QtWidgets,QtTest
 from emcd_sim.gui.app import MainWindow
@@ -118,7 +118,7 @@ def observe_blas(observations):
 def measure(app,w,errors,observations,seconds):
     # Settle pending initial/resized Qt paints before taking the baseline.
     app.processEvents();QtTest.QTest.qWait(150)
-    baseline=memory_snapshot()['process_rss_mib'];samples=[baseline];calculation_samples=[baseline]
+    memory_before=memory_snapshot();baseline=memory_before['process_rss_mib'];samples=[baseline];calculation_samples=[baseline]
     phase={'result_emitted':False};stop=threading.Event()
     def sample():
         while not stop.wait(.005):
@@ -126,6 +126,7 @@ def measure(app,w,errors,observations,seconds):
             if not phase['result_emitted']:calculation_samples.append(value)
     def emitted(*_):
         calculation_samples.append(memory_snapshot()['process_rss_mib']);phase['result_emitted']=True
+    usage=resource.getrusage(resource.RUSAGE_SELF);cpu_before=usage.ru_utime+usage.ru_stime
     sampler=threading.Thread(target=sample);sampler.start();started=time.perf_counter();worker=None;timed_out=False
     try:
         w.start_emcd();worker=w.worker if w.busy else None
@@ -135,7 +136,9 @@ def measure(app,w,errors,observations,seconds):
             timed_out=wait(app,w,seconds)
     finally:
         stop.set();sampler.join();samples.append(memory_snapshot()['process_rss_mib'])
-    return dict(elapsed_seconds=time.perf_counter()-started,baseline_rss_mib=baseline,
+    elapsed=time.perf_counter()-started;usage=resource.getrusage(resource.RUSAGE_SELF);cpu=usage.ru_utime+usage.ru_stime-cpu_before
+    return dict(elapsed_seconds=elapsed,process_cpu_seconds=cpu,average_cpu_cores=cpu/elapsed,baseline_rss_mib=baseline,
+        memory_before=memory_before,memory_after=memory_snapshot(),
         peak_rss_mib=max(samples),incremental_peak_mib=max(samples)-baseline,
         calculation_peak_rss_mib=max(calculation_samples),calculation_incremental_peak_mib=max(calculation_samples)-baseline,
         rss_samples=len(samples),errors=list(errors),time_limit_seconds=seconds,time_limit_reached=timed_out,
@@ -156,7 +159,7 @@ def validate_result(r):
 
 
 def run(root,output,profile='bounded'):
-    if profile not in ('bounded','medium','defaults','dialogs','lifecycle'):raise ValueError('Unknown corrective profile')
+    if profile not in ('bounded','medium','defaults','dialogs','lifecycle','adaptive-small','adaptive-confirm','adaptive-medium','adaptive-scaling','adaptive-lifecycle'):raise ValueError('Unknown corrective profile')
     root=Path(root).resolve();out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     logger=logging.getLogger('emcd_sim.gui');logger.addHandler(logging.FileHandler(out/'gui.log'));logger.setLevel(logging.INFO)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([]);app.setQuitOnLastWindowClosed(False)
@@ -168,12 +171,14 @@ def run(root,output,profile='bounded'):
     try:
         if profile=='dialogs':report['dialogs']=dialog_checks(app,root,out)
         else:
-            cases=([('Ni','global'),('Ni','local'),('Cr','local')] if profile=='bounded' else
-                [('Fe3O4','local'),('NiFe2O4','local')] if profile=='medium' else [('Ni','global'),('Cr','local')])
+            cases=([('NiFe2O4','local')] if profile=='adaptive-scaling' else
+                [('Ni','global'),('Ni','local'),('Cr','local')] if profile in ('bounded','adaptive-small','adaptive-confirm') else
+                [('Fe3O4','local'),('NiFe2O4','local')] if profile in ('medium','adaptive-medium') else [('Ni','global'),('Cr','local')])
             with observe_blas(observations):
                 for material,mode in cases:
                     for method in ('bloch','fft-multislice'):
                         for channel in ('single','double'):
+                            if profile=='adaptive-scaling' and (method!='fft-multislice' or channel!='double'):continue
                             name=f'{material}-{mode}-{method}-{channel}'
                             w,errors,normal=load(app,root,out,material,name)
                             w.show_structure_viewer();v=w.structure_viewer;v.set_magnetization_mode(mode)
@@ -182,15 +187,27 @@ def run(root,output,profile='bounded'):
                             v.apply_groups();assert not v.isVisible(),v.editor.status.text()
                             w.propagation_box.setCurrentIndex(0 if method=='bloch' else 1)
                             w.channeling_box.setCurrentIndex(0 if channel=='single' else 1);w.worker_mode.setCurrentIndex(1)
-                            if profile=='medium':
+                            if profile in ('medium','adaptive-medium','adaptive-scaling'):
                                 w.set_values(dict(grid=17,depth=9,fft_grid=24,beam=.65,potential=1.2));w.basis_mode.setCurrentIndex(0)
                             elif profile=='defaults':
                                 w.set_values(normal['values']);w.zone.setText(normal['zone']);w.target.setText(normal['target']);w.basis_mode.setCurrentIndex(0)
                                 w.energy_scope.setCurrentIndex(w.energy_scope.findData(normal['scope']))
-                            for count in ((1,2,4) if profile=='bounded' else (1,)):
-                                errors.clear();observations.clear();w.worker_count.setValue(count);w.refresh();w.emcd_stale()
+                            if profile=='adaptive-small':
+                                requests=['auto']+[n for n in (1,2,4,6,8,10) if n<=pr.MAX_WORKERS]
+                            elif profile=='adaptive-confirm':
+                                requests=['auto',min(8,pr.MAX_WORKERS) if channel=='double' else 1]
+                            elif profile in ('adaptive-medium','adaptive-scaling'):
+                                requests=['auto',1]+([n for n in (6,8) if n<=pr.MAX_WORKERS] if channel=='double' else [])
+                                if material=='NiFe2O4' and method=='fft-multislice' and channel=='double':requests=['auto']+[n for n in (1,2,4,6,8) if n<=pr.MAX_WORKERS]
+                            elif profile=='adaptive-lifecycle':requests=['auto']
+                            else:requests=(1,2,4) if profile=='bounded' else (1,)
+                            for request in requests:
+                                automatic=request=='auto';count=1 if automatic else request
+                                errors.clear();observations.clear();w.worker_mode.setCurrentIndex(0 if automatic else 1)
+                                if hasattr(w,'memory_mode'):w.memory_mode.setCurrentIndex(0 if automatic else 1)
+                                w.worker_count.setValue(count);w.refresh();w.emcd_stale()
                                 w.browser.table.clearSelection();w.browser.selection_timer.stop()
-                                row=dict(material=material,mode=mode,method=method,channel=channel,requested=count)
+                                row=dict(material=material,mode=mode,method=method,channel=channel,requested='Automatic' if automatic else count,memory_mode='automatic' if automatic else 'manual')
                                 try:
                                     cfg=w.forward_settings();sites=None
                                     if mode=='local':cfg,sites,windows,reverse,signature=applied_inputs(w,cfg)
@@ -200,7 +217,7 @@ def run(root,output,profile='bounded'):
                                 except Exception as exc:
                                     row.update(outcome='validation_rejected',errors=[str(exc)],traceback=traceback.format_exc())
                                     report['cases'].append(row);record();continue
-                                if profile=='lifecycle':
+                                if profile in ('lifecycle','adaptive-lifecycle'):
                                     before={k:v.copy() for k,v in arrays(w.emcd_result).items()};runs=len(w.browser.registry.records)
                                     w.start_emcd();assert w.busy,errors
                                     QtCore.QTimer.singleShot(10,w.cancel);wait(app,w)
@@ -208,25 +225,29 @@ def run(root,output,profile='bounded'):
                                     for key,value in before.items():np.testing.assert_array_equal(arrays(w.emcd_result)[key],value)
                                     row['cancel_blas']=list(observations);observations.clear()
                                     row['cancelled_without_result_loss']=True
-                                    w.worker_count.setValue(2);w.channeling_box.setCurrentIndex(0);w.start_emcd()
+                                    w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(2);w.channeling_box.setCurrentIndex(0);w.start_emcd()
                                     assert not w.busy and errors
                                     row['rejected_request']=list(errors);errors.clear()
-                                    w.worker_count.setValue(count);w.channeling_box.setCurrentIndex(0 if channel=='single' else 1)
+                                    w.worker_mode.setCurrentIndex(0 if automatic else 1);w.worker_count.setValue(count);w.channeling_box.setCurrentIndex(0 if channel=='single' else 1)
                                 row.update(measure(app,w,errors,observations,(120 if channel=='single' else 20) if profile=='defaults' else 90))
                                 if row['outcome']=='completed' and not errors:
-                                    r=w.emcd_result;a=validate_result(r);case_name=name+'-'+str(count)
+                                    r=w.emcd_result;a=validate_result(r);case_name=name+'-'+('auto' if automatic else str(count))
                                     np.savez_compressed(out/(case_name+'.npz'),**a)
                                     row.update(array_shapes={k:list(v.shape) for k,v in a.items()},execution=r['metadata']['execution'],
                                         worker_memory=r['metadata']['numerics'],executors=list(executors(r['metadata'].get('angular_evaluation',[]))),
                                         actual_calculation_seconds=r['metadata'].get('calculation_seconds'),
                                         masked_array_nonfinite_counts={k:int((~np.isfinite(v)).sum()) for k,v in a.items() if not np.isfinite(v).all()})
-                                    if profile in ('medium','lifecycle'):
+                                    if profile in ('medium','lifecycle','adaptive-lifecycle') or profile.startswith('adaptive-') and (automatic or request==requests[-1]):
                                         w.save_to_path(out/(case_name+'-project'));wait(app,w)
                                         reopened=MainWindow(out/(case_name+'-reopen'));reopened.store_ui_preferences=lambda:None
                                         reopened.error=errors.append;reopened.project_dirty=False;reopened.open_project_path(out/(case_name+'-project'));wait(app,reopened)
                                         for key,value in a.items():np.testing.assert_array_equal(arrays(reopened.emcd_result)[key],value)
                                         reopened.emcd_stale();assert 'inputs match' in reopened.eels_view.label.text(),reopened.eels_view.label.text()
-                                        row['save_reopen_arrays_and_freshness']=True;dispose(app,reopened)
+                                        row['save_reopen_arrays_and_freshness']=True
+                                        if profile.startswith('adaptive-'):
+                                            assert (reopened.memory_mode.currentIndex()==0)==automatic
+                                            assert reopened.worker_mode.currentIndex()==(0 if automatic else 1)
+                                        dispose(app,reopened)
                                 report['cases'].append(row);record()
                                 print(name,count,row['outcome'],row['errors'],round(row.get('elapsed_seconds',0),3),flush=True)
                             dispose(app,w)

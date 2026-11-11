@@ -15,6 +15,8 @@ def configuration_equal(left,right,*,portable_source=False):
     from .project_configuration import _encode_config
     def value(cfg):
         data=_encode_config(cfg)
+        # Resource admission changes execution, not the completed scientific arrays.
+        for key in ('worker_mode','parallel_workers','memory_budget_mib'):data.pop(key,None)
         # Called for already-validated group references. Moving a portable
         # attachment does not change its declared contents or parameters.
         if portable_source and data.get('source_sha256'):data['source']=''
@@ -66,7 +68,7 @@ def forward_settings(window):
         fft_generators=window.saved_fft_generators(),worker_mode=('automatic','manual')[window.worker_mode.currentIndex()],
         parallel_workers=window.worker_count.value(),channeling_model=('single','double')[window.channeling_box.currentIndex()],
         **window.sampling_fields(),
-        systematic_row=window.row_projection.isChecked(),memory_budget_mib=window.memory_budget.currentData(),
+        systematic_row=window.row_projection.isChecked(),memory_budget_mib=window.resource_budget(),
         propagation=('bloch','fft-multislice','both')[window.propagation_box.currentIndex()],
         fft_grid=window.spin['fft_grid'].value(),slice_step=window.spin['slice_step'].value(),
         grid=window.spin['grid'].value(),depth=window.spin['depth'].value(),subpixels=window.spin['subpixels'].value(),

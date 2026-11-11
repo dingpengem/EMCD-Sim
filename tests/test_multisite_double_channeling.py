@@ -208,7 +208,9 @@ def test_unsupported_or_uncovered_double_rejected_before_propagation(tmp_path,mo
     cfg=configuration(channeling_model='double',angular_maps=False)
     windows=disjoint_windows()
     if failure in ('unknown','both'):cfg=replace(cfg,propagation='unknown' if failure=='unknown' else 'both')
-    elif failure=='workers':cfg=replace(cfg,parallel_workers=5)
+    elif failure=='workers':
+        from emcd_sim.gui.parallel_resources import MAX_WORKERS
+        cfg=replace(cfg,parallel_workers=MAX_WORKERS+1)
     else:windows['A']=ModeledEdgeWindow((703.,730.),(710.,))
     def forbidden(*args,**kwargs):pytest.fail('Invalid multi-site double request started propagation')
     monkeypatch.setattr(bw,'prepare_incoming_bloch',forbidden)

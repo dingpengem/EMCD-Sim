@@ -75,8 +75,8 @@ def test_local_worker_rejects_a_changed_accepted_concurrency(tmp_path):
 def test_automatic_bw_admission_can_reduce_concurrency_but_manual_is_exact():
     native=dict(backend='Accelerate',version='test',threads=1,cpu_count=10,
         platform='darwin',automatic_thread_control=True)
-    s=Settings(zone=(0,0,1),target=(2,0,0),basis_mode='two-beam',beam_cutoff=.6)
-    c=ForwardSettings(channeling_model='double',grid=9,depth=3,memory_budget_mib=512)
+    s=Settings()
+    c=ForwardSettings(channeling_model='double',grid=97,depth=64,energy_points=2,memory_budget_mib=512)
     with patch('emcd_sim.gui.parallel_resources.native_backend_info',return_value=native),patch.object(
             memory_budget,'memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=360.)):
         automatic=numerical_info(Structure.nickel(),s,c)

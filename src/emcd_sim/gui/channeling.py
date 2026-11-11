@@ -42,6 +42,10 @@ def bw_executor_guard(method,cancelled):
 
 
 def worker_count(n,method):
+    if sys.platform=='darwin':
+        # Low-level callers provide no depth/angle workload. The GUI supplies
+        # its full adaptive execution plan explicitly; do not guess here.
+        return 1
     if method=='bloch' and sys.platform=='win32':return 1
     dense=80*n**4/2**20
     return min(4,max(1,int(1200/(dense+40)))) if method=='bloch' else 4
@@ -57,7 +61,7 @@ def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics
     from ..cancellation import check_cancelled
     from .parallel_resources import MAX_WORKERS,calculation_blas_guard
     if type(workers) is not int or not 1<=workers<=MAX_WORKERS:
-        raise ValueError('Unsupported detector worker count')
+        raise ValueError(f'Unsupported detector worker count; detected range is 1–{MAX_WORKERS}')
     stop=threading.Event();errors=[];error_lock=threading.Lock()
     start=perf_counter();active=peak=started=0;busy=cpu=queue_seconds=0.;threads=set()
     def task_cancelled():return stop.is_set() or (cancelled is not None and cancelled())

@@ -75,8 +75,16 @@ def capture_configuration(w):
     state['metadata']['gui_drafts']=dict(manual=raw,manual_key=w._manual_key,
         spectral=w.manual_spectral.draft(),atomic=w.atomic_editor.draft(),global_axis=w.axis.text())
     state['metadata']['numerical_selection']=w.numerical_selection_snapshot()
+    if hasattr(w,'memory_mode'):
+        state['metadata']['resource_preferences']=dict(memory_auto=w.memory_mode.currentIndex()==0,
+            manual_memory_budget_mib=w.memory_budget.currentData())
+        # Persist a legal existing manual selector as the editable form state.
+        # Executed runs independently retain their exact effective Auto budget.
+        state['config']=replace(state['config'],memory_budget_mib=w.memory_budget.currentData())
     if w.magnetization_mode=='local':state['global_config']=getattr(w,'_saved_global_config',None)
-    if state.get('global_config') is not None:state['global_config']=replace(state['global_config'],correction=False)
+    if state.get('global_config') is not None:
+        state['global_config']=replace(state['global_config'],correction=False,
+            **({'memory_budget_mib':w.memory_budget.currentData()} if hasattr(w,'memory_mode') else {}))
     declared={'config':cfg.source_sha256,'global_config':getattr(state.get('global_config'),'source_sha256','')}
     declared.update({'group:'+r['group_id']:getattr(r['mdff_reference'],'source_sha256','') for r in state.get('group_records',[])})
     pins=getattr(w,'_configuration_source_pins',{})
@@ -88,6 +96,10 @@ def restore_configuration(w,state):
     """Restore editable inputs, never results, and never infer a tensor frame."""
     from .geometry import orientation
     from .site_group_editor import validate_site_rows
+    from .parallel_resources import MAX_WORKERS
+    saved=state['config']
+    if type(saved.parallel_workers) is not int or not 1<=saved.parallel_workers<=MAX_WORKERS:
+        raise ValueError(f'Saved worker request {saved.parallel_workers} exceeds this hardware range 1–{MAX_WORKERS}; inputs were not clamped')
     state=dict(state)
     enabled=state['config'].correction or bool(state.get('global_config') and state['global_config'].correction)
     w.retire_post_edge(enabled)
@@ -118,12 +130,13 @@ def restore_configuration(w,state):
             finally:w.emcd_result=previous;w.busy=busy
         else:
             w.structure=deepcopy(state['structure'])
+            w.restore_memory_budget(c.memory_budget_mib)
             for widget,text in ((w.zone,' '.join(map(str,s.zone))),(w.target,' '.join(map(str,s.target)))):
                 with QtCore.QSignalBlocker(widget):widget.setText(text)
             for widget,value in ((w.propagation_box,('bloch','fft-multislice','both').index(c.propagation)),
                 (w.channeling_box,('single','double').index(c.channeling_model)),
                 (w.elastic_provider_box,w.elastic_provider_box.findData(s.elastic_provider)),(w.basis_mode,w.basis_mode.findData(s.basis_mode)),
-                (w.memory_budget,w.memory_budget.findData(c.memory_budget_mib)),(w.worker_mode,0 if c.worker_mode=='automatic' else 1)):
+                (w.worker_mode,0 if c.worker_mode=='automatic' else 1)):
                 if value<0:raise ValueError('Saved numerical/provider setting is unavailable')
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(value)
             values=dict(kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,tx=s.tilt[0],ty=s.tilt[1])
@@ -186,6 +199,11 @@ def restore_configuration(w,state):
         w.material_site_groups=model
         w._loaded_fft_recipe=(w.fft_cell_key(),c.fft_generators) if c.fft_generators is not None else None
         w.restore_numerical_selection(state.get('metadata',{}))
+        if hasattr(w,'memory_mode'):
+            preferences=state.get('metadata',{}).get('resource_preferences',{})
+            w.restore_memory_budget(preferences.get('manual_memory_budget_mib',c.memory_budget_mib))
+            with QtCore.QSignalBlocker(w.memory_mode):w.memory_mode.setCurrentIndex(0 if preferences.get('memory_auto',False) else 1)
+            w.memory_budget.setEnabled(w.memory_mode.currentIndex()==1)
         w.refresh();w.sync_magnetization_mode()
         if state['magnetization_mode']=='global':
             w.mdff_dialog._entry=w.mdff_dialog.snapshot()

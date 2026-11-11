@@ -6,7 +6,8 @@ from pathlib import Path
 import numpy as np
 
 IMPLICATED_DLL_SHA256='63c857e738469261263c764a36be9436ebdeaa272e340a828f42047a97131080'
-MAX_WORKERS=4
+from .macos_resources import hardware_info,manual_worker_limit,adaptive_worker_count
+MAX_WORKERS=manual_worker_limit()
 _blas_control_lock=threading.RLock()
 
 
@@ -146,6 +147,7 @@ def native_backend_info():
     result=dict(backend='Unknown',version='Unknown',threads=None,library=None,sha256=None,
                 numpy_version=np.__version__,platform=sys.platform,machine=platform.machine(),
                 cpu_count=os.cpu_count(),calculation_threads=1)
+    if sys.platform=='darwin':result['hardware']=hardware_info()
     found=_numpy_blas()
     if found:
         _,threads,info=found;result.update(info)
@@ -173,13 +175,14 @@ def native_backend_info():
     return result
 
 
-def worker_plan(settings,cfg,n,*,native=None):
+def worker_plan(settings,cfg,n,*,native=None,detector_pixels=None):
     native=native_backend_info() if native is None else native
     mode=cfg.worker_mode;requested=cfg.parallel_workers
-    if mode not in ('automatic','manual') or type(requested) is not int or not 1<=requested<=MAX_WORKERS:
-        raise ValueError('Parallel Workers requires Automatic or Manual and an integer from 1 to 4.')
+    limit=manual_worker_limit(native.get('hardware')) if native.get('platform')=='darwin' else 4
+    if mode not in ('automatic','manual') or type(requested) is not int or not 1<=requested<=limit:
+        raise ValueError(f'Parallel Workers requires Automatic or Manual and an integer from 1 to {limit} for the detected hardware.')
     methods=('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,)
-    effective={};messages=[];blocked=False;risk='VALIDATED POLICY'
+    effective={};messages=[];adaptive={};blocked=False;risk='VALIDATED POLICY'
     matched=(native.get('sha256')==IMPLICATED_DLL_SHA256 and native.get('platform')=='win32'
         and native.get('numpy_version')=='2.4.6' and settings.zone==(0,1,7)
         and abs(settings.voltage-300)<1e-9 and abs(settings.thickness-8)<1e-9
@@ -187,13 +190,17 @@ def worker_plan(settings,cfg,n,*,native=None):
         and np.allclose(settings.tilt,(-7.11672544,0),rtol=0,atol=1e-8) and n in (21,27))
     if not matched:risk='UNVERIFIED COMBINATION'
     for method in methods:
-        if cfg.channeling_model=='single':auto=1
+        if native.get('platform')=='darwin':
+            from dataclasses import replace
+            hw=native.get('hardware') or dict(logical_cores=native.get('cpu_count') or 1)
+            auto,adaptive[method]=adaptive_worker_count(settings,replace(cfg,propagation=method),n,hw,detector_pixels=detector_pixels)
+        elif cfg.channeling_model=='single':auto=1
         elif method=='bloch':
             from ..double_channeling import bloch_response_memory_terms
             scratch=sum(bloch_response_memory_terms(n,n,cfg.depth,min(64,cfg.grid**2),(1,),
                 'analytic' if cfg.systematic_row else 'numerical').values())
             auto=1 if native.get('platform')=='win32' else min(4,max(1,int(1200/(scratch+40))))
-        else:auto=min(MAX_WORKERS,native.get('cpu_count') or 1)
+        else:auto=min(limit,native.get('cpu_count') or 1)
         count=auto if mode=='automatic' else requested;effective[method]=count
         if cfg.channeling_model=='single' and count!=1:
             effective[method]=1
@@ -217,7 +224,12 @@ def worker_plan(settings,cfg,n,*,native=None):
         messages.append('Conservative execution allowed with a caution; passing memory admission is not native-stability certification.')
     if native.get('automatic_thread_control'):
         messages.append('Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop.')
+    if mode=='automatic':
+        for method,detail in adaptive.items():
+            messages.append(f'Auto {method}: {effective[method]} worker(s), CPU starting capacity {detail["cpu_capacity"]}, '
+                f'estimated independent tasks {detail["independent_tasks"]}. '+detail['reason'])
     return dict(mode=mode,requested_workers='Automatic' if mode=='automatic' else requested,
+        adaptive=adaptive,manual_worker_limit=limit,
         policy_version='parallel-workers-v1',
         effective_workers=effective,native=native,risk=risk,blocked=blocked,
         status='Blocked' if blocked else ('Warning' if risk=='UNVERIFIED COMBINATION' else 'Supported'),
@@ -241,12 +253,16 @@ def preview_text(settings,cfg,info):
     threads=(str(native['threads']) if native['threads'] is not None else
         'Automatic (fixed count unavailable; execution uses verified single-thread mode)'
         if native.get('backend')=='Accelerate' and native.get('automatic_thread_control') else 'Unavailable from runtime introspection')
-    return (f'Voltage: {settings.voltage:g} kV | Beam cutoff: {settings.beam_cutoff:g} Å⁻¹ | Potential cutoff: {settings.potential_cutoff:g} Å⁻¹\n'
+    hardware=native.get('hardware',{})
+    topology=(f"CPU topology: {hardware.get('performance_cores')} performance + {hardware.get('efficiency_cores')} efficiency cores; {hardware.get('logical_cores')} logical\n"
+        if hardware.get('performance_cores') is not None else '')
+    return (topology+f'Voltage: {settings.voltage:g} kV | Beam cutoff: {settings.beam_cutoff:g} Å⁻¹ | Potential cutoff: {settings.potential_cutoff:g} Å⁻¹\n'
         f"Retained beams: {info['bw_beams']} / {info['fft_harmonics']} FFT harmonics | Propagation: {cfg.propagation} | {cfg.channeling_model.title()} Channeling\n"
         f"Energy samples: {cfg.energy_points} | Angular grid: {cfg.grid}×{cfg.grid}\n"
         f"Requested workers: {p['requested_workers']} | Effective workers: {counts}\n"
         f"NumPy BLAS: {native['backend']} {native['version']} | BLAS threads: {threads} | CPUs: {native['cpu_count']}\n"
         f"Estimated peak RAM: {peak_text} | Budget: {cfg.memory_budget_mib} MiB\n"
+        f"Estimated calculation arrays: {info.get('estimated_working_mib',0):.1f} MiB\n"
         f"Available RAM: {info.get('available_ram_mib',0):.1f} MiB (50% guard); active reservations: {info.get('concurrent_reserved_working_mib',0):.1f} MiB. Dense bound: {info['dense_working_estimate_mib']:.1f} MiB.\n") + (
         f"Status: {p['status']} — {p['risk']}\n"+' '.join(p['messages'])+'\n'+p['policy']+
         ('\n'+memory_contributors(info) if info.get('memory_breakdown_mib') else ''))

@@ -86,7 +86,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     if hkl is None:hkl=actual_geometry[2]
     if tuple(hkl)!=actual_geometry[2]:raise ValueError('Beam support changed during numerical preflight')
     n=len(hkl);pixels=cfg.grid**2;mesh=cfg.fft_grid**2
-    if ionization_sites is not None and cfg.channeling_model=='double' and detector_support_pixels is None:
+    if cfg.channeling_model=='double' and detector_support_pixels is None:
         from ..geometry import VirtualDetector
         axis=np.linspace(-cfg.halfwidth,cfg.halfwidth,cfg.grid)
         qx,qy=np.meshgrid(axis,axis,indexing='xy')
@@ -94,7 +94,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             mode='fractional',subpixels=cfg.subpixels)>0 for center in cfg.centers]
         detector_support_pixels=int(np.logical_or.reduce(supports).sum())
     from .parallel_resources import worker_plan,require_supported
-    execution=worker_plan(settings,cfg,n)
+    execution=worker_plan(settings,cfg,n,detector_pixels=detector_support_pixels)
     # Both Global and Local Single kernels contract at most 64 pixels at once,
     # even when selected maps retain a full angular grid.
     pair=16*min(pixels,64)*n*n/2**20;dense=4*pair

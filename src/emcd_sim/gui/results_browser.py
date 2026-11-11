@@ -276,6 +276,8 @@ class ProjectWorkspace(ProjectSession):
         self.clear_selected();self.input_source_requirements=[];self.default_structure()
         from .memory_budget import DEFAULT_BUDGET_MIB
         self.memory_budget.setCurrentIndex(self.memory_budget.findData(DEFAULT_BUDGET_MIB))
+        if hasattr(self,'memory_mode'):
+            self.memory_mode.setCurrentIndex(0);self.memory_budget.setEnabled(False)
         self.spin['grid'].setValue(97)
         self.sync_angular_resolution()
         if hasattr(self,'mdff_dialog'):
@@ -298,8 +300,9 @@ class ProjectWorkspace(ProjectSession):
         frame_reason=frame_rerun_reason(r)
         if frame_reason:self.error(frame_reason);return
         if r.get('fft_recipe_error'):self.error(r['fft_recipe_error']);return
-        if c.worker_mode not in ('automatic','manual') or type(c.parallel_workers) is not int or not 1<=c.parallel_workers<=4:
-            self.error('Saved parallel-worker request is unsupported (Automatic/Manual, 1–4). Saved results remain viewable; inputs were not replaced or clamped.');return
+        from .parallel_resources import MAX_WORKERS
+        if c.worker_mode not in ('automatic','manual') or type(c.parallel_workers) is not int or not 1<=c.parallel_workers<=MAX_WORKERS:
+            self.error(f'Saved parallel-worker request is unsupported (Automatic/Manual, 1–{MAX_WORKERS}). Saved results remain viewable; inputs were not replaced or clamped.');return
         try:structure=restore_structure(r.get('structure_snapshot'))
         except Exception as exc:self.error(str(exc));return
         if self.model_box.currentIndex()==2:self._remember_manual_state()
@@ -326,7 +329,10 @@ class ProjectWorkspace(ProjectSession):
             for widget,checked in ((self.row_projection,c.systematic_row),(self.angular_maps,c.angular_maps)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.mdff_stack.setCurrentIndex(self.model_box.currentIndex())
-            with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setCurrentIndex(self.memory_budget.findData(c.memory_budget_mib))
+            self.restore_memory_budget(c.memory_budget_mib)
+            if hasattr(self,'memory_mode') and r['metadata'].get('execution',{}).get('memory_policy',{}).get('mode')=='automatic':
+                with QtCore.QSignalBlocker(self.memory_mode):self.memory_mode.setCurrentIndex(0)
+                self.memory_budget.setEnabled(False)
             with QtCore.QSignalBlocker(self.worker_mode):self.worker_mode.setCurrentIndex(0 if c.worker_mode=='automatic' else 1)
             with QtCore.QSignalBlocker(self.worker_count):self.worker_count.setValue(c.parallel_workers)
             self.worker_count.setEnabled(c.worker_mode=='manual')

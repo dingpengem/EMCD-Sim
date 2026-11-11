@@ -87,13 +87,15 @@ def _macos_memory_snapshot():
     usage=Usage()
     if proc.proc_pid_rusage(os.getpid(),0,ctypes.byref(usage))!=0:raise OSError('proc_pid_rusage failed')
     # Speculative pages are already included in free; do not count them twice.
+    from .macos_resources import hardware_info,pressure_info
     return dict(available_ram_mib=(vm.free+vm.inactive)*os.sysconf('SC_PAGE_SIZE')/2**20,
-                process_rss_mib=usage.resident/2**20)
+                process_rss_mib=usage.resident/2**20,
+                physical_memory_mib=hardware_info()['physical_memory_mib'],**pressure_info())
 
 
 def assess_memory(working_mib, budget_mib=DEFAULT_BUDGET_MIB, *, dense_mib=0., snapshot=None,reject=True):
     """Reject over-budget jobs before large allocations; include active workers."""
-    if budget_mib not in BUDGETS_MIB:
+    if not (sys.platform=='darwin' and type(budget_mib) is int and budget_mib>0) and budget_mib not in BUDGETS_MIB:
         raise ValueError(f'Memory budget must be one of {BUDGETS_MIB} MiB.')
     if not math.isfinite(working_mib) or working_mib < 0:
         raise ValueError('Estimated allocation must be finite and nonnegative.')
@@ -114,14 +116,18 @@ def assess_memory(working_mib, budget_mib=DEFAULT_BUDGET_MIB, *, dense_mib=0., s
         process_rss_mib=rss, estimated_process_peak_mib=peak,
         concurrent_reserved_working_mib=active, concurrent_calculations=count,
         allocation_margin=ALLOCATION_MARGIN, process_reserve_mib=PROCESS_RESERVE_MIB)
-    if peak > budget_mib or peak > ram_limit:
+    critical=state.get('memory_pressure')=='critical' and working_mib>0
+    info.update(memory_pressure=state.get('memory_pressure','unavailable'),swap_used_mib=state.get('swap_used_mib'))
+    if peak > budget_mib or peak > ram_limit or critical:
         cause = []
         if peak > budget_mib:
             cause.append(f'selected budget {budget_mib} MiB')
         if peak > ram_limit:
             cause.append(f'50% of currently available RAM ({ram_limit:.1f} MiB of {available:.1f} MiB)')
         message=(f'Memory admission rejected: dense kernel {dense_mib:.1f} MiB; estimated arrays {working_mib:.1f} MiB; '
-            f'estimated total process peak {peak:.1f} MiB exceeds '+ ' and '.join(cause)+
+            f'estimated total process peak {peak:.1f} MiB'+
+            (' exceeds '+ ' and '.join(cause) if cause else '')+
+            ('; macOS reports critical memory pressure' if critical else '')+
             f'. Includes current RSS {rss:.1f} MiB, {count} active calculation(s), 25% allocation margin and 128 MiB reserve. '
             'No simulation parameters were changed. Choose a larger supported budget or free RAM; any sampling change must be explicit.')
         if reject:raise ValueError(message)

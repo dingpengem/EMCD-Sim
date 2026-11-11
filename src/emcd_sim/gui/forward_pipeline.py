@@ -411,6 +411,8 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
         additional_retained_working_mib=extra,detector_support_pixels=int(detector_support.sum()))
     if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
         raise ValueError('Resources changed since preflight; Run again to review the new effective worker counts.')
+    if execution_policy is not None and 'memory_policy' in execution_policy:
+        info['execution']['memory_policy']=execution_policy['memory_policy']
     if double:info['multisite_additional_working_mib']=extra
     working=info['estimated_working_mib']
     z=np.linspace(0,settings.thickness,cfg.depth)

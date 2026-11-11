@@ -60,7 +60,8 @@ def test_enlarged_basis_support_and_concurrent_memory(small):
     s,settings,cfg=small
     for zone,row,n in (((0,0,1),True,17),((0,1,7),False,59)):
         settings=replace(settings,zone=zone,beam_cutoff=4.6,potential_cutoff=6.2)
-        cfg=replace(cfg,systematic_row=row,channeling_model='double',propagation='both',fft_grid=48,depth=257,grid=193)
+        cfg=replace(cfg,systematic_row=row,channeling_model='double',propagation='both',fft_grid=48,depth=257,grid=193,
+            worker_mode='manual',parallel_workers=4)
         assert len(geometry(s,settings,systematic_row=row)[2])==n
         info=numerical_info(s,settings,cfg,check_memory=False)
         assert info['estimated_working_mib']>info['dense_working_estimate_mib']

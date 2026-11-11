@@ -53,8 +53,12 @@ def test_available_ram_and_invalid_measurement_fail_closed():
     with patch.object(memory, 'memory_snapshot', side_effect=OSError('unavailable')):
         with pytest.raises(ValueError, match='Cannot verify'):
             memory.assess_memory(1)
-    with pytest.raises(ValueError, match='budget must be'):
-        memory.assess_memory(1, 3072, snapshot=SNAPSHOT)
+    import sys
+    if sys.platform=='darwin':
+        assert memory.assess_memory(1,3072,snapshot=SNAPSHOT)['memory_budget_mib']==3072
+    else:
+        with pytest.raises(ValueError, match='budget must be'):
+            memory.assess_memory(1, 3072, snapshot=SNAPSHOT)
 
 
 def test_concurrent_reservations_and_cleanup_on_errors():

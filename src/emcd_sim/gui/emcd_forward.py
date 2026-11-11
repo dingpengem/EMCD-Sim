@@ -96,6 +96,8 @@ def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:Fal
     info=numerical_info(structure,settings,cfg)
     if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
         raise ValueError('Resources changed since preflight; Run again to review the new effective worker counts.')
+    if execution_policy is not None and 'memory_policy' in execution_policy:
+        info['execution']['memory_policy']=execution_policy['memory_policy']
     execution_policy=info['execution']
     check_cancelled(cancelled)
     # Double kernels make their own concurrent reservations. Reserve retained
