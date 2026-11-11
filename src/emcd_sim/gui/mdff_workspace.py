@@ -100,4 +100,15 @@ class MDFFWorkspace(QtWidgets.QDialog):
         return True
 
     def finish_edit(self):
-        if self.apply_configuration() is not None:self.hide()
+        if self.apply_configuration() is None:return
+        self.hide()
+        # These are modeless editors. Cocoa does not reliably activate their
+        # Material viewer when an editor is hidden (Global is owned by MainWindow,
+        # restored Local editors may be owned directly by the viewer). Return to
+        # the existing draft without invoking accept/reject or reopening a viewer.
+        viewer=getattr(self._window,'structure_viewer',None)
+        if viewer is None:
+            viewer=self.parentWidget()
+            while viewer is not None and not viewer.isWindow():viewer=viewer.parentWidget()
+        if viewer is not None and viewer.isVisible():
+            viewer.raise_();viewer.activateWindow()

@@ -488,12 +488,12 @@ class ResponsiveLayout(QtCore.QObject):
             screen.logicalDotsPerInchChanged.connect(self.screen_changed)
             self.fit_screen(screen)
         self.timer.start()
-        QtCore.QTimer.singleShot(200, lambda: self.fit_screen(self.screen))
+        QtCore.QTimer.singleShot(200, self, lambda: self.fit_screen(self.screen))
 
     def screen_changed(self, *_):
         self.fit_screen(self.screen)
         self.timer.start()
-        QtCore.QTimer.singleShot(200, lambda: self.fit_screen(self.screen))
+        QtCore.QTimer.singleShot(200, self, lambda: self.fit_screen(self.screen))
 
     def fit_screen(self, screen):
         if screen is None or self.window.isMaximized():
