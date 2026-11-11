@@ -226,7 +226,6 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.compute_resources=ComputeResourcesPanel(self)
         section=CollapsibleSection('Compute Resources',self.compute_resources,expanded=True)
         section.setObjectName('shared_Compute_Resources')
-        section.layout().setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
         self.form.addRow(section)
         self.shared_resources_group=self.compute_resources
         self.compute_resources.presentation_section=section

@@ -130,7 +130,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
     def section(self,title,expanded=True,*,key=None):
         group=CollapsibleSection(title.replace('&','&&'),expanded=expanded)
         group.setObjectName('settings_'+''.join(c if c.isalnum() else '_' for c in (key or title)))
-        group.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,QtWidgets.QSizePolicy.Policy.Maximum)
+        group.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,QtWidgets.QSizePolicy.Policy.Preferred)
         self.form=QtWidgets.QFormLayout(group.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);self.form_layout.addWidget(group)
 
     def number(self,key,label,value,lo,hi,callback):

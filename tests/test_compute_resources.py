@@ -165,3 +165,30 @@ def test_gui_run_submits_displayed_allocation_without_replacing_manual_requests(
     finally:
         if w.busy:w.run_outcome='cancelled';w.emcd_finished()
         w.project_dirty=False;w.close();app.processEvents()
+
+
+@pytest.mark.parametrize('width',[1065,905])
+def test_wrapped_resource_information_remains_readable_without_changing_parameters(tmp_path,width):
+    from PySide6 import QtWidgets,QtTest
+    from emcd_sim.gui.app import MainWindow
+    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    w=MainWindow(tmp_path/'workspace');panel=w.compute_resources
+    panel.presentation_section.setChecked(True)
+    panel.presentation_section.parentWidget().parentWidget().setChecked(True)
+    original=w.numerical_snapshot()
+    state=machine();state['cpu_model']='A dynamically reported CPU model with a long name that needs several wrapped lines'
+    w.resize(width,669);w.show()
+    try:
+        for mode in ('automatic','manual'):
+            cfg=ForwardSettings(channeling_model='double',memory_mode=mode,worker_mode=mode,parallel_workers=2)
+            panel.restore(cfg)
+            panel.show_estimate(cfg,numerical_info(w.structure,w.settings(),cfg,resource_snapshot=state,native=native(state)))
+            QtTest.QTest.qWait(300);app.processEvents()
+            assert panel.worker_mode.isVisible() and panel.memory_mode.isVisible()
+            for label in panel._labels:
+                assert label.height()>=label.heightForWidth(label.width())
+            assert w.numerical_snapshot()==original
+        panel.presentation_section.setChecked(False)
+        w.apply_numerical_visibility();app.processEvents()
+        assert not panel.isVisible() and not panel.presentation_section.isChecked()
+    finally:w.project_dirty=False;w.close();app.processEvents()

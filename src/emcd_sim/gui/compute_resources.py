@@ -12,7 +12,6 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
         super().__init__(parent)
         self.info=None
         form=QtWidgets.QVBoxLayout(self);form.setContentsMargins(0,0,0,0)
-        form.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
         self.hardware=QtWidgets.QLabel();self.hardware.setWordWrap(True);form.addWidget(self.hardware)
         def row(caption,field):
             label=QtWidgets.QLabel(caption);line=QtWidgets.QHBoxLayout()
@@ -42,27 +41,6 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
         for widget in (self.worker_count,self.memory_budget):widget.valueChanged.connect(self.changed)
         self._labels=(self.hardware,self.workers,self.budget,self.estimate,self.explanation,self.blas)
         self._sync();self.refresh_hardware()
-
-    def _fit_labels(self):
-        # Nested forms in a scroll area can shrink word-wrapped rows below
-        # their height-for-width hint. Reserve the actual readable height.
-        if getattr(self,'_fitting',False):return
-        self._fitting=True
-        try:
-            for label in self._labels:
-                label.setMinimumHeight(max(label.fontMetrics().height(),label.heightForWidth(max(1,label.width()))))
-            widgets=[self]
-            if hasattr(self,'presentation_section'):widgets.append(self.presentation_section)
-            # Recompute the enclosing minimums too: Qt otherwise retains the
-            # old short Pending-label height after a live estimate is filled.
-            for widget in widgets:
-                if widget.layout():widget.layout().invalidate();widget.layout().activate()
-                widget.updateGeometry()
-        finally:self._fitting=False
-
-    def resizeEvent(self,event):
-        super().resizeEvent(event)
-        self._fit_labels()
 
     def _sync(self):
         for mode,field,label in ((self.worker_mode,self.worker_count,self.worker_caption),
@@ -105,14 +83,12 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
             self.hardware.setToolTip('\n'.join(details))
         except (OSError,ValueError,KeyError) as exc:
             self.hardware.setText('Hardware/resource measurement unavailable: '+str(exc))
-        self._fit_labels()
 
     def pending(self,reason):
         self.info=None
         self.refresh_hardware();self.workers.setText('Effective workers: Pending')
         self.budget.setText('Effective memory budget: Pending');self.estimate.setText('Current Calculation Estimate\nAdmission: Pending')
         self.explanation.setText(str(reason));self.blas.clear()
-        self._fit_labels()
 
     def show_estimate(self,cfg,info):
         self.info=info
@@ -139,4 +115,3 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
         self.blas.setToolTip('One thread per supported BLAS runtime is set and verified on calculation entry, then prior limits are restored. '
             'If automatic control is unavailable, admission reports the limitation.\n'
             'GUI thread, calculation QThread and outer detector workers are distinct from native BLAS threads.\n'+str(runtimes))
-        self._fit_labels()

@@ -91,7 +91,6 @@ class NumericalSettingsUI:
         self.numerical_mode.model().item(0).setEnabled(not manual)
         for group in (self.shared_elastic_group,self.shared_sampling_group):
             group.setVisible(manual);group.presentation_section.setVisible(manual)
-        self.shared_resources_group.setVisible(True)
         self.shared_resources_group.presentation_section.setVisible(True)
         for key in NUMERICAL_KEYS:self.spin[key].setEnabled(manual)
         self.sync_sampling_controls()
