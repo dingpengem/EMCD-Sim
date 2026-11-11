@@ -28,10 +28,14 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(len(runtime.build_info()['implementation_sha256']),3)
 
     def test_user_workspace_outside_resources(self):
-        with patch.dict(os.environ,{'LOCALAPPDATA':str(Path(tempfile.gettempdir())/'rc-user')}):
+        with patch.object(runtime.sys,'platform','win32'), patch.dict(os.environ,{'LOCALAPPDATA':str(Path(tempfile.gettempdir())/'rc-user')}):
             with patch.dict(os.environ,clear=False):
                 os.environ.pop('EMCD_GUI_WORKSPACE',None)
                 self.assertEqual(runtime.workspace(),Path(tempfile.gettempdir())/'rc-user/EMCD-Sim/workspace')
+
+    def test_macos_user_data(self):
+        with patch.object(runtime.sys,'platform','darwin'), patch.object(runtime.Path,'home',return_value=Path('/Users/example')):
+            self.assertEqual(runtime.user_directory(),Path('/Users/example/Library/Application Support/EMCD-Sim'))
 
     def test_workspace_override(self):
         with patch.dict(os.environ,{'EMCD_GUI_WORKSPACE':str(Path(tempfile.gettempdir())/'chosen-workspace')}):

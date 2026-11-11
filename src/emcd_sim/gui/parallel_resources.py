@@ -10,6 +10,43 @@ MAX_WORKERS=4
 _blas_control_lock=threading.RLock()
 
 
+@lru_cache(maxsize=1)
+def _accelerate_blas():
+    """Verified wheel backend and macOS 15+ per-thread BLAS/LAPACK control."""
+    if sys.platform != 'darwin':return None
+    import scipy
+    packages=[p for p in (np,scipy) if p.__config__.CONFIG.get('Build Dependencies',{}).get('blas',{}).get('name','').lower()=='accelerate']
+    if not packages:return None
+    library=ctypes.CDLL('/System/Library/Frameworks/Accelerate.framework/Accelerate')
+    try:get,set_mode=library.BLASGetThreading,library.BLASSetThreading
+    except AttributeError as exc:
+        raise ValueError('Accelerate automatic thread control requires macOS 15 or newer') from exc
+    get.argtypes=[];get.restype=ctypes.c_uint
+    set_mode.argtypes=[ctypes.c_uint];set_mode.restype=ctypes.c_int
+    def set_threads(mode):
+        if set_mode(mode)!=0:raise ValueError('Accelerate rejected BLAS threading mode')
+    return get,set_threads,dict(backend='Accelerate',library=library._name,
+        configuration='Apple Accelerate BLAS/LAPACK; per-thread control',
+        parallel=1,scope='thread-local',packages=[p.__name__ for p in packages])
+
+
+@contextmanager
+def detector_blas_guard():
+    """Accelerate state is thread-local: protect each executor thread too."""
+    runtime=_accelerate_blas()
+    if runtime is None:
+        yield;return
+    get,set_threads,_=runtime
+    previous=int(get())
+    try:
+        set_threads(1)
+        if int(get())!=1:raise ValueError('Accelerate single-thread verification failed')
+        yield
+    finally:
+        set_threads(previous)
+        if int(get())!=previous:raise RuntimeError('Could not restore Accelerate threading mode')
+
+
 def _blas_runtimes():
     # Import the LAPACK consumer before taking the execution snapshot. NumPy
     # and SciPy wheels can load DIFFERENT OpenBLAS runtimes. Rediscover on each
@@ -18,8 +55,10 @@ def _blas_runtimes():
     import scipy
     runtimes=[]
     for package in (np,scipy):
-        folder=Path(package.__file__).resolve().parent.parent/(package.__name__+'.libs')
-        for path in sorted(set(folder.glob('*openblas*.dll'))|set(folder.glob('*openblas*.so*'))):
+        base=Path(package.__file__).resolve().parent
+        folders=(base.parent/(package.__name__+'.libs'),base/'.dylibs')
+        paths={p for folder in folders for pattern in ('*openblas*.dll','*openblas*.so*','*openblas*.dylib') for p in folder.glob(pattern)}
+        for path in sorted(paths):
             library=ctypes.CDLL(str(path))
             for prefix,suffix in ((p,s) for p in ('scipy_openblas_','openblas_') for s in ('64_','','_')):
                 try:
@@ -37,6 +76,11 @@ def _blas_runtimes():
                 break
             else:
                 raise ValueError('Cannot verify OpenBLAS control API: '+str(path))
+    accelerate=_accelerate_blas()
+    if accelerate is not None:
+        get,set_threads,info=accelerate
+        runtimes.append((get,set_threads,dict(info,threads=1 if int(get())==1 else None,
+            threading_mode='single' if int(get())==1 else 'automatic')))
     return runtimes
 
 
@@ -76,7 +120,7 @@ def calculation_blas_guard(cancelled=None):
 @lru_cache(maxsize=1)
 def _numpy_blas():
     folder=Path(np.__file__).resolve().parent.parent/'numpy.libs'
-    candidates=list(folder.glob('*openblas*.dll'))+list(folder.glob('*openblas*.so*'))
+    candidates=list(folder.glob('*openblas*.dll'))+list(folder.glob('*openblas*.so*'))+list((Path(np.__file__).resolve().parent/'.dylibs').glob('*openblas*.dylib'))
     for path in candidates:
         try:
             library=ctypes.CDLL(str(path))
@@ -105,6 +149,10 @@ def native_backend_info():
     if found:
         _,threads,info=found;result.update(info)
         value=int(threads());result['threads']=value if value>0 else None
+    elif _accelerate_blas() is not None:
+        get,_,info=_accelerate_blas()
+        result.update(backend='Accelerate',version=platform.mac_ver()[0],library=info['library'],
+                      threads=1 if int(get())==1 else None,threading_mode='single' if int(get())==1 else 'automatic')
     else:
         # Optional introspection supports other installed runtimes, including MKL.
         # It is never required or used to change their process-global settings.

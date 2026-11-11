@@ -1,0 +1,2 @@
+# Start with the exact Windows research baseline; record any ARM64 deviations.
+-r requirements-windows.txt

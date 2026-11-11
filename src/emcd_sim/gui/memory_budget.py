@@ -8,6 +8,7 @@ from contextlib import contextmanager
 import ctypes
 import math
 import os
+import sys
 from pathlib import Path
 import threading
 
@@ -50,11 +51,44 @@ def _memory_snapshot():
         if not get_memory(ctypes.windll.kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb):
             raise OSError('GetProcessMemoryInfo failed')
         return dict(available_ram_mib=status.available/2**20, process_rss_mib=counters.ws/2**20)
+    if sys.platform == 'darwin':return _macos_memory_snapshot()
     # Linux supports MemAvailable (includes reclaimable memory), not swap.
     values = dict(line.split(':', 1) for line in Path('/proc/meminfo').read_text().splitlines())
     available = float(values['MemAvailable'].split()[0])/1024
     resident_pages = int(Path('/proc/self/statm').read_text().split()[1])
     return dict(available_ram_mib=available, process_rss_mib=resident_pages*os.sysconf('SC_PAGE_SIZE')/2**20)
+
+
+def _macos_memory_snapshot():
+    """Current Mach VM pages and libproc RSS; never substitute peak RSS or swap."""
+    class VM(ctypes.Structure):
+        _fields_ = ([(n,ctypes.c_uint32) for n in ('free','active','inactive','wired')]
+            + [(n,ctypes.c_uint64) for n in ('zero_fill','reactivations','pageins','pageouts','faults','cow','lookups','hits','purges')]
+            + [(n,ctypes.c_uint32) for n in ('purgeable','speculative')]
+            + [(n,ctypes.c_uint64) for n in ('decompressions','compressions','swapins','swapouts')]
+            + [(n,ctypes.c_uint32) for n in ('compressor','throttled','external','internal')]
+            + [('uncompressed',ctypes.c_uint64)])
+    class Usage(ctypes.Structure):
+        _fields_ = [('uuid',ctypes.c_uint8*16)] + [(n,ctypes.c_uint64) for n in
+            ('user','system','wakeups','interrupts','pageins','wired','resident','footprint','start','exit')]
+    system=ctypes.CDLL('/usr/lib/libSystem.B.dylib')
+    system.mach_host_self.argtypes=[];system.mach_host_self.restype=ctypes.c_uint32
+    system.host_statistics64.argtypes=[ctypes.c_uint32,ctypes.c_int,ctypes.c_void_p,ctypes.POINTER(ctypes.c_uint32)]
+    system.host_statistics64.restype=ctypes.c_int
+    system.mach_port_deallocate.argtypes=[ctypes.c_uint32,ctypes.c_uint32];system.mach_port_deallocate.restype=ctypes.c_int
+    host=system.mach_host_self();vm=VM();count=ctypes.c_uint32(ctypes.sizeof(vm)//4)
+    try:
+        if system.host_statistics64(host,4,ctypes.byref(vm),ctypes.byref(count))!=0:
+            raise OSError('host_statistics64 failed')
+    finally:
+        system.mach_port_deallocate(ctypes.c_uint32.in_dll(system,'mach_task_self_').value,host)
+    proc=ctypes.CDLL('/usr/lib/libproc.dylib')
+    proc.proc_pid_rusage.argtypes=[ctypes.c_int,ctypes.c_int,ctypes.c_void_p];proc.proc_pid_rusage.restype=ctypes.c_int
+    usage=Usage()
+    if proc.proc_pid_rusage(os.getpid(),0,ctypes.byref(usage))!=0:raise OSError('proc_pid_rusage failed')
+    # Speculative pages are already included in free; do not count them twice.
+    return dict(available_ram_mib=(vm.free+vm.inactive)*os.sysconf('SC_PAGE_SIZE')/2**20,
+                process_rss_mib=usage.resident/2**20)
 
 
 def assess_memory(working_mib, budget_mib=DEFAULT_BUDGET_MIB, *, dense_mib=0., snapshot=None,reject=True):

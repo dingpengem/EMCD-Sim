@@ -82,10 +82,17 @@ def test_gui_budget_selector_and_start_admission(tmp_path, monkeypatch):
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         w = MainWindow(workspace=tmp_path/'workspace')
+        # The release GUI requires the Material transaction before settings
+        # can form an executable request; resource tests follow that workflow.
+        from test_material_mdff_workflow import xmcd_draft
+        viewer=xmcd_draft(w)
+        assert w.mdff_dialog.apply_configuration() is not None
+        viewer.apply_groups()
         assert w.memory_budget.currentData() == 2048
         for i, budget in enumerate(memory.BUDGETS_MIB):
             w.memory_budget.setCurrentIndex(i)
             assert w.forward_settings().memory_budget_mib == budget
+        w.project_dirty=False
         w.close()
     # A RAM change after UI preview is checked again at calculation entry.
     with patch.object(memory, 'memory_snapshot', return_value=dict(available_ram_mib=100, process_rss_mib=64)):

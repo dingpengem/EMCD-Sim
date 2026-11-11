@@ -1,5 +1,6 @@
 # Python environments, bytecode, caches, and packaging
 .venv/
+.venv-macos/
 venv/
 env/
 .env/

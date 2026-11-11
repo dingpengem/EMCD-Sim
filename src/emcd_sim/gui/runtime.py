@@ -41,6 +41,8 @@ def reference_source():
 
 
 def user_directory():
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library' / 'Application Support' / 'EMCD-Sim'
     base = Path(os.environ.get('LOCALAPPDATA', str(Path.home() / '.local/share')))
     return base / 'EMCD-Sim'
 

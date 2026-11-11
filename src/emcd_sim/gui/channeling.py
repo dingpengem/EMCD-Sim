@@ -70,7 +70,9 @@ def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics
                 queue_seconds+=before-submitted
         try:
             check_cancelled(task_cancelled)
-            return response(batch,task_cancelled)
+            from .parallel_resources import detector_blas_guard
+            with detector_blas_guard():
+                return response(batch,task_cancelled)
         except BaseException as exc:
             with error_lock:
                 if not errors:errors.append(exc)
