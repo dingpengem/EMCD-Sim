@@ -134,7 +134,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
     Double responses already include depth integration; Single needs thickness.
     """
     from .emcd_forward import Cancelled
-    from .propagation import projected_geometry_for
+    from .propagation import projected_geometry_for,SINGLE_CHANNELING_PIXEL_BATCH
     qx,qy,weights,detector_support,selected=angular_schedule(model,cfg,energy)
     dq2=(qx[0,1]-qx[0,0])**2
     full_weights=np.stack([weights[k].ravel() for k in ('A','B')])
@@ -183,9 +183,9 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
         if cfg.channeling_model=='single':
             start_contract=perf_counter()
             values=np.empty((2,len(points)))
-            for start in range(0,len(points),64):
+            for start in range(0,len(points),SINGLE_CHANNELING_PIXEL_BATCH):
                 if cancelled():raise Cancelled()
-                sl=slice(start,start+64)
+                sl=slice(start,start+SINGLE_CHANNELING_PIXEL_BATCH)
                 for si,t in enumerate(tensors):
                     even,odd=_tensor_angular_maps(model,t.tensor_angstrom2_per_ev[ie],e,C,phase,points[sl,0],points[sl,1])
                     values[si,sl]=settings.thickness*(even+odd)

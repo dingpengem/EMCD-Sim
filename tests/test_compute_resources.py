@@ -142,6 +142,20 @@ def test_no_maps_uses_detector_support_for_cpu_tasks():
     assert info['execution']['detector_task_pixels']==info['detector_support_pixels']<cfg.grid**2
 
 
+@pytest.mark.parametrize('method',['bloch','fft-multislice'])
+def test_single_full_maps_fit_budget_without_hypothetical_full_field_scratch(method):
+    state=machine();state['process_rss_mib']=64.
+    settings=Settings();structure=Structure.nickel()
+    cfg=ForwardSettings(propagation=method,grid=97,depth=64,memory_budget_mib=256,
+        worker_mode='manual',parallel_workers=1)
+    info=numerical_info(structure,settings,cfg,resource_snapshot=state,native=native(state))
+    assert not info.get('rejected') and info['estimated_process_peak_mib']<256
+    assert cfg.grid==97 and cfg.angular_maps and cfg.depth==64
+    small=numerical_info(structure,settings,replace(cfg,grid=9),resource_snapshot=state,native=native(state))
+    assert info['dense_working_estimate_mib']==small['dense_working_estimate_mib']
+    assert info['retained_results_working_mib']>small['retained_results_working_mib']
+
+
 def test_gui_run_submits_displayed_allocation_without_replacing_manual_requests(tmp_path,monkeypatch):
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow

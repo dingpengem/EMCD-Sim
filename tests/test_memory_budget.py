@@ -32,11 +32,13 @@ def test_larger_dense_kernel_admitted_only_with_larger_budget():
     assert cfg.memory_budget_mib == config_from_dict({}).memory_budget_mib == 2048
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         info = numerical_info(Structure.nickel(), settings, cfg)
-        assert info['dense_working_estimate_mib'] > 512
+        # A large real beam basis still needs a substantial 64-pixel batch;
+        # it does not allocate the former hypothetical full-map P*N*N array.
+        assert info['dense_working_estimate_mib'] > 32
         assert info['estimated_process_peak_mib'] > info['estimated_working_mib']
         assert info['estimated_working_mib'] > info['dense_working_estimate_mib']
-        with pytest.raises(ValueError, match='selected budget 512 MiB'):
-            numerical_info(Structure.nickel(), settings, replace(cfg, memory_budget_mib=512))
+        with pytest.raises(ValueError, match='selected budget 224 MiB'):
+            numerical_info(Structure.nickel(), settings, replace(cfg, memory_budget_mib=224))
 
 
 def test_preflight_rejects_incompatible_hkl_before_admission():

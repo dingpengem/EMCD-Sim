@@ -13,6 +13,7 @@ METHOD_NAMES={'bloch':'Bloch-wave','fft-multislice':'FFT Multislice','difference
 # Single Channeling reduces these energy blocks before retaining final results.
 # This is an allocation bound, not a change to spectral/angular sampling.
 MULTISITE_ENERGY_BATCH = 16
+SINGLE_CHANNELING_PIXEL_BATCH = 64
 
 
 def multisite_memory_terms(cfg, group_count):
@@ -102,7 +103,11 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     else:snapshot=resource_snapshot
     execution=worker_plan(settings,cfg,n,native=native,task_pixels=task_pixels,
         hardware=snapshot if snapshot is not None and 'logical_processors' in snapshot else None)
-    pair=16*(pixels if cfg.angular_maps else min(pixels,64))*n*n/2**20;dense=4*pair
+    # The SC tensor adapter contracts one bounded pixel batch, even at a
+    # selected full-map energy. Full fields are retained below, not as P*N*N
+    # tensor scratch. DC replaces this bound with its solver-specific terms.
+    scratch_pixels=min(pixels,SINGLE_CHANNELING_PIXEL_BATCH) if cfg.channeling_model=='single' else pixels
+    pair=16*scratch_pixels*n*n/2**20;dense=4*pair
     info=dict(bw_beams=n,fft_harmonics=0,potential_nonzero_harmonics=0,single_complex_pair_mib=pair,dense_working_estimate_mib=dense,
         fft_storage_working_mib=0.,coherence_working_mib=16*cfg.depth*n*n/2**20,propagation=cfg.propagation,
         fft_grid=cfg.fft_grid,slice_step_nm=cfg.slice_step,depth_nodes=cfg.depth,
@@ -166,7 +171,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     multisite_terms=(multisite_memory_terms(cfg,len(ionization_sites.groups))
                      if ionization_sites is not None and cfg.channeling_model=='single' else {})
     additional_retained_working_mib+=sum(multisite_terms.values())
-    info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*pixels*n)/2**20+additional_retained_working_mib
+    info['retained_results_working_mib']=(methods*(24*cfg.depth*n+32*n*n+160*pixels+128*cfg.energy_points)+96*scratch_pixels*n)/2**20+additional_retained_working_mib
     info['estimated_working_mib']=dense+info['fft_storage_working_mib']+info['coherence_working_mib']+info['retained_results_working_mib']
     if cfg.channeling_model=='double':
         bw_dense=80*n**4/2**20
