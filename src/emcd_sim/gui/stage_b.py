@@ -88,6 +88,20 @@ class EMCDWorker(QtCore.QThread):
 
 
 class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
+    def restore_worker_request(self,mode,count):
+        from .parallel_resources import MAX_WORKERS
+        if (mode not in ('automatic','manual') or type(count) is not int or count<1
+                or sys.platform!='darwin' and count>MAX_WORKERS):
+            raise ValueError('Saved worker request is unsupported; inputs were not clamped')
+        # A project can come from a larger Mac. Keep its exact saved request;
+        # Manual Run will explain the current hardware restriction. Auto ignores
+        # this inactive selector and chooses from current resources.
+        with QtCore.QSignalBlocker(self.worker_count):
+            self.worker_count.setMaximum(max(MAX_WORKERS,count));self.worker_count.setValue(count)
+        with QtCore.QSignalBlocker(self.worker_mode):self.worker_mode.setCurrentIndex(0 if mode=='automatic' else 1)
+        self.worker_count.setEnabled(mode=='manual')
+        self.worker_count.setToolTip(f'Current hardware supports 1–{MAX_WORKERS} workers. Saved requests are preserved; unsupported Manual requests reject at Run.')
+
     def resource_budget(self):
         if hasattr(self,'memory_mode') and self.memory_mode.currentIndex()==0:
             from .macos_resources import auto_memory_budget

@@ -16,12 +16,11 @@ def _accelerate_blas():
     """Verified wheel backend and macOS 15+ per-thread BLAS/LAPACK control."""
     if sys.platform != 'darwin':return None
     import scipy
-    packages=[p for p in (np,scipy) if p.__config__.CONFIG.get('Build Dependencies',{}).get('blas',{}).get('name','').lower()=='accelerate']
+    packages=[p for p in (np,scipy) if _declared_blas(p)=='accelerate']
     if not packages:return None
     library=ctypes.CDLL('/System/Library/Frameworks/Accelerate.framework/Accelerate')
     try:get,set_mode=library.BLASGetThreading,library.BLASSetThreading
-    except AttributeError as exc:
-        raise ValueError('Accelerate automatic thread control requires macOS 15 or newer') from exc
+    except AttributeError:return None
     get.argtypes=[];get.restype=ctypes.c_uint
     set_mode.argtypes=[ctypes.c_uint];set_mode.restype=ctypes.c_int
     def set_threads(mode):
@@ -29,6 +28,26 @@ def _accelerate_blas():
     return get,set_threads,dict(backend='Accelerate',library=library._name,
         configuration='Apple Accelerate BLAS/LAPACK; per-thread control',
         parallel=1,scope='thread-local',packages=[p.__name__ for p in packages])
+
+
+def _declared_blas(package):
+    return getattr(package.__config__,'CONFIG',{}).get('Build Dependencies',{}).get('blas',{}).get('name','').lower()
+
+
+def _loaded_openblas_paths():
+    """Find already-loaded Conda/custom macOS libraries as well as wheel layouts."""
+    if sys.platform!='darwin':return set()
+    try:
+        dyld=ctypes.CDLL('/usr/lib/libSystem.B.dylib')
+        count=dyld._dyld_image_count;name=dyld._dyld_get_image_name
+        count.argtypes=[];count.restype=ctypes.c_uint32
+        name.argtypes=[ctypes.c_uint32];name.restype=ctypes.c_char_p
+        paths=set()
+        for index in range(count()):
+            value=name(index)
+            if value and b'openblas' in value.lower():paths.add(Path(os.fsdecode(value)).resolve())
+        return paths
+    except (AttributeError,OSError):return set()
 
 
 @contextmanager
@@ -54,30 +73,32 @@ def _blas_runtimes():
     # request rather than caching the first library seen by a GUI preview.
     import scipy.linalg
     import scipy
-    runtimes=[]
+    runtimes=[];paths=_loaded_openblas_paths()
     for package in (np,scipy):
         base=Path(package.__file__).resolve().parent
         folders=(base.parent/(package.__name__+'.libs'),base/'.dylibs')
-        paths={p for folder in folders for pattern in ('*openblas*.dll','*openblas*.so*','*openblas*.dylib') for p in folder.glob(pattern)}
-        for path in sorted(paths):
-            library=ctypes.CDLL(str(path))
-            for prefix,suffix in ((p,s) for p in ('scipy_openblas_','openblas_') for s in ('64_','','_')):
-                try:
-                    get=getattr(library,prefix+'get_num_threads'+suffix)
-                    set_threads=getattr(library,prefix+'set_num_threads'+suffix)
-                    parallel=getattr(library,prefix+'get_parallel'+suffix)
-                    config=getattr(library,prefix+'get_config'+suffix)
-                except AttributeError:continue
-                get.argtypes=[];get.restype=ctypes.c_int
-                set_threads.argtypes=[ctypes.c_int];set_threads.restype=None
-                parallel.argtypes=[];parallel.restype=ctypes.c_int
-                config.argtypes=[];config.restype=ctypes.c_char_p
-                runtimes.append((get,set_threads,dict(library=str(path),configuration=config().decode(),
-                    threads=int(get()),parallel=int(parallel()))))
-                break
-            else:
-                raise ValueError('Cannot verify OpenBLAS control API: '+str(path))
+        paths.update(p.resolve() for folder in folders for pattern in ('*openblas*.dll','*openblas*.so*','*openblas*.dylib') for p in folder.glob(pattern))
+    for path in sorted(paths):
+        library=ctypes.CDLL(str(path))
+        for prefix,suffix in ((p,s) for p in ('scipy_openblas_','openblas_') for s in ('64_','','_')):
+            try:
+                get=getattr(library,prefix+'get_num_threads'+suffix)
+                set_threads=getattr(library,prefix+'set_num_threads'+suffix)
+                parallel=getattr(library,prefix+'get_parallel'+suffix)
+                config=getattr(library,prefix+'get_config'+suffix)
+            except AttributeError:continue
+            get.argtypes=[];get.restype=ctypes.c_int
+            set_threads.argtypes=[ctypes.c_int];set_threads.restype=None
+            parallel.argtypes=[];parallel.restype=ctypes.c_int
+            config.argtypes=[];config.restype=ctypes.c_char_p
+            runtimes.append((get,set_threads,dict(backend='OpenBLAS',library=str(path),configuration=config().decode(),
+                threads=int(get()),parallel=int(parallel()))))
+            break
+        else:
+            raise ValueError('Cannot verify OpenBLAS control API: '+str(path))
     accelerate=_accelerate_blas()
+    if accelerate is None and any(_declared_blas(p)=='accelerate' for p in (np,scipy)):
+        raise ValueError('Accelerate thread control is unavailable: macOS 15+ BLASGetThreading/BLASSetThreading APIs are required. Use a supported macOS/runtime combination; the thread count is not assumed unlimited.')
     if accelerate is not None:
         get,set_threads,info=accelerate
         runtimes.append((get,set_threads,dict(info,threads=1 if int(get())==1 else None,
@@ -147,7 +168,12 @@ def native_backend_info():
     result=dict(backend='Unknown',version='Unknown',threads=None,library=None,sha256=None,
                 numpy_version=np.__version__,platform=sys.platform,machine=platform.machine(),
                 cpu_count=os.cpu_count(),calculation_threads=1)
-    if sys.platform=='darwin':result['hardware']=hardware_info()
+    if sys.platform=='darwin':
+        from .macos_resources import _read
+        import scipy
+        hw=hardware_info();active=_read('hw.activecpu')
+        result['hardware']=dict(hw,available_logical_cores=min(hw['logical_cores'],active) if active and active>0 else hw['logical_cores'])
+        result['declared_backends']={p.__name__:_declared_blas(p) or 'unavailable' for p in (np,scipy)}
     found=_numpy_blas()
     if found:
         _,threads,info=found;result.update(info)
@@ -157,6 +183,12 @@ def native_backend_info():
         result.update(backend='Accelerate',version=platform.mac_ver()[0],library=info['library'],
                       threads=1 if int(get())==1 else None,threading_mode='single' if int(get())==1 else 'automatic')
     else:
+        if sys.platform=='darwin':
+            import scipy
+            declared={p.__name__:_declared_blas(p) or 'unavailable' for p in (np,scipy)}
+            result['declared_backends']=declared
+            if declared.get('numpy')=='accelerate':
+                result.update(backend='Accelerate',threading_mode='control API unavailable',version=platform.mac_ver()[0])
         # Optional introspection supports other installed runtimes, including MKL.
         # It is never required or used to change their process-global settings.
         try:
@@ -170,16 +202,25 @@ def native_backend_info():
         rows=[info for _,_,info in _blas_runtimes()]
         result['runtimes']=rows
         result['automatic_thread_control']=bool(rows) and all(row['parallel'] in (0,1) for row in rows)
-    except (OSError,ValueError,ImportError):
+        if not result['automatic_thread_control']:
+            result['thread_control_unavailable_reason']='No supported, verifiable numerical thread-control runtime was discovered.'
+        backends={row.get('backend','Unknown') for row in rows}
+        if len(backends)>1:result.update(backend='Mixed ('+', '.join(sorted(backends))+')',threads=None if any(row['threads'] is None for row in rows) else max(row['threads'] for row in rows))
+        elif rows and result['backend']=='Unknown':
+            result.update(backend=rows[0].get('backend','Unknown'),library=rows[0]['library'],threads=rows[0]['threads'])
+    except (OSError,ValueError,ImportError) as exc:
         result['runtimes']=[];result['automatic_thread_control']=False
+        result['thread_control_unavailable_reason']=str(exc)
     return result
 
 
 def worker_plan(settings,cfg,n,*,native=None,detector_pixels=None):
     native=native_backend_info() if native is None else native
     mode=cfg.worker_mode;requested=cfg.parallel_workers
-    limit=manual_worker_limit(native.get('hardware')) if native.get('platform')=='darwin' else 4
-    if mode not in ('automatic','manual') or type(requested) is not int or not 1<=requested<=limit:
+    hardware=native.get('hardware') or dict(logical_cores=native.get('cpu_count') or 1)
+    limit=manual_worker_limit(hardware) if native.get('platform')=='darwin' else 4
+    if (mode not in ('automatic','manual') or type(requested) is not int or requested<1
+            or requested>limit and (mode=='manual' or native.get('platform')!='darwin')):
         raise ValueError(f'Parallel Workers requires Automatic or Manual and an integer from 1 to {limit} for the detected hardware.')
     methods=('bloch','fft-multislice') if cfg.propagation=='both' else (cfg.propagation,)
     effective={};messages=[];adaptive={};blocked=False;risk='VALIDATED POLICY'
@@ -219,22 +260,27 @@ def worker_plan(settings,cfg,n,*,native=None,detector_pixels=None):
         messages.append('Accelerate is in automatic mode; its API does not expose a fixed thread count. Execution verifies single-thread mode in the calculation and detector threads.')
     elif native.get('threads') is None:
         if risk!='KNOWN UNSAFE':risk='UNVERIFIED COMBINATION'
-        messages.append('Native backend/thread count Unknown; this combination is not verified safe.')
+        messages.append('Fixed numerical thread count is unavailable from runtime introspection; no unsafe or unlimited count is inferred.')
     if risk=='UNVERIFIED COMBINATION' and not blocked:
         messages.append('Conservative execution allowed with a caution; passing memory admission is not native-stability certification.')
     if native.get('automatic_thread_control'):
         messages.append('Execution will set and verify 1 BLAS thread in each NumPy/SciPy runtime, then restore prior limits after workers stop.')
+    elif native.get('platform')=='darwin' and native.get('thread_control_unavailable_reason'):
+        blocked=True
+        messages.append('Verified numerical thread control unavailable: '+native['thread_control_unavailable_reason']+
+            ' No calculation started. This is a runtime capability restriction, not evidence of an unsafe or unlimited thread count.')
     if mode=='automatic':
         for method,detail in adaptive.items():
             messages.append(f'Auto {method}: {effective[method]} worker(s), CPU starting capacity {detail["cpu_capacity"]}, '
                 f'estimated independent tasks {detail["independent_tasks"]}. '+detail['reason'])
     return dict(mode=mode,requested_workers='Automatic' if mode=='automatic' else requested,
         adaptive=adaptive,manual_worker_limit=limit,
-        policy_version='parallel-workers-v1',
+        policy_version='macos-portable-workers-v2' if native.get('platform')=='darwin' else 'parallel-workers-v1',
         effective_workers=effective,native=native,risk=risk,blocked=blocked,
         status='Blocked' if blocked else ('Warning' if risk=='UNVERIFIED COMBINATION' else 'Supported'),
         messages=messages,policy='One calculation QThread; detector workers separate from native BLAS/LAPACK threads.',
-        evidence='Bounded Ni [017] 300 kV, 8 nm, 21/27-beam tests; not global numerical convergence.')
+        evidence=('Portable scheduling cost model; no benchmark-derived optimum. Native measurement scope is recorded in acceptance reports.'
+            if native.get('platform')=='darwin' else 'Bounded Ni [017] 300 kV, 8 nm, 21/27-beam tests; not global numerical convergence.'))
 
 
 def require_supported(plan):
@@ -253,9 +299,12 @@ def preview_text(settings,cfg,info):
     threads=(str(native['threads']) if native['threads'] is not None else
         'Automatic (fixed count unavailable; execution uses verified single-thread mode)'
         if native.get('backend')=='Accelerate' and native.get('automatic_thread_control') else 'Unavailable from runtime introspection')
+    if len(native.get('runtimes',[]))>1:
+        threads='; '.join(row.get('backend','BLAS')+' '+(str(row['threads']) if row.get('threads') is not None else row.get('threading_mode','count unavailable')) for row in native['runtimes'])
     hardware=native.get('hardware',{})
     topology=(f"CPU topology: {hardware.get('performance_cores')} performance + {hardware.get('efficiency_cores')} efficiency cores; {hardware.get('logical_cores')} logical\n"
         if hardware.get('performance_cores') is not None else '')
+    if hardware.get('available_logical_cores') is not None:topology+=f"Currently available logical CPUs: {hardware['available_logical_cores']}\n"
     return (topology+f'Voltage: {settings.voltage:g} kV | Beam cutoff: {settings.beam_cutoff:g} Å⁻¹ | Potential cutoff: {settings.potential_cutoff:g} Å⁻¹\n'
         f"Retained beams: {info['bw_beams']} / {info['fft_harmonics']} FFT harmonics | Propagation: {cfg.propagation} | {cfg.channeling_model.title()} Channeling\n"
         f"Energy samples: {cfg.energy_points} | Angular grid: {cfg.grid}×{cfg.grid}\n"
@@ -263,6 +312,6 @@ def preview_text(settings,cfg,info):
         f"NumPy BLAS: {native['backend']} {native['version']} | BLAS threads: {threads} | CPUs: {native['cpu_count']}\n"
         f"Estimated peak RAM: {peak_text} | Budget: {cfg.memory_budget_mib} MiB\n"
         f"Estimated calculation arrays: {info.get('estimated_working_mib',0):.1f} MiB\n"
-        f"Available RAM: {info.get('available_ram_mib',0):.1f} MiB (50% guard); active reservations: {info.get('concurrent_reserved_working_mib',0):.1f} MiB. Dense bound: {info['dense_working_estimate_mib']:.1f} MiB.\n") + (
+        f"Available RAM: {info.get('available_ram_mib',0):.1f} MiB; current RAM safety limit: {info.get('available_ram_limit_mib',0):.1f} MiB; active reservations: {info.get('concurrent_reserved_working_mib',0):.1f} MiB. Dense bound: {info['dense_working_estimate_mib']:.1f} MiB.\n") + (
         f"Status: {p['status']} — {p['risk']}\n"+' '.join(p['messages'])+'\n'+p['policy']+
         ('\n'+memory_contributors(info) if info.get('memory_breakdown_mib') else ''))

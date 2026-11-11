@@ -159,7 +159,7 @@ def validate_result(r):
 
 
 def run(root,output,profile='bounded'):
-    if profile not in ('bounded','medium','defaults','dialogs','lifecycle','adaptive-small','adaptive-confirm','adaptive-medium','adaptive-scaling','adaptive-lifecycle'):raise ValueError('Unknown corrective profile')
+    if profile not in ('bounded','medium','defaults','dialogs','lifecycle','adaptive-small','adaptive-confirm','adaptive-medium','adaptive-scaling','adaptive-lifecycle','adaptive-portable'):raise ValueError('Unknown corrective profile')
     root=Path(root).resolve();out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     logger=logging.getLogger('emcd_sim.gui');logger.addHandler(logging.FileHandler(out/'gui.log'));logger.setLevel(logging.INFO)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([]);app.setQuitOnLastWindowClosed(False)
@@ -171,7 +171,8 @@ def run(root,output,profile='bounded'):
     try:
         if profile=='dialogs':report['dialogs']=dialog_checks(app,root,out)
         else:
-            cases=([('NiFe2O4','local')] if profile=='adaptive-scaling' else
+            cases=([('Fe3O4','local')] if profile=='adaptive-portable' else
+                [('NiFe2O4','local')] if profile=='adaptive-scaling' else
                 [('Ni','global'),('Ni','local'),('Cr','local')] if profile in ('bounded','adaptive-small','adaptive-confirm') else
                 [('Fe3O4','local'),('NiFe2O4','local')] if profile in ('medium','adaptive-medium') else [('Ni','global'),('Cr','local')])
             with observe_blas(observations):
@@ -187,14 +188,14 @@ def run(root,output,profile='bounded'):
                             v.apply_groups();assert not v.isVisible(),v.editor.status.text()
                             w.propagation_box.setCurrentIndex(0 if method=='bloch' else 1)
                             w.channeling_box.setCurrentIndex(0 if channel=='single' else 1);w.worker_mode.setCurrentIndex(1)
-                            if profile in ('medium','adaptive-medium','adaptive-scaling'):
+                            if profile in ('medium','adaptive-medium','adaptive-scaling','adaptive-portable'):
                                 w.set_values(dict(grid=17,depth=9,fft_grid=24,beam=.65,potential=1.2));w.basis_mode.setCurrentIndex(0)
                             elif profile=='defaults':
                                 w.set_values(normal['values']);w.zone.setText(normal['zone']);w.target.setText(normal['target']);w.basis_mode.setCurrentIndex(0)
                                 w.energy_scope.setCurrentIndex(w.energy_scope.findData(normal['scope']))
                             if profile=='adaptive-small':
                                 requests=['auto']+[n for n in (1,2,4,6,8,10) if n<=pr.MAX_WORKERS]
-                            elif profile=='adaptive-confirm':
+                            elif profile in ('adaptive-confirm','adaptive-portable'):
                                 requests=['auto',min(8,pr.MAX_WORKERS) if channel=='double' else 1]
                             elif profile in ('adaptive-medium','adaptive-scaling'):
                                 requests=['auto',1]+([n for n in (6,8) if n<=pr.MAX_WORKERS] if channel=='double' else [])

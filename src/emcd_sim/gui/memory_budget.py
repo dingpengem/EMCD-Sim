@@ -111,11 +111,16 @@ def assess_memory(working_mib, budget_mib=DEFAULT_BUDGET_MIB, *, dense_mib=0., s
         count = len(_reservations)
     peak = rss+PROCESS_RESERVE_MIB+ALLOCATION_MARGIN*(working_mib+active)
     ram_limit = AVAILABLE_RAM_FRACTION*available
+    safety={}
+    if sys.platform=='darwin':
+        from .macos_resources import memory_safety
+        safety=memory_safety(state)
+        if safety:ram_limit=min(ram_limit,safety['system_process_limit_mib'])
     info = dict(memory_budget_mib=budget_mib, available_ram_mib=available,
         available_ram_fraction=AVAILABLE_RAM_FRACTION, available_ram_limit_mib=ram_limit,
         process_rss_mib=rss, estimated_process_peak_mib=peak,
         concurrent_reserved_working_mib=active, concurrent_calculations=count,
-        allocation_margin=ALLOCATION_MARGIN, process_reserve_mib=PROCESS_RESERVE_MIB)
+        allocation_margin=ALLOCATION_MARGIN, process_reserve_mib=PROCESS_RESERVE_MIB,**safety)
     critical=state.get('memory_pressure')=='critical' and working_mib>0
     info.update(memory_pressure=state.get('memory_pressure','unavailable'),swap_used_mib=state.get('swap_used_mib'))
     if peak > budget_mib or peak > ram_limit or critical:
@@ -123,7 +128,9 @@ def assess_memory(working_mib, budget_mib=DEFAULT_BUDGET_MIB, *, dense_mib=0., s
         if peak > budget_mib:
             cause.append(f'selected budget {budget_mib} MiB')
         if peak > ram_limit:
-            cause.append(f'50% of currently available RAM ({ram_limit:.1f} MiB of {available:.1f} MiB)')
+            cause.append((f'current RAM safety limit ({ram_limit:.1f} MiB; available {available:.1f} MiB, '
+                f'system reserve {safety["system_reserve_mib"]:.1f} MiB, pressure {state.get("memory_pressure","unavailable")})')
+                if safety else f'50% of currently available RAM ({ram_limit:.1f} MiB of {available:.1f} MiB)')
         message=(f'Memory admission rejected: dense kernel {dense_mib:.1f} MiB; estimated arrays {working_mib:.1f} MiB; '
             f'estimated total process peak {peak:.1f} MiB'+
             (' exceeds '+ ' and '.join(cause) if cause else '')+

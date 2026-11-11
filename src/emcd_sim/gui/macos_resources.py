@@ -71,10 +71,12 @@ def auto_memory_budget(snapshot=None):
     state=memory_snapshot() if snapshot is None else snapshot
     total=state.get('physical_memory_mib') or hardware_info().get('physical_memory_mib')
     if not total:raise ValueError('Auto memory budget unavailable: total physical RAM could not be determined; choose Manual MiB.')
+    if any(not math.isfinite(v) or v<=0 for v in (total,state['available_ram_mib'])) or not math.isfinite(state['process_rss_mib']) or state['process_rss_mib']<0:
+        raise ValueError('Auto memory budget unavailable: invalid physical RAM, available memory or process RSS measurement.')
     pressure=state.get('memory_pressure','unavailable')
     available=state['available_ram_mib'];rss=state['process_rss_mib']
-    reserve=max(1024.,.1*total)
-    fraction=.5 if pressure=='normal' else .35  # Missing pressure data is conservative too.
+    safety=memory_safety(dict(state,physical_memory_mib=total))
+    reserve=safety['system_reserve_mib'];fraction=safety['headroom_fraction']
     headroom=max(0.,available-reserve)*fraction
     limit=min(.5*total,.5*available,rss+headroom)
     if not math.isfinite(limit) or limit<1:raise ValueError('Auto memory admission rejected: no safe process headroom is currently available.')
@@ -82,14 +84,28 @@ def auto_memory_budget(snapshot=None):
         admission_rejected=pressure=='critical',
         available_ram_mib=available,baseline_process_rss_mib=rss,memory_pressure=pressure,
         swap_used_mib=state.get('swap_used_mib'),system_reserve_mib=reserve,
-        headroom_fraction=fraction,policy='macos-memory-v1; advisory current availability, rechecked at admission')
+        headroom_fraction=fraction,policy='macos-memory-v2; advisory current availability, safety reserve/pressure rechecked at admission')
+
+
+def memory_safety(state):
+    """Fresh system guard; manual budgets remain unchanged but are not RAM guarantees."""
+    total=state.get('physical_memory_mib')
+    if total is None:return {}  # Older/injected snapshots retain the 50% RAM guard.
+    if not math.isfinite(total) or total<=0:raise ValueError('Invalid physical RAM measurement')
+    reserve=max(1024.,.1*total)
+    fraction=.5 if state.get('memory_pressure')=='normal' else .35
+    limit=state['process_rss_mib']+max(0.,state['available_ram_mib']-reserve)*fraction
+    return dict(system_reserve_mib=reserve,headroom_fraction=fraction,system_process_limit_mib=limit)
 
 
 def adaptive_worker_count(settings,cfg,n,hardware,*,detector_pixels=None):
     """Capacity estimate, not an optimality claim or a persistent calibration."""
     logical=max(1,int(hardware.get('logical_cores') or 1))
     p=hardware.get('performance_cores')
-    capacity=min(logical,p if p else max(1,logical//2))
+    p=p if type(p) is int and 0<p<=logical else None
+    available=hardware.get('available_logical_cores',logical)
+    available=available if type(available) is int and 0<available<=logical else logical
+    capacity=min(available,p if p else max(1,available//2))
     if cfg.channeling_model=='single':return 1,dict(cpu_capacity=capacity,independent_tasks=1,reason='Single Channeling has no detector executor')
     pixels=cfg.grid**2
     # The GUI passes exact detector support where available. Otherwise use the
@@ -100,16 +116,23 @@ def adaptive_worker_count(settings,cfg,n,hardware,*,detector_pixels=None):
     selected=min(cfg.energy_points,len({float(v) for _,v in getattr(cfg,'selected_edges',())}) or 2) if cfg.angular_maps else 0
     full=cfg.angular_maps and cfg.angular_evaluation=='all'
     average=pixels if full else (selected*pixels+max(0,cfg.energy_points-selected)*detector_pixels)/max(1,cfg.energy_points)
-    tasks=max(1,math.ceil(average/(16 if cfg.propagation=='bloch' else 8)))
+    # Existing contractions bound batches to 64 BW / 32 MS pixels. This is
+    # algorithmic granularity, not a measured optimum on a particular chip.
+    batch_pixels=64 if cfg.propagation=='bloch' else 32
+    tasks=max(1,math.ceil(average/batch_pixels))
     if cfg.propagation=='bloch':
         work=average*(n**4 if cfg.systematic_row else cfg.depth*n*n)
+        preparation=n**3+cfg.depth*n*n
     else:
         mesh=cfg.fft_grid**(1 if cfg.systematic_row else 2)
         work=average*cfg.depth*(mesh*math.log2(max(mesh,2))+n*n)
-    # Bounded Ni/Cr measurements show tiny bases do not benefit from large
-    # pools. Larger-request thresholds are conservative starting heuristics.
-    proposed=1 if n<=8 or work<2e5 else 2 if work<2e6 else 4 if work<2e7 else capacity
+        preparation=cfg.depth*(mesh*math.log2(max(mesh,2))+n*n)+n**3
+    # Limit concurrency by parallel work relative to shared preparation. The
+    # square root leaves room for dispatch/reduction overhead; it is a general
+    # conservative cost model, not a calibrated prediction of elapsed time.
+    proposed=max(1,math.ceil(math.sqrt(work/max(1,preparation))))
     count=max(1,min(capacity,tasks,proposed))
     return count,dict(cpu_capacity=capacity,independent_tasks=tasks,estimated_work_units=work,
-        average_query_pixels=average,reason='Small-basis scaling evidence; otherwise workload/P-core starting policy. Memory admission may reduce Auto only.',
+        average_query_pixels=average,batch_pixels=batch_pixels,shared_preparation_work_units=preparation,
+        reason='Backend batch granularity and parallel/shared work ratio, bounded by available CPU capacity. Memory admission may reduce Auto only.',
         efficiency_cores_policy='Available to Manual scheduling; no affinity or claim about actual core placement')

@@ -56,6 +56,7 @@ def test_backend_unknown_is_not_guessed_from_cpu(monkeypatch):
     import emcd_sim.gui.parallel_resources as module
     monkeypatch.setattr(module,'_numpy_blas',lambda:None)
     monkeypatch.setattr(module,'_accelerate_blas',lambda:None)
+    monkeypatch.setattr(module,'_declared_blas',lambda package:'')
     with patch.dict('sys.modules',{'threadpoolctl':None}):value=module.native_backend_info()
     assert value['backend']=='Unknown' and value['threads'] is None
 

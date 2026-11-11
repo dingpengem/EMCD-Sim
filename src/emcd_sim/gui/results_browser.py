@@ -301,7 +301,8 @@ class ProjectWorkspace(ProjectSession):
         if frame_reason:self.error(frame_reason);return
         if r.get('fft_recipe_error'):self.error(r['fft_recipe_error']);return
         from .parallel_resources import MAX_WORKERS
-        if c.worker_mode not in ('automatic','manual') or type(c.parallel_workers) is not int or not 1<=c.parallel_workers<=MAX_WORKERS:
+        if (c.worker_mode not in ('automatic','manual') or type(c.parallel_workers) is not int or c.parallel_workers<1
+                or not hasattr(self,'memory_mode') and c.parallel_workers>MAX_WORKERS):
             self.error(f'Saved parallel-worker request is unsupported (Automatic/Manual, 1–{MAX_WORKERS}). Saved results remain viewable; inputs were not replaced or clamped.');return
         try:structure=restore_structure(r.get('structure_snapshot'))
         except Exception as exc:self.error(str(exc));return
@@ -333,9 +334,7 @@ class ProjectWorkspace(ProjectSession):
             if hasattr(self,'memory_mode') and r['metadata'].get('execution',{}).get('memory_policy',{}).get('mode')=='automatic':
                 with QtCore.QSignalBlocker(self.memory_mode):self.memory_mode.setCurrentIndex(0)
                 self.memory_budget.setEnabled(False)
-            with QtCore.QSignalBlocker(self.worker_mode):self.worker_mode.setCurrentIndex(0 if c.worker_mode=='automatic' else 1)
-            with QtCore.QSignalBlocker(self.worker_count):self.worker_count.setValue(c.parallel_workers)
-            self.worker_count.setEnabled(c.worker_mode=='manual')
+            self.restore_worker_request(c.worker_mode,c.parallel_workers)
             values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial if c.radial is not None else .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
             values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()});self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()
             self.sync_angular_resolution()

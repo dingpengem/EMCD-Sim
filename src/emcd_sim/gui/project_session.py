@@ -98,7 +98,8 @@ def restore_configuration(w,state):
     from .site_group_editor import validate_site_rows
     from .parallel_resources import MAX_WORKERS
     saved=state['config']
-    if type(saved.parallel_workers) is not int or not 1<=saved.parallel_workers<=MAX_WORKERS:
+    if (type(saved.parallel_workers) is not int or saved.parallel_workers<1
+            or not hasattr(w,'memory_mode') and saved.parallel_workers>MAX_WORKERS):
         raise ValueError(f'Saved worker request {saved.parallel_workers} exceeds this hardware range 1–{MAX_WORKERS}; inputs were not clamped')
     state=dict(state)
     enabled=state['config'].correction or bool(state.get('global_config') and state['global_config'].correction)
@@ -145,8 +146,7 @@ def restore_configuration(w,state):
             w.set_values(values);w.detectors=np.asarray(c.centers);w.sync_detectors();w.sync_za()
             for widget,value in ((w.angular_maps,c.angular_maps),(w.row_projection,c.systematic_row)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(value)
-            w.worker_count.setValue(c.parallel_workers)
-            w.worker_count.setEnabled(c.worker_mode=='manual')
+            w.restore_worker_request(c.worker_mode,c.parallel_workers)
             w._saved_global_config=state.get('global_config')
         drafts=state.get('metadata',{}).get('gui_drafts')
         if drafts:

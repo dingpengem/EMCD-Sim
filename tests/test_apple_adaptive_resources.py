@@ -42,7 +42,7 @@ def test_mac_manual_range_exceeds_four_but_not_detected_hardware(monkeypatch):
 def test_auto_uses_work_and_p_cores_not_every_logical_core(monkeypatch):
     monkeypatch.setattr(mac.sys,'platform','darwin')
     cfg=ForwardSettings(channeling_model='double',grid=97,depth=64,energy_points=2)
-    small=worker_plan(Settings(),cfg,2,native=NATIVE)
+    small=worker_plan(Settings(),replace(cfg,grid=9,angular_maps=False),2,native=NATIVE)
     large=worker_plan(Settings(),cfg,61,native=NATIVE)
     assert small['effective_workers']=={'bloch':1}
     assert large['effective_workers']=={'bloch':6}
@@ -96,5 +96,16 @@ def test_auto_controls_and_resolved_budgets_round_trip(tmp_path,monkeypatch):
         assert w.resource_budget()==budget
         w.memory_mode.setCurrentIndex(1);w.restore_memory_budget(777)
         assert w.resource_budget()==777 and w.memory_budget.currentData()==777
+        # Simulate moving a saved request from a larger Mac to a smaller one.
+        w.restore_worker_request('manual',64)
+        state=capture_configuration(w)
+        from emcd_sim.gui import parallel_resources
+        monkeypatch.setattr(parallel_resources,'MAX_WORKERS',4)
+        restore_configuration(w,state)
+        assert w.worker_mode.currentIndex()==1 and w.worker_count.value()==64
+        assert w.memory_mode.currentIndex()==1 and w.resource_budget()==777
+        state['config']=replace(state['config'],worker_mode='automatic')
+        restore_configuration(w,state)
+        assert w.worker_mode.currentIndex()==0 and w.worker_count.value()==64
     finally:
         w.project_dirty=False;w.close();w.deleteLater();application.processEvents()
