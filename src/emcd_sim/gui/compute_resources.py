@@ -12,6 +12,7 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
         super().__init__(parent)
         self.info=None
         form=QtWidgets.QFormLayout(self);form.setContentsMargins(0,0,0,0)
+        form.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
         form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         self.hardware=QtWidgets.QLabel();self.hardware.setWordWrap(True);form.addRow(self.hardware)
         self.worker_mode=QtWidgets.QComboBox();self.worker_mode.addItems(['Auto (recommended)','Manual'])
@@ -35,7 +36,18 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
         self.blas=QtWidgets.QLabel();self.blas.setWordWrap(True);form.addRow(self.blas)
         for widget in (self.worker_mode,self.memory_mode):widget.currentIndexChanged.connect(self._changed)
         for widget in (self.worker_count,self.memory_budget):widget.valueChanged.connect(self.changed)
+        self._labels=(self.hardware,self.workers,self.budget,self.estimate,self.explanation,self.blas)
         self._sync();self.refresh_hardware()
+
+    def _fit_labels(self):
+        # Nested forms in a scroll area can shrink word-wrapped rows below
+        # their height-for-width hint. Reserve the actual readable height.
+        for label in self._labels:
+            label.setMinimumHeight(max(label.fontMetrics().height(),label.heightForWidth(max(1,label.width()))))
+
+    def resizeEvent(self,event):
+        super().resizeEvent(event)
+        self._fit_labels()
 
     def _sync(self):
         for mode,field,label in ((self.worker_mode,self.worker_count,self.worker_caption),
@@ -78,12 +90,14 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
             self.hardware.setToolTip('\n'.join(details))
         except (OSError,ValueError,KeyError) as exc:
             self.hardware.setText('Hardware/resource measurement unavailable: '+str(exc))
+        self._fit_labels()
 
     def pending(self,reason):
         self.info=None
         self.refresh_hardware();self.workers.setText('Effective workers: Pending')
         self.budget.setText('Effective memory budget: Pending');self.estimate.setText('Current Calculation Estimate\nAdmission: Pending')
         self.explanation.setText(str(reason));self.blas.clear()
+        self._fit_labels()
 
     def show_estimate(self,cfg,info):
         self.info=info
@@ -107,3 +121,4 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
         counts=', '.join(str(row['threads']) for row in runtimes) if runtimes else str(native.get('threads') or 'Unavailable')
         self.blas.setText('BLAS: '+('1 thread per runtime during Run (verified on entry).' if native.get('automatic_thread_control') else 'Automatic control unavailable; review admission.')+' Current: '+counts+'.')
         self.blas.setToolTip('GUI thread, calculation QThread and outer detector workers are distinct from native BLAS threads.\n'+str(runtimes))
+        self._fit_labels()
