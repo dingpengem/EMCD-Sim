@@ -79,7 +79,7 @@ The screenshot shows the initial unconfigured state. **Site groups** is the tab 
 2. Enter `0 0 1` in **Global Material M (x y z)**: three numbers separated by spaces.
 3. Click **Configure MDFF…**. MDFF is the model used for the inelastic scattering calculation. Check that the context says **Global Material configuration**.
 4. Choose **XMCD-constrained MDFF**. Click **Browse XMCD…** and open your Documents copy of **Ni_fm.xmcd**.
-5. Click **Validate source / native features**. Confirm **L3 = 831.271 eV**, **L2 = 848.698 eV**, **eta = 1** and **beta = 1**. These selections belong to this particular file.
+5. Browsing checks the source automatically. Click **Recheck source (optional)** if needed. Confirm **L3 = 831.271 eV**, **L2 = 848.698 eV**, **eta = 1** and **beta = 1**. These selections belong to this particular file.
 6. Complete the example declarations below. Review them before checking the convention acknowledgement.
 
 | Field | Example value |
@@ -90,7 +90,7 @@ The screenshot shows the initial unconfigured state. **Site groups** is the tab 
 | Physical assumptions / limits | `Effective axisymmetric XMCD-derived Ni diagnostic; not quantitatively calibrated` |
 | Relative tensor reference | `1` |
 | Scientific status | `physical_source_unvalidated` |
-| Convention acknowledgement | Check **I declare M axis, RP/LP convention and edge assignments** for this supplied example. |
+| Convention acknowledgement | Review and check **Confirm RP−LP about Material +M and the displayed L3/L2 assignments** for this supplied example. |
 
 7. Click **Done**. You should return to the 3D Viewer. Then click the Viewer's **Apply and Close** to accept the complete configuration. Closing only the MDFF window does not complete this step.
 

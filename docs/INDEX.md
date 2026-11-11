@@ -8,7 +8,8 @@
 |---|---|
 |[Windows Installation](INSTALL_WINDOWS.md)|Correct Windows ZIP, requirements and troubleshooting|
 |[macOS ARM64 Installation](INSTALL_MACOS.md)|Apple Silicon Finder installation, signing limitations and examples|
-|[macOS ARM64 Quick Start](QUICK_START_MACOS.md)|Representative Ni energy spectrum and 97×97 momentum maps; complete settings and limits|
+|[macOS ARM64 Quick Start](QUICK_START_MACOS.md)|Packaged-app-validated 243-energy Ni spectrum and 97×97 momentum maps; genuine figures and measurements|
+|[macOS Quick Start acceptance](MACOS_QUICK_START_ACCEPTANCE.md)|Exact published-app identity, native automation, numerical checks and remaining limits|
 |[Quick Start](QUICK_START.md)|Small first Ni simulation, explicitly not converged research settings|
 |[MDFF construction and workflows](MDFF_WORKFLOWS.md)|Current XMCD, Atomic, constant/manual spectral and imported methods; explicit selections, units/defaults, existing-input example, and normal project creation|
 |[Complete Tutorial](TUTORIAL.md)|From crystal/diffraction through MDFF, channeling and measurement definitions|
