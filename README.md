@@ -6,12 +6,14 @@ Research software for electron magnetic circular dichroism (EMCD), core-loss EEL
 
 | Platform | Version and package | Installation | First calculation | Release notes |
 | --- | --- | --- | --- | --- |
-| Windows x64 | **v0.9.0-beta.2** — [release assets](https://github.com/dingpengem/EMCD-Sim/releases) | [Windows installation](docs/INSTALL_WINDOWS.md) | [Windows Quick Start](docs/QUICK_START.md) | [Windows beta.2](docs/RELEASE_NOTES_0_9_0_BETA_2.md) |
+| Windows x64 | [v0.9.0-beta.2 Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.2/EMCD-Sim-v0.9.0-beta.2-Windows.zip) | [Windows installation](docs/INSTALL_WINDOWS.md) | [Windows Quick Start](docs/QUICK_START.md) | [Windows beta.2](docs/RELEASE_NOTES_0_9_0_BETA_2.md) |
 | macOS Apple Silicon | [v0.9.0-beta.1-macos-arm64.1 ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1-macos-arm64.1/EMCD-Sim-v0.9.0-beta.1-macos-arm64.1-macOS-ARM64.zip) | [macOS installation](docs/INSTALL_MACOS.md) | [macOS Quick Start](docs/QUICK_START_MACOS.md) | [macOS ARM64 notes](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1-macos-arm64.1/docs/RELEASE_NOTES_MACOS_ARM64_1.md) |
 
 Download and **extract the complete folder**, then launch the EXE/app. Packaged use requires neither Python nor Conda, nor manual BLAS environment variables. Windows requires the documented external Microsoft x64 VC++ v14 runtime. The macOS app is ad-hoc signed, not notarized; follow its first-launch guide.
 
 Windows and macOS packages have **different source revisions**. Each package's build information and matching corresponding-source asset identify its exact source. [Earlier releases](https://github.com/dingpengem/EMCD-Sim/releases), including Windows beta.1, remain available unchanged.
+
+Published Windows beta.2 source: `18f63bfe20c24be128c53c5f55ef3cfdf7f6b246`; published macOS ARM64 source: `03dc8f8d1f0374984c9fc81866eaa32ce48008d0`. This homepage's post-publication download-link update does not change either tagged package.
 
 ## Capabilities
 
