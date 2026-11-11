@@ -47,8 +47,20 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
     def _fit_labels(self):
         # Nested forms in a scroll area can shrink word-wrapped rows below
         # their height-for-width hint. Reserve the actual readable height.
-        for label in self._labels:
-            label.setMinimumHeight(max(label.fontMetrics().height(),label.heightForWidth(max(1,label.width()))))
+        if getattr(self,'_fitting',False):return
+        self._fitting=True
+        try:
+            for label in self._labels:
+                label.setMinimumHeight(max(label.fontMetrics().height(),label.heightForWidth(max(1,label.width()))))
+            widgets=[self];parent=self.parentWidget()
+            if parent is not None and hasattr(parent,'presentation_section'):
+                widgets.extend((parent,parent.parentWidget(),parent.presentation_section))
+            # Recompute the enclosing minimums too: Qt otherwise retains the
+            # old short Pending-label height after a live estimate is filled.
+            for widget in widgets:
+                if widget.layout():widget.layout().invalidate();widget.layout().activate()
+                widget.updateGeometry()
+        finally:self._fitting=False
 
     def resizeEvent(self,event):
         super().resizeEvent(event)
@@ -124,6 +136,9 @@ class ComputeResourcesPanel(QtWidgets.QWidget):
             f"\nCurrent RSS: {info['process_rss_mib']:.1f} MiB; additional allocation: {info['additional_allocation_mib']:.1f} MiB.")
         native=execution['native'];runtimes=native.get('runtimes',[])
         counts=', '.join(str(row['threads']) for row in runtimes) if runtimes else str(native.get('threads') or 'Unavailable')
-        self.blas.setText('BLAS: '+('1 thread per runtime during Run (verified on entry).' if native.get('automatic_thread_control') else 'Automatic control unavailable; review admission.')+' Current: '+counts+'.')
-        self.blas.setToolTip('GUI thread, calculation QThread and outer detector workers are distinct from native BLAS threads.\n'+str(runtimes))
+        control='Run 1' if native.get('automatic_thread_control') else 'uncontrolled'
+        self.blas.setText('BLAS threads: '+control+'; now '+counts.replace(', ','/')+'.')
+        self.blas.setToolTip('One thread per supported BLAS runtime is set and verified on calculation entry, then prior limits are restored. '
+            'If automatic control is unavailable, admission reports the limitation.\n'
+            'GUI thread, calculation QThread and outer detector workers are distinct from native BLAS threads.\n'+str(runtimes))
         self._fit_labels()
