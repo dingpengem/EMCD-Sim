@@ -45,3 +45,11 @@ selections are injected in automation; human file-dialog/trackpad acceptance
 must be recorded separately. Synthetic Cr, magnetite and ferrite tests establish
 software behavior, not calibrated spectroscopy. See MACOS_ACCEPTANCE.md for
 observed results, incomplete workflows and numerical comparison scope.
+
+The completed local candidate is at
+`outputs/macos-arm64-candidate-20261110/EMCD-Sim.app` under the original checkout.
+The recorded build uses commit `a96f24203c3631761031cb072ff87b2a65b2fdee` and the
+fresh build root `build/macos-arm64-final` in the development worktree. Both the
+original and relocated app have been launched through macOS LaunchServices.
+The relocated app passed 12 bounded native cases; see the acceptance report for
+remaining human/Windows validation gaps and legacy test failures.
