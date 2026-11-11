@@ -2,7 +2,7 @@
 
 EMCD-Sim is a desktop application. You do not need programming experience, Terminal, Python, Conda or developer tools to use the packaged app.
 
-Use the published **v0.9.0-beta.1-macos-arm64.1** Research Beta on the [official releases page](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1). Download the macOS application ZIP from its **Assets** list. Do not download a Windows ZIP or GitHub's **Source code** ZIP as a Mac application. Follow the [separate macOS Quick Start](QUICK_START_MACOS.md) after installing.
+Use the published **v0.9.0-beta.1-macos-arm64.1** Research Beta on the [official releases page](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1). Download the macOS application ZIP from its **Assets** list. Do not download a Windows ZIP or GitHub's **Source code** ZIP as a Mac application. After installing, follow the [normal Ni spectrum + 97×97 momentum-map Quick Start](QUICK_START_MACOS.md). The smaller two-energy example below is retained only as an optional packaged diagnostic.
 
 ## 1. Check your Mac
 
@@ -58,9 +58,9 @@ The current bundle stores examples inside the app. **Copy** them to Documents wi
 
 The CIF file describes the crystal's atoms and cell. The XMCD file supplies the example magnetic spectroscopy input.
 
-## 5. Quick Start: a verified small nickel calculation
+## 5. Optional minimal packaged Ni diagnostic
 
-This recipe matches **Ni_global_BW_single**, which passed native packaged-app acceptance, including result export. It deliberately uses a small calculation to check the workflow. The data and model are research approximations.
+**This is a minimal software-check example, not the recommended normal Quick Start.** For sampled spectra and 97×97 momentum maps, use the [normal macOS Quick Start](QUICK_START_MACOS.md). The minimal recipe below matches **Ni_global_BW_single**, which passed packaged-app acceptance including export. It deliberately computes only two energies on a 9×9 grid and uses a 0.1 nm thickness to check basic functionality.
 
 ### Open the crystal
 
