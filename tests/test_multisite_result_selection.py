@@ -130,6 +130,38 @@ def select(view, mode, value=None):
     assert index >= 0;box.setCurrentIndex(index)
 
 
+@pytest.mark.parametrize('quantity',[0,1])
+def test_legend_click_hides_complete_curve_and_survives_reflow_export(view,tmp_path,quantity):
+    result=stored_result('FeNi');before=deepcopy(result['spectra'])
+    view.set_result(result);select(view,'compare')
+    include=next(box for box in view.multisite_controls.findChildren(QtWidgets.QCheckBox)
+                 if box.text()=='Include total spectrum')
+    include.setChecked(True);view.multisite_controls.quantity.setCurrentIndex(quantity)
+    # Total spans two disjoint modeled windows. One legend entry must control
+    # BOTH segments, while independent group/state curves stay untouched.
+    proxy,target=next((p,t) for p,t in view.proxies if isinstance(t,tuple) and len(t)==2)
+    label=next(p for p,t in view.proxies if t is target and hasattr(p,'get_text'))
+    other=next(t for p,t in view.proxies if t is not target)
+    from matplotlib.backend_bases import MouseEvent
+    def click(artist):
+        view.canvas.draw()
+        box=artist.get_window_extent(view.canvas.get_renderer())
+        view.figure.pick(MouseEvent('button_press_event',view.canvas,(box.x0+box.x1)/2,(box.y0+box.y1)/2,button=1))
+    click(proxy)
+    assert all(not line.get_visible() for line in target)
+    assert all(line.get_visible() for line in other)
+    assert proxy.get_alpha()==label.get_alpha()==.2
+    view.presentation.reflow(900)
+    view.canvas.print_figure(tmp_path/'hidden_curve.png')
+    assert all(not line.get_visible() for line in target)
+    assert proxy.get_alpha()==label.get_alpha()==.2
+    click(label)
+    assert all(line.get_visible() for line in target)
+    assert proxy.get_alpha()==label.get_alpha()==1
+    assert len(view.presentation.specs)==(2 if quantity==0 else 1)
+    for key,value in before.items():np.testing.assert_array_equal(result['spectra'][key],value)
+
+
 def test_gui_switching_means_comparison_elements_and_methods_without_recalculation(view):
     result = stored_result();before = deepcopy(result['spectra']);view.set_result(result)
     controls = view.multisite_controls

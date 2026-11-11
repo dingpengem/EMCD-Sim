@@ -42,20 +42,32 @@ def test_map_reflow_and_export_preserve_saved_samples(app,tmp_path):
     canvas.close()
 
 
-def test_comparison_legends_have_space_without_changing_curves(app,tmp_path):
+@pytest.mark.parametrize('count',[2,8,14])
+def test_comparison_legends_have_space_without_changing_curves(app,tmp_path,count):
     from matplotlib.figure import Figure
     from emcd_sim.gui.responsive import FigurePresentation
     fig=Figure(layout='constrained');canvas=ResponsiveCanvas(fig)
-    ax=fig.subplots();x=np.array([1.,2.,4.])
-    lines=[ax.plot(x,x*i,label=f'Long declared site group {i} · arbitrary element / edge | Detector A')[0] for i in range(1,7)]
+    ax,lower=fig.subplots(2,1,sharex=True);x=np.array([1.,2.,4.])
+    lines=[ax.plot(x,x*i,label=f'Long declared site group {i} · arbitrary element / edge | Detector A')[0] for i in range(1,count+1)]
+    for i in range(count):lower.plot(x,-x,label='long_unbroken_group_identifier_'+str(i)*40+' | reversal-odd')
+    ax.set_ylabel('Intensity (a.u.)');lower.set(xlabel='Energy loss (eV)',ylabel='Intensity difference (a.u.)')
+    lower.legend(fontsize=8)
     legend=ax.legend();proxy=legend.get_lines()[0];proxy.set_picker(5)
     fig.suptitle('Group Comparison | original intensity scale')
-    presentation=FigurePresentation(canvas,'eels',QtWidgets.QLabel());canvas.resize(430,900);presentation.capture()
-    axes=list(fig.axes);canvas.draw();canvas.print_figure(tmp_path/'comparison.png')
-    canvas.resize(900,900);presentation.update();canvas.draw()
+    presentation=FigurePresentation(canvas,'eels',QtWidgets.QLabel());canvas.resize(430,900);presentation.capture();canvas.show();QtTest.QTest.qWait(180)
+    axes=list(fig.axes)
+    def fits():
+        canvas.draw();renderer=canvas.get_renderer()
+        for data,space,item,labels in presentation.legends:
+            box=item.get_window_extent(renderer);slot=space.get_window_extent(renderer)
+            assert slot.contains(box.x0,box.y0) and slot.contains(box.x1,box.y1),(slot.extents,box.extents)
+            assert all(not box.overlaps(a.get_tightbbox(renderer,for_layout_only=True)) for a in (ax,lower))
+            assert all(''.join(t.get_text().split())==''.join(label.split()) for t,label in zip(item.get_texts(),labels))
+    fits();canvas.print_figure(tmp_path/'comparison.png')
+    canvas.resize(900,canvas.minimumHeight());QtTest.QTest.qWait(180);presentation.update();fits()
     assert fig.axes==axes and ax.get_legend() is None
-    assert len(presentation.legends)==1
-    assert legend in fig.axes[-1].get_children()
+    assert len(presentation.legends)==2
+    assert legend in presentation.legends[0][1].get_children()
     assert legend.get_lines()[0] is proxy and proxy.get_picker()==5
     for i,line in enumerate(lines,1):
         np.testing.assert_array_equal(line.get_xdata(),x)

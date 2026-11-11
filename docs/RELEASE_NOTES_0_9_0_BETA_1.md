@@ -13,6 +13,8 @@
 
 ## Scoped evidence reused
 
+RC2 addresses the outstanding comparison-legend crowding in the shared EELS rendering path. Legend rows use actual font/DPI measurements, wrap full labels and grow the scrollable canvas rather than overlap curves or axis decorations. Both primary EELS/component panels and signal-only views retain clickable complete curves across separate modeled windows; the same legend artists remain in figure exports. This is a presentation correction, with no propagation, normalization or saved-array changes. Existing broad verification and scientific limitations below remain unchanged.
+
 | Evidence | Meaning and limit |
 | --- | --- |
 | Legacy Ni, synthetic AFM Cr, inverse-spinel Fe₃O₄ and ordered NiFe₂O₄ validation | Existing scientific/numerical fixtures and native workflows; synthetic/effective MDFF is not calibrated material spectroscopy. See the corresponding `tests/test_multisite_scientific_validation.py`, `test_magnetite_site_benchmark.py`, and `test_nickel_ferrite_site_benchmark.py`. |
@@ -40,8 +42,8 @@ Independent clean-PC/VM Windows acceptance is unverified; Linux/macOS packages a
 
 ## Local package and proposed publication assets
 
-- `EMCD-Sim-v0.9.0-beta.1-Windows-RC1.zip` — complete portable folder, EXE and `_internal`.
-- `EMCD-Sim-v0.9.0-beta.1-Corresponding-Source-RC1.zip` — exact committed application source plus matching Qt/PySide/Shiboken sources and build/replacement instructions.
+- `EMCD-Sim-v0.9.0-beta.1-Windows-RC2.zip` — complete portable folder, EXE and `_internal`. RC1 remains preserved separately.
+- `EMCD-Sim-v0.9.0-beta.1-Corresponding-Source-RC2.zip` — exact committed application source plus matching Qt/PySide/Shiboken sources and build/replacement instructions.
 - Existing manifest/checksums and dependency licenses are retained. Qt PDF/Virtual Keyboard stay excluded; the required external Microsoft runtime is not bundled. spglib and Adaptive factor licensing/provenance remain included. Dependencies are not upgraded.
 
 The source remains on the feature branch. Main integration, any tag creation and publication are **not performed** by this preparation. The original main worktree's unrelated changes must remain intact. See [Quick Start](QUICK_START.md), [User Guide](USER_GUIDE.md), [installation](INSTALL_WINDOWS.md) and [changelog](CHANGELOG.md).

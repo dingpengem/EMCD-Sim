@@ -145,7 +145,7 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
     cfg=result['config'];multisite=cfg.model=='multisite'
     from .multisite_results import spectral_series,covered_segments,QUANTITIES,selection_description
     fields=QUANTITIES[quantity][1] if multisite and quantity else None
-    fig.clear();axes=np.atleast_1d(fig.subplots(1 if fields else 2,1,sharex=True));legends=[];records=[]
+    fig.clear();axes=np.atleast_1d(fig.subplots(1 if fields else 2,1,sharex=True));legends=[];records=[];targets={}
     methods=result.get('methods',{result.get('method','bloch'):result});method=method or result.get('method','bloch')
     chosen=methods if method=='overlay' else {method:methods[method]}
     for name,r in chosen.items():
@@ -156,12 +156,13 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
             s=item['spectra'];prefix=(name+': ' if len(chosen)>1 else '')+(item['label']+' | ' if len(series)>1 else '')
             segments=covered_segments(r,e,item['groups']) if multisite else [np.ones(len(e),bool)]
             def plot(ax,value,label,color,linestyle='-'):
-                drawn=False
+                drawn=False;segments_drawn=[]
                 for mask in segments:
                     if not np.any(mask):continue
                     line_style=dict(style)
                     if len(series)>1:line_style.update(ls='None' if points else linestyle)
-                    ax.plot(e[mask],np.asarray(value)[mask],label=prefix+label if not drawn else None,color=color,**line_style);drawn=True
+                    segments_drawn.extend(ax.plot(e[mask],np.asarray(value)[mask],label=prefix+label if not drawn else None,color=color,**line_style));drawn=True
+                if segments_drawn:targets.setdefault(ax,[]).append(tuple(segments_drawn))
             for i,(key,label) in enumerate(fields or [('I_A_plus','Detector A'),('I_B_plus','Detector B')]):
                 plot(axes[0],s[key],label,'C'+str(index%10) if len(series)>1 else 'C'+str(i),('-','--',':','-.')[i%4])
             curves,meta=components(s,component_mode)
@@ -178,7 +179,11 @@ def draw_eels(fig,result,zoom='Full spectrum',method=None,display=None,*,compone
     samples=[(label,float(value)) for label,value in selected_samples(cfg) if np.isfinite(value)]
     for ax in axes:
         ax.grid(alpha=.15)
-        if ax.get_legend_handles_labels()[0]:ax.legend(fontsize=8,loc='upper right')
+        if ax.get_legend_handles_labels()[0]:
+            legend=ax.legend(fontsize=8,loc='upper right')
+            for proxy,text,lines in zip(legend.get_lines(),legend.get_texts(),targets[ax]):
+                proxy.set_picker(5);text.set_picker(True)
+                legends.extend(((proxy,lines),(text,lines)))
         else:ax.text(.5,.5,'No modeled samples for this selection; excluded/unmodeled is not physical zero.',ha='center',va='center',wrap=True,transform=ax.transAxes,fontsize=8)
         if not fields:
             for v in dict.fromkeys(v for _,v in samples):ax.axvline(v,color='.6',ls=':',lw=.6)
@@ -600,8 +605,14 @@ class ResultsView(QtWidgets.QWidget):
                 export_derived(entries,Path(parent)/datetime.now().strftime('derived_%Y%m%d_%H%M%S_%f'),self.normalization.settings(),self.choice.currentText(),prb_options=options)
             except (ValueError,OSError) as exc:self.owner.error(str(exc))
     def pick(self,event):
-        for proxy,line in self.proxies:
-            if event.artist is proxy:line.set_visible(not line.get_visible());proxy.set_alpha(1 if line.get_visible() else .2);self.canvas.draw_idle()
+        for proxy,target in self.proxies:
+            if event.artist is proxy:
+                lines=target if isinstance(target,tuple) else (target,)
+                visible=not any(line.get_visible() for line in lines)
+                for line in lines:line.set_visible(visible)
+                for artist,other in self.proxies:
+                    if other is target:artist.set_alpha(1 if visible else .2)
+                self.canvas.draw_idle();return
 
 
 def _single_comparison_text(result,windows=None,reference=None):

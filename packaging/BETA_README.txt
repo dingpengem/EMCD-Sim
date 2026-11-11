@@ -1,4 +1,4 @@
-EMCD-Sim v0.9.0-beta.1 — Windows Research Beta local release candidate
+EMCD-Sim v0.9.0-beta.1 — Windows Research Beta local release candidate RC2
 NOT PUBLISHED. Exact committed source, dependencies and build time are in
 _internal/build_info.json and the existing build manifest. Prior development
 candidates remain separate; this is not independent clean-PC/VM acceptance.
@@ -9,7 +9,7 @@ Windows 10/11 x64. Python, Conda and WIEN2k are not required at runtime.
 Install Microsoft's official x64 Visual C++ v14 runtime (14.44.35211 or newer):
 https://aka.ms/vc14/vc_redist.x64.exe . The runtime/installer is not bundled.
 Use a writable project/export folder and retain the supplied SHA256SUMS.txt.
-The matching Corresponding-Source-RC1 ZIP contains EMCD-Sim-source.zip plus
+The matching Corresponding-Source-RC2 ZIP contains EMCD-Sim-source.zip plus
 matching Qt/PySide/Shiboken dependency sources and replacement instructions.
 See _internal/licenses/qt/SOURCE_AND_REPLACEMENT.md and component licenses.
 Unused Qt PDF and Virtual Keyboard components are excluded. ASE, spglib and
@@ -55,6 +55,9 @@ is retained. Total, Element, Group Contribution, Group Mean and comparisons use
 saved arrays without recalculation. Additive contributions use Total's fixed
 selected-atom denominator; group means and percentages are not additive.
 Raw +M/-M, reversal-even/odd and conventional A-B are distinct quantities.
+Shared EELS legends wrap in measured rows below the curves, remain clickable,
+and retain complete curve identification in figure exports. Scroll the Results
+panel when needed; RC1 packages remain a separate unpublished candidate.
 Independent windows/gaps describe a modeled partial core-edge spectrum.
 File > New Project / Open Project / Save / Save As / Close Project manages a
 complete multi-calculation project. Keep a new calculation rather than replacing
