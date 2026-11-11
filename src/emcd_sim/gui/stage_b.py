@@ -101,6 +101,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         with QtCore.QSignalBlocker(self.worker_mode):self.worker_mode.setCurrentIndex(0 if mode=='automatic' else 1)
         self.worker_count.setEnabled(mode=='manual')
         self.worker_count.setToolTip(f'Current hardware supports 1–{MAX_WORKERS} workers. Saved requests are preserved; unsupported Manual requests reject at Run.')
+        if hasattr(self,'resource_panel'):self.resource_panel.sync_modes()
 
     def resource_budget(self):
         if hasattr(self,'memory_mode') and self.memory_mode.currentIndex()==0:
@@ -120,6 +121,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if hasattr(self,'memory_mode'):
             with QtCore.QSignalBlocker(self.memory_mode):self.memory_mode.setCurrentIndex(1)
             self.memory_budget.setEnabled(True)
+        if hasattr(self,'resource_panel'):self.resource_panel.sync_modes()
 
     emcd_ready=QtCore.Signal()
     def mdff_controls(self):
@@ -288,13 +290,19 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.memory_label.setToolTip('Diagnostic estimate for the selected solver(s), common basis, sampling and current RAM. The budget controls admission, never an automatic parameter reduction.')
         self.form=shared_form
 
-        # Physical approximations remain accessible in Automatic mode.
-        for widget in (self.spin['b'],self.row_projection):
+        # Physical parameters belong with their material/propagation context.
+        for widget,destination in ((self.spin['b'],self.material_form),(self.row_projection,self.propagation_form)):
             row=self.shared_elastic_group.layout().takeRow(widget)
-            if row.labelItem:self.form.addRow(row.labelItem.widget(),widget)
-            else:self.form.addRow(widget)
+            if row.labelItem:destination.addRow(row.labelItem.widget(),widget)
+            else:destination.addRow(widget)
         self.memory_label.parentWidget().layout().removeWidget(self.memory_label)
-        self.resource_estimate=CollapsibleSection('Resource estimate',self.memory_label,expanded=False);self.resource_estimate.setObjectName('resource_estimate');self.form.addRow(self.resource_estimate)
+        self.resource_estimate=CollapsibleSection('Resource estimate',self.memory_label,expanded=False);self.resource_estimate.setObjectName('resource_estimate')
+        if sys.platform=='darwin':
+            from .compute_resources import ComputeResourcesPanel
+            self.resource_panel=ComputeResourcesPanel(self)
+            self.shared_resources_group.presentation_section.header.setText('Compute Resources')
+            self.shared_resources_group.setAccessibleName('Compute Resources')
+        else:self.form.addRow(self.resource_estimate)
         self.setup_numerical_mode(shared_form)
 
     def set_angular_resolution(self,*_):
@@ -498,13 +506,14 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if cfg.model=='xmcd' and not cfg.axis_declared:raise ValueError('Declare XMCD conventions before Run EMCD')
             if cfg.model=='atomic' and not hasattr(cfg,'provider_schema') and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
             from .propagation import numerical_info
-            info=numerical_info(self.structure,s,replace(cfg,energy_points=count),enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
+            # Use the exact same configured request as Run, including its energy
+            # scheduling declaration. Actual energy counts are reported above.
+            info=numerical_info(self.structure,s,cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             from .parallel_resources import preview_text
             self.memory_label.setText(preview_text(s,cfg,info))
             policy=getattr(self,'_memory_policy',{})
             self.memory_label.setText(self.memory_label.text()+f'\nMemory budget mode: {policy.get("mode","manual")}; effective {cfg.memory_budget_mib} MiB. '
                 + (f'Pressure: {policy.get("memory_pressure")}; system reserve: {policy.get("system_reserve_mib",0):.0f} MiB.' if policy.get('mode')=='automatic' else 'Manual budget is never increased automatically.'))
-            if sites is not None and cfg.channeling_model=='double':self.memory_label.setText(self.memory_label.text()+'\nInitial estimate; production admission includes retained multi-site arrays before propagation.')
             if info.get('numerical_warnings'):self.memory_label.setText(self.memory_label.text()+'\n'+'\n'.join(info['numerical_warnings']))
             if sites is not None:
                 groups=', '.join(g.group_id+' ('+g.mdff_reference.model+')' for g in sites.groups)
@@ -532,6 +541,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             self.invalidate_on_source_error(exc)
             if str(exc) in ('Atomic draft ready for explicit preview or calculation','Manual draft ready for explicit preview or calculation'):
                 reason='';self.memory_label.setText(str(exc)+'; resources checked when calculation starts.')
+        if hasattr(self,'resource_panel'):self.resource_panel.present(cfg,info,reason or (self.memory_label.text() if info is None else ''))
         self.emcd_button.setEnabled(not reason and not self.busy);self.emcd_button.setToolTip(reason or 'Run the selected incoming-wave propagation and shared EMCD/EELS contraction')
         if self.emcd_result:
             text=self.emcd_result['config'].channeling_model.title()+' Channeling | '+('Completed-run geometry and spectra; inputs match.' if fresh else 'Saved input comparison unavailable; showing saved geometry and spectra.' if fresh is None else 'STALE RESULT — current inputs differ; showing saved geometry and spectra.')
@@ -606,6 +616,10 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             from .propagation import numerical_info
             assessment=numerical_info(self.structure,s,cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             assessment['execution']['memory_policy']=dict(getattr(self,'_memory_policy',dict(mode='manual',effective_budget_mib=cfg.memory_budget_mib)))
+            if hasattr(self,'resource_panel'):
+                from .parallel_resources import preview_text
+                self.memory_label.setText(preview_text(s,cfg,assessment))
+                self.resource_panel.present(cfg,assessment,' '.join(assessment['execution']['messages']) if assessment['execution']['blocked'] else '',final=True)
             from .parallel_resources import require_supported
             from .runtime import build_info
             logger=logging.getLogger('emcd_sim.gui')
@@ -639,6 +653,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if not self.worker.isInterruptionRequested():self.preview_failed(message)
     def emcd_completed(self,result):
         if self.worker.isInterruptionRequested():return
+        if hasattr(self,'resource_panel'):self.resource_panel.completed(result)
         display_start=time.perf_counter()
         selection=getattr(self,'_run_numerical_selection',None)
         if selection:

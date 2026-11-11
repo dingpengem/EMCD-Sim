@@ -95,7 +95,9 @@ class NumericalSettingsUI:
         self.shared_resources_group.presentation_section.setVisible(True)
         for key in NUMERICAL_KEYS:self.spin[key].setEnabled(manual)
         self.sync_sampling_controls()
-        self.memory_budget.setEnabled(True);self.angular_resolution.setEnabled(manual)
+        self.memory_budget.setEnabled(not hasattr(self,'memory_mode') or self.memory_mode.currentIndex()==1)
+        if hasattr(self,'resource_panel'):self.resource_panel.sync_modes()
+        self.angular_resolution.setEnabled(manual)
         self.numerical_details.setVisible(not manual)
         self.sync_solver_controls()
 

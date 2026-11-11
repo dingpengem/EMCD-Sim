@@ -158,8 +158,33 @@ def validate_result(r):
     return a
 
 
+def resource_ui_evidence(app,w,out,name):
+    """Capture the real Cocoa panel, including compact-window scroll access."""
+    from emcd_sim.gui.responsive import CollapsibleSection
+    p=w.resource_panel
+    for section in w.findChildren(CollapsibleSection):
+        if section.objectName().startswith('settings_'):
+            section.setChecked('Shared_Calculation' in section.objectName())
+    section=w.shared_resources_group.presentation_section;section.setChecked(True)
+    layouts=[]
+    for width,height in ((1280,800),(1024,700)):
+        w.resize(width,height);app.processEvents();QtTest.QTest.qWait(100)
+        scroll=w.splitter.widget(0);scroll.ensureWidgetVisible(p.estimate);app.processEvents()
+        section.grab().save(str(out/f'{name}-{width}-panel.png'))
+        w.grab().save(str(out/f'{name}-{width}-window.png'))
+        for label in (p.hardware,p.cpu_auto,p.memory_auto,p.estimate):
+            if label.isVisible():
+                assert label.height()>=label.heightForWidth(label.width()),(label.text(),label.size())
+        layouts.append(dict(window=[w.width(),w.height()],panel_width=p.width(),device_pixel_ratio=w.devicePixelRatioF(),scroll_access=True))
+    snap=p.preview;info=snap['info']
+    return dict(hardware=p.hardware.text(),cpu=p.cpu_auto.text(),memory=p.memory_auto.text(),estimate=p.estimate.text(),
+        manual_workers=w.worker_count.value(),manual_memory=p.memory_request.value(),
+        manual_cpu_visible=not p.cpu_manual.isHidden(),manual_memory_visible=not p.memory_manual.isHidden(),
+        effective_workers=info['execution']['effective_workers'],memory_budget_mib=info['memory_budget_mib'],layouts=layouts)
+
+
 def run(root,output,profile='bounded'):
-    if profile not in ('bounded','medium','defaults','dialogs','lifecycle','adaptive-small','adaptive-confirm','adaptive-medium','adaptive-scaling','adaptive-lifecycle','adaptive-portable'):raise ValueError('Unknown corrective profile')
+    if profile not in ('bounded','medium','defaults','dialogs','lifecycle','adaptive-small','adaptive-confirm','adaptive-medium','adaptive-scaling','adaptive-lifecycle','adaptive-portable','adaptive-resource-ui'):raise ValueError('Unknown corrective profile')
     root=Path(root).resolve();out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     logger=logging.getLogger('emcd_sim.gui');logger.addHandler(logging.FileHandler(out/'gui.log'));logger.setLevel(logging.INFO)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([]);app.setQuitOnLastWindowClosed(False)
@@ -171,7 +196,7 @@ def run(root,output,profile='bounded'):
     try:
         if profile=='dialogs':report['dialogs']=dialog_checks(app,root,out)
         else:
-            cases=([('Fe3O4','local')] if profile=='adaptive-portable' else
+            cases=([('Fe3O4','local')] if profile in ('adaptive-portable','adaptive-resource-ui') else
                 [('NiFe2O4','local')] if profile=='adaptive-scaling' else
                 [('Ni','global'),('Ni','local'),('Cr','local')] if profile in ('bounded','adaptive-small','adaptive-confirm') else
                 [('Fe3O4','local'),('NiFe2O4','local')] if profile in ('medium','adaptive-medium') else [('Ni','global'),('Cr','local')])
@@ -188,14 +213,14 @@ def run(root,output,profile='bounded'):
                             v.apply_groups();assert not v.isVisible(),v.editor.status.text()
                             w.propagation_box.setCurrentIndex(0 if method=='bloch' else 1)
                             w.channeling_box.setCurrentIndex(0 if channel=='single' else 1);w.worker_mode.setCurrentIndex(1)
-                            if profile in ('medium','adaptive-medium','adaptive-scaling','adaptive-portable'):
+                            if profile in ('medium','adaptive-medium','adaptive-scaling','adaptive-portable','adaptive-resource-ui'):
                                 w.set_values(dict(grid=17,depth=9,fft_grid=24,beam=.65,potential=1.2));w.basis_mode.setCurrentIndex(0)
                             elif profile=='defaults':
                                 w.set_values(normal['values']);w.zone.setText(normal['zone']);w.target.setText(normal['target']);w.basis_mode.setCurrentIndex(0)
                                 w.energy_scope.setCurrentIndex(w.energy_scope.findData(normal['scope']))
                             if profile=='adaptive-small':
                                 requests=['auto']+[n for n in (1,2,4,6,8,10) if n<=pr.MAX_WORKERS]
-                            elif profile in ('adaptive-confirm','adaptive-portable'):
+                            elif profile in ('adaptive-confirm','adaptive-portable','adaptive-resource-ui'):
                                 requests=['auto',min(8,pr.MAX_WORKERS) if channel=='double' else 1]
                             elif profile in ('adaptive-medium','adaptive-scaling'):
                                 requests=['auto',1]+([n for n in (6,8) if n<=pr.MAX_WORKERS] if channel=='double' else [])
@@ -209,6 +234,8 @@ def run(root,output,profile='bounded'):
                                 w.worker_count.setValue(count);w.refresh();w.emcd_stale()
                                 w.browser.table.clearSelection();w.browser.selection_timer.stop()
                                 row=dict(material=material,mode=mode,method=method,channel=channel,requested='Automatic' if automatic else count,memory_mode='automatic' if automatic else 'manual')
+                                if profile=='adaptive-resource-ui':
+                                    row['resource_ui']=resource_ui_evidence(app,w,out,name+'-'+str(request))
                                 try:
                                     cfg=w.forward_settings();sites=None
                                     if mode=='local':cfg,sites,windows,reverse,signature=applied_inputs(w,cfg)
@@ -231,8 +258,15 @@ def run(root,output,profile='bounded'):
                                     row['rejected_request']=list(errors);errors.clear()
                                     w.worker_mode.setCurrentIndex(0 if automatic else 1);w.worker_count.setValue(count);w.channeling_box.setCurrentIndex(0 if channel=='single' else 1)
                                 row.update(measure(app,w,errors,observations,(120 if channel=='single' else 20) if profile=='defaults' else 90))
+                                if profile=='adaptive-resource-ui':
+                                    final=w.resource_panel.finalized['info']
+                                    row['finalized_resource_ui']=dict(effective_workers=final['execution']['effective_workers'],
+                                        memory_budget_mib=final['memory_budget_mib'],notice=w.resource_panel.run_allocation_text)
                                 if row['outcome']=='completed' and not errors:
                                     r=w.emcd_result;a=validate_result(r);case_name=name+'-'+('auto' if automatic else str(count))
+                                    if profile=='adaptive-resource-ui':
+                                        assert final['execution']['effective_workers']==r['metadata']['execution']['effective_workers']
+                                        assert final['memory_budget_mib']==r['config'].memory_budget_mib
                                     np.savez_compressed(out/(case_name+'.npz'),**a)
                                     row.update(array_shapes={k:list(v.shape) for k,v in a.items()},execution=r['metadata']['execution'],
                                         worker_memory=r['metadata']['numerics'],executors=list(executors(r['metadata'].get('angular_evaluation',[]))),

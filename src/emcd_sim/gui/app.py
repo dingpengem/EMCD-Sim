@@ -52,6 +52,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         for label,key in CHOICES:self.elastic_provider_box.addItem(label,key)
         self.form.addRow('Elastic scattering provider',self.elastic_provider_box)
         self.elastic_provider_box.currentIndexChanged.connect(self.refresh)
+        self.material_form=self.form
         self.section('Zone Axis & Diffraction',key='B. Zone Axis & Diffraction')
         geometry_form=self.form;self.geometry_options=CollapsibleSection('Orientation / ZA options',expanded=False);self.geometry_options.setObjectName('geometry_options');self.geometry_options.header.setToolTip('Crystal orientation, target hkl, projected ZA coordinates and Bragg alignment lock');geometry_form.addRow(self.geometry_options);self.form=QtWidgets.QFormLayout(self.geometry_options.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         self.zone=QtWidgets.QLineEdit('0 1 7');self.zone.setToolTip('Direct-lattice [u v w]; changes the actual oriented cell.');self.form.addRow('Nominal zone [uvw]',self.zone)
@@ -80,6 +81,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.mdff_controls()
         self.mdff_host.hide();self.form=settings_form
         self.section('Propagation Method',key='E. Propagation Method')
+        self.propagation_form=self.form
         self.propagation_controls()
         self.section('Shared Calculation Settings',key='F. Shared Calculation Settings')
         self.numerical_controls()
