@@ -1,4 +1,4 @@
-# Tutorial — CIF to saved EELS/EMCD results in the beta.2 Windows candidate
+# Tutorial — CIF to saved EELS/EMCD results in Windows beta.2
 
 [Home](../README.md) · [Install](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [User Guide](USER_GUIDE.md) · [MDFF models](MDFF_WORKFLOWS.md)
 
@@ -6,11 +6,13 @@ This tutorial follows the verified **FCC Ni, Global M, XMCD-constrained MDFF,
 Bloch-wave Single Channeling** workflow. It starts with raw input, not a
 serialized provider. The representative request has 243 energies and selected
 97×97 maps; it establishes neither convergence nor material calibration.
-Beta.2 is an unpublished candidate. Existing illustrations are retained from
-earlier Windows acceptance; their smaller diagnostic grids are not the sampling
-requested below. Published beta.1 retains its [versioned tutorial](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/TUTORIAL.md).
+The beta.2 RC1 packaged acceptance repeated the complete recipe below. Earlier
+Windows illustrations retain their diagnostic context; their smaller grids are
+not the sampling requested below. Published beta.1 retains its [versioned tutorial](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/TUTORIAL.md).
 
 The familiar layout is unchanged: Settings upper left, diffraction preview upper center, Results upper right, Project Results/history below. Material and MDFF are reached from Settings, not obsolete Model/Simulation menus.
+
+![Beta.2 RC1 Local Ni draft returned from MDFF to Material, before outer Apply](images/v090b2/local-material-draft.png)
 
 ## 1. Import the verified Ni input
 

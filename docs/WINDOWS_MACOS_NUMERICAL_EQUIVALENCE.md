@@ -118,8 +118,10 @@ bundle are needed solely for numerical comparison.
 
 The beta.2 Windows candidate can be built/tested while this gap is recorded,
 but **all-four-backend cross-platform numerical equivalence is INCOMPLETE**.
-The publication recommendation is **NO-GO pending authentic missing exports
-and their comparisons**, not a claim of a known physics failure.
+For beta.2 the release owner explicitly accepted these three incomplete direct
+comparisons as a documented Research Beta limitation on 11 November 2026. They
+remain INCOMPLETE, not PASS, and are no longer a publication prerequisite.
+No new comparisons or reruns were performed to replace the missing data.
 
 The 2.0 Å⁻¹ potential cutoff excludes the first off-row harmonic near 2.029 Å⁻¹.
 The actual MS step exceeds the advisory 0.04 nm reference. General beam/FFT/depth

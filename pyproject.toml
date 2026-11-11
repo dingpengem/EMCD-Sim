@@ -8,7 +8,7 @@ version = "0.9.0b2"
 description = "Research-stage EMCD forward-simulation framework with an FCC Ni benchmark"
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [{name = "EMCD-Sim contributors"}]
+authors = [{name = "Ding Peng"}]
 license = {text = "MIT"}
 dependencies = ["numpy>=1.24", "matplotlib>=3.7"]
 

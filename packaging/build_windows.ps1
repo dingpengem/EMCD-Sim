@@ -59,8 +59,8 @@ try {
 
 Application commit: $($manifest.build.commit)
 Current source package: $SourceArchiveName
-The matching application snapshot is EMCD-Sim-source.zip. This is an unpublished candidate; no new release tag is implied.
-The unchanged Qt 6.12 technical guide below retains its original beta.1 filenames/tag references. Use the current package and commit above for this candidate. The listed dependency sources and replacement instructions still apply.
+The matching application snapshot is EMCD-Sim-source.zip. This kit identifies committed source independently of publication status; verify a published release tag against the commit above.
+The unchanged Qt 6.12 technical guide below retains its original beta.1 filenames/tag references. Use the current package and commit above. The listed dependency sources and replacement instructions still apply.
 
 "@
     [IO.File]::WriteAllText((Join-Path $sourceStage 'README.md'), $sourceContext + [Environment]::NewLine + [Environment]::NewLine + $qtGuide, [Text.UTF8Encoding]::new($false))

@@ -1,12 +1,17 @@
 # Documentation index
 
-[Home](../README.md) · [Windows Research Beta prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1) · [Release notes](RELEASE_NOTES_0_9_0_BETA_1.md)
+[Home](../README.md) · [Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.2) · [macOS ARM64 Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1)
 
 ## Current user documentation
 
+[Windows beta.2 notes](RELEASE_NOTES_0_9_0_BETA_2.md) · [Scientific bibliography](SCIENTIFIC_REFERENCES.md) · [Software citation](CITATION.md) · [Windows/macOS numerical evidence](WINDOWS_MACOS_NUMERICAL_EQUIVALENCE.md)
+
 |Document|Use it for|
 |---|---|
-|[Windows Installation](INSTALL_WINDOWS.md)|Correct ZIP, verification, extraction, launch, logs and updates|
+|[Windows Installation](INSTALL_WINDOWS.md)|Correct Windows ZIP, requirements and troubleshooting|
+|[macOS ARM64 Installation](INSTALL_MACOS.md)|Apple Silicon Finder installation, signing limitations and examples|
+|[macOS ARM64 Quick Start](QUICK_START_MACOS.md)|Packaged-app-validated 243-energy Ni spectrum and 97×97 momentum maps; genuine figures and measurements|
+|[macOS Quick Start acceptance](MACOS_QUICK_START_ACCEPTANCE.md)|Exact published-app identity, native automation, numerical checks and remaining limits|
 |[Quick Start](QUICK_START.md)|Small first Ni simulation, explicitly not converged research settings|
 |[MDFF construction and workflows](MDFF_WORKFLOWS.md)|Current XMCD, Atomic, constant/manual spectral and imported methods; explicit selections, units/defaults, existing-input example, and normal project creation|
 |[Complete Tutorial](TUTORIAL.md)|From crystal/diffraction through MDFF, channeling and measurement definitions|
@@ -19,13 +24,15 @@
 |[Recalculated Ni example provenance](images/ni017_flipm_recomputed/README.md)|Fresh 9/30 nm spectra, twelve portraits, conventional versus fixed-detector Flip-M|
 |[Changelog](CHANGELOG.md)|Version/milestone and documentation history|
 
-Current Installation, Quick Start, Tutorial, User Guide and MDFF instructions describe **v0.9.0-beta.1 Windows Research Beta**. See [release notes](RELEASE_NOTES_0_9_0_BETA_1.md) for scoped evidence and remaining verification. Older v0.8 binaries retain their tagged documentation. Historical acceptance/release records below keep their original source, artifact and verification identities.
+The existing [Windows Quick Start](QUICK_START.md) and cross-platform scientific Tutorial/User Guide originated from the **Windows v0.9.0-beta.1** workflow and may contain Windows paths. Mac users should start with the dedicated [macOS Installation](INSTALL_MACOS.md) and [macOS Quick Start](QUICK_START_MACOS.md). Each release's documentation defines its own acceptance scope. Older v0.8 binaries retain their tagged documentation. Historical acceptance/release records below keep their original source, artifact and verification identities.
 
 ## Scientific validation and acceptance
 
 - [Neutral-atom elastic providers](ELASTIC_ATOMIC_FACTORS.md): bundled Apache-2.0 Z=1–118 Adaptive default, named Ni Lobato compatibility, external Z=1–98 table and strict Mott limits, CIF indexing and [local acceptance](acceptance/unified-elastic-2026-11-03/FINAL_INTEGRATION_RECOMMENDATION.md).
 
-- [v0.9.0-beta.1 prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1): [current scoped evidence and remaining limitations](RELEASE_NOTES_0_9_0_BETA_1.md).
+- [v0.9.0-beta.2 Windows prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.2): [current evidence and limitations](RELEASE_NOTES_0_9_0_BETA_2.md).
+- [v0.9.0-beta.1 Windows prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1): [historical Windows evidence](RELEASE_NOTES_0_9_0_BETA_1.md).
+- [v0.9.0-beta.1 macOS ARM64 prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1): [Mac release notes](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1-macos-arm64.1/docs/RELEASE_NOTES_MACOS_ARM64_1.md) and attached acceptance review.
 - [Historical v0.8.1-beta.2 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2): beta.2 assets and publication status; [release validation](RELEASE_NOTES_0_8_1_BETA_2.md#validation-evidence-and-scoped-exception) keeps its original verification scope.
 - [Historical v0.8.0-beta.1 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.0-beta.1): that milestone's assets, hashes and limitations.
 - [Original candidate/native acceptance](WINDOWS_ZOLZ_97B2220_CANDIDATE_ACCEPTANCE.md): recorded build `41516996056`, exact binary provenance and bounded native outcomes. Its prepublication status is historical.

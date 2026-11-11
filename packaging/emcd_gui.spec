@@ -15,14 +15,21 @@ install_qt_plugin_filter()
 required_assets = required_datas(root)
 guide_names = ('INSTALL_WINDOWS.md', 'QUICK_START.md', 'TUTORIAL.md', 'USER_GUIDE.md', 'INDEX.md',
     'MDFF_WORKFLOWS.md', 'RELEASE_NOTES_0_9_0_BETA_1.md', 'RELEASE_NOTES_0_9_0_BETA_2.md',
-    'WINDOWS_MACOS_NUMERICAL_EQUIVALENCE.md', 'WINDOWS_SC_DC_RESOURCE_BENCHMARK.md')
+    'WINDOWS_MACOS_NUMERICAL_EQUIVALENCE.md', 'WINDOWS_SC_DC_RESOURCE_BENCHMARK.md',
+    'SCIENTIFIC_REFERENCES.md', 'CITATION.md', 'INSTALL_MACOS.md', 'QUICK_START_MACOS.md')
 documentation = [(str(root/'README.md'), 'documentation'), (str(root/'LICENSE'), 'documentation')]
+documentation += [(str(root/name), 'documentation') for name in ('CITATION.cff', 'CITATION.bib')]
 documentation += [(str(root/'docs'/name), 'documentation/docs') for name in guide_names]
 documentation.append((str(root/'docs/benchmarks/windows-macos-20261111/bw_sc_array_comparisons.csv'),
     'documentation/docs/benchmarks/windows-macos-20261111'))
 for image in ('v090b1/site-groups-afm-cr.png', 'v090b1/results-comparison.png',
-              'v070b1/gui_overview.png', 'v070b1/diffraction_preview.svg', 'v070b1/angular_smoke.png'):
+              'v070b1/gui_overview.png', 'v070b1/diffraction_preview.svg', 'v070b1/angular_smoke.png',
+              'v090b2/global-ni-spectrum.png', 'v090b2/local-material-draft.png',
+              'v090b2/windows-macos-calculation-times.png', 'v090b2/windows-macos-calculation-times.svg'):
     documentation.append((str(root/'docs/images'/image), 'documentation/docs/images/'+str(Path(image).parent)))
+# Retain the illustrations and authentic sample exports linked by the Mac guide.
+for name in ('docs/images/macos/quickstart-ni', 'docs/examples/macos-ni-quickstart'):
+    documentation.append((str(root/name), 'documentation/'+name))
 sys.path.insert(0, str(root / 'src'))
 stage = root / os.environ.get('EMCD_GUI_BUILD_ROOT','build/windows-rc') / 'resources'
 stage.mkdir(parents=True, exist_ok=True)

@@ -1,93 +1,53 @@
-# Install EMCD-Sim on Windows — beta.2 candidate and published beta.1
+# Install EMCD-Sim v0.9.0-beta.2 on Windows
 
 [Home](../README.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [User Guide](USER_GUIDE.md)
 
 ## Ordinary packaged use
 
-**Beta.2 is an unpublished candidate**, supplied separately as
-`EMCD-Sim-v0.9.0-beta.2-Windows-RC1.zip` with its matching
-`EMCD-Sim-v0.9.0-beta.2-RC1-Qt-sources.zip`. There is no beta.2 release/tag to
-download yet. Extract the complete candidate into a new writable directory and
-launch `EMCD-Sim.exe` beside `_internal`, as in steps 3–6 below. Candidate files
-do not update an existing installation automatically. Offline guides are under
-`_internal/documentation/docs/`; the source kit also contains them and their
-illustrations. See [candidate status](RELEASE_NOTES_0_9_0_BETA_2.md).
+1. Open the [Windows Research Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.2). Under **Assets**, download **EMCD-Sim-v0.9.0-beta.2-Windows.zip**. GitHub's automatic Source code ZIP is not the Windows application. Earlier releases remain unchanged.
+2. Use Windows 11 x64 and install/repair the official [Microsoft Visual C++ v14 x64 Redistributable](https://aka.ms/vc14/vc_redist.x64.exe) if needed. The tested runtime is **14.44.35211**; use a compatible current v14 runtime. This remains an external dependency: Microsoft runtime DLLs are not bundled contrary to the established redistribution policy.
+3. In File Explorer, right-click the downloaded ZIP and choose **Extract All…** into a new writable folder. Wait for extraction to finish. Keep the **complete EMCD-Sim folder** and all `_internal` contents together.
+4. Open the extracted folder and double-click **EMCD-Sim.exe**, beside `_internal`. Do not run from inside the ZIP or copy the EXE alone. Follow local SmartScreen/security policy; the research binary is not code-signed. Do not disable antivirus as a workaround.
+5. Check the displayed version and **Help → About** build identity. Start with the [Quick Start](QUICK_START.md), not a restored unknown configuration. The example CIF and XMCD file are under `_internal/examples/Ni_FCC_a3.52.cif` and `_internal/data/wien2k_ni/Ni_fm.xmcd`.
+6. Save projects to a writable location. Updating means extracting a new complete package into a different directory; preserve previous projects and required source files.
 
-For the **published** [v0.9.0-beta.1 Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1),
-use the download steps below and its [tagged Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/QUICK_START.md).
-Both are research software, not quantitatively calibrated stable releases.
+**Python, Conda, WIEN2k and manual OpenBLAS/OMP environment variables are not required for packaged use.** The application supplies its Python/Qt and supported numerical libraries. Windows beta.2 is distinct from the unchanged macOS ARM64 release and has its own source revision.
 
-1. Download **[EMCD-Sim-v0.9.0-beta.1-Windows.zip](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/EMCD-Sim-v0.9.0-beta.1-Windows.zip)** from that release's **Assets**. GitHub's automatic “Source code” archive and the Corresponding-Source ZIP are not the runnable application.
-2. Download **[SHA256SUMS.txt](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/SHA256SUMS.txt)** from the same release. Optional PowerShell verification:
-   ```powershell
-   Get-FileHash -LiteralPath '.\EMCD-Sim-v0.9.0-beta.1-Windows.zip' -Algorithm SHA256
-   Get-Content -LiteralPath '.\SHA256SUMS.txt'
-   ```
-   Compare the matching filename's entry. On mismatch, obtain a fresh copy from the intended release.
-3. On Windows 10/11 x64, install or repair the **official Microsoft x64 Visual C++ v14 runtime, 14.44.35211 or newer** if needed: [Microsoft instructions](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist), [official x64 installer](https://aka.ms/vc14/vc_redist.x64.exe). The runtime/installer is external to this package. Do not obtain individual DLLs from download sites.
-4. Right-click the Windows ZIP and choose **Extract All…** into a new writable folder. Extract the **complete folder**, preserving:
-   ```text
-   EMCD-Sim/
-       EMCD-Sim.exe
-       _internal/
-       README.txt
-       SHA256SUMS.txt
-       ...other supplied files...
-   ```
-5. Open that extracted folder and double-click **EMCD-Sim.exe**. Keep `_internal` beside the EXE. Do not launch inside the ZIP, copy only the EXE, mix versions, or overwrite an older installation in place.
-6. Check **Help → About**, then follow [Quick Start](QUICK_START.md) or the complete [Tutorial](TUTORIAL.md). Save projects in a writable directory outside the installation.
+## Compute Resources
 
-**Packaged users do not install Python, Conda, a compiler or WIEN2k, and do not set OpenBLAS/OMP variables.** The package includes its Python/Qt dependencies. The application manages supported BLAS runtimes during calculations and verifies its thread limits. Choose worker counts in the GUI and inspect its CPU/memory estimate.
+In **Shared Calculation Settings → Compute Resources**, **CPU Workers** and **Memory Budget** each offer **Auto (recommended)** or **Manual**. Auto considers detected hardware, useful tasks and current memory/commit headroom; it never silently reduces beams, energy points, FFT/grid or depth sampling. SC has one outer worker; DC may use more. More workers are not necessarily faster.
 
-The executable is unsigned; native acceptance is not code signing or SmartScreen certification. Follow organizational security policy rather than disabling protections. Independent clean-PC/VM acceptance remains unverified.
+The panel shows effective workers/budget, the current calculation estimate and admission status. A memory budget is a ceiling, not expected consumption; the estimate includes reserves and differs from measured RSS. Insufficient admission must be resolved before Run. Manual values are remembered when switching back to Auto and reopening projects. Run applies and verifies supported BLAS thread limits and restores them afterward; users need no shell-variable workaround.
 
-## Examples and matching sources
+## Projects and exports
 
-The complete Windows folder includes:
+Use **File → New Project**, **Open Project…**, **Save**, **Save As…**, and **Close Project**. Save creates a complete folder; Open Project selects that folder. Keep all its files. The lower **Project Results** panel retains separate calculations; **Restore Settings from Selected Run…** differs from merely viewing an old result. Compare exactly two selected runs in the separate comparison dialog.
 
-| Input | Path relative to the extracted EMCD-Sim folder |
-| --- | --- |
-| Verified illustrative FCC Ni, **3.520 Å**, four sites | `_internal/examples/Ni_FCC_a3.52.cif` |
-| Five-column Ni source used by the representative tutorial | `_internal/data/wien2k_ni/Ni_fm.xmcd` |
-| Synthetic BCC Fe and Atomic demonstration | `_internal/examples/Fe_BCC_a2.8665.cif`, `synthetic_fe_atomic_parameters.json` |
-| Inverse-spinel Fe₃O₄ structure | `_internal/examples/Fe3O4_inverse_spinel.cif` |
+In Results, inspect detector spectra and selected angular maps. **Results → Export Results…** writes CSV/NPZ and available figures; figure export also sits near its plot. Save/Open restores existing arrays without rerunning. External spectroscopy files are not all automatically embedded: retain required sources. Missing/changed sources may block rerun while saved arrays remain viewable. Never bypass scientific source/frame validation.
 
-These are software examples, not experimental material calibration. The built-in Ni default is **3.524 Å**; importing the tutorial's 3.520 Å CIF is intentional. Source-checkout links and the representative 243-energy/97×97 settings are in [Tutorial](TUTORIAL.md#1-import-the-verified-ni-input).
+## Guides, sources and licenses
 
-The published beta.1 **[Corresponding-Source ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/EMCD-Sim-v0.9.0-beta.1-Corresponding-Source.zip)** remains available unchanged. For the beta.2 candidate use its separately supplied matching source ZIP, not this older application snapshot. Each kit contains `EMCD-Sim-source.zip`, guides/illustrations and matching Qt/PySide/Shiboken sources. The unchanged Qt 6.12 [technical replacement guide](https://github.com/dingpengem/EMCD-Sim/blob/feat/windows-adaptive-compute/packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md) retains historical beta.1 names; the candidate kit's README identifies its actual package and source commit. Dependency licenses apply separately from the application MIT license. Unused Qt PDF/Virtual Keyboard components remain excluded. The existing manifest and `_internal/build_info.json` identify the exact source and dependencies. No independent clean-PC/VM validation is implied.
+Offline guides, citation, scientific references and illustrations are in `_internal/documentation/`; online [Quick Start](QUICK_START.md) and [Tutorial](TUTORIAL.md) use current controls. The release's **EMCD-Sim-v0.9.0-beta.2-Corresponding-Source.zip** contains the exact application snapshot plus matching Qt/PySide/Shiboken 6.12 sources and replacement instructions. Do not substitute the older beta.1 application source.
 
-## Projects, updates and troubleshooting
+The unchanged Qt 6.12 [technical replacement guide](../packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md) retains historical beta.1 example names; the source kit's outer README identifies the actual beta.2 package and commit. Applicable dependency licenses/notices accompany the binaries. Unused Qt PDF and Virtual Keyboard are excluded; required Qt plugins and spglib runtime/licenses are retained. The existing build manifest and `_internal/build_info.json` record dependencies and exact committed source. No independent clean-PC/VM validation is claimed.
 
-Use **File → New Project**, **Open Project…**, **Save**, **Save As…**, and **Close Project**. No manually prepared JSON is required. **Save/Save As…** creates a complete project folder; **Open Project…** selects that folder. In the lower **Project Results** panel, select a run to **View Results** or **Restore Settings from Selected Run…**. Restoring settings is distinct from viewing an older result.
-
-Retain every project file and required external source. Saved arrays remain viewable when a source is unavailable, but rerun requires a matching validated source. Editor-managed attachments are portable where implemented; arbitrary spectroscopy sources are not universally embedded. Update into a new application directory and preserve older projects.
+## Troubleshooting
 
 | Symptom | Action |
 | --- | --- |
-| Missing `MSVCP140.dll` / `VCRUNTIME140*.dll` | Install/repair the official Microsoft runtime above. |
-| Missing Python/Qt files or startup failure | Freshly extract the complete ZIP. Inspect quarantine under local policy; do not combine versions. |
-| Run disabled | Read the complete inline reason. In the active Global/group context, validate source, conventions, frames and coverage; finish **Done → Apply and Close**. |
-| “Inactive — Global mode” on a local row | That row is not used by Global mode. Check the accepted Global provider, not the inactive row. |
-| Stale result notice | Distinguish changed working inputs from the displayed saved run. Missing/changed sources need resolution; do not bypass validation. |
-| Memory admission rejected | Review effective beams, energies, angular support and workers. A larger budget does not create RAM. |
-| Crowded view | Resize/scroll or use **Maximize / restore results**. Legends have separate rows. Figure export is in the Results details toolbar; its overflow menu remains available. |
-| Save failed | Select a writable folder and retain the complete project. |
+| Missing MSVCP140/VCRUNTIME140 DLL | Install/repair the official Microsoft x64 runtime above. |
+| Missing Python/Qt file or startup failure | Freshly extract the complete ZIP; inspect quarantine under local policy, and do not combine versions. |
+| Run disabled | Read the full reason; validate the active Global/group source, conventions, frame and coverage, then finish **Done → Apply and Close**. |
+| Inactive — Global mode on a group | That Local row is not used by Global calculation; check the Global provider's actual readiness. |
+| Stale result notice | Compare working inputs with the displayed saved run. Resolve genuinely missing/changed sources; do not blindly reapply or bypass validation. |
+| Memory admission rejected | Review the effective settings and workers. Increasing a budget does not create RAM. |
+| Crowded Results | Resize/scroll or use **Maximize / restore results**. Dedicated legends and toolbar overflow preserve access and figure identification. |
+| Save failed | Select a writable location and retain the complete project folder. |
 
-Default application data are under `%LOCALAPPDATA%\EMCD-Sim`; logs are in `logs\runtime.log`. `EMCD_GUI_WORKSPACE` redirects workspace files, not that log directory. Report version/source identity, settings and relevant errors without sharing private data.
+Default application data are under `%LOCALAPPDATA%\EMCD-Sim`; logs are in `logs\runtime.log`. `EMCD_GUI_WORKSPACE` redirects workspace files, not that log directory. Include build identity, relevant settings and a bounded error excerpt when reporting problems.
 
-## Source development — optional, separate from EXE use
+## Source development — optional and separate
 
-For developers with Git and Python 3.11, use a new clone:
+Developers may clone the repository, check out the required version and install `.[gui]` in a Python >=3.10 virtual environment. The Windows package uses Python 3.11. See [build requirements](../packaging/requirements-windows.txt) and [packaging workflow](../packaging/README.md); these are maintainer instructions, not EXE prerequisites. No Conda installation or environment activation is required.
 
-```powershell
-git clone https://github.com/dingpengem/EMCD-Sim.git
-Set-Location EMCD-Sim
-git switch feat/windows-adaptive-compute
-py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[gui]"
-.\.venv\Scripts\python.exe -m emcd_sim.gui
-```
-
-No Conda or shell activation is required. If `py` is unavailable, use an explicit compatible interpreter path. The project requires Python >=3.10; the Windows build uses Python 3.11. Developers may install `.[dev,gui]` for tests. [Windows build requirements](../packaging/requirements-windows.txt) and [packaging instructions](../packaging/README.md) are for maintainers, not EXE users.
-
-Historical releases retain their own tagged instructions, including [v0.8.1-beta.2 installation](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/INSTALL_WINDOWS.md). [Release evidence and limitations](RELEASE_NOTES_0_9_0_BETA_1.md) distinguish scoped native/focused checks from historical failed/incomplete broad verification and scientific convergence/calibration.
+Research limitations, unchanged historical failed/incomplete broad checks and current focused acceptance are in the [release notes](RELEASE_NOTES_0_9_0_BETA_2.md). Finite-basis agreement is not convergence or quantitative material calibration.

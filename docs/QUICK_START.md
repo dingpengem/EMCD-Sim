@@ -1,13 +1,15 @@
-# Quick Start — v0.9.0-beta.2 Windows Research Beta candidate
+# Quick Start — v0.9.0-beta.2 Windows Research Beta
 
 [Home](../README.md) · [Install](INSTALL_WINDOWS.md) · [Complete Tutorial](TUTORIAL.md) · [User Guide](USER_GUIDE.md)
 
-This guide describes the **unpublished beta.2 candidate**. The published beta.1
+This guide describes **beta.2**. The earlier beta.1
 package remains available with its [tagged guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/QUICK_START.md).
 Use the complete extracted Windows package. Python, Conda and manual BLAS
 environment variables are unnecessary. The representative Global Ni BW Single
-request below has already completed in the adaptive-compute development EXE;
+request below completed freshly through the beta.2 RC1 packaged GUI;
 it is a functional example, not a convergence or calibration recipe.
+
+![Fresh beta.2 RC1 Global Ni detector spectrum and Compute Resources](images/v090b2/global-ni-spectrum.png)
 
 1. Launch **EMCD-Sim.exe**; choose **File → New Project**.
 2. In **Material**, click **Open CIF…** and select `_internal/examples/Ni_FCC_a3.52.cif`. **Inspect structure…** should show four Ni sites in a cubic **3.520 Å** cell, not the built-in 3.524 Å default.
@@ -45,8 +47,8 @@ hardware, effective allocation, estimated process peak and admission separately.
 Auto retains your Manual values and never reduces scientific sampling. Older
 projects with a saved fixed memory budget retain Manual memory. Run refreshes
 available resources and submits its displayed allocation; admission may change
-as other applications consume RAM. These controls are development-source changes,
-not an update to the published v0.9.0-beta.1 Windows package. The memory budget
+as other applications consume RAM. These controls are part of beta.2; the earlier
+v0.9.0-beta.1 Windows package remains unchanged. The memory budget
 is an admission ceiling; the estimated process peak is not measured consumption.
 SC uses one outer worker. DC includes post-loss outgoing propagation and has a
 different memory/work schedule; more workers are not guaranteed to be faster.

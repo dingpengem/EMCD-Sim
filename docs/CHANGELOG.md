@@ -1,16 +1,21 @@
 # Changelog
 
-## v0.9.0-beta.2 Windows candidate — unpublished
+## v0.9.0-beta.2 — Windows Research Beta
 
-- Prepare version-consistent standalone RC1 packaging with the unified Compute
-  Resources panel, preserved Auto/Manual settings and corrected bounded SC
-  memory estimates. Keep physics, sources, references and published artifacts.
-- Distinguish requested/evaluated energy counts; document the verified 243-energy,
-  selected-97×97 Ni workflow with Auto CPU/memory and offline guides.
-- Preserve BW-SC per-array cross-platform evidence; record the unavailable
-  authentic Mac BW-DC/MS-SC/MS-DC exports and publication NO-GO explicitly.
-- See [candidate notes](RELEASE_NOTES_0_9_0_BETA_2.md) and
-  [numerical comparison inventory](WINDOWS_MACOS_NUMERICAL_EQUIVALENCE.md).
+- Unified Compute Resources replaces Resource Estimate: independent Auto/Manual
+  CPU and memory, hardware-aware admission, remembered Manual values and
+  calculation-scoped BLAS safeguards. Correct SC estimates describe the actual
+  bounded pixel contraction; scientific kernels and reference arrays are unchanged.
+- Distinguish requested uniform points from actual evaluated energies. Verify
+  the fresh packaged 243-energy, two-97×97-map Ni Global workflow, Local BW/MS
+  diagnostics, cancellation/restart, Save/Open and exports.
+- Publish existing measured performance, scientific-method/data bibliography,
+  validated software citation and MIT-consistent source/AI-derivative attribution.
+  Preserve current main's macOS guides, examples and independently released app.
+- Direct BW-SC cross-platform arrays pass; BW-DC/MS-SC/MS-DC direct comparisons
+  remain INCOMPLETE, explicitly accepted as a Research Beta limitation, not PASS.
+  Historical failed/incomplete broad verification remains unchanged.
+- See [release notes](RELEASE_NOTES_0_9_0_BETA_2.md).
 
 ## v0.9.0-beta.1 — Windows Research Beta (prerelease)
 
