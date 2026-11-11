@@ -13,6 +13,16 @@ from windows_dependencies import EXCLUDED_MODULES, install_qt_plugin_filter, pre
 check_environment()
 install_qt_plugin_filter()
 required_assets = required_datas(root)
+guide_names = ('INSTALL_WINDOWS.md', 'QUICK_START.md', 'TUTORIAL.md', 'USER_GUIDE.md', 'INDEX.md',
+    'MDFF_WORKFLOWS.md', 'RELEASE_NOTES_0_9_0_BETA_1.md', 'RELEASE_NOTES_0_9_0_BETA_2.md',
+    'WINDOWS_MACOS_NUMERICAL_EQUIVALENCE.md', 'WINDOWS_SC_DC_RESOURCE_BENCHMARK.md')
+documentation = [(str(root/'README.md'), 'documentation'), (str(root/'LICENSE'), 'documentation')]
+documentation += [(str(root/'docs'/name), 'documentation/docs') for name in guide_names]
+documentation.append((str(root/'docs/benchmarks/windows-macos-20261111/bw_sc_array_comparisons.csv'),
+    'documentation/docs/benchmarks/windows-macos-20261111'))
+for image in ('v090b1/site-groups-afm-cr.png', 'v090b1/results-comparison.png',
+              'v070b1/gui_overview.png', 'v070b1/diffraction_preview.svg', 'v070b1/angular_smoke.png'):
+    documentation.append((str(root/'docs/images'/image), 'documentation/docs/images/'+str(Path(image).parent)))
 sys.path.insert(0, str(root / 'src'))
 stage = root / os.environ.get('EMCD_GUI_BUILD_ROOT','build/windows-rc') / 'resources'
 stage.mkdir(parents=True, exist_ok=True)
@@ -55,7 +65,7 @@ a = Analysis([str(root/'packaging/launcher.py')], pathex=[str(root/'src')],
            (str(root/'tests/fixtures/Fe3O4_inverse_spinel.cif'),'examples'),
            (str(checked_distributions['ase'].locate_file('ase/spacegroup/spacegroup.dat')),'ase/spacegroup'),
            (str(root/'src/emcd_sim/data/adaptive_dirac_pade_2026'),'emcd_sim/data/adaptive_dirac_pade_2026'),
-           (str(root/'src/emcd_sim/data/edge_references_v1'),'emcd_sim/data/edge_references_v1')]+licenses+required_assets,
+           (str(root/'src/emcd_sim/data/edge_references_v1'),'emcd_sim/data/edge_references_v1')]+licenses+required_assets+documentation,
     hiddenimports=['matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg','ase.io.cif','ase.io.jsonio','ase.io.extxyz'],
     hooksconfig={'matplotlib': {'backends': ['Agg', 'QtAgg', 'svg']}},
     excludes=['tkinter','PyQt5','PyQt6','PySide2','pytest','IPython','torch','tensorflow']+EXCLUDED_MODULES, noarchive=False)

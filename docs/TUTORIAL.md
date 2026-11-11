@@ -1,8 +1,14 @@
-# Tutorial — CIF to saved EELS/EMCD results in v0.9.0-beta.1
+# Tutorial — CIF to saved EELS/EMCD results in the beta.2 Windows candidate
 
 [Home](../README.md) · [Install](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [User Guide](USER_GUIDE.md) · [MDFF models](MDFF_WORKFLOWS.md)
 
-This tutorial follows the already verified **FCC Ni, Global M, XMCD-constrained MDFF, Bloch-wave Single Channeling** case. It starts with raw input, not a serialized provider. The small two-energy calculation demonstrates configuration flow and persistence; it establishes neither spectral convergence nor quantitative material calibration.
+This tutorial follows the verified **FCC Ni, Global M, XMCD-constrained MDFF,
+Bloch-wave Single Channeling** workflow. It starts with raw input, not a
+serialized provider. The representative request has 243 energies and selected
+97×97 maps; it establishes neither convergence nor material calibration.
+Beta.2 is an unpublished candidate. Existing illustrations are retained from
+earlier Windows acceptance; their smaller diagnostic grids are not the sampling
+requested below. Published beta.1 retains its [versioned tutorial](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/TUTORIAL.md).
 
 The familiar layout is unchanged: Settings upper left, diffraction preview upper center, Results upper right, Project Results/history below. Material and MDFF are reached from Settings, not obsolete Model/Simulation menus.
 
@@ -24,11 +30,11 @@ In the Viewer's **Site groups** tab:
 1. Select **Global Magnetization Mode**.
 2. Set **Global Material M (x y z)** to `0 0 1`.
 3. Click **Configure MDFF…**. Check that **MDFF editing context** is **Global Material configuration** and the displayed read-only Material target M is `0 0 1`. A selected local row must not silently change this context.
-4. Select **XMCD-constrained MDFF**. Click **Browse XMCD…** and choose the raw source:
+4. Select **XMCD-constrained MDFF**. Click **Browse XMCD...** and choose the raw source:
    - Windows: `_internal/data/wien2k_ni/Ni_fm.xmcd`;
    - source: [data/wien2k_ni/Ni_fm.xmcd](../data/wien2k_ni/Ni_fm.xmcd).
-5. Click **Validate source / native features**. Inspect the source coverage and explicitly confirm **L3 native feature (eV) = 831.271**, **L2 native feature (eV) = 848.698**, **eta=1**, **beta=1**. Do not substitute generic Ni L-edge values, extrapolate missing data, or reuse metallic Ni spectra for an oxide.
-6. Complete the visible declarations below. New configurations use the explicit material-declaration route automatically; there is no hidden-checkbox or legacy-menu step.
+5. Browsing validates the source; **Recheck source (optional)** repeats that check. Inspect the coverage and explicitly confirm **L3 native feature (eV) = 831.271**, **L2 native feature (eV) = 848.698**, **eta=1**, **beta=1**. Do not substitute generic Ni L-edge values, extrapolate missing data, or reuse metallic Ni spectra for an oxide.
+6. Complete the declarations below. Expand **Advanced source declarations** for provenance, physical limits and scientific status. New configurations use explicit material declarations automatically; there is no hidden-checkbox or legacy-menu step.
 
 | Control | Declaration used by this diagnostic |
 | --- | --- |
@@ -38,7 +44,7 @@ In the Viewer's **Site groups** tab:
 | Physical assumptions / limits | `Effective axisymmetric XMCD-derived Ni diagnostic; not quantitatively calibrated for a=3.520 A` |
 | Relative tensor reference (A^2/eV) | `1`, a relative reference after source-max normalization, not an absolute cross section |
 | Scientific status | `physical_source_unvalidated` |
-| Convention acknowledgement | Check **I declare M axis, RP/LP convention and edge assignments** after reviewing those assumptions |
+| Convention acknowledgement | Check **Confirm RP−LP about Material +M and the displayed L3/L2 assignments** after reviewing those assumptions |
 
 The reversal assumption is the declared axisymmetric XMCD odd contribution with shared XAS. It is not permission to reverse arbitrary tensors by complex conjugation. Material owns M; a complete source tensor frame remains separate.
 
@@ -59,19 +65,19 @@ Use the existing Settings sections in this order; it avoids carrying geometry fr
 | Propagation Method | **Channeling Model = Single Channeling**, **Propagation Method = Bloch-wave** |
 | Shared Calculation Settings → Numerical Settings | **General settings (editable)**; older saved “Manual (Advanced)” settings restore through this current editable mode |
 | Beam / MDFF cutoff; potential cutoff | **2.5 / 2.0 Å⁻¹** |
-| Angular grid | **9**, giving 9×9 requested maps |
+| Angular grid | **Standard - 97x97**, giving 97×97 selected maps |
 | Depth nodes; aperture boundary subpixels | **64; 64** |
 | Map halfwidth | **1 Å⁻¹** |
-| Energy sampling | **Selected energies only**; actual samples **831.271 and 848.698 eV** |
+| Energy sampling | **Entire energy range — uniform sampling**, **241** requested points plus exact L3/L2: **243** actual samples |
 | Angular evaluation | **Full angular maps at selected energies** on; **Full angular field at every energy (advanced)** off |
-| Parallel Workers | **Manual**, requested workers **1** |
-| Memory budget | **2048 MiB** |
+| CPU Workers | **Auto (recommended)** |
+| Memory Budget | **Auto (recommended)** |
 | Virtual detectors | Click **Restore Thales A/B** after setting this geometry; set **Radius (Å⁻¹) = 0.09** |
 
-The **Windows adaptive-compute development candidate** combines resource controls
+The **beta.2 Windows candidate** combines resource controls
 and estimates in **Shared Calculation Settings → Compute Resources**. For this
-reproducible example choose CPU **Manual / 1** and Memory **Manual / 2048 MiB**.
-For other work, Auto CPU considers available physical/hybrid cores, detector task
+representative example choose CPU and Memory **Auto (recommended)**.
+Auto CPU considers available physical/hybrid cores, detector task
 size and memory; Single Channeling uses one outer worker. Auto memory reserves
 half of current physical/commit/address-space headroom, rather than using
 installed RAM as free space. The effective budget is a total process-peak limit;
@@ -87,9 +93,21 @@ Outer worker count is distinct from observed simultaneous tasks and BLAS threads
 Auto is a conservative heuristic, not a speedup guarantee. These controls are
 not present in the published v0.9.0-beta.1 package.
 
-This accepted case has **21 incident beams**, A/B centers approximately `(0.2840909091, ±0.2840909091) Å⁻¹`, zero B factor and no post-edge correction. Numerical q is crystallographic `g=1/d`; angular momentum transfer uses `Q=2πg` internally. Two selected energies are points, not a resolved EELS spectrum. The normal default is uniform energy sampling with exact selections inserted; this small example deliberately chooses selected-only.
+This case has **21 incident beams**, A/B centers approximately
+`(0.2840909091, ±0.2840909091) Å⁻¹`, zero B factor and no post-edge correction.
+Numerical q is crystallographic `g=1/d`; angular transfer uses `Q=2πg` internally.
+The source interval is 823.625–882.521 eV. All 243 detector samples are calculated;
+only exact L3/L2 energies retain full 97×97 fields. Spectral points, momentum
+grid, depth nodes and aperture subpixels control different sampling operations.
 
-Review effective settings before Run. **Custom – 9×9** is the expected preset caption. Do not select “Standard” to change a caption: that would change sampling. The application manages BLAS limits internally; no Conda or BLAS environment-variable setup is needed.
+Review effective values before Run; named sampling presets appear only when
+their defining values match, otherwise a Custom caption shows the actual grid.
+A preset selection changes sampling; caption restoration does not. The memory
+budget is a ceiling, the process estimate includes reserves, and measured RSS
+is a separate quantity. DC includes outgoing propagation and need not match SC
+or have a larger whole-process RSS. No Conda/BLAS environment setup is needed.
+The 2.0 Å⁻¹ potential cutoff omits the first off-row harmonic near 2.029 Å⁻¹;
+neither this example nor cross-platform agreement establishes convergence.
 
 ## 4. Local Site Groups and non-ionizing atoms
 

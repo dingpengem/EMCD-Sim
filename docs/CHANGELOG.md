@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.9.0-beta.2 Windows candidate — unpublished
+
+- Prepare version-consistent standalone RC1 packaging with the unified Compute
+  Resources panel, preserved Auto/Manual settings and corrected bounded SC
+  memory estimates. Keep physics, sources, references and published artifacts.
+- Distinguish requested/evaluated energy counts; document the verified 243-energy,
+  selected-97×97 Ni workflow with Auto CPU/memory and offline guides.
+- Preserve BW-SC per-array cross-platform evidence; record the unavailable
+  authentic Mac BW-DC/MS-SC/MS-DC exports and publication NO-GO explicitly.
+- See [candidate notes](RELEASE_NOTES_0_9_0_BETA_2.md) and
+  [numerical comparison inventory](WINDOWS_MACOS_NUMERICAL_EQUIVALENCE.md).
+
 ## v0.9.0-beta.1 — Windows Research Beta (prerelease)
 
 - Finalize current installation, Quick Start and Tutorial with the verified small 3.520 Å Ni Global workflow, current Viewer/MDFF acceptance controls, Local magnetic-subgroup/exclusion guidance and retained native illustrations. Packaged use needs neither Conda nor manual BLAS variables. Rebuild matching source/packages after this documentation-only change; numerical RC2 evidence remains separate.

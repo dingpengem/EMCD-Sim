@@ -6,6 +6,19 @@ Research software for electron magnetic circular dichroism (EMCD), core-loss EEL
 
 [Windows download](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/EMCD-Sim-v0.9.0-beta.1-Windows.zip) | [Installation](docs/INSTALL_WINDOWS.md) | [Quick Start](docs/QUICK_START.md) | [Tutorial](docs/TUTORIAL.md) | [User Guide](docs/USER_GUIDE.md) | [MDFF workflows](docs/MDFF_WORKFLOWS.md)
 
+**Development source: v0.9.0-beta.2 Windows candidate — not published.**
+It adds the unified Compute Resources panel, adaptive CPU/memory admission and
+corrected sampling/resource reporting. The current guides use the representative
+243-energy, selected-97×97 Ni example. See [candidate notes](docs/RELEASE_NOTES_0_9_0_BETA_2.md)
+and [numerical evidence/missing datasets](docs/WINDOWS_MACOS_NUMERICAL_EQUIVALENCE.md).
+The beta.1 download above remains unchanged; its [tagged guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/QUICK_START.md)
+describes that older binary.
+
+The independent [published macOS ARM64 Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1),
+[macOS installation](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/INSTALL_MACOS.md)
+and [macOS Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/main/docs/QUICK_START_MACOS.md)
+are preserved; the Windows candidate is not a macOS update.
+
 ## Capabilities
 
 | Area | Current scope |
@@ -25,7 +38,7 @@ Research software for electron magnetic circular dichroism (EMCD), core-loss EEL
 5. **Run EMCD / EELS**. Automatic internal BLAS limits are verified for the calculation and restored afterward; users need no environment-variable workaround. Manual outer workers remain subject to CPU/memory admission. Progress reports actual work and elapsed time; **Cancel** stops cooperatively.
 6. Inspect Results without recalculating. Save the complete project with **File → Save / Save As…**; restore a run or compare exactly two calculations from **Project Results**. Export controls are beside the corresponding results.
 
-Use the [Quick Start](docs/QUICK_START.md) for a deliberately small first case. Extract the complete Windows package and keep `_internal` beside `EMCD-Sim.exe`. Install the documented Microsoft x64 v14 runtime separately. Python, Conda and WIEN2k are not required to run the EXE. The accompanying source kit contains the matching application source and required dependency sources/replacement instructions.
+Use the [Quick Start](docs/QUICK_START.md) for a representative Ni first case. Extract the complete Windows package and keep `_internal` beside `EMCD-Sim.exe`. Install the documented Microsoft x64 v14 runtime separately. Python, Conda and WIEN2k are not required to run the EXE. The accompanying source kit contains the matching application source and required dependency sources/replacement instructions.
 
 ## Scientific and verification limits
 

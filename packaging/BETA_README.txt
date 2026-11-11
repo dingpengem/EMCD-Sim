@@ -1,21 +1,26 @@
-EMCD-Sim v0.9.0-beta.1 — Windows Research Beta (PRERELEASE)
+EMCD-Sim v0.9.0-beta.2 — Windows Research Beta RC1 (UNPUBLISHED CANDIDATE)
 Exact committed source, dependencies and build time are in
 _internal/build_info.json and the existing build manifest. Prior development
 candidates remain separate; this is not independent clean-PC/VM acceptance.
 
 START HERE
-Download EMCD-Sim-v0.9.0-beta.1-Windows.zip from the release Assets:
-https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1
+Use the separately supplied EMCD-Sim-v0.9.0-beta.2-Windows-RC1.zip.
+There is no beta.2 published release/tag yet. The previous beta.1 release remains
+unchanged at https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1 .
 Use Extract All, keep the complete EMCD-Sim folder, and double-click
 EMCD-Sim.exe beside _internal. Do not run inside the ZIP or copy only the EXE.
 Install the official Microsoft runtime below if needed. Python/Conda and
 manual OpenBLAS/OMP environment settings are NOT required for ordinary use.
 Installation:
-https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/INSTALL_WINDOWS.md
+https://github.com/dingpengem/EMCD-Sim/blob/feat/windows-adaptive-compute/docs/INSTALL_WINDOWS.md
 Quick Start:
-https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/QUICK_START.md
+https://github.com/dingpengem/EMCD-Sim/blob/feat/windows-adaptive-compute/docs/QUICK_START.md
 Tutorial (with bundled-input paths and native illustrations):
-https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/TUTORIAL.md
+https://github.com/dingpengem/EMCD-Sim/blob/feat/windows-adaptive-compute/docs/TUTORIAL.md
+Offline copies and illustrations: _internal/documentation/docs/ .
+The independent macOS release/installation remain unchanged:
+https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1
+https://github.com/dingpengem/EMCD-Sim/blob/main/docs/INSTALL_MACOS.md
 
 INSTALLATION AND REDISTRIBUTION
 Extract the complete EMCD-Sim folder; keep _internal beside EMCD-Sim.exe.
@@ -25,6 +30,9 @@ https://aka.ms/vc14/vc_redist.x64.exe . The runtime/installer is not bundled.
 Use a writable project/export folder and retain the supplied SHA256SUMS.txt.
 The matching Corresponding-Source ZIP contains EMCD-Sim-source.zip plus
 matching Qt/PySide/Shiboken dependency sources and replacement instructions.
+Use EMCD-Sim-v0.9.0-beta.2-RC1-Qt-sources.zip for this candidate. Its README
+identifies the current commit; the unchanged Qt technical guide keeps its
+historical beta.1 names. Those are not the current application source/package.
 See _internal/licenses/qt/SOURCE_AND_REPLACEMENT.md and component licenses.
 Unused Qt PDF and Virtual Keyboard components are excluded. ASE, spglib and
 other dependencies retain applicable license/provenance files. Adaptive neutral
@@ -62,6 +70,24 @@ NumPy/SciPy OpenBLAS runtimes are limited and verified during calculation, then
 restored. No BLAS environment-variable workaround is needed for normal startup.
 Four workers are not universally faster. Progress counts actual completed work;
 Cancel stops cooperatively and joins owned workers before another calculation.
+
+COMPUTE RESOURCES AND REPRESENTATIVE NI
+Shared Calculation Settings > Compute Resources replaces Resource Estimate.
+CPU Workers and Memory Budget have independent Auto/Manual modes; remembered
+Manual values are retained. The budget is an admission ceiling, the estimated
+peak includes reserves, and measured process memory is a different quantity.
+SC has one outer worker. Default Auto is conservative, not a speedup guarantee.
+The Quick Start uses 200 kV/10 nm, actual 3.520 A Ni [017]/(200), 241 uniform
+points plus exact selected features = 243 energies, and two 97x97 selected maps.
+Spectra at other energies use the fractional detector support. No numerical
+convergence or quantitative material calibration is implied.
+
+EVIDENCE STATUS
+The prior Windows 16-run benchmark is retained; its scientific arrays and
+sources are unchanged. BW-SC cross-platform evidence passes. Direct Mac BW-DC,
+MS-SC and MS-DC numerical comparisons remain INCOMPLETE until authentic retained
+exports are transferred. See _internal/documentation/docs/WINDOWS_MACOS_NUMERICAL_EQUIVALENCE.md.
+Publication is NO-GO pending those comparisons and final candidate acceptance.
 
 RESULTS AND PROJECTS
 The familiar Settings / Diffraction / Results / lower Project Results layout

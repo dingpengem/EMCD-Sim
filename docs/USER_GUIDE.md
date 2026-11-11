@@ -1,5 +1,11 @@
 # EMCD-Sim User Manual
 
+For the unpublished beta.2 Windows candidate, follow the current
+[Quick Start](QUICK_START.md) and [Tutorial](TUTORIAL.md) for the 243-energy,
+selected-97×97 workflow and unified Compute Resources controls. Historical
+screenshots below retain their version labels. Advanced historical/source
+references may require the corresponding-source kit or online repository.
+
 [Home](../README.md) · [Installation](INSTALL_WINDOWS.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [Index](INDEX.md)
 
 This manual describes **v0.9.0-beta.1 Windows Research Beta**, a prerelease. Use the [release notes](RELEASE_NOTES_0_9_0_BETA_1.md) for evidence and remaining verification limits. Older v0.8 binaries retain their [tag-specific instructions](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/USER_GUIDE.md).

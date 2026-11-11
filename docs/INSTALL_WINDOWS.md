@@ -1,10 +1,21 @@
-# Install EMCD-Sim v0.9.0-beta.1 on Windows
+# Install EMCD-Sim on Windows — beta.2 candidate and published beta.1
 
 [Home](../README.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [User Guide](USER_GUIDE.md)
 
 ## Ordinary packaged use
 
-Use the [v0.9.0-beta.1 Windows Research Beta prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1). It is research software, not a stable or quantitatively calibrated release.
+**Beta.2 is an unpublished candidate**, supplied separately as
+`EMCD-Sim-v0.9.0-beta.2-Windows-RC1.zip` with its matching
+`EMCD-Sim-v0.9.0-beta.2-RC1-Qt-sources.zip`. There is no beta.2 release/tag to
+download yet. Extract the complete candidate into a new writable directory and
+launch `EMCD-Sim.exe` beside `_internal`, as in steps 3–6 below. Candidate files
+do not update an existing installation automatically. Offline guides are under
+`_internal/documentation/docs/`; the source kit also contains them and their
+illustrations. See [candidate status](RELEASE_NOTES_0_9_0_BETA_2.md).
+
+For the **published** [v0.9.0-beta.1 Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1),
+use the download steps below and its [tagged Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/QUICK_START.md).
+Both are research software, not quantitatively calibrated stable releases.
 
 1. Download **[EMCD-Sim-v0.9.0-beta.1-Windows.zip](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/EMCD-Sim-v0.9.0-beta.1-Windows.zip)** from that release's **Assets**. GitHub's automatic “Source code” archive and the Corresponding-Source ZIP are not the runnable application.
 2. Download **[SHA256SUMS.txt](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/SHA256SUMS.txt)** from the same release. Optional PowerShell verification:
@@ -37,13 +48,13 @@ The complete Windows folder includes:
 | Input | Path relative to the extracted EMCD-Sim folder |
 | --- | --- |
 | Verified illustrative FCC Ni, **3.520 Å**, four sites | `_internal/examples/Ni_FCC_a3.52.cif` |
-| Five-column Ni source used by the small tutorial | `_internal/data/wien2k_ni/Ni_fm.xmcd` |
+| Five-column Ni source used by the representative tutorial | `_internal/data/wien2k_ni/Ni_fm.xmcd` |
 | Synthetic BCC Fe and Atomic demonstration | `_internal/examples/Fe_BCC_a2.8665.cif`, `synthetic_fe_atomic_parameters.json` |
 | Inverse-spinel Fe₃O₄ structure | `_internal/examples/Fe3O4_inverse_spinel.cif` |
 
-These are software examples, not experimental material calibration. The built-in Ni default is **3.524 Å**; importing the tutorial's 3.520 Å CIF is intentional. Source-checkout links and the exact small settings are in [Tutorial](TUTORIAL.md#1-import-the-verified-ni-input).
+These are software examples, not experimental material calibration. The built-in Ni default is **3.524 Å**; importing the tutorial's 3.520 Å CIF is intentional. Source-checkout links and the representative 243-energy/97×97 settings are in [Tutorial](TUTORIAL.md#1-import-the-verified-ni-input).
 
-The separate **[Corresponding-Source ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/EMCD-Sim-v0.9.0-beta.1-Corresponding-Source.zip)** contains `EMCD-Sim-source.zip`, including these guides and their illustrations, plus matching Qt/PySide/Shiboken sources and [build/replacement instructions](../packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md). Dependency licenses apply separately from the application MIT license. Unused Qt PDF/Virtual Keyboard components are excluded. The existing build manifest and `_internal/build_info.json` identify the exact source and dependencies.
+The published beta.1 **[Corresponding-Source ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1/EMCD-Sim-v0.9.0-beta.1-Corresponding-Source.zip)** remains available unchanged. For the beta.2 candidate use its separately supplied matching source ZIP, not this older application snapshot. Each kit contains `EMCD-Sim-source.zip`, guides/illustrations and matching Qt/PySide/Shiboken sources. The unchanged Qt 6.12 [technical replacement guide](https://github.com/dingpengem/EMCD-Sim/blob/feat/windows-adaptive-compute/packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md) retains historical beta.1 names; the candidate kit's README identifies its actual package and source commit. Dependency licenses apply separately from the application MIT license. Unused Qt PDF/Virtual Keyboard components remain excluded. The existing manifest and `_internal/build_info.json` identify the exact source and dependencies. No independent clean-PC/VM validation is implied.
 
 ## Projects, updates and troubleshooting
 
@@ -71,7 +82,7 @@ For developers with Git and Python 3.11, use a new clone:
 ```powershell
 git clone https://github.com/dingpengem/EMCD-Sim.git
 Set-Location EMCD-Sim
-git switch --detach v0.9.0-beta.1
+git switch feat/windows-adaptive-compute
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[gui]"
 .\.venv\Scripts\python.exe -m emcd_sim.gui

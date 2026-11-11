@@ -334,7 +334,7 @@ def run_multisite(output):
         return execute(dialog)
     try:
         assert app.platformName()=='windows','Native Windows platform required'
-        assert build_info()['application_version']=='0.9.0b1'
+        assert build_info()['application_version']=='0.9.0b2'
         with (patch.object(QtWidgets.QMessageBox,'exec',retain),
               patch.object(QtWidgets.QMessageBox,'warning',return_value=QtWidgets.QMessageBox.StandardButton.Discard),
               patch.object(QtWidgets.QMessageBox,'question',return_value=QtWidgets.QMessageBox.StandardButton.Yes)):
