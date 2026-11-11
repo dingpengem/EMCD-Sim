@@ -13,7 +13,7 @@
 
 ## Scoped evidence reused
 
-RC2 addresses the outstanding comparison-legend crowding in the shared EELS rendering path. Legend rows use actual font/DPI measurements, wrap full labels and grow the scrollable canvas rather than overlap curves or axis decorations. Both primary EELS/component panels and signal-only views retain clickable complete curves across separate modeled windows; the same legend artists remain in figure exports. This is a presentation correction, with no propagation, normalization or saved-array changes. Existing broad verification and scientific limitations below remain unchanged.
+RC2 addresses the outstanding comparison-legend crowding in the shared EELS rendering path. Legend rows use actual font/DPI measurements, wrap full labels and grow the scrollable canvas rather than overlap curves or axis decorations. A minimum-aware EELS canvas policy keeps the final legend rows reachable at high DPI. Both primary EELS/component panels and signal-only views retain clickable complete curves across separate modeled windows; the same legend artists remain in figure exports. This is a presentation correction, with no propagation, normalization or saved-array changes. Existing broad verification and scientific limitations below remain unchanged.
 
 | Evidence | Meaning and limit |
 | --- | --- |

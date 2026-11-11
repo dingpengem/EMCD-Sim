@@ -137,6 +137,11 @@ def test_legend_click_hides_complete_curve_and_survives_reflow_export(view,tmp_p
     include=next(box for box in view.multisite_controls.findChildren(QtWidgets.QCheckBox)
                  if box.text()=='Include total spectrum')
     include.setChecked(True);view.multisite_controls.quantity.setCurrentIndex(quantity)
+    view.canvas.setFixedWidth(280)  # Actual narrow-panel canvas, not a full-width standalone view.
+    view.window().resize(330,600);view.window().show();QtTest.QTest.qWait(250)
+    view.canvas.draw()
+    assert view.figure.bbox.height==pytest.approx(view.canvas.height()*view.canvas.device_pixel_ratio,abs=1)
+    assert view.canvas.geometry().bottom()<view.scroll.widget().height()
     # Total spans two disjoint modeled windows. One legend entry must control
     # BOTH segments, while independent group/state curves stay untouched.
     proxy,target=next((p,t) for p,t in view.proxies if isinstance(t,tuple) and len(t)==2)
@@ -153,6 +158,8 @@ def test_legend_click_hides_complete_curve_and_survives_reflow_export(view,tmp_p
     assert proxy.get_alpha()==label.get_alpha()==.2
     view.presentation.reflow(900)
     view.canvas.print_figure(tmp_path/'hidden_curve.png')
+    QtTest.QTest.qWait(180)
+    assert view.canvas.geometry().bottom()<view.scroll.widget().height()
     assert all(not line.get_visible() for line in target)
     assert proxy.get_alpha()==label.get_alpha()==.2
     click(label)

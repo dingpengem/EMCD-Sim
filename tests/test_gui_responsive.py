@@ -58,9 +58,10 @@ def test_comparison_legends_have_space_without_changing_curves(app,tmp_path,coun
     axes=list(fig.axes)
     def fits():
         canvas.draw();renderer=canvas.get_renderer()
+        assert fig.bbox.height==pytest.approx(canvas.height()*canvas.device_pixel_ratio,abs=1)
         for data,space,item,labels in presentation.legends:
             box=item.get_window_extent(renderer);slot=space.get_window_extent(renderer)
-            assert slot.contains(box.x0,box.y0) and slot.contains(box.x1,box.y1),(slot.extents,box.extents)
+            assert slot.padded(1e-6).contains(box.x0,box.y0) and slot.padded(1e-6).contains(box.x1,box.y1),(slot.extents,box.extents)
             assert all(not box.overlaps(a.get_tightbbox(renderer,for_layout_only=True)) for a in (ax,lower))
             assert all(''.join(t.get_text().split())==''.join(label.split()) for t,label in zip(item.get_texts(),labels))
     fits();canvas.print_figure(tmp_path/'comparison.png')

@@ -373,7 +373,11 @@ class ResultsView(QtWidgets.QWidget):
         self.figure=Figure(layout='constrained');self.canvas=FigureCanvasQTAgg(self.figure)
         self.navigation=NavigationToolbar2QT(self.canvas,self)
         self.canvas.setMinimumSize(280,160)
-        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Ignored)
+        # EELS legend rows grow the canvas minimum height. Ignoring its size
+        # hint lets Qt's scroll content under-report that height at high DPI,
+        # leaving the final legend rows unreachable even at maximum scroll.
+        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Minimum if kind=='eels' else QtWidgets.QSizePolicy.Policy.Ignored)
         self.multisite_banner=QtWidgets.QLabel();self.multisite_banner.setWordWrap(True);self.multisite_banner.hide()
         layout.addWidget(self.multisite_banner);layout.addWidget(self.canvas,1)
         self.details_section=CollapsibleSection('Display details / diagnostics / export',expanded=False);self.details_section.setObjectName('results_details_'+kind);self.details_toggle=self.details_section.header;self.details_body=self.details_section.body;details=QtWidgets.QVBoxLayout(self.details_body);details.setContentsMargins(0,0,0,0)
