@@ -145,12 +145,14 @@ Raw I(+M)/I(−M), reversal-even `[I(+M)+I(−M)]/2`, reversal-odd `[I(+M)−I(�
 ## 6. Save, reopen and export
 
 1. **File → Save As…**: choose a separate project folder, for example `Ni352_Global_XMCD_BW_SC`. The application creates its own configuration, source attachments where supported, metadata and calculated arrays. No JSON editing/import is needed.
-2. Use **Keep New** when retaining another calculation; preserve the original. The lower **Project Results** panel manages runs. **Restore Settings from Selected Run…** restores settings, while **View Results** displays saved arrays.
+2. Use **Keep New** when retaining another calculation; preserve the original. In development source, selecting one run in the lower **Project Results** panel or using **View Results** restores that run's recorded inputs together with its saved arrays. Comparison multi-selection does not choose a run to restore. **Restore Settings from Selected Run…** remains available as an explicit action.
 3. **File → Close Project → Open Project…**: select the complete saved project folder. Inspect the restored structure, Global mode, provider/source, settings and calculated result without rerunning. Missing/changed required external sources may block rerun while existing saved arrays remain viewable.
 4. Export numbers with **Results → Export Results…** or, for the displayed Local selection, **Display details / diagnostics / export → Export selected spectra CSV + metadata**. Preserve the accompanying metadata, exact energies/masks, units and normalization.
 5. Export a figure with **Display details / diagnostics / export → figure toolbar → Export Figure…**. In narrow panels open the toolbar's **…** overflow. Exported figures include legends outside the plotting axes. A figure/CSV export is separate from saving a project.
 
 The complete comparison dialog is **Results → Compare Calculations…**, for exactly two distinct runs in the active project. It does not rerun either calculation.
+
+New development calculations retain accepted inputs at Run, including editor parameters, inactive/excluded structural groups and resource requests. Auto allocation is reassessed on this machine. Selecting a saved run never starts a calculation or numerical preview and does not ask you to save on each selection; normal project-close protection remains. Older runs restore only recorded settings and identify unavailable inputs. Numeric crystal snapshots remain usable when the original CIF is absent; missing or changed required MDFF sources block recalculation without hiding saved results. This development behavior is not a claim about the already published beta.2 binaries.
 
 ## Limits and historical examples
 

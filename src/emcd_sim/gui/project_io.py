@@ -1,9 +1,9 @@
 """Versioned, checksummed project folders and read-only Stage B/C import.
 
-Result loading constructs saved plotting context only. No potential, tensor or
-propagation routines are called, and external sources are never read to plot.
-Configuration-only IO separately validates saved MDFF declarations, without
-elastic propagation or result-array restoration.
+Saved arrays are reconstructed independently of external sources. An optional
+run-input snapshot uses the existing configuration loader to validate source
+declarations; missing sources remain identifiable without blocking result
+viewing. Neither path starts elastic propagation or a numerical preview.
 """
 from dataclasses import asdict
 from pathlib import Path
@@ -286,6 +286,14 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             from ase.io import write
             write(temp/'structure.cif',restore_structure(snapshot).atoms,format='cif')
         managed=set(ARRAY_FILES)|{'project.json','metadata.json','comparison_metadata.json','input_parameters.json','structure.json','structure.cif','validity.json','display_state.json'}
+        if result.get('input_configuration') is not None:
+            # Optional existing configuration project, alongside unchanged NPZ
+            # results. Its own manifest/portable-source rules remain in force.
+            if (root/'run_inputs').exists():
+                old=json.loads((root/'project.json').read_text(encoding='utf-8'))
+                if old.get('run_inputs')!='run_inputs':raise ValueError('Run input attachment conflicts with an existing user folder; use Save As')
+            save_configuration(result['input_configuration'],temp/'run_inputs',cancelled=cancelled,progress=progress)
+            managed.add('run_inputs')
         multisite_sources=attach_sources(result,temp,managed) if multisite else None
         # Optional portable copy of a verified source-backed atomic input. Old
         # projects remain unchanged/readable; missing sources are never invented.
@@ -343,6 +351,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
         if atomic_attachment:manifest['atomic_parameter_source']=atomic_attachment
         if manual_attachment:manifest['manual_tensor_source']=manual_attachment
         if multisite_sources is not None:manifest['multisite_sources']=multisite_sources
+        if result.get('input_configuration') is not None:manifest['run_inputs']='run_inputs'
         _json(temp/'project.json',manifest);check('Validating saved project');load_project(temp,progress=lambda s:None)
         check('Finalizing complete project')
         if root.exists():_rename_folder(root,backup,cancelled)
@@ -579,6 +588,9 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
         from ..imported_mdff import ImportedMDFF
         ImportedMDFF.load(source,cfg.source_sha256)
         result['source_overrides']=dict(mdff=str(source))
+    if manifest and manifest.get('run_inputs'):
+        if manifest['run_inputs']!='run_inputs':raise ValueError('Invalid saved run input location')
+        result['input_configuration']=load_configuration(safe_path(root,'run_inputs'),cancelled=cancelled,progress=progress)
     check('Saved results ready; no physical recalculation')
     return result
 

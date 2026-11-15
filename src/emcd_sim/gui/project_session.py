@@ -72,7 +72,8 @@ def capture_configuration(w):
         state['metadata']['crystallographic_sites']=deepcopy(editor.crystallographic_provenance)
     raw=w._capture_manual_state();raw['source']=None
     state['metadata']['gui_drafts']=dict(manual=raw,manual_key=w._manual_key,
-        spectral=w.manual_spectral.draft(),atomic=w.atomic_editor.draft(),global_axis=w.axis.text())
+        spectral=w.manual_spectral.draft(),atomic=w.atomic_editor.draft(),global_axis=w.axis.text(),
+        atomic_element=w.atomic_editor.element.currentData(),atomic_use_editor=w.atomic_editor.use_editor.isChecked())
     state['metadata']['numerical_selection']=w.numerical_selection_snapshot()
     if w.magnetization_mode=='local':state['global_config']=getattr(w,'_saved_global_config',None)
     if state.get('global_config') is not None:state['global_config']=replace(state['global_config'],correction=False)
@@ -87,12 +88,16 @@ def restore_configuration(w,state):
     """Restore editable inputs, never results, and never infer a tensor frame."""
     from .geometry import orientation
     from .site_group_editor import validate_site_rows
+    w._run_restore_error=''
+    for widget,hidden in getattr(w,'_unavailable_input_widgets',[]):widget.setVisible(not hidden)
+    w._unavailable_input_widgets=[]
+    if hasattr(w,'run_settings_notice'):w.run_settings_notice.hide()
     state=dict(state)
     enabled=state['config'].correction or bool(state.get('global_config') and state['global_config'].correction)
     w.retire_post_edge(enabled)
     state['config']=replace(state['config'],correction=False)
     if state.get('global_config') is not None:state['global_config']=replace(state['global_config'],correction=False)
-    s=state['settings'];c=state['config'];w._session_restoring=True
+    s=state['settings'];c=state['config'];was_restoring=w._session_restoring;w._session_restoring=True
     try:
         if state['magnetization_mode']=='local' and state.get('global_config') is None:w._accepted_global_mdff=None
         if state['magnetization_mode']=='local' and state.get('global_config') is not None:
@@ -135,11 +140,18 @@ def restore_configuration(w,state):
         drafts=state.get('metadata',{}).get('gui_drafts')
         if drafts:
             w.set_material_magnetization(tuple(float(v) for v in drafts['global_axis'].replace(',',' ').split()))
+            element=drafts.get('atomic_element',getattr(c,'ionizing_element',None) if c.model=='atomic' else None)
+            if element is not None:
+                with QtCore.QSignalBlocker(w.atomic_editor.element):
+                    w.atomic_editor.element.setCurrentIndex(w.atomic_editor.element.findData(element))
+                w.atomic_editor._element=element
             w.atomic_editor.restore_draft(drafts['atomic'])
+            if 'atomic_use_editor' in drafts:
+                with QtCore.QSignalBlocker(w.atomic_editor.use_editor):w.atomic_editor.use_editor.setChecked(drafts['atomic_use_editor'])
             source=w.imported_info;raw=deepcopy(drafts['manual']);raw['source']=source
             w._manual_bindings[drafts['manual_key']]=raw;w._activate_manual_state(drafts['manual_key'],remember=False)
             w.manual_spectral.restore_draft(drafts['spectral'])
-        w.show_structure_viewer();viewer=w.structure_viewer;editor=viewer.editor
+        w.show_structure_viewer(show=False);viewer=w.structure_viewer;editor=viewer.editor
         editor.load_groups(None)
         rows=[]
         for r in state.get('group_records',[]):
@@ -183,12 +195,16 @@ def restore_configuration(w,state):
         w.material_site_groups=model
         w._loaded_fft_recipe=(w.fft_cell_key(),c.fft_generators) if c.fft_generators is not None else None
         w.restore_numerical_selection(state.get('metadata',{}))
-        w.refresh();w.sync_magnetization_mode()
+        w.sync_magnetization_mode()
         if state['magnetization_mode']=='global':
             w.mdff_dialog._entry=w.mdff_dialog.snapshot()
             w.mdff_dialog._draft_configuration=None;w.mdff_dialog._ready_snapshot=None
             w.sync_xmcd_route()
-    finally:w._session_restoring=False
+    finally:w._session_restoring=was_restoring
+    if not was_restoring:
+        was=w._restoring;w._restoring=True
+        try:w.refresh()
+        finally:w._restoring=was
     w.emcd_stale()
 
 
@@ -197,6 +213,10 @@ class ProjectSession:
         self.active_project_path=None;self.project_dirty=False;self._session_restoring=False
         self._after_project_save=None;self._saving_project=False;self._configuration_sources={}
         self._configuration_source_pins={};self._configuration_metadata={};self._loaded_configuration_config=None
+        self._run_restore_error=''
+        self.run_settings_notice=QtWidgets.QLabel();self.run_settings_notice.setWordWrap(True)
+        self.run_settings_notice.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.run_settings_notice.hide();self.form_layout.insertWidget(0,self.run_settings_notice)
         self.project_status=QtWidgets.QLabel();self.statusBar().addPermanentWidget(self.project_status)
         self._legacy_record_index={r['path']:dict(r) for r in self.browser.registry.records if r.get('path')}
         self.browser.registry.records=[];self.browser.refresh()
@@ -209,8 +229,98 @@ class ProjectSession:
                 elif isinstance(widget,QtWidgets.QTableWidget):widget.itemChanged.connect(self.mark_project_dirty)
         self.set_project_status('Unsaved Project')
 
+    def restore_result_inputs(self,result):
+        """Select inputs and results as one UI operation; never read other runs.
+
+        Selection is navigation, not a request to save/discard the project.
+        Preserve existing dirty state and close-project protection.
+        """
+        dirty=self.project_dirty;restoring=self._session_restoring
+        self._session_restoring=True;self._run_restore_error=''
+        for widget,hidden in getattr(self,'_unavailable_input_widgets',[]):widget.setVisible(not hidden)
+        self._unavailable_input_widgets=[]
+        try:
+            # Drop unaccepted editor state belonging to the previously viewed
+            # run. No confirmation and no application of a draft on navigation.
+            dialog=getattr(self,'mdff_dialog',None)
+            if dialog is not None:
+                dialog.hide();dialog._draft_configuration=None;dialog._ready_snapshot=None
+            viewer=getattr(self,'structure_viewer',None)
+            if viewer is not None:
+                viewer.hide()
+                for d in viewer.editor.mdff_dialogs.values():d.hide()
+            saved=result.get('input_configuration') or result.get('configuration')
+            if saved is not None:state=deepcopy(saved)
+            elif result['config'].model!='multisite':
+                state=dict(structure=io.restore_structure(result.get('structure_snapshot')),
+                    settings=result['settings'],config=result['config'],magnetization_mode='global',
+                    metadata=deepcopy(result.get('metadata',{})),group_records=[])
+            else:
+                # Retain available structural/magnetic information, but never
+                # manufacture provider parameters from group spectra.
+                records=[]
+                for gid,entry in result.get('groups',{}).items():
+                    m=entry['metadata']
+                    records.append(dict(group_id=gid,element=m['element'],indices=tuple(m['indices']),
+                        magnetization=m['magnetization_crystal'],mdff_reference=None,enabled=True))
+                state=dict(structure=io.restore_structure(result.get('structure_snapshot')),
+                    settings=result['settings'],config=result['config'],magnetization_mode='local',group_records=records,
+                    reverse_magnetization=result.get('metadata',{}).get('multisite',{}).get('global_reversal',False),
+                    issues=['This older Local run has no complete provider parameter snapshot; site MDFF settings are unavailable.'])
+            # Validate the recorded plotting frame/provider before touching
+            # widgets. Older exports can remain viewable without being rerunnable.
+            for reason in (io.frame_rerun_reason(result),io.elastic_provider_reason(result),result.get('fft_recipe_error')):
+                if reason:raise ValueError(reason)
+            if state['settings']!=result['settings']:raise ValueError('Recorded input snapshot differs from the selected run settings.')
+            c=state['config']
+            if c.worker_mode not in ('automatic','manual') or c.memory_mode not in ('automatic','manual'):
+                raise ValueError('Saved compute resource request is unavailable.')
+            # Never bind an old resolved allocation to this machine.
+            state['config']=replace(c,resource_allocation=None)
+            if state.get('global_config') is not None:
+                state['global_config']=replace(state['global_config'],resource_allocation=None)
+            overrides=dict(state.get('source_overrides',{}))
+            if result.get('input_configuration') is None:
+                for key,path in result.get('source_overrides',{}).items():
+                    overrides['config' if key in ('mdff','xmcd') else key]=path
+            state['source_overrides']=overrides
+            if 'numerical_selection' in result.get('metadata',{}):
+                state.setdefault('metadata',{})['numerical_selection']=deepcopy(result['metadata']['numerical_selection'])
+            restore_configuration(self,state)
+            self._restored_source_block=bool(self._restored_source_block) if state['magnetization_mode']=='global' else False
+            message='Recorded calculation settings restored.'
+            if result.get('input_configuration') is None:
+                message+=' Older run: unrecorded editor drafts/inactive model settings are unavailable.'
+            issues=state.get('issues',[])
+            if issues:message+=' Recalculation unavailable: '+'; '.join(issues)
+            if c.correction:
+                self._run_restore_error='The saved post-edge correction is retired and cannot be restored; saved arrays are unchanged.'
+                message+=' Settings restoration incomplete: '+self._run_restore_error
+        except (ValueError,KeyError,TypeError,OSError) as exc:
+            self._run_restore_error='Settings restoration incomplete: '+str(exc)
+            message=self._run_restore_error+' Saved results remain viewable; no other run’s inputs are shown.'
+            self._accepted_global_mdff=None;self.material_site_groups=None
+            self.last_result=None;self.table.setRowCount(0)
+            self.ax.clear();self.ax.set_title('Selected run input geometry unavailable');self.canvas.draw_idle()
+            for i in range(self.form_layout.count()):
+                widget=self.form_layout.itemAt(i).widget()
+                if widget is not None and widget is not self.run_settings_notice:
+                    self._unavailable_input_widgets.append((widget,widget.isHidden()));widget.hide()
+            for d in self.findChildren(QtWidgets.QDialog):d.hide()
+        finally:
+            self.project_dirty=dirty;self._session_restoring=restoring
+        was=self._restoring;self._restoring=True
+        try:
+            if not self._run_restore_error:self.refresh()
+        finally:self._restoring=was
+        self.run_settings_notice.setText(message);self.run_settings_notice.show()
+        self.emcd_stale()
+        if self._run_restore_error:self.emcd_button.setEnabled(False);self.run_button.setEnabled(False)
+        return message
+
     def mark_project_dirty(self,*_):
-        if not hasattr(self,'project_status') or self._session_restoring or self._restoring:return
+        if (not hasattr(self,'project_status') or self._session_restoring or self._restoring
+                or getattr(self,'_selecting_saved_result',False)):return
         self.project_dirty=True;self.set_project_status('Unsaved Changes' if self.active_project_path else 'Unsaved Project')
 
     def set_project_status(self,status):
@@ -315,6 +425,8 @@ class ProjectSession:
         if self.busy or not self.confirm_project_changes(self.new_project):return
         self._session_restoring=True
         try:
+            for widget,hidden in getattr(self,'_unavailable_input_widgets',[]):widget.setVisible(not hidden)
+            self._unavailable_input_widgets=[];self._run_restore_error='';self.run_settings_notice.hide()
             self._reset_project_inputs();self.set_magnetization_mode('global')
             from .emcd_forward import ForwardSettings
             self.restore_sampling_controls(ForwardSettings())
@@ -345,14 +457,7 @@ class ProjectSession:
         if len(rows)>1:self.error('Select exactly one calculation to restore its settings.');return
         r=self.browser.cache.get(rows[0]['id']) if rows else self.emcd_result
         if self.busy or r is None:return
-        if not self.confirm_project_changes(self.use_result_settings):return
-        if r['config'].model=='multisite':
-            if not r.get('configuration'):self.error('This older run lacks full provider declarations; no settings were substituted.');return
-            state=deepcopy(r['configuration']);state['source_overrides']=r.get('source_overrides',{})
-            if 'numerical_selection' in r['metadata']:state.setdefault('metadata',{})['numerical_selection']=r['metadata']['numerical_selection']
-            restore_configuration(self,state)
-        else:
-            self.set_magnetization_mode('global');self._restore_single_settings()
+        self.restore_result_inputs(r)
         self.mark_project_dirty()
 
     def register_completed(self,result):

@@ -218,6 +218,13 @@ class ProviderUI:
             self.atomic_editor.set_crystal(self.structure,preserve_validation=True)
             with QtCore.QSignalBlocker(self.atomic_parameter_path):self.atomic_parameter_path.setText(path or cfg.source)
             self.validate_atomic_parameters(expected_sha256=cfg.source_sha256)
+            if self.atomic_provider_info is None:
+                # An older result may not contain a GUI draft. Do not leave
+                # another run's electronic parameters under this missing source.
+                self.atomic_editor.restore_draft({})
+                with QtCore.QSignalBlocker(self.atomic_editor.element):
+                    self.atomic_editor.element.setCurrentIndex(self.atomic_editor.element.findData(cfg.ionizing_element))
+                self.atomic_editor._element=cfg.ionizing_element
             with QtCore.QSignalBlocker(self.atomic_declaration):self.atomic_declaration.setChecked(bool(self.atomic_provider_info and cfg.axis_declared))
         elif cfg.model=='xmcd':
             d=cfg.provider_declaration

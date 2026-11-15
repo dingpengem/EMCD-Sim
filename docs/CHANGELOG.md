@@ -1,5 +1,16 @@
 # Changelog
 
+## Development source — saved-run input restoration
+
+- Selecting or viewing one saved calculation restores its own recorded structure,
+  magnetic configuration, MDFF/editor parameters, detectors and numerical inputs
+  alongside its results. Comparison multi-selection does not restore an arbitrary run.
+- Capture accepted inputs at calculation start and persist them through the existing
+  configuration-project format. Reassess compute requests on the current machine.
+- Preserve saved arrays and ordinary project-close protection; identify incomplete
+  legacy settings and missing/changed sources without substituting another run's inputs.
+- These changes are local development source, not an update to published installers.
+
 ## v0.9.0-beta.2 — Windows Research Beta
 
 - Unified Compute Resources replaces Resource Estimate: independent Auto/Manual

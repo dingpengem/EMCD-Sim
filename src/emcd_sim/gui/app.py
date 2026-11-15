@@ -147,7 +147,18 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
     def set_values(self,values):
         changed=any(self.spin[key].value()!=float(value) for key,value in values.items())
         for key,value in values.items():
-            with QtCore.QSignalBlocker(self.spin[key]):self.spin[key].setValue(float(value))
+            widget=self.spin[key]
+            with QtCore.QSignalBlocker(widget):
+                if (getattr(self,'_restoring',False) or getattr(self,'_session_restoring',False)) and np.isfinite(value):
+                    # Recorded valid settings must not silently clamp to a
+                    # newer editor's usual increment-button range.
+                    if isinstance(widget,QtWidgets.QDoubleSpinBox):
+                        from decimal import Decimal
+                        digits=max(0,-Decimal(str(float(value))).as_tuple().exponent)
+                        widget.setDecimals(max(widget.decimals(),min(323,digits)))
+                        widget.setRange(min(widget.minimum(),float(value)),max(widget.maximum(),float(value)))
+                    else:widget.setRange(min(widget.minimum(),int(value)),max(widget.maximum(),int(value)))
+                widget.setValue(float(value))
         if 'grid' in values and hasattr(self,'angular_resolution'):self.sync_angular_resolution()
         if changed:self.mark_project_dirty()
 
@@ -189,6 +200,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.canvas.draw_idle()
 
     def refresh(self,*_,fit=False):
+        if getattr(self,'_session_restoring',False):return
         if not hasattr(self,'canvas'):return
         if getattr(self,'_project_structure',self.structure) is not self.structure:self.mark_project_dirty()
         self._project_structure=self.structure

@@ -431,6 +431,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if not hasattr(self,'emcd_button') or getattr(self,'_restoring',False):return
         reason='';cfg=None;info=None
         try:
+            if getattr(self,'_run_restore_error',''):raise ValueError(self._run_restore_error)
             if getattr(self,'_numerical_error',None):raise ValueError(self._numerical_error)
             cfg=self.forward_settings(prepare=False);s=self.settings();sites=None;signature=None
             if cfg.model=='multisite':
@@ -533,6 +534,7 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
     def start_emcd(self):
         if self.busy:return
         try:
+            if getattr(self,'_run_restore_error',''):raise ValueError(self._run_restore_error)
             reason=self.restored_source_reason()
             if reason:raise ValueError(reason)
             self.resolve_numerical_ui()
@@ -563,6 +565,13 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             cfg=bind_allocation(cfg,assessment)
             structure=Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings)
             if sites is not None:sites.validate_structure(structure)
+            # Freeze accepted inputs now, not when the worker finishes or the
+            # project is saved. Editors may hold inactive or subsequent drafts.
+            from .project_session import capture_configuration
+            from copy import deepcopy
+            self._run_configuration=capture_configuration(self)
+            self._run_configuration.update(structure=deepcopy(structure),settings=s,
+                config=deepcopy(replace(cfg,resource_allocation=None)))
         except Exception as exc:
             if self.invalidate_on_source_error(exc):self.emcd_stale()
             self.error(str(exc));return
@@ -586,18 +595,17 @@ class StageB(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
     def emcd_completed(self,result):
         if self.worker.isInterruptionRequested():return
         display_start=time.perf_counter()
+        from copy import deepcopy
+        if getattr(self,'_run_configuration',None) is not None:
+            result['input_configuration']=deepcopy(self._run_configuration)
         selection=getattr(self,'_run_numerical_selection',None)
         if selection:
             result['metadata']['numerical_selection']=selection
             for method in result.get('methods',{}).values():method['metadata']['numerical_selection']=selection
-        self.emcd_result=result;self.run_outcome='completed'
-        self.sync_result_capabilities(result)
+        self.run_outcome='completed'
         self.register_completed(result)
-        for i,view in ((1,self.maps_view),(2,self.eels_view)):
-            self.tabs.setTabEnabled(i,i!=1 or bool(result['maps']));view.set_result(result)
-        for i,view in ((5,self.diffraction_view),(6,self.overview_view)):
-            self.tabs.setTabEnabled(i,i==5 or len(result.get('methods',{}))==2);view.set_result(result)
-        self.tabs.setTabEnabled(3,True);self.comparison.setPlainText(comparison_text(result));self.tabs.setCurrentIndex(2);self.emcd_stale();self.emcd_ready.emit()
+        self.display_saved_result(result,self.selected_record)
+        self.emcd_ready.emit()
         logging.getLogger('emcd_sim.gui').info('Result display setup elapsed_seconds=%.6f (canvas painting may be deferred)',time.perf_counter()-display_start)
     def emcd_finished(self):
         self._emcd_elapsed_timer.stop();self._emcd_elapsed_timer.deleteLater()

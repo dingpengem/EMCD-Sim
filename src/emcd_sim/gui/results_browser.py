@@ -84,6 +84,7 @@ class ResultsBrowser(QtWidgets.QWidget):
         self.table.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Ignored if compact else QtWidgets.QSizePolicy.Policy.Expanding)
     def auto_view(self):
         rows=self.selected()
+        self._requested_view_id=rows[0]['id'] if len(rows)==1 else None
         if not self.owner.busy and len(rows)==1 and (not self.owner.selected_record or rows[0]['id']!=self.owner.selected_record['id']):self.view()
     def selected(self):
         ids=[self.table.item(i,0).data(QtCore.Qt.ItemDataRole.UserRole) for i in sorted({x.row() for x in self.table.selectedIndexes()})]
@@ -113,7 +114,8 @@ class ResultsBrowser(QtWidgets.QWidget):
         self.refresh();self.select_id(record['id']);return record
     def view(self):
         rows=self.selected()
-        if not rows:return
+        self._requested_view_id=rows[0]['id'] if len(rows)==1 else None
+        if len(rows)!=1 or self.owner.busy:return
         r=rows[0]
         if r['id'] in self.cache:self.owner.display_saved_result(self.cache[r['id']],r);return
         if r.get('path'):self.owner.open_project_path(r['path'],legacy=not (Path(r['path'])/'project.json').exists(),record=r)
@@ -176,6 +178,13 @@ class ProjectWorkspace(ProjectSession):
         if hasattr(self,'responsive'):self.responsive.reset()
         else:self.splitter.setSizes([340,820,390]);self.result_sizes=None;self.saved_sizes=None;self.resizeDocks([self.browser_dock],[190],QtCore.Qt.Orientation.Vertical)
     def display_saved_result(self,result,record=None):
+        dirty=self.project_dirty;selecting=getattr(self,'_selecting_saved_result',False)
+        self._selecting_saved_result=True
+        try:self._display_saved_result(result,record)
+        finally:self._selecting_saved_result=selecting;self.project_dirty=dirty
+
+    def _display_saved_result(self,result,record=None):
+        restoration=self.restore_result_inputs(result)
         self.emcd_result=result;self.selected_record=record
         if hasattr(self,'sync_result_capabilities'):self.sync_result_capabilities(result)
         for i,view in ((1,self.maps_view),(2,self.eels_view),(5,self.diffraction_view),(6,self.overview_view)):
@@ -203,7 +212,7 @@ class ProjectWorkspace(ProjectSession):
             view.advanced.setChecked(bool(state.get('advanced',False)));view.redraw()
             if notes:view.display_note.setText(' '.join(notes))
         sources=source_status(result);warnings=result.get('project_warnings',[])
-        self.statusBar().showMessage('Viewing completed saved data; no recalculation. '+(' '.join(warnings))+' '+('Source unavailable/mismatched for rerun.' if any(not s['verified'] for s in sources.values()) else ''))
+        self.statusBar().showMessage('Viewing completed saved data; no recalculation. '+restoration+' '+(' '.join(warnings))+' '+('Source unavailable/mismatched for rerun.' if any(not s['verified'] for s in sources.values()) else ''))
     def io_operation(self,operation,completed):
         if self.busy:return
         previous_result=self.emcd_result;previous_record=self.selected_record
@@ -234,6 +243,7 @@ class ProjectWorkspace(ProjectSession):
             callback=self._after_project_save;self._after_project_save=None
             if not self._io_success or cancelled:self.set_project_status('Save Failed')
             elif callback:QtCore.QTimer.singleShot(0,callback)
+        QtCore.QTimer.singleShot(0,self.browser.auto_view)
     def _open_single_result_path(self,path,*,legacy=False,record=None,relocated=False):
         def loaded(result):
             # Loader-verified project attachments take precedence over browser
@@ -249,7 +259,12 @@ class ProjectWorkspace(ProjectSession):
             row=record or self.browser.register(result,path)
             if not record:
                 overrides=dict(row.get('source_overrides',{}),**overrides)
-            self.browser.cache[row['id']]=result;result['source_overrides']=overrides;self.browser.refresh();self.browser.select_id(row['id']);self.display_saved_result(result,row)
+            self.browser.cache[row['id']]=result;result['source_overrides']=overrides
+            if record is not None and getattr(self.browser,'_requested_view_id',record['id'])!=record['id']:return
+            if record is not None:
+                selected=self.browser.selected()
+                if len(selected)!=1 or selected[0]['id']!=record['id']:return
+            self.browser.refresh();self.browser.select_id(row['id']);self.display_saved_result(result,row)
             if record is None:
                 self.project_dirty=True;self.set_project_status('Unsaved Changes' if self.active_project_path else 'Unsaved Project')
         self.io_operation(lambda cancel,progress:load_project(path,legacy=legacy,cancelled=cancel,progress=progress),loaded)
@@ -292,16 +307,16 @@ class ProjectWorkspace(ProjectSession):
         if self.busy or self.emcd_result is None:return
         r=self.emcd_result;s=r['settings'];c=r['config']
         if c.model not in ('xmcd','atomic','imported'):
-            self.error('Saved MDFF provider is unsupported; results remain viewable without migrating inputs.');return
+            raise ValueError('Saved MDFF provider is unsupported; results remain viewable without migrating inputs.')
         from .project_io import frame_rerun_reason,elastic_provider_reason
         provider_reason=elastic_provider_reason(r)
-        if provider_reason:self.error(provider_reason);return
+        if provider_reason:raise ValueError(provider_reason)
         frame_reason=frame_rerun_reason(r)
-        if frame_reason:self.error(frame_reason);return
-        if r.get('fft_recipe_error'):self.error(r['fft_recipe_error']);return
+        if frame_reason:raise ValueError(frame_reason)
+        if r.get('fft_recipe_error'):raise ValueError(r['fft_recipe_error'])
         if (c.worker_mode not in ('automatic','manual') or c.memory_mode not in ('automatic','manual')
                 or any(type(v) is not int or not 1<=v<=2**31-1 for v in (c.parallel_workers,c.memory_budget_mib))):
-            self.error('Saved resource request is unsupported. Saved results remain viewable; inputs were not replaced or clamped.');return
+            raise ValueError('Saved resource request is unsupported. Saved results remain viewable; inputs were not replaced or clamped.')
         try:structure=restore_structure(r.get('structure_snapshot'))
         except Exception as exc:self.error(str(exc));return
         if self.model_box.currentIndex()==2:self._remember_manual_state()
