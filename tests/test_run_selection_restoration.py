@@ -214,6 +214,25 @@ def test_late_result_load_does_not_replace_latest_selection(window,tmp_path,monk
     assert w.selected_record['id']==b_id and w.settings().thickness==19.
 
 
+def test_clicking_current_run_and_returning_from_multiselection_restore_inputs(window,app,tmp_path):
+    w=window;a=local_fixture(tmp_path/'a');b=local_fixture(tmp_path/'b')
+    a_id=add(w,a);b_id=add(w,b)
+    w.browser.select_id(a_id);w.browser.auto_view()
+    w.spin['thickness'].setValue(99.)
+    w.show();w.browser_dock.show();app.processEvents()
+    item=next(w.browser.table.item(i,0) for i in range(w.browser.table.rowCount())
+        if w.browser.table.item(i,0).data(QtCore.Qt.ItemDataRole.UserRole)==a_id)
+    w.browser.table.scrollToItem(item)
+    QtTest.QTest.mouseClick(w.browser.table.viewport(),QtCore.Qt.MouseButton.LeftButton,
+        pos=w.browser.table.visualItemRect(item).center())
+    app.processEvents()
+    assert w.settings().thickness==a['settings'].thickness
+    w.browser.table.selectAll();w.browser.auto_view()
+    w.spin['thickness'].setValue(98.)
+    w.browser.select_id(a_id);w.browser.auto_view()
+    assert w.settings().thickness==a['settings'].thickness and w.selected_record['id']==a_id
+
+
 def test_incomplete_legacy_does_not_show_previous_inputs(window,tmp_path):
     w=window;a,_=global_atomic(tmp_path);add(w,a)
     incomplete=deepcopy(a);incomplete.pop('input_configuration',None);incomplete['structure_snapshot']=None

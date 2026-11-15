@@ -78,14 +78,16 @@ class ResultsBrowser(QtWidgets.QWidget):
         self.table.setMinimumHeight(96)
         self.selection_timer=QtCore.QTimer(self);self.selection_timer.setSingleShot(True);self.selection_timer.setInterval(250)
         self.table.itemSelectionChanged.connect(lambda:self.selection_timer.start());self.selection_timer.timeout.connect(self.auto_view)
+        self.table.cellClicked.connect(lambda *_:self.view())
     def set_compact(self,compact):
         for button in self.action_buttons:button.setVisible(True)
         self.more.setVisible(True)
         self.table.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,QtWidgets.QSizePolicy.Policy.Ignored if compact else QtWidgets.QSizePolicy.Policy.Expanding)
     def auto_view(self):
         rows=self.selected()
+        previous=getattr(self,'_requested_view_id',None)
         self._requested_view_id=rows[0]['id'] if len(rows)==1 else None
-        if not self.owner.busy and len(rows)==1 and (not self.owner.selected_record or rows[0]['id']!=self.owner.selected_record['id']):self.view()
+        if not self.owner.busy and len(rows)==1 and (not self.owner.selected_record or rows[0]['id']!=self.owner.selected_record['id'] or previous!=rows[0]['id']):self.view()
     def selected(self):
         ids=[self.table.item(i,0).data(QtCore.Qt.ItemDataRole.UserRole) for i in sorted({x.row() for x in self.table.selectedIndexes()})]
         return [r for identity in ids for r in self.registry.records if r['id']==identity]
