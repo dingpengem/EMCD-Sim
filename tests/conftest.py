@@ -28,7 +28,7 @@ def release_test_owned_gui_resources(request, monkeypatch):
     before_windows = tuple(app.topLevelWidgets()) if app else ()
     before = {id(w) for w in before_windows}
     if qt:
-        warning, execute = qt.QMessageBox.warning, qt.QMessageBox.exec
+        warning, critical, execute = qt.QMessageBox.warning, qt.QMessageBox.critical, qt.QMessageBox.exec
         def owned(window):
             return type(window).__name__ == 'MainWindow' and id(window) not in before
         def project_warning(parent, title, *args, **kwargs):
@@ -37,13 +37,23 @@ def release_test_owned_gui_resources(request, monkeypatch):
             # Save/Cancel install their own responses after this fixture.
             if owned(parent) and title == 'Unsaved Changes':
                 return qt.QMessageBox.StandardButton.Discard
+            if owned(parent) and title == 'EMCD-Sim':
+                pytest.fail(f'Unexpected GUI error: {title}: {args[0] if args else ""}')
             return warning(parent, title, *args, **kwargs)
         def retain_calculation(dialog, *args, **kwargs):
             if owned(dialog.parent()) and dialog.windowTitle() == 'Retain Calculation':
                 dialog.defaultButton().click()  # keep as a new test calculation
                 return qt.QDialog.DialogCode.Accepted
             return execute(dialog, *args, **kwargs)
+        def unexpected_error(parent, title, message, *args, **kwargs):
+            # An unexpected error from a test-owned window must fail rather
+            # than block the unattended suite in a modal native event loop.
+            # Tests expecting an error install their own handler/response.
+            if owned(parent):
+                pytest.fail(f'Unexpected GUI error: {title}: {message}')
+            return critical(parent, title, message, *args, **kwargs)
         monkeypatch.setattr(qt.QMessageBox, 'warning', project_warning)
+        monkeypatch.setattr(qt.QMessageBox, 'critical', unexpected_error)
         monkeypatch.setattr(qt.QMessageBox, 'exec', retain_calculation)
     pyplot = sys.modules.get('matplotlib.pyplot')
     figures = set(pyplot.get_fignums()) if pyplot else set()

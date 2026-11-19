@@ -224,7 +224,7 @@ def test_memory_rejection_does_not_lower_settings(window,monkeypatch):
 
 
 def test_run_starts_one_worker_only(window,monkeypatch):
-    import emcd_sim.gui.calculation_worker as sb
+    import emcd_sim.gui.calculation_controls as sb
     worker=Mock();worker.isInterruptionRequested.return_value=False
     factory=Mock(return_value=worker);monkeypatch.setattr(sb,'EMCDWorker',factory)
     window.start_emcd();assert factory.call_count==1 and worker.start.call_count==1
