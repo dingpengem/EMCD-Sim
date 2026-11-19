@@ -17,7 +17,6 @@ from emcd_sim import multisite_double_channeling as multi
 from emcd_sim.cancellation import Cancelled, check_cancelled
 from emcd_sim.gui import channeling, memory_budget, parallel_resources
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from test_multisite_forward import configuration, system as ni_system, RAW_KEYS, PARITY_KEYS
@@ -82,7 +81,9 @@ def test_group_memory_limits_automatic_workers_and_rejects_manual(tmp_path,monke
     # Resource admission only: no propagation or allocation of the estimated
     # 64 MiB result storage occurs in this controlled-memory case.
     monkeypatch.setattr(memory_budget,'memory_snapshot',lambda:dict(available_ram_mib=32768.,process_rss_mib=100.))
-    cfg=configuration(propagation='fft-multislice',channeling_model='double',depth=257,fft_grid=64,
+    # Full-field tasks ensure that memory, rather than aperture task count,
+    # limits the automatic plan. No estimated arrays are actually allocated.
+    cfg=configuration(propagation='fft-multislice',channeling_model='double',depth=257,fft_grid=64,angular_evaluation='all',
                       memory_budget_mib=512,worker_mode='automatic')
     info=numerical_info(structure,settings,cfg,ionization_sites=sites,additional_retained_working_mib=64.)
     assert info['execution']['effective_workers']['fft-multislice']==1

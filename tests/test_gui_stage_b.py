@@ -16,6 +16,7 @@ from emcd_sim.gui.forward_results import export_result
 from emcd_sim.gui.xmcd_source import inspect_xmcd_source
 from emcd_sim.wien2k_xmcd import load_wien2k_xmcd
 from emcd_sim.gui.app import MainWindow
+from runtime_fixtures import apply_global_mdff
 from emcd_sim.gui.geometry import orientation
 from emcd_sim.elastic import depth_coherence
 from legacy_geometry import Ni017Geometry,rotated_tensor
@@ -95,13 +96,21 @@ class ForwardTests(unittest.TestCase):
         self.assertTrue((folder/'L3_angular_maps.png').exists())
     def test_gates_and_memory(self):
         changed=Structure.nickel();changed.atoms.cell*=1.1;self.assertTrue(material_reason(changed))
-        with self.assertRaisesRegex(ValueError,'512 MiB'):calculate(self.structure,Settings(beam_cutoff=6.5),replace(self.cfg,grid=97,memory_budget_mib=512))
+        # Admission includes current RSS. A bounded SC calculation can fit
+        # 512 MiB in a fresh process; force genuine pressure for this rejection
+        # check instead of depending on memory retained by earlier tests.
+        with patch('emcd_sim.gui.memory_budget.memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=512.)):
+            with self.assertRaisesRegex(ValueError,'512 MiB'):calculate(self.structure,Settings(beam_cutoff=6.5),replace(self.cfg,grid=97,memory_budget_mib=512))
 
 
 class WorkerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    def setUp(self):self.w=MainWindow(workspace=Path('outputs')/('stage_b_worker_'+uuid.uuid4().hex));self.w.model_box.setCurrentIndex(0);self.w.validate_xmcd(show_error=False);self.w.declaration.setChecked(True);self.w.error=lambda s:None
+    def setUp(self):
+        self.w=MainWindow(workspace=Path('outputs')/('stage_b_worker_'+uuid.uuid4().hex))
+        self.w.model_box.setCurrentIndex(0);self.w.validate_xmcd(show_error=False);self.w.declaration.setChecked(True)
+        apply_global_mdff(self.w)
+        self.w.error=lambda s:None
     def tearDown(self):
         if self.w.busy:self.w.cancel();self.w.worker.wait(5000);self.app.processEvents()
         self.w.close();self.app.processEvents()

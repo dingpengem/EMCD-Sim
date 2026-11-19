@@ -95,7 +95,7 @@ def test_atomic_revalidation_updates_energies_identity_and_stale_preview(window,
     w.atomic_parameter_path.setText(str(path));w.validate_atomic_parameters();e.preview();old=e.preview_dialog
     d=json.loads(path.read_bytes());d['parameters'].update(crystal_field_ev=1.75,edge_energies_ev=[709.2,722.3])
     path.write_text(json.dumps(d),encoding='utf-8');digest=hashlib.sha256(path.read_bytes()).hexdigest()
-    w.validate_atomic_parameters();cfg=w.forward_settings();source=load_provider(cfg)
+    w.validate_atomic_parameters();cfg=w.global_mdff_draft_settings();source=load_provider(cfg)
     assert e.validated_sha256==cfg.source_sha256==digest
     assert float(e.fields['cf'].text())==source.metadata['atomic_parameters']['crystal_field_ev']==1.75
     assert [float(e.fields[k].text()) for k in ('l3','l2')]==[709.2,722.3]
@@ -103,7 +103,7 @@ def test_atomic_revalidation_updates_energies_identity_and_stale_preview(window,
     e.preview();assert e.preview_dialog.source.sha256==digest and 'CURRENT' in e.preview_state.text()
     path.write_text('{',encoding='utf-8');w.validate_atomic_parameters()
     assert not w.atomic_provider_info and not e.validated_path and 'STALE' in e.preview_state.text()
-    with pytest.raises(ValueError):w.forward_settings()
+    with pytest.raises(ValueError):w.global_mdff_draft_settings()
 
 
 def imported_document(w):
@@ -116,21 +116,25 @@ def imported_document(w):
 
 def test_complete_three_manual_bindings_frames_and_edits(window,tmp_path):
     w,_=window;w.model_box.setCurrentIndex(2);w.manual_model.setCurrentIndex(0);w.constant_input_mode.setCurrentIndex(0)
-    w.manual_tensor.cells.item(0,0).setText('.8');w.axis.setText('0 0 1');constant=w.forward_settings()
-    w.manual_model.setCurrentIndex(1);e=w.manual_spectral;e.element.setCurrentText('Fe');e.direction.setText('1 2 3');e.fields['L2','width'].setText('2.3')
-    spectral=w.forward_settings()
+    w.manual_tensor.cells.item(0,0).setText('.8');w.set_material_magnetization((0,0,1));constant=w.global_mdff_draft_settings()
+    w.manual_model.setCurrentIndex(1);e=w.manual_spectral;e.element.setCurrentText('Fe');w.set_material_magnetization((1,2,3));e.fields['L2','width'].setText('2.3')
+    spectral=w.global_mdff_draft_settings()
     w.manual_model.setCurrentIndex(0);w.constant_input_mode.setCurrentIndex(1)
     path=tmp_path/'external.json';path.write_text(json.dumps(imported_document(w)),encoding='utf-8')
-    w.imported_path.setText(str(path));w.validate_imported_mdff();w.imported_declaration.setChecked(True);imported=w.forward_settings()
+    w.set_material_magnetization((0,1,0))
+    w.imported_path.setText(str(path));w.validate_imported_mdff();w.imported_declaration.setChecked(True);imported=w.global_mdff_draft_settings()
     assert w._manual_key=='imported'
     for _ in range(2):
-        w.constant_input_mode.setCurrentIndex(0);a=w.forward_settings()
+        w.set_material_magnetization(constant.magnetization)
+        w.constant_input_mode.setCurrentIndex(0);a=w.global_mdff_draft_settings()
         assert a.source_sha256==constant.source_sha256 and a.magnetization==constant.magnetization
         assert w.manual_tensor.cells.item(0,0).text()=='.8'
-        w.manual_model.setCurrentIndex(1);a=w.forward_settings()
+        w.set_material_magnetization(spectral.magnetization)
+        w.manual_model.setCurrentIndex(1);a=w.global_mdff_draft_settings()
         assert a.source_sha256==spectral.source_sha256 and a.magnetization==spectral.magnetization
         assert e.fields['L2','width'].text()=='2.3'
-        w.manual_model.setCurrentIndex(0);w.constant_input_mode.setCurrentIndex(1);a=w.forward_settings()
+        w.set_material_magnetization(imported.magnetization)
+        w.manual_model.setCurrentIndex(0);w.constant_input_mode.setCurrentIndex(1);a=w.global_mdff_draft_settings()
         assert a.source==imported.source and a.source_sha256==imported.source_sha256 and a.magnetization==imported.magnetization
         w.preview_mdff();expected=source_for(a).tensors(source_for(a).energy_ev,np.eye(3),a.magnetization)
         for actual,tensor in zip(w.manual_preview_pair,expected):np.testing.assert_array_equal(actual,tensor.tensor_angstrom2_per_ev)
@@ -141,12 +145,12 @@ def test_invalid_constant_draft_and_pending_import_survive_switch(window,tmp_pat
     w.manual_tensor.cells.item(0,0).setText('nan')
     w.manual_model.setCurrentIndex(1);w.manual_model.setCurrentIndex(0)
     assert w.manual_tensor.cells.item(0,0).text()=='nan'
-    with pytest.raises(ValueError):w.forward_settings()
+    with pytest.raises(ValueError):w.global_mdff_draft_settings()
     w.imported_path.setText(str(tmp_path/'missing.json'))
     assert w._manual_key=='imported'
     w.manual_model.setCurrentIndex(1);w.manual_model.setCurrentIndex(0)
     assert w.imported_path.text()==str(tmp_path/'missing.json')
-    with pytest.raises(ValueError,match='Validate'):w.forward_settings()
+    with pytest.raises(ValueError,match='Validate'):w.global_mdff_draft_settings()
 
 
 @pytest.mark.parametrize('width',[1e-200,1.,1e308,1.5e308])

@@ -299,7 +299,11 @@ def test_multielement_cif_checkboxes_never_enable_multiple_groups(window, tmp_pa
     for box in e.element_boxes.values(): box.setChecked(True)
     e.load_document(DEMO); e.generate(); w.atomic_declaration.setChecked(True); w.model_box.setCurrentIndex(1)
     w.emcd_stale(); assert not w.emcd_button.isEnabled()
-    assert 'element' in w.emcd_button.toolTip().lower() or 'sites' in w.emcd_button.toolTip().lower() or 'Manual' in w.emcd_button.toolTip()
+    w.show_structure_viewer(show=False)
+    assert w.mdff_dialog.apply_configuration() is None
+    reason=w.mdff_dialog.status.text().lower()
+    assert 'element' in reason or 'sites' in reason or 'manual' in reason
+    assert w._accepted_global_mdff is None and not w.emcd_button.isEnabled()
 
 
 def test_required_physical_definitions_and_blank_material_inputs(window):
@@ -327,7 +331,7 @@ def test_editor_generation_exact_tensor_equivalence_and_checksum(window, tmp_pat
     for sign in ('plus','minus'):
         np.testing.assert_array_equal(getattr(a,sign).tensor_angstrom2_per_ev, getattr(b,sign).tensor_angstrom2_per_ev)
     assert Path(e.validated_path).parent == w.workspace/'atomic_inputs'
-    w.atomic_declaration.setChecked(True); assert w.forward_settings().ionizing_element == 'Fe'
+    w.atomic_declaration.setChecked(True); assert w.global_mdff_draft_settings().ionizing_element == 'Fe'
     e.preview(); assert e.preview_dialog.isVisible()
 
 
@@ -420,16 +424,20 @@ def test_cif_change_invalidates_source_and_keeps_per_element_drafts(window):
     assert not w.atomic_provider_info and not w.atomic_declaration.isChecked() and e.fields['radial'].text() == '0.04'
 
 
-def test_rotated_frame_derived_axis_and_top_level_consistency(window, tmp_path):
+def test_rotated_frame_requires_matching_material_magnetization(window, tmp_path):
     w, _ = window; e = demo(w); e.frame_mode.setCurrentIndex(2)
     rotation = [[1,0,0],[0,0,-1],[0,1,0]]
     for i in range(3):
         for j in range(3): e.frame.cellWidget(i,j).setText(str(rotation[i][j]))
+    e.generate()
+    assert w.atomic_provider_info is None
+    assert tuple(map(float,w.axis.text().split())) == (0,0,1)
+    w.set_material_magnetization((0,-1,0))
     e.generate(); assert w.atomic_provider_info
-    assert tuple(map(float,w.axis.text().split())) == (0,-1,0)
-    w.atomic_declaration.setChecked(True); assert w.forward_settings().magnetization == (0,-1,0)
-    w.axis.setText('0 0 1')
-    with pytest.raises(ValueError): w.forward_settings()
+    w.atomic_declaration.setChecked(True)
+    assert w.global_mdff_draft_settings().magnetization == (0,-1,0)
+    w.set_material_magnetization((0,0,1))
+    with pytest.raises(ValueError): w.global_mdff_draft_settings()
 
 
 def test_empty_missing_and_unwritable_sources_are_actionable(window, tmp_path):

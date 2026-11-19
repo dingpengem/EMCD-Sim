@@ -218,14 +218,15 @@ def test_global_local_lock_legacy_settings_reopen_and_no_fallback(tmp_path,app,m
         window.correction.setChecked(False)
         # Preserve exactly the legacy interpretation/settings rather than deriving local M.
         global_text = window.axis.text()
-        with pytest.raises(ValueError,match='Atomic draft ready') as legacy_state:
+        with pytest.raises(ValueError,match='Configure and Apply Global MDFF') as legacy_state:
             window.forward_settings(prepare=False)
         window.show_structure_viewer();viewer = window.structure_viewer;editor = viewer.editor
         assert editor.magnetization_mode == 'global'
         editor.mode.setCurrentIndex(1)
         assert not window.axis.isEnabled() and window.axis.text() == global_text
-        assert not window.atomic_editor.direction.isEnabled() and not window.atomic_editor.apply_direction.isEnabled()
-        assert 'Global magnetization is locked while site-specific magnetization is enabled.' in window.magnetization_mode_note.text()
+        assert window.atomic_editor.direction.isReadOnly()
+        assert window.material_magnetization==tuple(map(float,global_text.split()))
+        assert 'Inactive for the current Local calculation.' in window.mdff_material_direction.text()
         assert not window.emcd_button.isEnabled()
         from emcd_sim.gui.multisite_run import applied_inputs
         local_cfg = window.forward_settings(prepare=False)
@@ -242,7 +243,8 @@ def test_global_local_lock_legacy_settings_reopen_and_no_fallback(tmp_path,app,m
         assert editor.rows() == rows
         editor.mode.setCurrentIndex(0)
         assert window.axis.isEnabled() and window.axis.text() == global_text
-        assert window.atomic_editor.direction.isEnabled() and window.atomic_editor.apply_direction.isEnabled()
+        assert window.atomic_editor.direction.isReadOnly()
+        assert window.material_magnetization==tuple(map(float,global_text.split()))
         assert not editor.direction.isEnabled() and not viewer.view.show_magnetization
         assert editor.rows() == rows
         with pytest.raises(ValueError) as restored_state:window.forward_settings(prepare=False)

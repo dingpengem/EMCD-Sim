@@ -5,7 +5,7 @@ from unittest.mock import Mock,patch
 import json
 import pytest
 from PySide6 import QtWidgets
-from emcd_sim.gui.geometry import Settings,Structure
+from emcd_sim.gui.geometry import Settings,Structure,align_bragg
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.parallel_resources import worker_plan,IMPLICATED_DLL_SHA256,native_backend_info
 from emcd_sim.gui.propagation import numerical_info
@@ -135,10 +135,12 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
             assert w._accepted_global_mdff is not None
             w.channeling_box.setCurrentIndex(1)
             assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,2.5,2.0)
-            assert w.settings()==Settings()
+            initial_settings=w.settings()
+            assert initial_settings==Settings()
             assert w.spin['grid'].value()==97 and w.memory_budget.value()==2048
             assert not w.shared_resources_group.isHidden()
             original=w.numerical_snapshot();w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(4)
+            assert w.settings()==initial_settings
             assert w.numerical_snapshot()==original and not w.emcd_button.isEnabled()
             errors=[];w.error=errors.append;w.start_emcd();assert errors and not factory.called and not w.busy
             w.worker_mode.setCurrentIndex(0);assert w.worker_count.value()==4
@@ -146,7 +148,9 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
             assert w.compute_resources.info['bw_beams']==21
             w.spin['kv'].setValue(200);assert w.compute_resources.info['incident_voltage_kv']==200
             w.new_project()
-            assert w.settings()==Settings() and w.worker_mode.currentIndex()==0
+            g=w.current[3][w.current[2].index(Settings().target)]
+            expected=replace(Settings(),tilt=tuple(align_bragg(g,(0,0),Settings().voltage,'Y')))
+            assert w.settings()==expected and w.worker_mode.currentIndex()==0
         finally:w.close();app.processEvents()
 
 
