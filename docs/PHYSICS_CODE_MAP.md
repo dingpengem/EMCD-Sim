@@ -128,6 +128,16 @@ import. The editor is an input builder, not a second scientific generator.
 | Imported material tensor | `imported_mdff.ImportedMDFF.load`, `.tensors`; `mdff_providers.load_provider`, `load_site_group_provider` | Spectral `(n_energy,3,3)` pairs, strictly increasing native energies, source identity, schema/convention, real proper frames, Hermiticity/positivity and reversal claims are validated at the import boundary. Source interpolation stays inside declared coverage. `test_single_element_contracts`, `test_multisite_spectrum`. |
 | Historical Ni | `historical_ni.NiLocalConfig`, `ni_local_transitions`, `tensors`; provider adapter from `mdff_providers.prepare_provider` | Retained supported Ni CLI/API and saved-project defaults. Shares atomic angular/radial algebra but preserves historical parameter and threshold policy. It must not substitute for an unavailable explicit source. `test_part1c_refactor`, `test_single_element_ni_compatibility`, `test_run_selection_restoration`. |
 
+The constant row above describes the single-matrix synthetic model.
+`gui.group_mdff` also offers an explicit constant pair: its `candidate` builder
+retains independently entered Hermitian PSD matrices `T_plus=A`, `T_minus=B`,
+with their declared full frame and coverage. It does not manufacture the other
+state by conjugation in that mode. Both modes enter the same `ImportedMDFF`
+validation/provider path. Arbitrary imported pairs likewise need not satisfy
+`T_minus=conj(T_plus)`; the physical pair and its validity are source declarations.
+See `test_group_direction_binding` and `test_multisite_single_channeling` for
+real reversal-odd and noncollinear cases.
+
 Material transition information (`TransitionDataset`) is distinct from its
 dipole scattering representation (`DipoleTensor`/explicit imported pair).
 Neither owns incident waves, elastic propagation or detector apertures.

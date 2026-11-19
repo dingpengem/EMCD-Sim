@@ -128,7 +128,7 @@ unknown source objects cannot fall through to the historical Ni provider.
 
 Real limits remain: periodic finite ZOLZ support, projected nonabsorbing IAM,
 one incident plane wave and localized single ionization; cubic independent-
-electron atomic 2p?3d only; XMCD proxy assumptions; explicit source coverage,
+electron atomic 2p→3d only; XMCD proxy assumptions; explicit source coverage,
 frames and scales; no automatic cross-source calibration. The single-provider
 site-equivalence gate is narrower than the multisite route. Multi-site Double
 `propagation='both'` remains unsupported and requires separate solver runs.
@@ -167,3 +167,100 @@ package identities are recorded after the final source is frozen. The earlier
 in-progress full run was stopped for the user's API clarification; it is not a
 completed regression and must not be counted as one. Historical current-source
 registration blockers are reported rather than bypassed or repinned.
+
+Native Windows Qt affected checks completed in 504.08 s: **56 passed,
+12 failed, 1 skipped**. All 11 saved-run restoration tests and all 13 project
+workflow tests passed, including selection/multiselection, input restoration,
+missing/changed sources, Save As and fresh-process reopening. The canonical
+API's seven negative cases, executor-failure propagation and Ni GUI export
+also passed. Screenshots were inspected from
+`build/physics-readability/native-ui/current.png` and
+`project_comparison_after.png`.
+
+Five native failures exposed an over-specific assertion in the updated energy
+comparison helper: current checkpoint/reopened results also contain runtime
+allocation observations. The helper now checks each available observation
+against that result's admission/execution metadata; all numerical assertions
+are unchanged. Seven solver-controls tests still target older editor setup,
+tooltip or source-layout expectations. One existing optional genuine saved
+project fixture is unavailable; its original skip condition remains.
+
+The first final-suite invocation stopped during collection (two missed
+`material_inputs.calculate` imports). Those two tests and one maintained
+research script now import `forward_pipeline.calculate` directly. This is
+recorded separately from the subsequent complete regression; it is not a
+successful full run.
+
+The next full invocation reached the older automatic-settings worker test, then
+blocked in `MainWindow.error`'s modal warning (confirmed by pytest's 120-second
+traceback). Its owned process tree was stopped; no unrelated process was
+terminated. The existing test-owned GUI lifecycle fixture now fails unexpected
+error dialogs rather than waiting indefinitely, while intentional-error tests
+retain their own handlers. The worker mock targets `calculation_controls`, the
+actual factory binding. This test-harness correction does not change application
+behavior, scientific tolerances, reference pins or skip conditions. That
+interrupted run is not counted as a completed full regression.
+
+## Complete regression and affected checks
+
+The complete in-process regression collected and executed all **1,747 cases**
+after application source was frozen. It finished with **1,091 passed,
+388 failed, 205 errors and 63 skipped**, 1,068 warnings, in **19,907.56 s
+(5 h 31 min 47 s)**. This is **not a clean full-suite pass**. The log and XML
+are `build/physics-readability/complete-suite.log` and `complete-suite.xml`.
+The test snapshot started at `db63dcf`; later test-only binding corrections
+are verified separately below. No application source changed during this run.
+
+The 593 failed/error reports separate into these message categories:
+
+| Reports | Category and disposition |
+| --- | --- |
+| 244 | Memory admission: the long-lived pytest process exceeded fixture budgets. One observation measured 4,119.2 MiB RSS and 4,215.1 MiB private memory; later exceptions reported 5,726.1 MiB RSS. Budgets, admission checks and sampling were not changed. |
+| 163 | Current-source registration: includes the known baseline `app.py` pin and reviewed-source scopes covering moved modules or migrated scripts. Immutable evidence and strict kernel/data pins were preserved rather than repinned. |
+| 31 | Two configuration/persistence fixtures still mocked removed `calculate_multisite`. They now forbid canonical `calculate`; the redundant second guard was removed. |
+| 155 | Other reports, including older GUI setup/default/widget expectations, historical path/version expectations, two missed inner imports and archived-reference scheduler binding. Do not infer that every newly observed failure was independently reproduced at the starting revision. |
+
+The missed inner import in `test_atomic_ionization` now takes `calculate` from
+`forward_pipeline`. The historical Ni scientific comparison patches the actual
+`channeling.calculate_detector_signals` scheduler with its archived reference;
+the reference equations and assertions are unchanged. Duplicate canonical
+imports left by consolidation were removed from two tests.
+
+A fresh-process affected batch completed **71 passed in 36.33 s**, with the same
+budgets, scientific assertions and tolerances. It covers the corrected consumer
+fixtures, multisite forward cases, generated Fe atomic projects, historical Ni
+comparisons, the Double/Bloch scheduler comparison, Fe end-to-end models,
+canonical metadata/flux, and a real cubic-spinel geometry using explicitly
+synthetic spectroscopy. Those checked late-run calculation failures were
+resource-admission failures, not changed numerical results. This does not
+replace or relabel the complete in-process result. Evidence:
+`build/physics-readability/affected-consumers.log` and `affected-consumers.xml`.
+
+All 11 saved-run restoration cases passed again in the full run. All 12
+offscreen project-workflow cases passed; its native-only case had already
+passed in the earlier Windows run (13/13 there). Console interfaces, public
+exports and packaging hidden imports resolved. Existing platform, external-data
+and saved-artifact skip conditions were retained.
+
+Current-source registration, older GUI/fixture expectations and process-wide
+test resource retention remain verification blockers. The older Ni oracle's
+two last-bit differences were separately reproduced at the starting commit,
+as recorded above. No published benchmark was regenerated, no tolerance was
+relaxed and no release acceptance is claimed.
+
+Two additional existing Windows-only checks were then run with
+`QT_QPA_PLATFORM=windows`: **1 passed in 34.59 s** for group MDFF controls and
+**1 passed in 15.79 s** for a real multisite worker calculation started by the
+Run button. They verify manual/XMCD switching, Material M ownership, explicit
+two-group inputs and displayed calculated results. Screenshots were inspected
+in `build/physics-readability/native-ui/group_xmcd.png` and `multisite.png`
+(the constant-editor image is `group.png`). These are native source checks on
+this host, distinct from the later frozen build and from a clean-machine test.
+
+An in-memory AST/source review accounts for 106 methods across
+`CalculationControls`, `MainWindow`, `ProjectWorkspace`, `ResultRegistry` and
+`ProjectIOWorker`. Their bodies match the starting source after the documented
+name/import relocations; the setup method and Ni source constant have their
+reviewed new names. The Ni source value is unchanged. This supports identifying
+older GUI setup expectations separately from changed application behavior;
+it does not replace behavioral checks.
