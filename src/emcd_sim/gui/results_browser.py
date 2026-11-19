@@ -326,6 +326,8 @@ class ProjectWorkspace(ProjectSession):
         if self.model_box.currentIndex()==2:self._remember_manual_state()
         self.retire_post_edge(c.correction)
         c=replace(c,correction=False)
+        source_override=r.get('source_overrides',{}).get('xmcd' if c.model=='xmcd' else 'mdff')
+        if source_override:c=replace(c,source=source_override)
         self._restoring=True
         try:
             self.structure=structure;self.last_result=None;self.table.setRowCount(0)
