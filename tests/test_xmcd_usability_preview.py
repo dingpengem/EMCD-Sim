@@ -10,6 +10,7 @@ from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.project_io import save_project, load_project
 from emcd_sim.mdff_providers import prepare_provider
 from test_mdff_usability import window
+from runtime_fixtures import apply_global_mdff
 
 
 def declared_xmcd(w,tmp_path):
@@ -78,7 +79,8 @@ def test_missing_source_keeps_visible_preview_and_directs_to_main_input(window):
     w,app=window;w.model_box.setCurrentIndex(0);w.source_path.clear();w.mdff_dialog.show();app.processEvents()
     p=w.xmcd_preview;w.preview_mdff()
     assert p.isVisible() and p.is_stale and not hasattr(p,'select_source')
-    assert 'main XMCD input' in p.status.text() and not w.errors
+    assert 'five-column XAS/XMCD source in this editing context' in p.status.text()
+    assert not w.errors
 
 
 def test_main_source_selected_once_serves_preview_and_calculation(window,tmp_path):
@@ -101,6 +103,7 @@ def test_main_source_selected_once_serves_preview_and_calculation(window,tmp_pat
         w.numerical_mode.setCurrentIndex(1);w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(1)
         w.set_values(dict(beam=.6,potential=1.2,kv=200,thickness=.2,grid=9,depth=3,subpixels=4,energy=9,halfwidth=.7,radius=.12))
         w.propagation_box.setCurrentIndex(0);w.energy_scope.setCurrentIndex(1)
+        apply_global_mdff(w)
         w.start_emcd();deadline=time.monotonic()+90
         while w.busy and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
         assert not w.busy and not w.errors,w.errors
@@ -123,7 +126,8 @@ def test_bundled_other_element_never_substituted(window):
 
 
 def test_legacy_preview_uses_calculation_provider(window):
-    w,_=window;w.structure=Structure.nickel();w.model_box.setCurrentIndex(0);w.declaration.setChecked(True);w.preview_mdff()
+    w,_=window;w.structure=Structure.nickel();w.model_box.setCurrentIndex(0)
+    w.reference_ni.setChecked(True);w.declaration.setChecked(True);w.preview_mdff()
     p=w.xmcd_preview;assert p.snapshot is not None,p.status.text()
     cfg=p.snapshot['config'];assert not hasattr(cfg,'provider_schema')
     expected=prepare_provider(cfg).tensors(p.snapshot['energy'],np.eye(3))
@@ -150,14 +154,19 @@ def test_switching_models_preserves_drafts_axes_and_display_state(window,tmp_pat
 def test_three_model_project_restore_and_preview(window,tmp_path,mode):
     w,app=window;declared_xmcd(w,tmp_path)
     w.model_box.setCurrentIndex(mode)
-    cfg=replace(w.forward_settings(),propagation='bloch',energy_scope='edges',grid=9,depth=3,subpixels=4,halfwidth=.7,
+    cfg=replace(apply_global_mdff(w),propagation='bloch',energy_scope='edges',grid=9,depth=3,subpixels=4,halfwidth=.7,
         radius=.12,centers=((.2,.2),(.2,-.2)),correction=False,worker_mode='manual',parallel_workers=1)
     settings=Settings(zone=(0,0,1),target=(1,1,0),voltage=200,thickness=.2,tilt=(-5,7),beam_cutoff=.6,potential_cutoff=1.2)
     original=calculate(w.structure,settings,cfg);folder=tmp_path/'project';save_project(original,folder)
     restored=load_project(folder)
     w.model_box.setCurrentIndex((mode+1)%3);w.emcd_result=restored;w.use_result_settings();app.processEvents()
     assert w.model_box.currentIndex()==mode and w.mdff_stack.currentIndex()==mode
+    entry=w.mdff_dialog.comparable(w.mdff_dialog._entry)
+    current=w.mdff_dialog.comparable(w.mdff_dialog.snapshot())
+    assert not w.mdff_dialog.has_unapplied_edits(),{key:(entry[key],current[key]) for key in entry if entry[key]!=current[key]}
     w.preview_mdff()
+    current=w.mdff_dialog.comparable(w.mdff_dialog.snapshot())
+    assert not w.mdff_dialog.has_unapplied_edits(),{key:(entry[key],current[key]) for key in entry if entry[key]!=current[key]}
     if mode==0:
         p=w.xmcd_preview;assert not p.is_stale,p.status.text()
         assert p.snapshot['config'].source_sha256==cfg.source_sha256

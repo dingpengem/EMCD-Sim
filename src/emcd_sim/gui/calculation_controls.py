@@ -213,7 +213,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
 
     def model_changed(self,index):
         previous=self.mdff_stack.currentIndex()
-        if previous==2 and hasattr(self,'_remember_manual_state'):self._remember_manual_state()
+        if previous==2 and not getattr(self,'_restoring',False) and hasattr(self,'_remember_manual_state'):self._remember_manual_state()
         self.mdff_stack.setCurrentIndex(index)
         self.refresh_material_direction()
         if hasattr(self,'model_description'):self.model_description.setText((

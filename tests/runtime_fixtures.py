@@ -9,6 +9,15 @@ from emcd_sim.single_channeling_tensor import run_tensor_single_channeling
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
 from emcd_sim.gui.runtime import LABEL,build_info
 
+def apply_global_mdff(window):
+    """Accept explicitly configured inputs through the real Material workflow."""
+    window.show_structure_viewer()
+    assert window.mdff_dialog.apply_configuration() is not None,window.mdff_dialog.status.text()
+    window.structure_viewer.apply_groups()
+    assert not window.structure_viewer.isVisible(),window.structure_viewer.editor.status.text()
+    assert not window.mdff_dialog.has_unapplied_edits(),window.mdff_dialog.status.text()
+    return window.forward_settings()
+
 def release_controls(window, app):
     """Exercise the actual release widgets without starting a worker."""
     assert window.cancel_button.text()=='Cancel' and not window.cancel_button.isEnabled()

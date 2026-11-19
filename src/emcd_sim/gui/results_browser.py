@@ -346,7 +346,7 @@ class ProjectWorkspace(ProjectSession):
             with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(provider_index)
             for widget,checked in ((self.row_projection,c.systematic_row),(self.angular_maps,c.angular_maps)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
-            self.mdff_stack.setCurrentIndex(self.model_box.currentIndex())
+            self.model_changed(self.model_box.currentIndex())
             self.compute_resources.restore(c)
             values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial if c.radial is not None else .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
             values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()});self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()

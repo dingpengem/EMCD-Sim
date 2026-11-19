@@ -139,10 +139,17 @@ class ImportedTensorUI:
         self.emcd_stale()
 
     def prepare_manual_tensor(self):
+        def source_unchanged(generated):
+            current=self.imported_info
+            if current is None or generated.sha256!=current.sha256:return False
+            if Path(self.imported_path.text())!=Path(current.path) or not Path(current.path).is_file():return False
+            ImportedMDFF.load(current.path,expected_sha256=current.sha256)
+            return True
         if self.manual_model.currentIndex()==1:
             from .runtime import workspace
             doc=self.manual_spectral.document()
             source=self.manual_tensor.persist(getattr(self,'workspace',None) or workspace(),doc)
+            if source_unchanged(source):return
             with QtCore.QSignalBlocker(self.imported_path):self.imported_path.setText(source.path)
             with QtCore.QSignalBlocker(self.imported_declaration):self.imported_declaration.setChecked(True)
             self.imported_info=source
@@ -154,6 +161,7 @@ class ImportedTensorUI:
             doc=self.manual_tensor.document(self.ionizing_element.text().strip(),self.imported_edge.text().strip(),
                 (float(self.manual_l3.text()),float(self.manual_l2.text())),tuple(float(v) for v in self.axis.text().split()))
             source=self.manual_tensor.persist(getattr(self,'workspace',None) or workspace(),doc)
+            if source_unchanged(source):return
             with QtCore.QSignalBlocker(self.imported_path):self.imported_path.setText(source.path)
             self.imported_info=source
             with QtCore.QSignalBlocker(self.imported_declaration):self.imported_declaration.setChecked(True)
