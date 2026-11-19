@@ -33,6 +33,14 @@ def window(tmp_path):
         w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
         assert set(w.structure.atoms.get_chemical_symbols())=={'Ni'}
         assert w.source_info and w.validated_path==w.source_path.text()
+        w.show_structure_viewer()
+        # Automatic presets are a supported saved historical Ni capability;
+        # source-backed material providers intentionally require Manual mode.
+        w.reference_ni.setChecked(True)
+        assert w.mdff_dialog.apply_configuration() is not None
+        w.structure_viewer.apply_groups()
+        assert type(w._accepted_global_mdff) is NiForwardSettings
+        w.numerical_mode.setCurrentIndex(0)
         yield w
         w.close();app.processEvents()
         for solver in solvers:solver.assert_not_called()
@@ -58,7 +66,7 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
         values,_=resolve_parameters(Structure.nickel(),Settings(),cfg)
         assert values['fft_grid']==minimum
     assert [c.fft_grid for s,c in calls]==list(range(32,min(minimum,128)+1,2))
-    assert all(s.beam_cutoff==3.2 and s.potential_cutoff==2.5 and c.depth==64 and c.slice_step==2. for s,c in calls)
+    assert all(s.beam_cutoff==2.5 and s.potential_cutoff==2.0 and c.depth==64 and c.slice_step==2. for s,c in calls)
 
 
 def test_pure_resolution_never_calls_scientific_solvers():
@@ -97,15 +105,17 @@ def test_reference_selection_and_fft_support(method,channel):
 ])
 def test_unmatched_never_claims_convergence(settings,cfg):
     values,meta=resolve_parameters(Structure.nickel(),settings,cfg)
-    assert values['beam']==3.2 and values['potential']==2.5
+    assert values['beam']==2.5 and values['potential']==2.0
     assert 'convergence not established' in meta['status']
 
 
-def test_unsupported_geometry_no_fallback():
-    # The full basis admission cap can reject this geometry even before the
-    # MS geometry gate; neither rejection may truncate beams or switch engines.
-    with pytest.raises(ValueError,match='FFT EMCD supports Ni|interactive limit'):
-        resolve_parameters(Structure.nickel(),replace(Settings(),zone=(0,1,1)),replace(NiForwardSettings(),propagation='both'))
+def test_supported_orientation_and_invalid_geometry_no_fallback():
+    cfg=replace(NiForwardSettings(),propagation='both')
+    values,meta=resolve_parameters(Structure.nickel(),replace(Settings(),zone=(0,1,1)),cfg)
+    assert values['fft_grid']>=32 and meta['physical_settings']['zone']==(0,1,1)
+    assert 'convergence not established' in meta['status']
+    with pytest.raises(ValueError,match=r'Zone direction cannot be \[000\]'):
+        resolve_parameters(Structure.nickel(),replace(Settings(),zone=(0,0,0)),cfg)
 
 
 def test_auto_defaults_display_and_no_solvers(window):
@@ -113,7 +123,7 @@ def test_auto_defaults_display_and_no_solvers(window):
     assert w.numerical_mode.currentIndex()==0
     assert w.shared_sampling_group.isHidden() and not w.shared_resources_group.isHidden()
     assert not w.spin['beam'].isEnabled() and not w.spin['fft_grid'].isEnabled()
-    assert w.spin['grid'].value()==97 and w.memory_budget.currentData()==2048
+    assert w.spin['grid'].value()==97 and w.memory_budget.value()==2048
     assert 'FFT grid' not in w.numerical_values.text()
     for index in (1,2,0):
         w.propagation_box.setCurrentIndex(index)
@@ -122,19 +132,19 @@ def test_auto_defaults_display_and_no_solvers(window):
         assert cfg.depth==actual['depth'] and cfg.grid==actual['grid'] and cfg.fft_grid==actual['fft_grid']
         assert ('FFT grid' in w.numerical_values.text())==(index!=0)
         assert w.ms_settings_group.isHidden()
-    w.new_project();assert w.numerical_mode.currentIndex()==0
+    w.new_project();assert w.numerical_mode.currentIndex()==1
 
 
 def test_manual_roundtrip_preserves_physics_and_overrides(window):
     w=window;original=w.numerical_snapshot();physical=w.settings()
     w.numerical_mode.setCurrentIndex(1);assert w.numerical_snapshot()==original
     w.spin['beam'].setValue(2.8);w.spin['potential'].setValue(2.4);w.spin['depth'].setValue(33)
-    w.spin['grid'].setValue(65);w.memory_budget.setCurrentIndex(0)
+    w.spin['grid'].setValue(65);w.memory_mode.setCurrentIndex(1);w.memory_budget.setValue(512)
     manual=w.numerical_snapshot();cfg=w.forward_settings()
     for i in (1,2,0):w.propagation_box.setCurrentIndex(i)
     assert w.numerical_snapshot()==manual
     w.numerical_mode.setCurrentIndex(0)
-    assert w.spin['grid'].value()==97 and w.spin['beam'].value()==3.2 and w.spin['potential'].value()==2.5
+    assert w.spin['grid'].value()==97 and w.spin['beam'].value()==2.5 and w.spin['potential'].value()==2.0
     w.numerical_mode.setCurrentIndex(1)
     assert w.numerical_snapshot()==manual and w.forward_settings()==cfg
     assert replace(w.settings(),beam_cutoff=physical.beam_cutoff,potential_cutoff=physical.potential_cutoff)==physical
