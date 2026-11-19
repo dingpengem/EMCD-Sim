@@ -20,6 +20,7 @@ from emcd_sim.gui.multisite_run import applied_inputs
 from emcd_sim.gui.multisite_results import comparison_text,covered_segments
 from emcd_sim.multisite import IonizationSiteGroup,MultiSiteIonization
 from single_element_helpers import document
+from runtime_fixtures import apply_global_mdff
 
 RAW = ('I_A_plus','I_B_plus','I_A_minus','I_B_minus','N_A','N_B','M_A','M_B','D_raw','D_mag','D_nonmag')
 
@@ -156,7 +157,12 @@ def test_group_weighting_windows_and_global_pair_reversal(window,tmp_path,app,ki
 def test_legacy_global_ni_gui_matches_existing_calculation(window,app,channel):
     controls(window,Structure.nickel(),channel=channel)
     window.atomic_editor.use_editor.setChecked(False);window.atomic_parameter_path.clear()
-    window.model_box.setCurrentIndex(1);window.emcd_stale()
+    window.model_box.setCurrentIndex(1)
+    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.gui.saved_atomic_ui import restore
+    saved=NiForwardSettings(model='atomic',axis_declared=True)
+    restore(window.atomic_editor,replace(saved,l3=saved.atomic.l3_ev,l2=saved.atomic.l2_ev),window.structure)
+    apply_global_mdff(window);window.emcd_stale()
     cfg = window.forward_settings();assert cfg.model == 'atomic' and not hasattr(cfg,'provider_schema')
     expected = calculate(window.structure,window.settings(),cfg)
     window.start_emcd();actual = finish(window,app)
@@ -195,7 +201,7 @@ def test_cancellation_and_mode_switching_keep_applied_configuration(window,tmp_p
     assert not window.axis.isEnabled() and editor.accepted_site_groups is references
 
 
-def test_pending_mdff_and_unsupported_controls_are_actionable(window,tmp_path):
+def test_pending_mdff_and_unsupported_requests_are_actionable(window,tmp_path):
     structure,sites = sites_for(tmp_path);controls(window,structure);editor = bind(window,sites)
     editor.groups.setCurrentItem(editor.groups.topLevelItem(0));dialog = editor.configure_mdff()
     dialog.import_path.setText('unfinished source')
@@ -203,13 +209,14 @@ def test_pending_mdff_and_unsupported_controls_are_actionable(window,tmp_path):
     assert window.worker is None and 'pending MDFF' in window.test_errors[-1]
     dialog.reject();assert not dialog.has_unapplied_edits()
     assert applied_inputs(window,window.forward_settings())[1].groups
-    window.correction.setChecked(True);window.start_emcd()
-    assert window.worker is None and 'post-edge correction' in window.test_errors[-1]
-    assert window.correction.isChecked()  # No automatic settings repair.
-    window.correction.setChecked(False)
+    cfg,inputs,windows,reverse,_=applied_inputs(window,window.forward_settings())
+    with pytest.raises(ValueError,match='post-edge correction'):
+        calculate(structure,window.settings(),replace(cfg,correction=True),sites=inputs,
+            energy_windows=windows,reverse_magnetization=reverse)
+    assert window.worker is None and not window.forward_settings().correction
     with QtCore.QSignalBlocker(window.channeling_box):window.channeling_box.setCurrentIndex(1)
     with QtCore.QSignalBlocker(window.propagation_box):window.propagation_box.setCurrentIndex(2)
-    window.start_emcd()
+    window.test_errors.clear();window.start_emcd()
     assert window.worker is None and 'separate BW' in window.test_errors[-1]
     assert window.propagation_box.currentIndex() == 2 and window.channeling_box.currentIndex() == 1
 

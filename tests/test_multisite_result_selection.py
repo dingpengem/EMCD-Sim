@@ -207,7 +207,7 @@ def test_legacy_ni_view_remains_the_existing_two_panel_view(view):
     result['model'].elastic.crystal.species=('Ni',)*4
     view.set_result(result)
     assert view.multisite_controls.isHidden() and view.multisite_banner.isHidden()
-    assert len(view.figure.axes) == 2
+    assert len(view.presentation.specs) == 2  # Data panels exclude responsive legend axes.
     np.testing.assert_array_equal(next(line for line in view.figure.axes[0].lines if line.get_label()=='Detector A').get_ydata(),result['spectra']['I_A_plus'])
     assert view.component_mode.isVisibleTo(view)
 
@@ -238,7 +238,7 @@ def test_results_polish_defaults_relevance_and_exports(view):
 
 def test_shared_primary_total_components_and_display_restoration(view):
     result=stored_result('FeNi');before=deepcopy(result['spectra']);view.set_result(result)
-    assert len(view.figure.axes)==2
+    assert len(view.presentation.specs)==2
     assert not view.choice.isHidden() and not view.component_mode.isHidden()
     # Actual modeled samples only: no line joins the unsupported Fe/Ni gap.
     for ax in view.figure.axes:

@@ -153,7 +153,10 @@ class ZWorkspaceTests(unittest.TestCase):
     def test_project_selection_inputs_and_use_settings_without_solver(self):
         w=self.w;s=w.settings();row=w.browser.register(ProjectTests.second,ROOT/'second_complete',name='Tilted result')
         with no_solvers():w.display_saved_result(ProjectTests.second,row)
-        self.assertEqual(s,w.settings());self.assertIn('current inputs differ',w.maps_view.label.text())
+        self.assertNotEqual(s,w.settings())
+        self.assertEqual(ProjectTests.second['settings'],w.settings())
+        for key,value in ProjectTests.second['spectra'].items():
+            np.testing.assert_array_equal(w.emcd_result['spectra'][key],value)
         with no_solvers():w.use_result_settings()
         np.testing.assert_allclose(w.settings().tilt,ProjectTests.second['settings'].tilt,atol=1e-9);self.assertFalse(w.busy)
         project=self.workspace/'Project';w.save_to_path(project);self.wait_io();self.assertTrue(w._io_success)

@@ -100,7 +100,9 @@ def test_global_metadata_and_spectral_zoom_aliases(view,monkeypatch):
     monkeypatch.setattr('emcd_sim.gui.results.decorate_reciprocal_map',lambda *a,**k:None)
     view.set_result(result);assert view.choice.count()==3
     assert not view.restore_zoom('second:K zoom') and view.choice.currentData()==8981.
-    view.redraw();assert view.figure.axes[-1].get_xlim()==(8976.,8986.)
+    view.redraw()
+    spectral_axis=next(ax for ax in view.figure.axes if ax.get_xlabel()=='Energy loss (eV)')
+    assert spectral_axis.get_xlim()==(8976.,8986.)
     assert 'Ni' not in view.figure._suptitle.get_text()
     result=deepcopy(result);result['config']=ImportedSettings(selected_edges=(('K',8980.),),core_edge='K',energy_scope='full',ionizing_element='Cu')
     result.pop('groups');result['metadata'].pop('multisite');result['maps']={'K':result['maps']['first:K']}

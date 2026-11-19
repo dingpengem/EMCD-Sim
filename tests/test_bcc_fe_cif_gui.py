@@ -59,11 +59,16 @@ def test_exact_cif_structure_and_reciprocal_selection():
 def test_direct_import_retains_settings_and_explains_manual_guard(window):
     w,app=window;before=w.settings();load_exact(w)
     assert w.settings()==before
-    assert w.numerical_mode.currentText()=='Automatic'
+    assert w.numerical_mode.currentIndex()==1 and not w._numerical_error
+    assert w.run_button.isEnabled() and not w.emcd_button.isEnabled()
+    # Explicitly requesting a saved automatic policy without a declared
+    # material must not prevent elastic preview or import a Ni preset.
+    w.numerical_mode.setCurrentIndex(0)
     assert w.run_button.isEnabled()
     assert 'displayed settings unchanged' in w.run_button.toolTip()
     assert 'not independently convergence-validated' in w.run_button.toolTip()
-    assert 'Ni presets are not transferred' in w.statusBar().currentMessage()
+    assert w.settings()==before and w._accepted_global_mdff is None
+    assert 'Global MDFF is unconfigured' in w._numerical_error
     assert w._numerical_error and not w.emcd_button.isEnabled()
     assert w.ax.get_title()!='Invalid configuration — no current plot'
     assert not w.errors
@@ -86,11 +91,11 @@ def test_bcc_001_counts_from_independent_parity_and_reciprocal_radius(cutoff,cou
         assert set(geometry(s,cfg)[2])==expected
 
 def test_zone_only_after_import_explains_beam_limit_without_changing_settings(window):
-    w,app=window;load_exact(w)
+    w,app=window;w.set_values(dict(beam=3.2));load_exact(w)
     before=w.settings();w.zone.setText('0 0 1');w.apply_orientation()
     assert w.settings().target==(2,0,0)
     assert w.settings().beam_cutoff==before.beam_cutoff==3.2
-    assert w.numerical_mode.currentText()=='Automatic'
+    assert w.numerical_mode.currentIndex()==1
     assert w.ax.get_title()=='Beam limit exceeded — no current plot'
     assert '137 beams exceed the interactive limit 121' in w.selection.text()
     assert 'Select Manual (Advanced)' in w.selection.text()
@@ -127,7 +132,8 @@ def test_requested_fe_settings_actual_worker_and_default_ni(window,beam_cutoff,b
 
 @pytest.mark.parametrize('model',[0,1,2])
 def test_unsupported_fe_mdff_never_blocks_valid_elastic_or_applies_presets(window,model):
-    w,app=window;load_exact(w);before=w.settings();numbers=w.numerical_snapshot()
+    w,app=window;load_exact(w);w.numerical_mode.setCurrentIndex(0)
+    before=w.settings();numbers=w.numerical_snapshot()
     w.model_box.setCurrentIndex(model);w.refresh()
     assert w.numerical_mode.currentIndex()==0
     assert w._numerical_error and not w.emcd_button.isEnabled()
@@ -168,7 +174,7 @@ def test_mdff_independence_does_not_bypass_elastic_validation(window,zone,target
     w,app=window;load_exact(w)
     w.zone.setText(zone);w.target.setText(target);w.set_values(dict(beam=cutoff));before=w.numerical_snapshot()
     w.refresh();assert not w.run_button.isEnabled()
-    assert 'Manual (Advanced)' in w.selection.text()
+    assert reason in w.selection.text()
     w.start_preview()
     assert w.errors and reason in w.errors[-1]
     assert 'Declared MDFF' not in w.errors[-1]

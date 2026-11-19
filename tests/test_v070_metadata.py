@@ -42,13 +42,13 @@ def test_canonical_result_metadata_and_detector_flux(tmp_path):
 
 
 def test_current_windows_and_workflow_metadata_match_source():
-    assert (__version__,__display_version__)==('0.9.0b1','v0.9.0-beta.1')
+    assert (__version__,__display_version__)==('0.9.0b2','v0.9.0-beta.2')
     text=(ROOT/'packaging/windows_version_info.txt').read_text()
-    assert 'filevers=(0, 9, 0, 1), prodvers=(0, 9, 0, 1)' in text
-    assert "'FileVersion', '0.9.0.1'" in text and "'ProductVersion', 'v0.9.0-beta.1'" in text
+    assert 'filevers=(0, 9, 0, 2), prodvers=(0, 9, 0, 2)' in text
+    assert "'FileVersion', '0.9.0.2'" in text and "'ProductVersion', 'v0.9.0-beta.2'" in text
     workflow=(ROOT/'.github/workflows/windows-build.yml').read_text()
-    assert 'EMCD-Sim-v0.9.0-beta.1-Windows' in workflow
-    assert 'build/windows-v0.9.0-beta.1' in workflow
+    assert 'EMCD-Sim-v0.9.0-beta.2-Windows' in workflow
+    assert 'build/windows-v0.9.0-beta.2' in workflow
     assert not re.search(r'beta3|beta\.3|0\.6\.1b3',workflow)
     assert build_info()['physics_convention']==PHYSICS_CONVENTION
 
