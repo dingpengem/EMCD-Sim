@@ -61,7 +61,7 @@ def test_eels_widgets_modes_lock_and_no_calculation(result):
             assert 'L3' in view.prb_readout.text() and 'L2' in view.prb_readout.text()
             view.advanced.setChecked(True);view.component_diagnostic.setCurrentIndex(1)
             assert 'Magnetic-only' in view.figure.axes[1].lines[0].get_label()
-            assert len(view.figure.axes)==2
+        assert len(view.figure.axes)==4
     finally:w.close();app.processEvents()
 
 

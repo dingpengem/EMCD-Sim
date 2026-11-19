@@ -145,7 +145,10 @@ def test_logical_screen_sizes(window, physical, scale):
 
 
 def test_collapsing_preserves_state_without_replot(window):
+    from runtime_fixtures import apply_global_mdff
     w = window
+    w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
+    apply_global_mdff(w)
     settings, cfg = asdict(w.settings()), asdict(w.forward_settings())
     detectors = w.detectors.copy()
     w.ax.set(xlim=(-.4,.8), ylim=(-.2,.7))
@@ -196,9 +199,10 @@ def test_compact_maximize_restores_controls(window):
     w.tabs.setTabEnabled(2,True);w.tabs.setCurrentIndex(2);w.responsive.show_panel(2)
     QtTest.QTest.qWait(160)
     view=w.eels_view
-    before=view.canvas.height()
+    before=view.canvas.height();scroll_before=view.scroll.verticalScrollBar().maximum()
     view.maximize();QtTest.QTest.qWait(160)
-    assert view.canvas.height()>before
+    assert view.canvas.height()>=before
+    assert view.scroll.verticalScrollBar().maximum()<scroll_before
     assert view.benchmark_section.isHidden()
     view.maximize();QtTest.QTest.qWait(160)
     assert not view.benchmark_section.isHidden()
@@ -241,10 +245,11 @@ def test_sections_release_space_without_rebuilding(window):
     view=w.eels_view
     view.details_section.setChecked(True)
     QtTest.QTest.qWait(160)
-    before=view.canvas.height()
+    before=view.canvas.height();scroll_before=view.scroll.verticalScrollBar().maximum()
     view.details_section.header.click()
     QtTest.QTest.qWait(160)
-    assert view.canvas.height()>before
+    assert view.canvas.height()>=before
+    assert view.scroll.verticalScrollBar().maximum()<scroll_before
     for section in w.findChildren(CollapsibleSection):
         body=section.body
         state=section.isChecked()

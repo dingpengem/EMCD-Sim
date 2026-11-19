@@ -230,7 +230,7 @@ def test_gui_target_basis_and_crystal_axis_restore_without_solver(tmp_path):
             w.restore_detectors();np.testing.assert_allclose(w.detectors[0],[w.detectors[1,0],-w.detectors[1,1]],atol=1e-13)
             w.basis_mode.setCurrentIndex(1)
             assert w.settings().basis_mode=='two-beam' and w.current[2]==((0,0,0),(2,-2,0))
-            np.testing.assert_allclose(w.forward_settings().magnetization,(0,0,1))
+            np.testing.assert_allclose(w.global_mdff_draft_settings().magnetization,(0,0,1))
             w.propagation_box.setCurrentIndex(2)
             assert not w._numerical_error
             w.reset_reference()

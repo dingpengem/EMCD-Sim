@@ -20,7 +20,10 @@ def seed_preview(w):
 
 
 def test_motion_invalidates_all_preview_indicators_and_restores_exact_cache(window):
+    from runtime_fixtures import apply_global_mdff
     w=window;w.numerical_mode.setCurrentIndex(1);w.declaration.setChecked(True)
+    w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
+    apply_global_mdff(w)
     s,cached,intensity=seed_preview(w)
     # Minimal result identity for testing status labels only; no maps fabricated.
     w.emcd_result=dict(settings=s,config=w.forward_settings(),methods={},

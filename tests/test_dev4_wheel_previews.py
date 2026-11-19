@@ -66,10 +66,12 @@ def test_xmcd_source_guidance_reversed_group_and_global_context(window,tmp_path,
     window.show_structure_viewer(show=False)
     d=GroupMDFFDialog(('Ni','Ni',(0,1,2,3),(0.,0.,1.),None),tmp_path,window.structure_viewer.editor)
     d.model.setCurrentIndex(0);d.source_path.setText(str(DEFAULT_NI_SOURCE));d.validate_xmcd_source()
+    d.xmcd_preview.update_preview()
     assert d.xmcd_preview.snapshot is None
     assert len(d.xmcd_preview.figure.axes[0].lines)==4  # Authenticated input, no invented tensor.
     d.declaration.setChecked(True);d.xmcd_preview.update_preview()
-    assert 'Source / provenance' in d.xmcd_preview.status.text()
+    assert d.xmcd_preview.snapshot is not None and 'CURRENT' in d.xmcd_preview.status.text()
+    assert d.xmcd_preview.snapshot['config'].source_sha256==d.source_info['sha256']
     xmcd(d);d.xmcd_preview.update_preview();p=d.xmcd_preview
     assert p.snapshot is not None and not p.is_stale
     baseline={k:v.copy() for k,v in p.snapshot['states'].items()}

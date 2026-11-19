@@ -150,8 +150,9 @@ def test_parallel_pipeline_failure_stops_owned_tasks(tmp_path,monkeypatch,method
 @pytest.mark.skipif(sys.platform!='win32',reason='Windows native thread policy')
 def test_windows_nested_blas_blocked_before_work(tmp_path,monkeypatch):
     structure,settings,sites=system(tmp_path)
-    native=dict(parallel_resources.native_backend_info(),threads=2)
+    native=dict(parallel_resources.native_backend_info(),threads=2,automatic_thread_control=False)
     monkeypatch.setattr(parallel_resources,'native_backend_info',lambda:native)
+    monkeypatch.setattr(parallel_resources,'_blas_runtimes',lambda:[])
     def forbidden(*args,**kwargs):pytest.fail('Blocked worker request started incoming propagation')
     monkeypatch.setattr(multi,'prepare_incoming_bloch',forbidden)
     import emcd_sim.double_channeling as bw

@@ -188,7 +188,7 @@ def test_existing_atomic_and_xmcd_editors_bind_independently(viewer,tmp_path):
     xmcd.source_path.setText(str(path));xmcd.spin['xl3'].setValue(710);xmcd.spin['xl2'].setValue(723)
     xmcd.xmcd_provenance.setText('Explicit synthetic RP/LP source');xmcd.xmcd_validity.setText('Axisymmetric proxy test only')
     xmcd.xmcd_scale.setText('3');xmcd.eta.setValue(1);xmcd.beta.setValue(0)
-    xmcd.xmcd_status.setCurrentText('synthetic');xmcd.declaration.setChecked(True)
+    xmcd.xmcd_status.setCurrentText('synthetic');xmcd.validate_xmcd_source();xmcd.xmcd_conventions.setChecked(True)
     assert xmcd.apply_configuration() is not None,xmcd.status.text()
     assert [r[4].model for r in editor.rows()] == ['atomic','xmcd']
     assert editor.validated_site_groups is not None

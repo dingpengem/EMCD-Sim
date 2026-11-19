@@ -133,8 +133,9 @@ def test_gui_toggle_keeps_results_and_legacy_diagnostics(result):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     w=MainWindow(workspace=Path('outputs')/('component_ui_'+uuid4().hex))
     try:
-        original_settings=w.settings()
         w.display_saved_result(result)
+        assert w.settings()==result['settings']
+        original_settings=w.settings()
         view=w.eels_view;assert not view.advanced.isChecked() and view.advanced_body.isHidden()
         assert [view.component_mode.itemText(i) for i in range(2)]==['Raw (a.u.)','EMCD Asymmetry (%)']
         source_id=id(result['spectra']['I_A_plus']);before=result['spectra']['I_A_plus'].copy()
@@ -144,8 +145,8 @@ def test_gui_toggle_keeps_results_and_legacy_diagnostics(result):
         assert id(result['spectra']['I_A_plus'])==source_id
         np.testing.assert_array_equal(result['spectra']['I_A_plus'],before)
         assert 'EMCD Asymmetry' in view.prb_readout.text()
-        view.advanced.setChecked(True);app.processEvents();assert len(view.figure.axes)==3
-        np.testing.assert_allclose(view.figure.axes[-1].get_xlim(),result['spectra']['energy_ev'][[0,-1]])
+        view.advanced.setChecked(True);app.processEvents();assert len(view.figure.axes)==6
+        np.testing.assert_allclose(view.figure.axes[2].get_xlim(),result['spectra']['energy_ev'][[0,-1]])
         assert w.settings()==original_settings
         assert 'g=1/d' in w.spin['beam'].toolTip() and 'ionization' in w.spin['potential'].toolTip()
     finally:w.close();app.processEvents()

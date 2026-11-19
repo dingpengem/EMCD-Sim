@@ -185,6 +185,66 @@ current contracts in separate recorded subprocesses; both sides must pass. The
 other two verify the corrected label scan and the already implemented beta.2
 Windows metadata. Source-registration recovery is not yet a full-suite pass.
 
+## Complete frozen-candidate regression
+
+The first complete Phase 2 regression ran on clean commit
+`313e2fd1ed16f0aea1b5825711f1e8dff36a45f5`, without selection or early stopping.
+Evidence is `build/regression-recovery/phase2-complete-suite-candidate-313e2fd.*`;
+its `-run.json` records the exact command, environment, initial clean status,
+process and timing. The XML-derived remaining inventory is
+`phase2-candidate-313e2fd-inventory.json`.
+
+| Outcome | Recorded Phase 1 | Phase 2 frozen candidate | Absolute change | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Collected | 1,747 | 1,760 | +13 | +0.74% |
+| Passed | 1,091 | 1,634 | +543 | +49.77% |
+| Failed | 388 | 64 | -324 | -83.51% |
+| Errors | 205 | 0 | -205 | -100% |
+| Failures and errors | 593 | 64 | -529 | -89.21% |
+| Skipped | 63 | 62 | -1 | -1.59% |
+| Duration, seconds | 19,907.56 | 4,771.27 | -15,136.29 | -76.03% |
+
+These are observed inventories, not a controlled performance comparison or a
+claim that historical logs identify an exact current source snapshot. No new
+skips or relaxed numerical tolerances were introduced. Inventory differences
+and skip reasons still require final reconciliation.
+
+The actual pytest payload PID was 7892, distinct from launcher PID 18524.
+Windows measured **944.35 MiB peak RSS** and **1,000.82 MiB peak commit**.
+There were **zero memory-admission failures** among the 64 failures, compared
+with 244 explicit historical admission reports. Current-process GUI lifecycle
+records show destruction of test-owned widgets; logs also include short-lived
+historical workflow subprocesses, so rows must not all be interpreted as one
+process. The final payload peak is the authoritative main-process peak.
+
+The 64 failures include obsolete draft accessors, incomplete Material acceptance
+in fixtures, previous widget/plot expectations, old execution-hook assumptions,
+and independent numerical discrepancies. They are being corrected and verified;
+the frozen run is not represented as a clean pass.
+
+Further focused recovery completed 141 passed, 21 failed and one unchanged skip
+in 306.03 s (`phase2-post-suite-gui-consumer-recovery`). Most editor/draft and
+current GUI contracts passed. Follow-up `phase2-manual-frame-and-current-plot-contracts`
+completed 15 passed and eight failed in 119.33 s; both relocated analytical
+manual-tensor projects now recalculate exactly, and every requested slice-step
+case passed. Remaining presentation and external-source expectations continue
+under investigation.
+
+The manual-tensor investigation found an actual restoration bug at non-[001]
+Material M: `manual_l23_editor.load_source` replaced the saved **inactive** full
+frame draft with the active physical frame. The next generation changed editor
+provenance/file identity and produced a phantom unapplied draft. Restoration
+now preserves a saved inactive frame (or an active frame exactly matching the
+authoritative model). Physical frame selection, tensors and equations are
+unchanged. Existing exact recalculation and independent sampled-tensor assertions
+remain intact.
+
+Portable persistence remains deliberately different for editor-managed sources
+and arbitrary external files. Generated Atomic/manual inputs can be embedded;
+external JSON/XMCD files retain their original-source requirements. Recovery
+does not silently make every external file portable or substitute another
+source after loss/corruption.
+
 ## Portable Atomic source restoration
 
 The next material/GUI batch completed 138 passed, 25 failed and three skipped
@@ -302,3 +362,99 @@ the complete intended suite on frozen source, rebuild and validate the native
 development EXE, compare complexity with the preserved original audit, and
 record final local commits and status. GO requires all requested criteria;
 selected passing batches are insufficient.
+
+## Additional recovery checkpoint after the first complete run
+
+The remaining ordinary GUI consumers were migrated to explicit MDFF Done and
+Material Apply, current resource controls, result-owned input restoration, and
+semantic edge-selection data. Effective scientific assertions remain in place.
+Plot checks now count the actual primary and secondary axes (four for the
+ordinary EELS view, six for component views), rather than treating every axis
+as an independent panel. Responsive-layout checks measure the scroll range
+released by maximizing the plot while retaining its minimum legend height.
+
+Cancellation and cohort spies now target the active canonical orchestration
+and grouped kernels. An old-reference call adapter removes only the new
+`prepared_outgoing` software argument; the historical reference still computes
+its own outgoing states and retains its original numerical assertions.
+
+| Previous test name | Current test name | Reason |
+| --- | --- | --- |
+| `test_restored_proper_frame_direction_is_derived` | `test_restored_frame_preserves_material_direction_and_full_basis` | Loading verified data must preserve both the accepted Material direction and saved inactive full-frame editor state. |
+| `test_cancellation_between_site_events` | `test_cancellation_between_grouped_energy_events` | The production dispatcher shares grouped energy events; cancellation is checked at the real event boundary. |
+
+No test was removed or skipped to conceal a failure.
+
+`phase2-final-explicit-ni-guard` passed both the real imported Fe workflow with
+explicit Ni-on-Fe rejection and positive current/historical source registration
+in 28.44 s. `phase2-source-desktop-native-qa-current-workers` passed native Qt
+Single/Double, BW/MS, Save/Open fingerprints and exports in 35.719 s.
+
+The existing cancellation acceptance required current kernel instrumentation:
+the old probe watched `depth_response` while production uses the shared grouped
+response. The initial owned QA process stalled on a Retain Calculation dialog;
+the exact payload window title and runtime log confirmed it. Only its recorded
+process tree was stopped. The migrated QA clears temporary browser selection,
+observes actual BW/MS group/depth checkpoints, and discards only temporary QA
+drafts at shutdown. Production cancellation and kernels are unchanged.
+`phase2-source-cancellation-current-kernel-hooks` then passed all nine cases,
+queued-completion suppression, immediate restart and project integrity in
+19.547 s. Worst request-to-idle latency was 0.255919 s, below the unchanged 2 s
+assertion. Reservations and prior completed arrays are checked throughout.
+
+The four representative memory modes use identical explicit Ni preset inputs:
+0.3 nm, cutoffs 0.9/1.8 inverse angstrom, angular grid 9, depth 9, aperture
+subpixels 8, FFT 16, slice step 0.01 nm, one requested worker, 2,048 MiB budget.
+
+| Mode | Predicted working MiB | Predicted process peak MiB | RSS before/after MiB | Lifetime peak RSS MiB |
+| --- | ---: | ---: | ---: | ---: |
+| Bloch Single | 0.067 | 203.022 | 75.113 / 77.871 | 94.520 |
+| Bloch Double | 8.119 | 216.023 | 77.875 / 78.035 | 94.520 |
+| FFT Single | 0.159 | 206.238 | 78.070 / 78.117 | 94.520 |
+| FFT Double | 9.806 | 218.374 | 78.117 / 78.156 | 94.520 |
+
+Evidence: `phase2-representative-memory-modes.log` and `-run.json`.
+The Windows PSAPI measurements come from the actual calculation process;
+the venv launcher peak is a different process and is not substituted for it.
+The lifetime peak is cumulative across these four short cases and includes
+imports; it is not a per-kernel incremental peak. Peak commit was 109.602 MiB.
+Every case left zero active reservations, no detector executor threads and an
+unlocked Windows Bloch executor. These small cases support correct conservative
+admission, not an arbitrary-size accuracy claim for the estimator.
+
+Six strict numerical failures are currently exposed. In addition to the two
+older Ni Double exact comparisons already recorded, the historical cancellation
+reference has one numerical-depth and two full-spectrum exact-array failures
+(maximum differences about 1.39e-17 and 6.94e-18). The weighted Cr grouped parity
+case differs by 1.08420217e-18 at a cancellation-sensitive derived signal, just
+outside its unchanged absolute tolerance of 1e-18. The exact same Cr assertion
+and numbers fail when running the actual pre-refactor source in memory:
+`phase2-cr-current-and-pre-refactor-assertion.log`. These failures are retained;
+no tolerances, input sizes, equations or expected arrays are altered.
+
+Raw old/current XML node comparison explains the first complete run's +13
+collected cases: eight added current-owner mutation cases, one additive
+declaration mutation, one native-widget teardown regression and three extra
+independent-kernel negative controls with ordinary registration already
+approved. Renamed tests/path parameters are paired rather than treated as
+deleted coverage. One prior optional GUI artifact became available; no skip was
+added, giving 63 to 62 skips. Adding the newly edited ZOLZ test to the existing
+closed mutation scope is expected to add one further final case. Final counts
+will be taken from the final XML, not this expectation.
+
+`phase1-final-classification.json` gives a primary category and reason for every
+one of the original 593 failure/error reports: A registration/API 211,
+B GUI/application contracts 127, C source/project restoration 5, D memory
+admission 244, E observed numerical 1, F test infrastructure 5. This supersedes
+the preliminary symptom grouping. Memory or registration failures frequently
+prevented downstream assertions from running, so the initial single observed
+numerical failure does not mean other numerical comparisons had passed.
+
+Local native-QA checkpoint: `cd86ede2725c339bee171b436b4d332ff32b956a`.
+It updates only opt-in QA routes/callbacks and the packaging acceptance script;
+no scientific engine or normal GUI execution calculation is changed.
+The independently run changed provider stage passed six Fe/O cases in 82.766 s,
+using the current MDFF workspace labels, scroll owner and semantic map choices.
+The eight core Ni/Fe cases passed calculation, Save/Open and recalculation in
+both full source attempts before their obsolete provider-stage widgets failed.
+These partial run records are not relabeled complete native acceptance.

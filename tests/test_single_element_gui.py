@@ -6,6 +6,7 @@ from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.geometry import Structure
 from emcd_sim.gui.project_io import save_project,load_project
 from single_element_helpers import write_source
+from runtime_fixtures import apply_global_mdff
 
 
 def test_imported_gui_worker_restore_and_missing_source(tmp_path,monkeypatch):
@@ -21,25 +22,29 @@ def test_imported_gui_worker_restore_and_missing_source(tmp_path,monkeypatch):
         assert not w.emcd_button.isEnabled()
         p=write_source(tmp_path/'tensor.json');w.imported_path.setText(str(p));w.validate_imported_mdff()
         assert w.imported_info is not None and not w.emcd_button.isEnabled()
-        w.imported_declaration.setChecked(True);w.energy_scope.setCurrentIndex(1);w.angular_maps.setChecked(True)
+        w.imported_declaration.setChecked(True);w.energy_scope.setCurrentIndex(w.energy_scope.findData('edges'));w.angular_maps.setChecked(True)
         w.detectors=np.array([[.2,.2],[.2,-.2]]);w.sync_detectors();w.correction.setChecked(False);w.refresh();w.emcd_stale()
+        apply_global_mdff(w)
         assert w.emcd_button.isEnabled(),w.emcd_button.toolTip()
         assert w.forward_settings().ionizing_element=='Fe'
         w.start_emcd();limit=time.monotonic()+90
         while w.busy and time.monotonic()<limit:app.processEvents();time.sleep(.01)
         assert not w.busy and not errors,errors
         assert w.emcd_result['metadata']['scientific_status']=='SYNTHETIC TEST ONLY'
-        save_project(w.emcd_result,tmp_path/'project');w.emcd_result=load_project(tmp_path/'project');w.use_result_settings()
+        save_project(w.emcd_result,tmp_path/'project');w.display_saved_result(load_project(tmp_path/'project'))
         assert not errors and w.model_box.currentIndex()==2 and w.forward_settings().ionizing_element=='Fe'
         np.testing.assert_array_equal(w.emcd_result['spectra']['energy_ev'],[710,723])
-        p.unlink();w.emcd_result=load_project(tmp_path/'project');w.use_result_settings();w.emcd_stale()
+        p.unlink();w.display_saved_result(load_project(tmp_path/'project'));w.emcd_stale()
         assert not w.emcd_button.isEnabled() and w.imported_info is None
         assert w.emcd_result['spectra']['I_A_plus'].size==2
         # Selecting a Ni provider must reapply its original conservative eligibility gate.
         from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
         w.model_box.setCurrentIndex(0);w.source_path.setText(str(DEFAULT_NI_SOURCE));w.validate_xmcd(show_error=False)
+        w.declaration.setChecked(True)
         w.emcd_stale();assert not w.emcd_button.isEnabled()
-        assert 'Ni' in w.emcd_button.toolTip()
+        w.show_structure_viewer(show=False)
+        assert w.mdff_dialog.apply_configuration() is None
+        assert 'Ni' in w.mdff_dialog.status.text() and not w.emcd_button.isEnabled()
     finally:
         if w.busy:w.cancel();w.worker.wait(15000)
         for dialog in w.dialogs:dialog.close()

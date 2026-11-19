@@ -208,7 +208,7 @@ def test_unsupported_or_uncovered_double_rejected_before_propagation(tmp_path,mo
     cfg=configuration(channeling_model='double',angular_maps=False)
     windows=disjoint_windows()
     if failure in ('unknown','both'):cfg=replace(cfg,propagation='unknown' if failure=='unknown' else 'both')
-    elif failure=='workers':cfg=replace(cfg,parallel_workers=5)
+    elif failure=='workers':cfg=replace(cfg,parallel_workers=0)
     else:windows['A']=ModeledEdgeWindow((703.,730.),(710.,))
     def forbidden(*args,**kwargs):pytest.fail('Invalid multi-site double request started propagation')
     monkeypatch.setattr(bw,'prepare_incoming_bloch',forbidden)
@@ -216,15 +216,16 @@ def test_unsupported_or_uncovered_double_rejected_before_propagation(tmp_path,mo
     with pytest.raises(ValueError):calculate(structure, settings, cfg, energy_windows=windows, sites=sites)
 
 
-def test_cancellation_between_site_events(tmp_path,monkeypatch):
+def test_cancellation_between_grouped_energy_events(tmp_path,monkeypatch):
+    from emcd_sim import multisite_double_channeling as grouped
     structure,settings,sites,_=simple_system(tmp_path,'Cr')
     stopped=False
-    original=bw.depth_response
-    def depth(*args,**kwargs):
+    original=grouped.double_channeling_group_responses
+    def response(*args,**kwargs):
         nonlocal stopped
         value=original(*args,**kwargs)
         stopped=True
         return value
-    monkeypatch.setattr(bw,'depth_response',depth)
+    monkeypatch.setattr(grouped,'double_channeling_group_responses',response)
     with pytest.raises(Cancelled):
         calculate(structure, settings, configuration(channeling_model='double', angular_maps=False), energy_ev=[710.0, 723.0], cancelled=lambda : stopped, sites=sites)

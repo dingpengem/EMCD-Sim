@@ -90,7 +90,8 @@ class PropagationTests(unittest.TestCase):
         for cfg in (replace(self.cfg,fft_grid=13),replace(self.cfg,fft_grid=10),replace(self.cfg,slice_step=0)):
             with self.assertRaises(ValueError):calculate(self.structure,self.settings,cfg)
         self.assertEqual(numerical_info(self.structure,self.settings,self.cfg)['fft_harmonics'],1024)
-        with self.assertRaisesRegex(ValueError,'512 MiB'):numerical_info(self.structure,self.settings,replace(self.cfg,grid=193,memory_budget_mib=512,propagation='bloch'))
+        with patch('emcd_sim.gui.memory_budget.memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=512.)):
+            with self.assertRaisesRegex(ValueError,'512 MiB'):numerical_info(self.structure,self.settings,replace(self.cfg,grid=193,memory_budget_mib=512,propagation='bloch'))
     def test_shared_scales_difference_maps_and_export(self):
         r=self.result;figs=[Figure(figsize=(14,9),layout='constrained') for _ in range(3)]
         for f,name in zip(figs,('bloch','fft-multislice','difference')):draw_maps(f,r,'L3',name,field='I_mag')
@@ -111,7 +112,11 @@ class ZGUIStageCTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         if not hasattr(PropagationTests,'result'):PropagationTests.setUpClass()
-    def setUp(self):self.w=MainWindow(workspace=Path('outputs')/('stage_c_worker_'+uuid.uuid4().hex));self.w.model_box.setCurrentIndex(0);self.w.validate_xmcd(show_error=False);self.w.declaration.setChecked(True);self.w.error=lambda s:None
+    def setUp(self):
+        from runtime_fixtures import apply_global_mdff
+        self.w=MainWindow(workspace=Path('outputs')/('stage_c_worker_'+uuid.uuid4().hex))
+        self.w.model_box.setCurrentIndex(0);self.w.validate_xmcd(show_error=False);self.w.declaration.setChecked(True)
+        apply_global_mdff(self.w);self.w.error=lambda s:None
     def tearDown(self):
         if self.w.busy:self.w.cancel();self.w.worker.wait(10000);self.app.processEvents()
         self.w.close();self.app.processEvents()

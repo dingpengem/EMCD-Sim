@@ -125,17 +125,17 @@ def test_window_selection_keeps_denominator_and_provider_amplitude(tmp_path):
 
 @pytest.mark.parametrize('partial_overlap',[False,True])
 def test_same_element_overlapping_grids_and_common_grid_compatibility(tmp_path,monkeypatch,partial_overlap):
-    import emcd_sim.multisite_spectrum as spectrum
+    import emcd_sim.gui.forward_pipeline as forward
 
     structure,settings,sites=system(tmp_path,same_element=True)
     windows=dict(A=ModeledEdgeWindow((704.,720.) if partial_overlap else (704.,730.),(710.,716.)),
                  B=ModeledEdgeWindow((715.,735.) if partial_overlap else (709.,735.),(716.,723.)))
     calls=[]
-    original=spectrum.run_multisite_with_coherence
+    original=forward.integrate_single_channeling_spectrum
     def counted(*args,**kwargs):
-        calls.append((tuple(g.group_id for g in args[1].groups),args[3].copy()))
+        calls.append((tuple(g.group_id for g in args[2].groups),args[4]['energy_ev'].copy()))
         return original(*args,**kwargs)
-    monkeypatch.setattr(spectrum,'run_multisite_with_coherence',counted)
+    monkeypatch.setattr(forward,'integrate_single_channeling_spectrum',counted)
     cfg=configuration(angular_maps=False)
     result=calculate(structure, settings, cfg, energy_windows=windows, sites=sites)
     independently_accumulated(result,structure,settings,sites)

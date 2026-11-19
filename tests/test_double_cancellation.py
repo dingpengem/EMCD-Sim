@@ -70,11 +70,12 @@ def test_incoming_slice_cancel(elastic):
 
 def test_both_cancellation_prevents_incoming_ms():
     from emcd_sim.gui import channeling
-    event=threading.Event();original=bw.depth_response
-    def depth(*a,**kw):event.set();return original(*a,**kw)
+    event=threading.Event();original=channeling.calculate_detector_signals
+    def signals(*a,**kw):
+        value=original(*a,**kw);event.set();return value
     cfg=NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',
         energy_scope='edges',angular_maps=False,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
-    with patch.object(bw,'depth_response',depth),patch.object(channeling,'fft_geometry') as fft:
+    with patch.object(channeling,'calculate_detector_signals',signals),patch.object(channeling,'fft_geometry') as fft:
         with pytest.raises(Cancelled):calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),cfg,cancelled=event.is_set)
     fft.assert_not_called()
 
@@ -91,6 +92,7 @@ def test_full_spectrum_unchanged(solver):
     def historical_arguments(elastic,kw):
         from emcd_sim.historical_ni import HistoricalNiSites
         kw.pop('cancelled',None)
+        kw.pop('prepared_outgoing',None)  # The archived reference prepares its own outgoing basis.
         sites=kw.pop('ionization_sites')
         assert isinstance(sites,HistoricalNiSites)
         # The archived API predates explicit sites. Certify the adapter supplies

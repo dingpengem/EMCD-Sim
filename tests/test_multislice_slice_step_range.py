@@ -14,6 +14,7 @@ from emcd_sim.gui.forward_results import export_result
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.gui.project_io import save_project, load_project, fingerprints
 from emcd_sim.multislice_double_channeling import ProjectedFFT, incident_fields
+from runtime_fixtures import apply_global_mdff
 
 STEPS = [.04, .5, 1., 2., 5., 10.]
 
@@ -38,6 +39,7 @@ def test_manual_gui_preserves_requested_maximum(tmp_path, step, mode):
         assert w.spin['slice_step'].value() == NiForwardSettings().slice_step == 2.
         assert (w.spin['slice_step'].minimum(), w.spin['slice_step'].maximum()) == (.001,10.)
         w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
+        w.reference_ni.setChecked(True);apply_global_mdff(w)
         w.numerical_mode.setCurrentIndex(mode)
         w.propagation_box.setCurrentIndex(1)
         before = w.numerical_snapshot()
@@ -46,7 +48,7 @@ def test_manual_gui_preserves_requested_maximum(tmp_path, step, mode):
         assert w.spin['slice_step'].value() == w.forward_settings().slice_step == step
         assert all(v == w.numerical_snapshot()[k] for k,v in before.items() if k != 'slice_step')
         if step > .04:
-            assert 'split-step errors' in w.memory_label.text()
+            assert 'split-step errors' in w.compute_resources.estimate.toolTip()
         assert w.emcd_button.isEnabled(), w.emcd_button.toolTip()
         for numerical_mode in (1,0,1,0):
             w.numerical_mode.setCurrentIndex(numerical_mode)
