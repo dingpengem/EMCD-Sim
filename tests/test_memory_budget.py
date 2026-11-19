@@ -77,6 +77,30 @@ def test_real_system_memory_measurement():
     assert state['available_ram_mib'] > 0 and state['process_rss_mib'] > 0
 
 
+def test_test_owned_closed_widget_is_destroyed_but_shared_widget_survives(request,monkeypatch):
+    from PySide6 import QtCore,QtWidgets
+    from shiboken6 import isValid
+    from conftest import release_test_owned_gui_resources
+    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    shared=QtWidgets.QWidget();shared.show()
+    owned=None
+    try:
+        with monkeypatch.context() as context:
+            context.delenv('EMCD_TEST_LIFECYCLE_LOG',raising=False)
+            cleanup=release_test_owned_gui_resources.__wrapped__(request,context)
+            next(cleanup)
+            owned=QtWidgets.QWidget();owned.show();owned.close()
+            assert isValid(owned)  # close alone retains the native widget.
+            with pytest.raises(StopIteration):next(cleanup)
+            assert not isValid(owned)
+            assert isValid(shared)
+    finally:
+        for widget in (owned,shared):
+            if widget is not None and isValid(widget):widget.close();widget.deleteLater()
+        QtCore.QCoreApplication.sendPostedEvents(None,QtCore.QEvent.Type.DeferredDelete)
+        app.processEvents()
+
+
 def test_gui_budget_selector_and_start_admission(tmp_path, monkeypatch):
     monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
     from PySide6 import QtWidgets
