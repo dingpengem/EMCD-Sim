@@ -28,7 +28,7 @@ def run(args):
         def baseline_contract(*args,**kwargs):
             kwargs.pop('execution_workers',None)
             return old.contract(*args,**kwargs)
-        adapter.contract=baseline_contract;baseline_workers=old.worker_count
+        adapter.calculate_detector_signals=baseline_contract;baseline_workers=old.worker_count
     saved=load_project(args.project)
     raw=json.loads((args.project/'input_parameters.json').read_text())
     structure=restore_structure(raw['structure_snapshot'])

@@ -1,9 +1,10 @@
 """Focused Stage B default BW/CLI comparison; no multislice or orientation sweep."""
+from emcd_sim.gui.forward_results import selected_edge_metrics
 import argparse,json
 from dataclasses import replace
 from pathlib import Path
 import numpy as np
-from emcd_sim.gui.emcd_forward import ForwardSettings,inspect_source,DEFAULT_SOURCE,calculate,metrics,export_result
+from emcd_sim.gui.emcd_forward import ForwardSettings,inspect_source,DEFAULT_SOURCE,calculate,export_result
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.study_geometry import StudyGeometry,rotated_tensor
 Ni017Geometry=lambda a_angstrom=3.524: StudyGeometry((0,1,7),(2,0,0),a_angstrom)
@@ -62,7 +63,7 @@ def main():
     export_result(result,args.output)
     report=dict(source_sha256=info['sha256'],energy_points=len(e),grid=33,depth=64,beams=len(model.elastic.beams.hkl),
                 max_abs_full_spectrum_difference=comparisons,coherence_max_abs=float(abs(C-result['coherence']).max()),
-                alpha_cli=float(post.spectra['alpha_obs'][0]),alpha_gui=result['metadata']['alpha'],edge_metrics=metrics(result),
+                alpha_cli=float(post.spectra['alpha_obs'][0]),alpha_gui=result['metadata']['alpha'],edge_metrics=selected_edge_metrics(result),
                 comparison='Established Ni017Geometry CLI model, rotated_tensor and depth_coherence; identical source, energies, detector apertures and numerical controls.')
     (args.output/'cli_comparison.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8');print(json.dumps(report,indent=2))
 

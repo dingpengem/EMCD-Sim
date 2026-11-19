@@ -59,10 +59,26 @@ def multisite_bw_double_memory_terms(cfg, group_count, detector_pixels=None):
         group_detector_spectra=256*energies*(group_count+2)/2**20)
 
 
+def projected_geometry_from_oriented_crystal(settings,crystal,fft_generators=None):
+    """Build FFT support from this request's explicit oriented elastic crystal.
+
+    The crystal includes all species/sites, with lattice rows already rotated
+    into beam Cartesian axes. No material or orientation preset is selected.
+    ProjectedGeometry validates periodic ZOLZ support for the declared zone.
+    """
+    return ProjectedGeometry.from_oriented(crystal,settings.zone,settings.target,generators=fft_generators)
+
+
 def projected_geometry_for(settings,crystal=None,fft_generators=None):
+    """Historical geometry API; an omitted crystal explicitly selects FCC Ni.
+
+    Production requests use projected_geometry_from_oriented_crystal and must
+    supply their complete crystal. Keep this old preset default for supported
+    external callers, without letting it enter a declared material calculation.
+    """
     if crystal is None:
         return ProjectedGeometry.from_crystal(fcc_nickel(),settings.zone,settings.target,generators=fft_generators)
-    return ProjectedGeometry.from_oriented(crystal,settings.zone,settings.target,generators=fft_generators)
+    return projected_geometry_from_oriented_crystal(settings,crystal,fft_generators)
 
 
 def resolve_fft_configuration(structure,settings,cfg):
@@ -70,7 +86,7 @@ def resolve_fft_configuration(structure,settings,cfg):
     if cfg.propagation=='bloch' or cfg.fft_generators is not None:return cfg
     from dataclasses import replace
     crystal=geometry(structure,settings,systematic_row=cfg.systematic_row)[0]
-    cell=projected_geometry_for(settings,crystal).generators
+    cell=projected_geometry_from_oriented_crystal(settings,crystal).generators
     return replace(cfg,fft_generators=tuple(tuple(int(v) for v in h) for h in cell))
 
 
@@ -114,7 +130,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
         energy_samples=cfg.energy_points,incident_voltage_kv=settings.voltage)
     info['numerical_warnings']=[]
     if settings.basis_mode=='full' and not cfg.systematic_row:
-        geo=projected_geometry_for(settings,actual_geometry[0],cfg.fft_generators)
+        geo=projected_geometry_from_oriented_crystal(settings,actual_geometry[0],cfg.fft_generators)
         offrow=sum(abs(geo.crystal.g_vector(h)[1])>1e-12 for h in geo.hkl_within(settings.potential_cutoff))
         info['potential_nonzero_offrow_harmonics']=int(offrow)
         first=min((np.linalg.norm(geo.crystal.g_vector(h)) for h in geo.hkl_within(np.linalg.norm(geo.crystal.g_vector(geo.support_generators[1]))) if abs(geo.crystal.g_vector(h)[1])>1e-12),default=float('inf'))
@@ -153,7 +169,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
                 'Large propagation steps may introduce split-step errors and are not automatically numerically converged. '
                 'Check convergence against smaller steps; accurate elastic intensities do not automatically guarantee converged EMCD signals. '
                 'The actual substep is also bounded by depth intervals; the requested maximum is unchanged.')
-        geo=projected_geometry_for(settings,actual_geometry[0],cfg.fft_generators)
+        geo=projected_geometry_from_oriented_crystal(settings,actual_geometry[0],cfg.fft_generators)
         harmonics,g=geo.harmonics(cfg.fft_grid,max(settings.beam_cutoff,settings.potential_cutoff))
         lookup={tuple(h):i for i,h in enumerate(harmonics)}
         if len(lookup)!=mesh or any(tuple(h) not in lookup for h in hkl):raise ValueError('FFT mesh does not contain the exact ordered common hkl basis')

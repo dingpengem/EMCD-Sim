@@ -6,7 +6,8 @@ import numpy as np
 import pytest
 from ase.build import bulk
 
-from emcd_sim.gui import forward_pipeline as forward, propagation, memory_budget
+from emcd_sim.gui import forward_pipeline as forward, propagation, memory_budget, multisite_integration
+from emcd_sim.detector_signals import integrate_detector_block
 from emcd_sim.gui.geometry import Settings, Structure
 from emcd_sim.gui.parallel_resources import require_supported
 from emcd_sim.multisite import MultiSiteIonization
@@ -22,7 +23,7 @@ def test_blocks_release_raw_arrays_and_match_unbatched_windows(tmp_path,monkeypa
                  down=multisite_spectrum.ModeledEdgeWindow((714.,723.)))
     cfg=configuration(angular_maps=angular_maps,selected_edges=(('first',710.),('middle',716.),('last',723.)))
     original=multisite_spectrum.contract_multisite_spectrum
-    original_block=forward._multisite_single_block
+    original_block=multisite_integration.contract_single_channeling_block
     previous=[];sizes=[]
 
     def bounded(*args,**kwargs):
@@ -32,7 +33,7 @@ def test_blocks_release_raw_arrays_and_match_unbatched_windows(tmp_path,monkeypa
         previous[:]=[weakref.ref(raw['total']['plus']),weakref.ref(raw['groups']['up']['plus'])]
         return raw
 
-    monkeypatch.setattr(forward,'_multisite_single_block',bounded)
+    monkeypatch.setattr(multisite_integration,'contract_single_channeling_block',bounded)
     result=forward.calculate_multisite(structure,settings,sites,cfg,energy_ev=energy,
         energy_windows=windows,reverse_magnetization=True)
     assert len(sizes)>1 and max(sizes)<=propagation.MULTISITE_ENERGY_BATCH
@@ -44,7 +45,7 @@ def test_blocks_release_raw_arrays_and_match_unbatched_windows(tmp_path,monkeypa
     # Original full-grid fractional detector integration, including zero pixels.
     for actual,part in [(result,raw['total']),(result['weighted_sum'],raw['weighted_sum'])]+[
             (result['groups'][group.group_id],raw['groups'][group.group_id]) for group in sites.groups]:
-        expected=forward._multisite_detector_data(part,cfg,energy,result['qx'],result['qy'],
+        expected=integrate_detector_block(part,cfg,energy,result['qx'],result['qy'],
             result['weights'],np.ones(result['qx'].size,bool))
         for key in RAW_KEYS+PARITY_KEYS:
             np.testing.assert_allclose(actual['spectra'][key],expected['spectra'][key],rtol=2e-13,atol=1e-17)

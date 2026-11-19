@@ -46,7 +46,7 @@ def test_original_ni_all_numeric_arrays_exact(old_contract,model,channel):
         centers=((.2,.2),(.2,-.2)),radius=.12,correction=False,worker_mode='manual',parallel_workers=1)
     if model=='atomic':cfg=replace(cfg,l3=cfg.atomic.l3_ev,l2=cfg.atomic.l2_ev)
     a=ni.calculate(Structure.nickel(),settings,cfg)
-    with patch.object(channeling,'contract',old_contract):b=ni.calculate(Structure.nickel(),settings,cfg)
+    with patch.object(channeling,'calculate_detector_signals',old_contract):b=ni.calculate(Structure.nickel(),settings,cfg)
     count=0
     for method in a['methods']:
         x,y=a['methods'][method],b['methods'][method]

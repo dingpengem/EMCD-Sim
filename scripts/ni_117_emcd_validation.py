@@ -5,12 +5,13 @@ Every finished Both-method case is atomically checkpointed before continuing.
 """
 from dataclasses import asdict, replace
 from pathlib import Path
+from emcd_sim.gui.forward_results import selected_edge_metrics
 import argparse, csv, hashlib, json, time
 import numpy as np
 from emcd_sim.study_geometry import StudyGeometry
 Ni117Geometry=lambda a_angstrom=3.524: StudyGeometry((1,1,7),(2,-2,0),a_angstrom)
 from emcd_sim.gui.geometry import Structure, Settings, geometry, excitation
-from emcd_sim.gui.emcd_forward import ForwardSettings, DEFAULT_SOURCE, calculate, metrics
+from emcd_sim.gui.emcd_forward import ForwardSettings, DEFAULT_SOURCE, calculate
 from emcd_sim.mirror_parity import row_mirror_diagnostics
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -102,7 +103,7 @@ def run_case(root,label,s,cfg,code_hashes):
                 arrays[name+'__'+edge+'__'+key]=values[key]
         arrays.update({name+'__spectrum__'+k:v for k,v in r['spectra'].items()})
         arrays[name+'__amplitudes']=r['amplitudes'];arrays[name+'__coherence']=r['coherence']
-        methods[name]=dict(metrics=metrics(r),parity=fields,detector_areas=r['metadata']['detector_areas'],
+        methods[name]=dict(metrics=selected_edge_metrics(r),parity=fields,detector_areas=r['metadata']['detector_areas'],
             source_audit=r['metadata']['source_audit'],angular_evaluation=r['metadata']['angular_evaluation'],
             exit_populations=abs(r['amplitudes'][-1])**2,settings=asdict(s))
         assert not any(d['mirror_reuse'] for d in r['metadata']['angular_evaluation'])

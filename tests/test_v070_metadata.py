@@ -18,6 +18,48 @@ def test_forward_computation_ast_is_unchanged_except_approved_metadata_and_prior
     # Part 1C relocates compatibility functions, retaining each body exactly.
     # The new wrappers and complete current scope are checked independently.
     accepted=ast.parse(subprocess.check_output(['git','show','98570c62:'+path],cwd=ROOT).decode('utf-8-sig'))
+    # Read the actual result owner after the readability extraction. Reassemble
+    # only the moved definitions for this existing historical computation guard;
+    # all assertions below and all immutable source registrations stay intact.
+    result_owner=ast.parse((ROOT/'src/emcd_sim/gui/forward_results.py').read_text(encoding='utf-8'))
+    detector_owner=ast.parse((ROOT/'src/emcd_sim/detector_signals.py').read_text(encoding='utf-8'))
+    function=lambda tree,name:next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
+    class RenameResultImports(ast.NodeTransformer):
+        names={'selected_edge_metrics':'metrics','export_method_result':'_export_single'}
+        def visit_Name(self,node):
+            node.id=self.names.get(node.id,node.id)
+            return node
+    moved_results={}
+    for before,after in (('_contract','assemble_forward_result'),('metrics','selected_edge_metrics'),
+                         ('_export_single','export_method_result'),('export_result','export_result')):
+        node=copy.deepcopy(function(result_owner,after));node.name=before
+        RenameResultImports().visit(node)
+        if before=='_contract':
+            node.args=copy.deepcopy(function(current,'_contract').args)  # compatibility-only unused args
+            node.body[0]=copy.deepcopy(function(accepted,'_contract').body[0])
+            local_import=ast.parse('from .emcd_forward import inspect_source').body[0]
+            assert ast.dump(node.body[1])==ast.dump(local_import)
+            node.body.pop(1)
+            parity=function(detector_owner,'reversal_components')
+            assert len(parity.body)==4 and isinstance(parity.body[-1],ast.Return)
+            statement=next(n for n in node.body if isinstance(n,ast.Expr) and isinstance(n.value,ast.Call)
+                and isinstance(n.value.func,ast.Attribute) and n.value.func.attr=='update'
+                and n.value.args and isinstance(n.value.args[0],ast.Call)
+                and isinstance(n.value.args[0].func,ast.Name) and n.value.args[0].func.id=='reversal_components')
+            raw_assignment=node.body[node.body.index(statement)-1]
+            assert ast.dump(raw_assignment)==ast.dump(parity.body[1])
+            expanded=copy.deepcopy(statement);expanded.value.args=[]
+            expanded.value.keywords=copy.deepcopy(parity.body[-1].value.keywords)
+            index=node.body.index(statement)
+            node.body[index:index+1]=[copy.deepcopy(parity.body[2]),expanded]
+        elif ast.get_docstring(node) and not ast.get_docstring(function(accepted,before)):
+            node.body.pop(0)  # documentation is not a computation
+        moved_results[before]=node
+    current.body=[moved_results.get(n.name,n) if isinstance(n,ast.FunctionDef) else n for n in current.body]
+    current.body.extend(moved_results[name] for name in ('metrics','_export_single','export_result'))
+    current.body[0]=copy.deepcopy(accepted.body[0])  # module responsibility prose
+    settings_class=next(n for n in current.body if isinstance(n,ast.ClassDef) and n.name=='ForwardSettings')
+    if ast.get_docstring(settings_class):settings_class.body.pop(0)
     relocated=ast.parse((ROOT/'src/emcd_sim/historical_ni.py').read_text(encoding='utf-8-sig'))
     orientation=ast.parse((ROOT/'src/emcd_sim/mdff_orientation.py').read_text(encoding='utf-8-sig'))
     moved=('material_reason','axis_rotation','tensors','energy_grid')

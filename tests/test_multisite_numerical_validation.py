@@ -14,7 +14,8 @@ from ase import Atoms
 
 from emcd_sim.double_channeling import prepare_incoming_bloch
 from emcd_sim.geometry import VirtualDetector
-from emcd_sim.gui.forward_pipeline import calculate_multisite, _multisite_detector_data
+from emcd_sim.gui.forward_pipeline import calculate_multisite
+from emcd_sim.detector_signals import integrate_detector_block
 from emcd_sim.gui.generalized_forward import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model, geometry
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
@@ -80,8 +81,8 @@ def analytic_reference(inputs,thickness):
     incoming=prepare_incoming_bloch(elastic,thickness,cfg.depth)
     raw=contract_multisite_bloch_double(model,sites,plan,qx.ravel()[support],qy.ravel()[support],
         crystal_to_microscope=rotation,thickness_nm=thickness,depth_steps=cfg.depth,method='analytic',prepared_incoming=incoming)
-    result=_multisite_detector_data(raw['total'],cfg,plan['energy_ev'],qx,qy,weights,support)
-    result['groups']={key:_multisite_detector_data(group,cfg,plan['energy_ev'],qx,qy,weights,support)
+    result=integrate_detector_block(raw['total'],cfg,plan['energy_ev'],qx,qy,weights,support)
+    result['groups']={key:integrate_detector_block(group,cfg,plan['energy_ev'],qx,qy,weights,support)
                       for key,group in raw['groups'].items()}
     return result
 

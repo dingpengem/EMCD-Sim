@@ -9,6 +9,12 @@ from ..mdff_providers import load_provider
 
 @dataclass(frozen=True)
 class ImportedSettings(compatibility.ForwardSettings):
+    """Explicit tensor identity and selected edges, without inherited Ni energies.
+
+    The source declares element, core transition, crystal-frame reversal pair
+    and energy coverage. Empty declarations are invalid until acknowledged;
+    a missing source never selects the historical Ni adapter.
+    """
     model: str='imported'
     source: str=''
     ionizing_element: str=''

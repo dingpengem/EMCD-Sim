@@ -1,4 +1,4 @@
-"""Explicit ordered site groups for future site-resolved forward adapters.
+"""Explicit ordered ionization-site groups for shared-crystal forward calculations.
 
 No symmetry, magnetic equivalence, tensor rotation or spectral summation is
 inferred here. Indices refer to ASE's expanded atom list, not CIF row numbers.

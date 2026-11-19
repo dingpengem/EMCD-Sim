@@ -4,7 +4,8 @@ import weakref
 import numpy as np
 import pytest
 
-from emcd_sim.gui import forward_pipeline as forward
+from emcd_sim.gui import forward_pipeline as forward, multisite_integration
+from emcd_sim.detector_signals import integrate_detector_block
 from emcd_sim.multisite_spectrum import _empty_group_intensities,_spectrum_result
 
 
@@ -49,13 +50,13 @@ def test_selected_double_support_and_reduction(monkeypatch,maps,reverse,propagat
         return result
     name='contract_multisite_bloch_double' if propagation=='bloch' else 'contract_multisite_ms_double'
     monkeypatch.setattr('emcd_sim.multisite_double_channeling.'+name,solver)
-    result=forward._multisite_double_detector_data(model,sites,plan,cfg,qx,qy,weights,support,
+    result=multisite_integration.integrate_double_channeling_spectrum(model,sites,plan,cfg,qx,qy,weights,support,
         np.eye(3),9.,incoming,1,reverse,lambda s:None,lambda:False,
         propagation=propagation,prepared_fft=(fft,fields),potential_cutoff=.6)
     counts={float(e):pixels for block,pixels in calls for e in block}
     assert len(counts)==len(energy)==sum(len(block) for block,_ in calls)
     assert all(pixels==(qx.size if maps and e in energy[[0,-1]] else support.sum()) for e,pixels in counts.items())
-    expected=forward._multisite_detector_data(dict(zip(('plus','minus'),raw_values(energy,qx.ravel(),qy.ravel()))),
+    expected=integrate_detector_block(dict(zip(('plus','minus'),raw_values(energy,qx.ravel(),qy.ravel()))),
         cfg,energy,qx,qy,weights,np.ones(qx.size,bool))
     for key,value in expected['spectra'].items():np.testing.assert_allclose(result['total']['spectra'][key],value,rtol=2e-13,atol=1e-14)
     for label,fields in expected['maps'].items():

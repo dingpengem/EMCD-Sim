@@ -1,4 +1,4 @@
-"""GUI adapters to the existing channeling kernels; no scattering model here."""
+"""Detector-support scheduling over the existing Single/Double Channeling kernels."""
 from concurrent.futures import ThreadPoolExecutor,wait,FIRST_COMPLETED
 from contextlib import contextmanager
 import sys,threading,os
@@ -11,10 +11,10 @@ from ..mdff_edges import selected_samples
 
 
 def fft_geometry(elastic,settings,cfg,*,cancelled=None):
-    from .propagation import projected_geometry_for
+    from .propagation import projected_geometry_from_oriented_crystal
     return ProjectedFFT.build(elastic,grid_points=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
         systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
-        projected_geometry=projected_geometry_for(settings,elastic.crystal,cfg.fft_generators),
+        projected_geometry=projected_geometry_from_oriented_crystal(settings,elastic.crystal,cfg.fft_generators),
         systematic_row_hkl=settings.target if cfg.systematic_row else None,
         retained_hkl=elastic.beams.hkl if settings.basis_mode=='two-beam' else None,
         memory_budget_mib=cfg.calculation_memory_budget_mib,cancelled=cancelled)
@@ -126,15 +126,19 @@ def angular_schedule(model,cfg,energy):
     return qx,qy,weights,detector_support,selected
 
 
-def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared_incoming=None,*,energy_checkpoint=None,execution_workers=None,ionization_sites=None):
+def calculate_detector_signals(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared_incoming=None,*,energy_checkpoint=None,execution_workers=None,ionization_sites=None):
     """Full field at selected map energies, detector-only elsewhere, on one grid.
 
     Detector-only skips exactly zero-weight pixels. Fractional weights and all
     physical/numerical parameters are identical; no interpolation or coarsening.
     Double responses already include depth integration; Single needs thickness.
+    C is (beam,beam) incoming depth-mean coherence; tensors are explicit +/-M
+    energy tensors in beam Cartesian axes. Grid qx/qy is (qy,qx) in cycles/A;
+    outputs are raw detector spectra (energy,) and selected maps (qy,qx).
+    No material model or GUI state is constructed here.
     """
     from .emcd_forward import Cancelled
-    from .propagation import projected_geometry_for,SINGLE_CHANNELING_PIXEL_BATCH
+    from .propagation import projected_geometry_from_oriented_crystal,SINGLE_CHANNELING_PIXEL_BATCH
     qx,qy,weights,detector_support,selected=angular_schedule(model,cfg,energy)
     dq2=(qx[0,1]-qx[0,0])**2
     full_weights=np.stack([weights[k].ravel() for k in ('A','B')])
@@ -205,7 +209,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
                 r,diag=multislice_double_channeling_response(elastic,float(e),batch,settings.thickness,
                     fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
                     systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
-                    projected_geometry=projected_geometry_for(settings,elastic.crystal,cfg.fft_generators),
+                    projected_geometry=projected_geometry_from_oriented_crystal(settings,elastic.crystal,cfg.fft_generators),
                     depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,memory_budget_mib=cfg.calculation_memory_budget_mib,
                     prepared_grid=grid,prepared_incoming=incoming,cancelled=task_cancelled,**site_arguments)
                 return r,diag
@@ -249,3 +253,7 @@ def contract(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared
     return dict(spectra=spectra,maps=maps,qx=qx,qy=qy,weights=weights,diagnostics=diagnostics,
         angular_evaluation_policy='full_grid_all_energies' if cfg.angular_maps and cfg.angular_evaluation=='all' else EVALUATION_POLICY,
         incoming_preparation_seconds=incoming_seconds)
+
+
+# Historical scheduler import; a single implementation serves both names.
+contract = calculate_detector_signals

@@ -1,6 +1,7 @@
 """Independent energy/map choices and the shared bounded Local scheduler."""
 from dataclasses import replace
 import numpy as np
+from emcd_sim.detector_signals import integrate_detector_block
 from PySide6 import QtCore
 
 from emcd_sim.gui.multisite_run import applied_inputs
@@ -78,7 +79,7 @@ def test_selected_fields_match_full_grid_at_identical_energies(tmp_path,monkeypa
     raw=contract_multisite_spectrum(result['model'],structure,sites,result['coherence'],
         prepare_multisite_spectrum(sites,energy),result['qx'].ravel(),result['qy'].ravel(),
         crystal_to_microscope=result['metadata']['frame'],thickness_nm=settings.thickness)
-    expected=forward._multisite_detector_data(raw['total'],cfg,energy,result['qx'],result['qy'],
+    expected=integrate_detector_block(raw['total'],cfg,energy,result['qx'],result['qy'],
         result['weights'],np.ones(97**2,bool))
     for key in RAW_KEYS+PARITY_KEYS:
         np.testing.assert_allclose(result['spectra'][key],expected['spectra'][key],rtol=2e-13,atol=1e-17)
