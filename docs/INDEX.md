@@ -1,5 +1,8 @@
 # Documentation index
 
+Current developer maps: [physics and implementation](PHYSICS_CODE_MAP.md) ·
+[refactor names, compatibility decisions and verification](REFACTOR_NAME_MAP.md).
+
 [Home](../README.md) · [Windows Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.2) · [macOS ARM64 Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1)
 
 ## Current user documentation

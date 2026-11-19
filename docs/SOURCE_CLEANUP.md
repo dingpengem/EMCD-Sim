@@ -1,5 +1,11 @@
 # Current-runtime source cleanup
 
+For the later local readability refactor, current owners and compatibility names
+are recorded in [REFACTOR_NAME_MAP.md](REFACTOR_NAME_MAP.md). The inventory and
+counts below describe this cleanup's historical revision; `gui.stage_b` is now
+removed, with current callers using calculation controls and worker execution
+directly.
+
 ## Scope and ancestry
 
 Started on `cleanup/source-package` at

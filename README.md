@@ -17,6 +17,11 @@ Published Windows beta.2 source: `18f63bfe20c24be128c53c5f55ef3cfdf7f6b246`; pub
 
 ## Capabilities
 
+For source development, see the [current physics/code map](docs/PHYSICS_CODE_MAP.md)
+and [responsibility/name review](docs/REFACTOR_NAME_MAP.md). They distinguish
+implemented physics, shared numerical methods, material presets and compatibility
+interfaces; this refactor adds no scientific capabilities.
+
 | Area | Implemented scope |
 | --- | --- |
 | Structure | ASE/CIF import, interactive 3D viewer, crystallographic group suggestions with original atom indices/Wyckoff provenance, manual magnetic subgroups. Ordinary CIFs infer neither magnetic order nor MDFF. |

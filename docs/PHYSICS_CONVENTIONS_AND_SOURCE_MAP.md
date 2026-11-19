@@ -1,5 +1,9 @@
 # Physics conventions and formula-to-source map
 
+This is a **historical audit of the revision named below**,
+including its then-uncorrected contraction. For the current corrected convention,
+equations and entry points, use [PHYSICS_CODE_MAP.md](PHYSICS_CODE_MAP.md).
+
 Audit date: 2026-11-01. Source: local `main` at
 `a77f7455f5fe57dad6bae5d948477b2390433bb0`, worktree
 `build/source-cleanup-integration`. Line numbers refer to this unchanged source.
