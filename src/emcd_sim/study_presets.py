@@ -1,4 +1,4 @@
-"""Study conveniences using the shared structure-derived orientation engine.
+"""Nickel study presets and explicit XMCD-frame conveniences over shared engines.
 
 Historical studies select configurations in their scripts; no axis-specific
 reciprocal, Fourier-potential or propagation algorithm lives here.
@@ -14,7 +14,7 @@ from emcd_sim.physical_elastic import PhysicalElasticModel
 from emcd_sim.benchmark import nickel_physical_benchmark
 
 @dataclass(frozen=True)
-class StudyGeometry:
+class NickelStudyGeometry:
     zone:tuple
     target:tuple
     a_angstrom:float=3.524
@@ -37,7 +37,7 @@ class StudyGeometry:
         detectors={k:VirtualDetector((g/2,s*g/2),.16*g) for k,s in (('A',1),('B',-1))}
         return replace(nickel_physical_benchmark(),elastic=e,detectors=detectors,chiral_groups=None)
 
-def rotated_tensor(path,energy_ev=None,*,eta=1.,beta=1.,frame):
+def xmcd_tensor_in_frame(path,energy_ev=None,*,eta=1.,beta=1.,frame):
     from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
     from emcd_sim.mdff_tensor import DipoleTensor
     R=np.asarray(frame,float)

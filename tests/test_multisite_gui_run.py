@@ -14,8 +14,8 @@ from PySide6 import QtCore,QtWidgets,QtTest
 
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.geometry import Structure
-from emcd_sim.gui.forward_pipeline import calculate,calculate_multisite
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.gui.multisite_run import applied_inputs
 from emcd_sim.gui.multisite_results import comparison_text,covered_segments
 from emcd_sim.multisite import IonizationSiteGroup,MultiSiteIonization
@@ -107,7 +107,7 @@ def test_afm_gui_modes_match_programmatic_api(window,tmp_path,app,method,channel
     # Disabled/invalid legacy M cannot override a valid local configuration.
     with QtCore.QSignalBlocker(window.axis):window.axis.setText('unused legacy global M')
     cfg,inputs,windows,reverse,signature = applied_inputs(window,window.forward_settings())
-    expected = calculate_multisite(structure,window.settings(),inputs,cfg,energy_windows=windows,reverse_magnetization=reverse)
+    expected = calculate(structure, window.settings(), cfg, energy_windows=windows, reverse_magnetization=reverse, sites=inputs)
     assert window.emcd_button.isEnabled(),window.emcd_button.toolTip()
     window.start_emcd();assert window.busy
     stages = [];window.worker.stage.connect(stages.append)

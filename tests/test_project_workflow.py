@@ -26,7 +26,6 @@ def app():return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 def window(app,tmp_path,monkeypatch):
     def forbidden(*a,**k):pytest.fail('Project workflow started a numerical calculation')
     monkeypatch.setattr('emcd_sim.gui.calculation_worker.calculate',forbidden)
-    monkeypatch.setattr('emcd_sim.gui.calculation_worker.calculate_multisite',forbidden)
     w=MainWindow(tmp_path/'workspace');w.errors=[];w.error=w.errors.append
     b=QtWidgets.QMessageBox.StandardButton
     monkeypatch.setattr(QtWidgets.QMessageBox,'warning',lambda *a,**k:b.Discard)
@@ -135,7 +134,7 @@ def test_close_cancel_discard_and_explicit_replace(window,app,tmp_path,monkeypat
 def test_missing_sources_and_legacy_ni_open_without_recalculation(window,app,tmp_path):
     from ase import Atoms
     from emcd_sim.gui.geometry import Structure
-    from emcd_sim.gui.emcd_forward import ForwardSettings
+    from emcd_sim.gui.forward_settings import NiForwardSettings
     w=window;r=result_fixture(tmp_path,manual=False);restore_configuration(w,r['configuration']);retain(w,r)
     root=tmp_path/'External Project';w.save_to_path(root);wait(w,app);assert not w.errors
     for entry in r['groups'].values():Path(entry['metadata']['source']['path']).unlink()
@@ -146,7 +145,7 @@ def test_missing_sources_and_legacy_ni_open_without_recalculation(window,app,tmp
     w.start_emcd();assert not w.busy and w.errors  # Preflight rejects, no worker/solver.
     w.errors.clear()
     legacy=deepcopy(r);legacy.pop('groups');legacy.pop('weighted_sum');legacy.pop('configuration');legacy.pop('methods')
-    legacy['config']=ForwardSettings(model='atomic',magnetization=(1.,0.,0.),l3=710.,l2=723.,grid=9,depth=3,subpixels=4)
+    legacy['config']=NiForwardSettings(model='atomic',magnetization=(1.,0.,0.),l3=710.,l2=723.,grid=9,depth=3,subpixels=4)
     legacy['metadata'].pop('multisite');legacy['metadata'].pop('mdff_provider');legacy['metadata']['mdff']=asdict(legacy['config'])
     atoms=Atoms('Ni4',scaled_positions=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]],cell=[3.52]*3,pbc=True)
     legacy['structure_snapshot']=io.structure_snapshot(Structure(atoms));m=legacy['maps']['Fe__L3'];legacy['maps']={'L3':m,'L2':m}
@@ -212,7 +211,7 @@ def test_failed_collection_stage_keeps_previous_run_files(tmp_path,monkeypatch):
 def test_unavailable_global_atomic_provider_is_not_saved_as_legacy_ni(window,app,tmp_path):
     from ase.build import bulk
     from emcd_sim.gui.geometry import Structure,Settings
-    from emcd_sim.gui.generalized_forward import ProviderSettings
+    from emcd_sim.gui.material_inputs import ProviderSettings
     w=window;source=tmp_path/'missing-atomic.json'
     raw=(Path(__file__).resolve().parents[1]/'docs/examples/synthetic_fe_atomic_parameters.json').read_bytes()
     source.write_bytes(raw);digest=io.sha256(source);source.unlink()

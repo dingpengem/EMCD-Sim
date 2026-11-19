@@ -8,7 +8,7 @@ import pytest
 from emcd_sim.manual_l23 import (lorentzian,window_fraction,simple_strength,simple_parameters,evaluate,AnalyticalL23MDFF)
 from emcd_sim.imported_mdff import ImportedMDFF
 from emcd_sim.mdff_orientation import axis_rotation
-from emcd_sim.gui.generalized_forward import source_for,settings_for_source
+from emcd_sim.gui.material_inputs import source_for, settings_for_source
 from emcd_sim.gui.geometry import Settings
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.project_io import save_project,load_project,source_status

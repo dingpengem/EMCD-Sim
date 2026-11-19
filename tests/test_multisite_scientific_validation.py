@@ -16,9 +16,11 @@ import pytest
 
 from emcd_sim.geometry import VirtualDetector, characteristic_qz_angstrom_inv
 from emcd_sim.gui import channeling
-from emcd_sim.gui.emcd_forward import ForwardSettings, calculate, tensors
-from emcd_sim.gui.forward_pipeline import calculate_multisite
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.historical_ni import tensors
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model, geometry
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from historical_xmcd_test_support import historical_xmcd_source, HISTORICAL_XMCD_SHA256
@@ -67,7 +69,7 @@ def test_historical_ni_matched_thicknesses(tmp_path, old_contract, method, chann
         'grid', 'depth', 'subpixels', 'fft_grid', 'slice_step', 'halfwidth',
         'centers', 'radius', 'worker_mode', 'parallel_workers', 'propagation',
         'channeling_model', 'systematic_row', 'angular_maps')}
-    historical = ForwardSettings(**fields, source=str(historical_xmcd_source(tmp_path)),
+    historical = NiForwardSettings(**fields, source=str(historical_xmcd_source(tmp_path)),
         source_sha256=HISTORICAL_XMCD_SHA256, axis_declared=True, correction=False,
         energy_scope='edges')
     energy = np.array([historical.l3, historical.l2])
@@ -91,7 +93,7 @@ def test_historical_ni_matched_thicknesses(tmp_path, old_contract, method, chann
     # shared kernels. The fixture adapts historical names, not equations.
     with patch.object(channeling, 'contract', old_contract):
         legacy = calculate(structure, settings, historical, energy_ev=energy)
-    result = calculate_multisite(structure, settings, sites, cfg, energy_ev=energy)
+    result = calculate(structure, settings, cfg, energy_ev=energy, sites=sites)
     # Reversal/detector differences can be exactly zero in the reference.
     # Subtraction roundoff is set by the raw intensity, not that zero signal.
     raw_scale = max(np.max(abs(legacy['spectra'][k])) for k in RAW_KEYS)
@@ -140,7 +142,7 @@ def cr_case(tmp_path, unequal):
 
 def test_ni_bounded_depth_quadrature_against_independent_gauss(tmp_path):
     """Isolate depth error; detector centers only, not angular/basis convergence."""
-    cfg = ForwardSettings(source=str(historical_xmcd_source(tmp_path)), axis_declared=True,
+    cfg = NiForwardSettings(source=str(historical_xmcd_source(tmp_path)), axis_declared=True,
                           source_sha256=HISTORICAL_XMCD_SHA256, correction=False)
     structure = Structure.nickel()
     queries = np.array([[.2, .2], [.2, -.2]])
@@ -188,9 +190,8 @@ def test_bcc_cr_independent_events_and_symmetry(tmp_path, method, channel, unequ
     energy = np.array([710., 723.])  # illustrative synthetic labels, not Cr edges
     cfg = configuration(propagation=method, channeling_model=channel,
                         depth=17, slice_step=.02, angular_maps=False)
-    result = calculate_multisite(structure, settings, sites, cfg, energy_ev=energy)
-    reverse = calculate_multisite(structure, settings, sites, cfg, energy_ev=energy,
-                                  reverse_magnetization=True)
+    result = calculate(structure, settings, cfg, energy_ev=energy, sites=sites)
+    reverse = calculate(structure, settings, cfg, energy_ev=energy, reverse_magnetization=True, sites=sites)
     positions = structure.atoms.get_scaled_positions()
     np.testing.assert_allclose(positions, [[0, 0, 0], [.5, .5, .5]], rtol=0, atol=1e-15)
     np.testing.assert_array_equal(sum(np.asarray(g.magnetization) for g in sites.groups), [0, 0, 0])

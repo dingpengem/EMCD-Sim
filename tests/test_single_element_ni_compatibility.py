@@ -1,11 +1,13 @@
 """Numerical arrays versus immutable pre-feature source, not regenerated fixtures."""
+from reference_imports import relocate_reference_imports
+from emcd_sim.gui.forward_settings import NiForwardSettings
 import subprocess,sys,types,os,hashlib
 from pathlib import Path
 from dataclasses import replace
 from unittest.mock import patch
 import numpy as np
 import pytest
-from emcd_sim.gui import emcd_forward as ni,channeling
+from emcd_sim.gui import forward_pipeline as ni, channeling
 from emcd_sim.gui.geometry import Structure,Settings
 
 BASE='2f9c130099dce5df4e4609b521c42f53c5385518'
@@ -17,7 +19,7 @@ def archived(path,name,package):
     source=source.replace('..ni_local_mdff import','..historical_ni import')
     source=source.replace('fcc_site_phase_matrix','historical_ni_site_phase_matrix as fcc_site_phase_matrix',1)
     source=source.replace('import ProjectedNiFFT','import ProjectedFFT as ProjectedNiFFT',1)
-    exec(compile(source,'immutable_pre_feature_'+path,'exec'),module.__dict__)
+    exec(compile(relocate_reference_imports(source),'immutable_pre_feature_'+path,'exec'),module.__dict__)
     return module
 
 
@@ -41,7 +43,7 @@ def old_contract():
 @pytest.mark.parametrize('channel',['single','double'])
 def test_original_ni_all_numeric_arrays_exact(old_contract,model,channel):
     settings=Settings(thickness=.3,beam_cutoff=.9,potential_cutoff=1.8)
-    cfg=ni.ForwardSettings(model=model,axis_declared=True,channeling_model=channel,propagation='both',
+    cfg=NiForwardSettings(model=model,axis_declared=True,channeling_model=channel,propagation='both',
         energy_scope='edges',grid=9,depth=9,subpixels=8,fft_grid=16,slice_step=.01,halfwidth=.7,
         centers=((.2,.2),(.2,-.2)),radius=.12,correction=False,worker_mode='manual',parallel_workers=1)
     if model=='atomic':cfg=replace(cfg,l3=cfg.atomic.l3_ev,l2=cfg.atomic.l2_ev)

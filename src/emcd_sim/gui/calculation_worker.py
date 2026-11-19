@@ -12,7 +12,7 @@ import threading
 import time
 from PySide6 import QtCore
 from ..cancellation import Cancelled
-from .forward_pipeline import calculate, calculate_multisite
+from .forward_pipeline import calculate
 
 
 class EMCDWorker(QtCore.QThread):
@@ -59,12 +59,10 @@ class EMCDWorker(QtCore.QThread):
                 logger.info('Calculation stage: %s',message)
                 self.stage.emit(message)
             kwargs={'execution_policy':self.execution_policy} if hasattr(self,'execution_policy') else {}
-            if self.sites is None:
-                if self.config.model=='multisite':raise ValueError('Missing multi-site assignments; legacy fallback is forbidden')
-                r=calculate(self.structure,self.settings,self.config,progress,self.cancelled,**kwargs)
-            else:
-                r=calculate_multisite(self.structure,self.settings,self.sites,self.config,progress,self.cancelled,
-                    energy_windows=self.energy_windows,reverse_magnetization=self.reverse_magnetization,**kwargs)
+            local=(dict(sites=self.sites,energy_windows=self.energy_windows,
+                        reverse_magnetization=self.reverse_magnetization) if self.sites is not None else {})
+            r=calculate(self.structure,self.settings,self.config,progress,self.cancelled,**local,**kwargs)
+            if self.sites is not None:
                 r['gui_multisite_input']=self.input_signature
                 if self.input_signature and len(self.input_signature)>3:
                     r['metadata']['ionization_participation']=dict(

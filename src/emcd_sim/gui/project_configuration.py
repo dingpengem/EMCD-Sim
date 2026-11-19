@@ -23,8 +23,8 @@ import numpy as np
 from .. import __version__
 from ..multisite_spectrum import ModeledEdgeWindow, _samples
 from . import project_io as io
-from .emcd_forward import Cancelled
-from .generalized_forward import ImportedSettings
+from ..cancellation import Cancelled
+from .material_inputs import ImportedSettings
 from .site_group_editor import validate_site_rows
 
 
@@ -249,7 +249,7 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
             if mode=='global' and key=='config' and not status['verified']:
                 state['issues'].append('Global source '+status['state']);active_valid = False
             elif mode=='global' and key=='config' and isinstance(cfg,ImportedSettings):
-                from .generalized_forward import source_for
+                from .material_inputs import source_for
                 try:source_for(effective_cfg)
                 except (ValueError,OSError) as exc:
                     status['validation_error'] = str(exc);state['issues'].append('Global configuration: '+str(exc));active_valid = False

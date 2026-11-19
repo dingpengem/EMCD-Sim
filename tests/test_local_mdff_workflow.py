@@ -5,7 +5,7 @@ from PySide6 import QtCore
 
 from test_multisite_gui_run import app, window, controls
 from emcd_sim.gui.geometry import Structure
-from emcd_sim.gui.emcd_forward import DEFAULT_SOURCE
+from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
 from emcd_sim.gui.project_configuration import save_configuration, load_configuration
 from emcd_sim.gui.multisite_run import applied_inputs
@@ -22,7 +22,7 @@ def local_draft(w,model,*,direction=True):
     w.set_material_magnetization((1,0,0))  # Inactive Global M must not override the group.
     d=w.open_mdff_context(e.rows()[0][0]);d.model.setCurrentIndex(0 if model=='xmcd' else 1)
     if model=='xmcd':
-        d.source_path.setText(str(DEFAULT_SOURCE));d.source_path.editingFinished.emit()
+        d.source_path.setText(str(DEFAULT_NI_SOURCE));d.source_path.editingFinished.emit()
         d.xmcd_conventions.setChecked(True)
     else:d.declaration.setChecked(True)
     return v,e,d
@@ -65,7 +65,7 @@ def test_local_preview_done_cancel_and_roundtrip(window,tmp_path,model):
 
 def test_changed_xmcd_source_does_not_silently_replace_acceptance(window,tmp_path):
     w=window;v,e,d=local_draft(w,'xmcd');path=tmp_path/'Ni.xmcd'
-    path.write_bytes(DEFAULT_SOURCE.read_bytes());d.source_path.setText(str(path));d.source_path.editingFinished.emit();d.xmcd_conventions.setChecked(True)
+    path.write_bytes(DEFAULT_NI_SOURCE.read_bytes());d.source_path.setText(str(path));d.source_path.editingFinished.emit();d.xmcd_conventions.setChecked(True)
     assert d.apply_configuration() is not None;v.apply_groups();accepted=v.accepted_site_groups
     w.show_structure_viewer();d=w.open_mdff_context(e.rows()[0][0])
     path.write_bytes(path.read_bytes()+b'\n# changed source identity\n')

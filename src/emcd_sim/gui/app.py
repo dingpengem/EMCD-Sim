@@ -648,7 +648,7 @@ def main():
         if args.smoke_atomic:window.model_box.setCurrentIndex(1)
         def capture_emcd():
             if window.busy:QtCore.QTimer.singleShot(100,capture_emcd);return
-            from .emcd_forward import export_result
+            from .forward_results import export_result
             import datetime
             from .runtime import workspace
             root=(workspace()/'smoke_exports')/('atomic_' if args.smoke_atomic else 'xmcd_')

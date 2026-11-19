@@ -18,10 +18,11 @@ def result():
     from emcd_sim.gui.project_io import load_project
     saved=Path('outputs/windows_beta_acceptance/source_native/double_both_project')
     if (saved/'project.json').exists():return load_project(saved)
-    from emcd_sim.gui.emcd_forward import calculate,ForwardSettings
+    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.gui.forward_settings import NiForwardSettings
     from emcd_sim.gui.geometry import Structure,Settings
     return calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),
-        ForwardSettings(axis_declared=True,channeling_model='double',propagation='both',energy_points=9,grid=9,depth=9,subpixels=16,fft_grid=24,angular_maps=True))
+        NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',energy_points=9,grid=9,depth=9,subpixels=16,fft_grid=24,angular_maps=True))
 
 
 def test_eels_exact_two_panels_and_one_total_curve(result):
@@ -112,7 +113,7 @@ def test_detector_asymmetry_after_integration_not_average_of_percentages():
 
 def test_exports_keep_legacy_arrays_and_explicit_signal_sidecars(result):
     import json,csv
-    from emcd_sim.gui.emcd_forward import export_result
+    from emcd_sim.gui.forward_results import export_result
     from emcd_sim.gui.project_io import load_project
     before={name:{k:v.copy() for k,v in m['spectra'].items()} for name,m in result['methods'].items()}
     root=Path('outputs')/('v060_exports_'+uuid4().hex)

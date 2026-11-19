@@ -9,7 +9,7 @@ import weakref
 import numpy as np
 import pytest
 from emcd_sim.gui import memory_budget as memory
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.geometry import Settings, Structure
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.gui.project_io import config_from_dict
@@ -25,7 +25,7 @@ def test_supported_budgets_and_512_compatibility(budget):
 
 
 def test_larger_dense_kernel_admitted_only_with_larger_budget():
-    cfg = ForwardSettings(propagation='bloch',grid=33)
+    cfg = NiForwardSettings(propagation='bloch',grid=33)
     # Use a real large basis. Preflight intentionally rejects synthetic hkl
     # counts that disagree with the actual oriented diffraction geometry.
     settings = Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=3.2)
@@ -43,7 +43,7 @@ def test_larger_dense_kernel_admitted_only_with_larger_budget():
 
 def test_preflight_rejects_incompatible_hkl_before_admission():
     with pytest.raises(ValueError,match='Beam support changed'):
-        numerical_info(Structure.nickel(),Settings(),ForwardSettings(),hkl=tuple(range(100)))
+        numerical_info(Structure.nickel(),Settings(),NiForwardSettings(),hkl=tuple(range(100)))
 
 
 def test_available_ram_and_invalid_measurement_fail_closed():
@@ -81,7 +81,7 @@ def test_gui_budget_selector_and_start_admission(tmp_path, monkeypatch):
     monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.emcd_forward import calculate
+    from emcd_sim.gui.forward_pipeline import calculate
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         w = MainWindow(workspace=tmp_path/'workspace')
@@ -93,7 +93,7 @@ def test_gui_budget_selector_and_start_admission(tmp_path, monkeypatch):
         w.close()
     # A RAM change after UI preview is checked again at calculation entry.
     with patch.object(memory, 'memory_snapshot', return_value=dict(available_ram_mib=100, process_rss_mib=64)):
-        with patch('emcd_sim.gui.emcd_forward._calculate') as engine:
+        with patch('emcd_sim.gui.forward_pipeline._calculate_uniform_prepared') as engine:
             with pytest.raises(ValueError, match='currently available RAM'):
-                calculate(Structure.nickel(), Settings(), ForwardSettings())
+                calculate(Structure.nickel(), Settings(), NiForwardSettings())
             engine.assert_not_called()

@@ -5,7 +5,9 @@ import pytest
 from legacy_geometry import Ni117Geometry
 from legacy_geometry import Ni017Geometry
 from emcd_sim.gui.geometry import Structure, Settings, geometry, orientation, indices, excitation, align_bragg, elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings, calculate, tensors
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.historical_ni import tensors
 from emcd_sim.gui.project_io import save_project, load_project, fingerprints, settings_from_dict
 from emcd_sim.multislice_double_channeling import ProjectedFFT, incident_fields
 from emcd_sim.mirror_parity import row_mirror_diagnostics
@@ -18,7 +20,7 @@ def settings(mode='full', **kwargs):
 
 def config(**kwargs):
     g=np.sqrt(8)/3.524
-    return replace(ForwardSettings(axis_declared=True,propagation='both',energy_scope='edges',grid=9,
+    return replace(NiForwardSettings(axis_declared=True,propagation='both',energy_scope='edges',grid=9,
         depth=17,subpixels=8,fft_grid=24,slice_step=.04,centers=((g/2,g/2),(g/2,-g/2)),
         radius=.16*g,correction=False,worker_mode='manual',parallel_workers=1),**kwargs)
 
@@ -217,7 +219,7 @@ def test_gui_target_basis_and_crystal_axis_restore_without_solver(tmp_path):
     if not QtGui.QFontDatabase.families():
         font=QtGui.QFontDatabase.addApplicationFont(str(Path(get_data_path())/'fonts/ttf/DejaVuSans.ttf'))
         app.setFont(QtGui.QFont(QtGui.QFontDatabase.applicationFontFamilies(font)[0],9))
-    with patch('emcd_sim.gui.stage_b.EMCDWorker.start',side_effect=AssertionError('GUI must not solve')),patch('emcd_sim.gui.app.PreviewWorker.start',side_effect=AssertionError('GUI must not solve')):
+    with patch('emcd_sim.gui.calculation_worker.EMCDWorker.start',side_effect=AssertionError('GUI must not solve')),patch('emcd_sim.gui.app.PreviewWorker.start',side_effect=AssertionError('GUI must not solve')):
         w=MainWindow(tmp_path/'workspace')
         w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
         try:

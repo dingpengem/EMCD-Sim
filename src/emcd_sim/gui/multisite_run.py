@@ -5,7 +5,7 @@ import numpy as np
 
 from ..multisite import MultiSiteIonization
 from ..multisite_spectrum import ModeledEdgeWindow, prepare_multisite_spectrum
-from .forward_pipeline import MultiSiteForwardSettings
+from .forward_settings import MultiSiteForwardSettings
 from .propagation import resolve_fft_configuration
 
 

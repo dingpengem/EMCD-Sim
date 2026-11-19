@@ -9,7 +9,7 @@ import shutil
 import uuid
 
 from . import project_io as io
-from .emcd_forward import Cancelled
+from ..cancellation import Cancelled
 
 
 def _unmanaged(source,target,managed):

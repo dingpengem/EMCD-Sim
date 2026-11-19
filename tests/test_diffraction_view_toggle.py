@@ -15,8 +15,8 @@ def window(tmp_path):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with ExitStack() as guards:
         for name in ('emcd_sim.gui.app.preview','emcd_sim.gui.app.PreviewWorker.start',
-                     'emcd_sim.gui.stage_b.calculate','emcd_sim.gui.stage_b.EMCDWorker.start',
-                     'emcd_sim.gui.propagation.propagate','emcd_sim.gui.emcd_forward.calculate',
+                     'emcd_sim.gui.calculation_worker.calculate','emcd_sim.gui.calculation_worker.EMCDWorker.start',
+                     'emcd_sim.gui.propagation.propagate','emcd_sim.gui.forward_pipeline.calculate',
                      'numpy.linalg.eigh'):
             guards.enter_context(patch(name,side_effect=AssertionError('Viewport must not run solvers')))
         w=MainWindow(workspace=tmp_path/'workspace')

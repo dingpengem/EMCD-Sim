@@ -3,8 +3,8 @@ from dataclasses import asdict,replace
 from pathlib import Path
 import json
 from PySide6 import QtCore,QtWidgets
-from .generalized_forward import ProviderSettings,settings_for_provider,source_for
-from .emcd_forward import DEFAULT_SOURCE
+from .material_inputs import ProviderSettings, settings_for_provider, source_for
+from .forward_settings import DEFAULT_NI_SOURCE
 from ..imported_mdff import CONVENTION
 
 
@@ -202,7 +202,7 @@ class ProviderUI:
             acknowledged=self.atomic_declaration.isChecked() or (self.atomic_editor.active and not self.atomic_editor.external_source_pending)
         elif base.model=='xmcd':
             if not self.explicit_xmcd.isChecked() and symbols=={'Ni'}:return base
-            if Path(base.source).resolve()==DEFAULT_SOURCE.resolve() and symbols!={'Ni'}:
+            if Path(base.source).resolve()==DEFAULT_NI_SOURCE.resolve() and symbols!={'Ni'}:
                 raise ValueError('Bundled Ni XMCD cannot be used for another element; select its declared source')
             declaration=self.xmcd_source_declaration(base)
             cfg=settings_for_provider(base.source,'xmcd',declaration)

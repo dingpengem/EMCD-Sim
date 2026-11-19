@@ -1,11 +1,13 @@
 """Focused actual-kernel dispatch, parity, memory and compatibility checks."""
+from emcd_sim.cancellation import Cancelled
+from emcd_sim.gui.forward_settings import NiForwardSettings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from dataclasses import replace,asdict
 from unittest.mock import patch
 import numpy as np
 import pytest
-from emcd_sim.gui import emcd_forward as forward
+from emcd_sim.gui import forward_pipeline as forward
 from emcd_sim.gui.geometry import Structure,Settings,geometry
 from emcd_sim.gui.project_io import config_from_dict,save_project,load_project
 from emcd_sim.gui.propagation import numerical_info
@@ -13,7 +15,7 @@ from emcd_sim.gui.propagation import numerical_info
 
 @pytest.fixture
 def small():
-    return Structure.nickel(),Settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),forward.ForwardSettings(
+    return Structure.nickel(),Settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),NiForwardSettings(
         axis_declared=True,energy_scope='edges',angular_maps=False,grid=17,depth=17,subpixels=16,fft_grid=24,correction=False)
 
 
@@ -117,7 +119,7 @@ def test_double_full_energy_coverage_is_actually_evaluated(small):
 
 def test_cancelled_double_job_releases_reservation(small):
     from emcd_sim.gui import memory_budget
-    with pytest.raises(forward.Cancelled):
+    with pytest.raises(Cancelled):
         forward.calculate(*small[:2],replace(small[2],channeling_model='double'),cancelled=lambda:True)
     assert memory_budget.assess_memory(0)['concurrent_calculations']==0
 

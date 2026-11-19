@@ -8,7 +8,7 @@ from emcd_sim.cancellation import Cancelled,check_cancelled
 from emcd_sim.gui import memory_budget
 from emcd_sim.gui.channeling import map_detector_batches
 from emcd_sim.gui.parallel_resources import calculation_blas_guard,_blas_runtimes
-from emcd_sim.gui.forward_pipeline import calculate_multisite
+from emcd_sim.gui.forward_pipeline import calculate
 from test_multisite_forward import system,configuration
 from test_multisite_parallel import compare
 
@@ -21,10 +21,10 @@ def test_cr_auto_and_manual_preserve_existing_serial_intensities(tmp_path,method
         selected_edges=(('first',710.),('last',723.)))
     before=[int(get()) for get,_,_ in _blas_runtimes()]
     with calculation_blas_guard():
-        reference=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.])
+        reference=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=sites)
         changed=replace(cfg,memory_mode='automatic',worker_mode='automatic' if channel=='single' else 'manual',
             parallel_workers=1 if channel=='single' else 5)
-        actual=calculate_multisite(structure,settings,sites,changed,energy_ev=[710.,723.])
+        actual=calculate(structure, settings, changed, energy_ev=[710.0, 723.0], sites=sites)
         compare(actual,reference)
         assert actual['config'].memory_budget_mib==2048 and actual['config'].memory_mode=='automatic'
         assert actual['config'].calculation_memory_budget_mib==actual['metadata']['numerics']['memory_budget_mib']
@@ -68,10 +68,11 @@ def test_resident_reserved_arrays_are_not_added_to_rss_twice(monkeypatch):
 
 @pytest.mark.parametrize('sampling,requested,actual',[('edges',241,2),('uniform',9,11)])
 def test_saved_energy_diagnostics_distinguish_request_from_evaluated_grid(tmp_path,sampling,requested,actual):
-    from emcd_sim.gui.emcd_forward import ForwardSettings,calculate
+    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.gui.geometry import Structure,Settings
     from emcd_sim.gui.project_io import save_project,load_project
-    cfg=ForwardSettings(axis_declared=True,grid=9,depth=5,subpixels=8,
+    cfg=NiForwardSettings(axis_declared=True,grid=9,depth=5,subpixels=8,
         energy_scope='edges' if sampling=='edges' else 'full',energy_sampling=sampling,
         energy_points=requested,worker_mode='manual',parallel_workers=1)
     with calculation_blas_guard():

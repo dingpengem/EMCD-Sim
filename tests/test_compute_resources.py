@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.geometry import Settings,Structure
 from emcd_sim.gui.memory_budget import assess_memory,selected_memory_budget
 from emcd_sim.gui.parallel_resources import worker_plan,bind_allocation
@@ -40,7 +40,7 @@ def test_auto_budget_uses_current_headroom_not_installed_ram(gib):
 @pytest.mark.parametrize('logical,physical',[(1,1),(2,1),(8,4),(64,32),(128,64),(16,None)])
 def test_cpu_policy_scales_and_keeps_small_bw_jobs_serial(logical,physical):
     state=machine(128,logical,physical)
-    cfg=ForwardSettings(channeling_model='double',grid=97,depth=64)
+    cfg=NiForwardSettings(channeling_model='double',grid=97,depth=64)
     plan=worker_plan(Settings(),cfg,59,native=native(state))
     count=plan['effective_workers']['bloch']
     assert 1<=count<=logical and (logical==1 or count<logical)
@@ -53,7 +53,7 @@ def test_cpu_policy_scales_and_keeps_small_bw_jobs_serial(logical,physical):
 
 def test_hybrid_and_manual_cpu_requests_are_not_silently_substituted():
     state=machine(64,32,24,classes={0:16,1:8})
-    cfg=ForwardSettings(channeling_model='double',grid=97)
+    cfg=NiForwardSettings(channeling_model='double',grid=97)
     plan=worker_plan(Settings(),cfg,59,native=native(state))
     assert plan['effective_workers']['bloch']==15
     manual=worker_plan(Settings(),replace(cfg,worker_mode='manual',parallel_workers=40),59,native=native(state))
@@ -72,7 +72,7 @@ def test_affinity_and_cpu_set_allocation_filter_original_core_ids():
 @pytest.mark.parametrize('constraint,value',[('available_ram_mib',100),('commit_available_mib',100),('virtual_available_mib',100)])
 def test_real_insufficiency_rejects_auto_without_forcing_one_worker(constraint,value):
     state=machine();state[constraint]=value
-    cfg=ForwardSettings(channeling_model='double',memory_mode='automatic',grid=9,depth=17)
+    cfg=NiForwardSettings(channeling_model='double',memory_mode='automatic',grid=9,depth=17)
     info=numerical_info(Structure.nickel(),Settings(),cfg,enforce_execution=False,resource_snapshot=state,native=native(state))
     assert info['execution']['blocked'] and info['execution']['effective_workers']['bloch']==0
     assert info['rejected'] and info['rejection_reason']
@@ -81,7 +81,7 @@ def test_real_insufficiency_rejects_auto_without_forcing_one_worker(constraint,v
 
 def test_auto_workers_fit_budget_but_manual_values_never_change():
     state=machine(32,32,16)
-    cfg=ForwardSettings(channeling_model='double',memory_budget_mib=440,grid=97,depth=64)
+    cfg=NiForwardSettings(channeling_model='double',memory_budget_mib=440,grid=97,depth=64)
     structure=Structure.nickel();settings=Settings()
     auto=numerical_info(structure,settings,cfg,enforce_execution=False,resource_snapshot=state,native=native(state))
     manual=numerical_info(structure,settings,replace(cfg,worker_mode='manual',parallel_workers=15),
@@ -92,7 +92,7 @@ def test_auto_workers_fit_budget_but_manual_values_never_change():
 
 
 def test_run_allocation_preserves_manual_requests_and_rechecks_changed_resources():
-    state=machine(32,16,8);cfg=ForwardSettings(channeling_model='double',memory_mode='automatic',grid=9,depth=17)
+    state=machine(32,16,8);cfg=NiForwardSettings(channeling_model='double',memory_mode='automatic',grid=9,depth=17)
     info=numerical_info(Structure.nickel(),Settings(),cfg,resource_snapshot=state,native=native(state))
     accepted=bind_allocation(cfg,info)
     assert accepted.memory_budget_mib==2048 and accepted.parallel_workers==1
@@ -137,7 +137,7 @@ def test_project_roundtrip_retains_modes_and_remembered_manual_values(tmp_path,m
 
 
 def test_no_maps_uses_detector_support_for_cpu_tasks():
-    state=machine();cfg=ForwardSettings(channeling_model='double',angular_maps=False,angular_evaluation='all')
+    state=machine();cfg=NiForwardSettings(channeling_model='double',angular_maps=False,angular_evaluation='all')
     info=numerical_info(Structure.nickel(),Settings(),cfg,resource_snapshot=state,native=native(state))
     assert info['execution']['detector_task_pixels']==info['detector_support_pixels']<cfg.grid**2
 
@@ -146,7 +146,7 @@ def test_no_maps_uses_detector_support_for_cpu_tasks():
 def test_single_full_maps_fit_budget_without_hypothetical_full_field_scratch(method):
     state=machine();state['process_rss_mib']=64.
     settings=Settings();structure=Structure.nickel()
-    cfg=ForwardSettings(propagation=method,grid=97,depth=64,memory_budget_mib=256,
+    cfg=NiForwardSettings(propagation=method,grid=97,depth=64,memory_budget_mib=256,
         worker_mode='manual',parallel_workers=1)
     info=numerical_info(structure,settings,cfg,resource_snapshot=state,native=native(state))
     assert not info.get('rejected') and info['estimated_process_peak_mib']<256
@@ -159,7 +159,7 @@ def test_single_full_maps_fit_budget_without_hypothetical_full_field_scratch(met
 def test_gui_run_submits_displayed_allocation_without_replacing_manual_requests(tmp_path,monkeypatch):
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.stage_b import EMCDWorker
+    from emcd_sim.gui.calculation_worker import EMCDWorker
     from test_material_mdff_workflow import xmcd_draft
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     monkeypatch.setattr(EMCDWorker,'start',lambda self:None) # Inspect submission; no propagation.
@@ -194,7 +194,7 @@ def test_wrapped_resource_information_remains_readable_without_changing_paramete
     w.resize(width,669);w.show()
     try:
         for mode in ('automatic','manual'):
-            cfg=ForwardSettings(channeling_model='double',memory_mode=mode,worker_mode=mode,parallel_workers=2)
+            cfg=NiForwardSettings(channeling_model='double',memory_mode=mode,worker_mode=mode,parallel_workers=2)
             panel.restore(cfg)
             panel.show_estimate(cfg,numerical_info(w.structure,w.settings(),cfg,resource_snapshot=state,native=native(state)))
             QtTest.QTest.qWait(300);app.processEvents()

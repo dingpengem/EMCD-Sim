@@ -6,7 +6,7 @@ from emcd_sim.cancellation import Cancelled,check_cancelled
 from emcd_sim.gui import parallel_resources as resources
 from emcd_sim.gui.channeling import map_detector_batches
 from emcd_sim.gui.geometry import Settings
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 
 
 def test_real_runtimes_limit_and_restore_without_environment_overrides():
@@ -55,7 +55,7 @@ def test_failed_verification_restores_partial_changes(monkeypatch):
 
 def test_preflight_preserves_four_workers_without_claiming_limits_applied():
     native=dict(resources.native_backend_info(),threads=12,automatic_thread_control=True)
-    cfg=replace(ForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=4)
+    cfg=replace(NiForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=4)
     plan=resources.worker_plan(Settings(),cfg,21,native=native)
     assert not plan['blocked'] and plan['effective_workers']['bloch']==4
     assert plan['native']['threads']==12
@@ -67,7 +67,7 @@ def test_memory_admission_still_rejects_without_reducing_manual_workers(monkeypa
     from emcd_sim.gui.geometry import Structure
     monkeypatch.setattr('emcd_sim.gui.memory_budget.memory_snapshot',
                         lambda:dict(available_ram_mib=64,process_rss_mib=120))
-    cfg=replace(ForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=4)
+    cfg=replace(NiForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=4)
     info=numerical_info(Structure.nickel(),Settings(),cfg,enforce_execution=False)
     assert info['execution']['risk']=='RESOURCE REJECTED'
     assert info['execution']['effective_workers']['bloch']==4

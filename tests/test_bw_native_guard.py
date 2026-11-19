@@ -59,7 +59,7 @@ def test_gui_resource_rejection_remains_responsive(tmp_path,monkeypatch):
         window.model_box.setCurrentIndex(1);window.numerical_mode.setCurrentIndex(1)
         window.spin['beam'].setValue(3.)
         before=window.numerical_snapshot();errors=[];window.error=errors.append
-        factory=Mock();monkeypatch.setattr('emcd_sim.gui.stage_b.EMCDWorker',factory)
+        factory=Mock();monkeypatch.setattr('emcd_sim.gui.calculation_controls.EMCDWorker',factory)
         def reject(*args,**kwargs):raise ValueError('Memory admission rejected: selected budget 2048 MiB')
         monkeypatch.setattr(propagation,'numerical_info',reject)
         window.start_emcd()
@@ -73,14 +73,14 @@ def test_gui_resource_rejection_remains_responsive(tmp_path,monkeypatch):
 def test_worker_logs_inputs_and_last_stage_without_changing_results(monkeypatch,caplog):
     import logging
     from dataclasses import replace
-    from emcd_sim.gui.stage_b import EMCDWorker
+    from emcd_sim.gui.calculation_worker import EMCDWorker
     from emcd_sim.gui.geometry import Structure,Settings
-    from emcd_sim.gui.emcd_forward import ForwardSettings
+    from emcd_sim.gui.forward_settings import NiForwardSettings
     expected=object()
     def calculate(structure,settings,cfg,progress,cancelled):
         progress('outgoing eigenproblem diagnostic');return expected
-    monkeypatch.setattr('emcd_sim.gui.stage_b.calculate',calculate)
-    worker=EMCDWorker(Structure.nickel(),replace(Settings(),beam_cutoff=3.),ForwardSettings(source='C:/private/user_sample.xmcd'))
+    monkeypatch.setattr('emcd_sim.gui.calculation_worker.calculate',calculate)
+    worker=EMCDWorker(Structure.nickel(),replace(Settings(),beam_cutoff=3.),NiForwardSettings(source='C:/private/user_sample.xmcd'))
     result=[];worker.result.connect(result.append)
     with caplog.at_level(logging.INFO,logger='emcd_sim.gui'):worker.run()
     assert result==[expected]

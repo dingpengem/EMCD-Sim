@@ -6,7 +6,8 @@ import numpy as np
 from emcd_sim.crystal import fcc_nickel
 from emcd_sim.projected_geometry import ProjectedGeometry
 from emcd_sim.gui.geometry import Structure,Settings
-from emcd_sim.gui.emcd_forward import ForwardSettings,calculate,DEFAULT_SOURCE
+from emcd_sim.gui.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
+from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.prb_benchmark import benchmark_spectra
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -19,7 +20,7 @@ def cases():
         ('710',(7,1,0),(0,0,2),3.2,2.2)]:
         geo=ProjectedGeometry.from_crystal(fcc_nickel(),zone,target);g=geo.crystal.g_vector(target)[0]
         s=Settings(zone=zone,target=target,voltage=200,thickness=2,tilt=(geo.bragg_tilt(),0),beam_cutoff=beam,potential_cutoff=potential)
-        c=ForwardSettings(axis_declared=True,propagation='both',energy_scope='edges',grid=17,depth=33,subpixels=32,
+        c=NiForwardSettings(axis_declared=True,propagation='both',energy_scope='edges',grid=17,depth=33,subpixels=32,
             fft_grid=32,slice_step=.02,correction=False,centers=((g/2,g/2),(g/2,-g/2)),radius=.16*g,worker_mode='manual',parallel_workers=1)
         for channel in ('single','double'):yield name+'_'+channel,s,replace(c,channeling_model=channel)
         if name=='001':
@@ -43,7 +44,7 @@ def main():
     args=parser.parse_args()
     OUT.mkdir(parents=True,exist_ok=True)
     files=sorted((ROOT/'src/emcd_sim').glob('*.py'))+sorted((ROOT/'src/emcd_sim/gui').glob('*.py'))
-    provenance=dict(source_sha256=sha(DEFAULT_SOURCE),commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+    provenance=dict(source_sha256=sha(DEFAULT_NI_SOURCE),commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         code_sha256={str(p.relative_to(ROOT)):sha(p) for p in files},physical_model='depth-averaged projected IAM ZOLZ; XMCD-effective Hermitian Ni tensor; crystal M=[001]')
     rows=[]
     for label,s,c in cases():

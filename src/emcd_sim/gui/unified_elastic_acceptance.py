@@ -17,7 +17,7 @@ def run(output,historical_project=None):
     from matplotlib.backend_bases import MouseEvent
     from .app import MainWindow
     from .geometry import Structure,elastic_model,indices
-    from .emcd_forward import material_reason
+    from ..historical_ni import material_reason
     from .project_io import load_project,save_project,fingerprints,restore_structure,load_elastic_project
     from .runtime import build_info
     from ..adaptive_scattering import adaptive_factor,data_resource,COEFFICIENT_SHA256

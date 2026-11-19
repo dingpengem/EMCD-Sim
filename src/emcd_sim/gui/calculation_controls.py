@@ -14,14 +14,16 @@ from PySide6 import QtCore,QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg,NavigationToolbar2QT
 from .geometry import Structure
-from .emcd_forward import (ForwardSettings,DEFAULT_SOURCE,inspect_source,export_result)
+from .forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
+from .xmcd_source import inspect_xmcd_source
+from .forward_results import export_result
 from ..historical_ni import NiLocalConfig
 from ..wien2k_xmcd import load_wien2k_xmcd
 from .responsive import CollapsibleSection
 from .results import ResultsView
 from .numerical_settings import NumericalSettingsUI
 from .imported_tensor_ui import ImportedTensorUI
-from .generalized_forward import material_reason,energy_grid,tensors
+from .material_inputs import material_reason, energy_grid, tensors
 from .calculation_worker import EMCDWorker
 from .provider_ui import ProviderUI
 
@@ -39,7 +41,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.form.addRow('Material target M (read-only)',self.axis)
         self.mdff_stack=QtWidgets.QStackedWidget();self.form.addRow(self.mdff_stack)
         xm=QtWidgets.QWidget();xf=QtWidgets.QFormLayout(xm);self.mdff_stack.addWidget(xm);saved=self.form;self.form=xf
-        self.source_path=QtWidgets.QLineEdit(str(DEFAULT_SOURCE) if DEFAULT_SOURCE.exists() else '');self.form.addRow('Five-column XMCD',self.source_path)
+        self.source_path=QtWidgets.QLineEdit(str(DEFAULT_NI_SOURCE) if DEFAULT_NI_SOURCE.exists() else '');self.form.addRow('Five-column XMCD',self.source_path)
         self.button('Browse XMCD...',self.browse_xmcd);self.button('Recheck source (optional)',self.validate_xmcd)
         self.number('eta','eta',1,-5,5,self.emcd_stale);self.number('beta','beta',1,0,10,self.emcd_stale)
         self.number('xl3','L3 native feature (eV)',831.271,1,10000,self.emcd_stale);self.number('xl2','L2 native feature (eV)',848.698,1,10000,self.emcd_stale)
@@ -206,7 +208,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.diffraction_view=ResultsView(self,'diffraction');self.overview_view=ResultsView(self,'comparison')
         self.tabs.addTab(self.diffraction_view,'BW/MS Diffraction');self.tabs.addTab(self.overview_view,'BW/MS Overview')
         self.tabs.setTabEnabled(5,False);self.tabs.setTabEnabled(6,False)
-        if DEFAULT_SOURCE.exists():self.validate_xmcd(show_error=False)
+        if DEFAULT_NI_SOURCE.exists():self.validate_xmcd(show_error=False)
         self.emcd_stale()
 
     def model_changed(self,index):
@@ -226,7 +228,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if path:self.source_path.setText(path);self.validate_xmcd()
     def validate_xmcd(self,show_error=True):
         try:
-            info=inspect_source(self.source_path.text())
+            info=inspect_xmcd_source(self.source_path.text())
             unchanged=(self.source_info or {}).get('sha256')==info['sha256'] and self.validated_path==self.source_path.text()
             if unchanged:
                 info['explicit_selected']=self.source_info.get('explicit_selected',{})
@@ -307,7 +309,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=False,
             window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()),magnetization=self.material_magnetization)
         cfg=replace(cfg,**shared)
-        from .generalized_forward import ImportedSettings,ProviderSettings
+        from .material_inputs import ImportedSettings, ProviderSettings
         if isinstance(cfg,ProviderSettings) and cfg.model=='xmcd':
             declaration=dict(cfg.provider_declaration,magnetization_crystal=list(self.material_magnetization))
             cfg=replace(cfg,provider_declaration=declaration,pair_reversed=False)
@@ -330,7 +332,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if not self.source_info:raise ValueError('Five-column XMCD: select a readable valid source file. '+self.source_status.text())
         if mode=='xmcd' and not self.declaration.isChecked():
             raise ValueError('Source conventions: confirm RP−LP about Material +M and the displayed L3/L2 assignments beside the source controls; parsing cannot establish these choices')
-        cfg=ForwardSettings(**self.sampling_fields(),fft_generators=self.saved_fft_generators(),**self.compute_resources.settings(),channeling_model=('single','double')[self.channeling_box.currentIndex()],systematic_row=self.row_projection.isChecked(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+        cfg=NiForwardSettings(**self.sampling_fields(),fft_generators=self.saved_fft_generators(),**self.compute_resources.settings(),channeling_model=('single','double')[self.channeling_box.currentIndex()],systematic_row=self.row_projection.isChecked(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
@@ -438,7 +440,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             cfg=self.global_mdff_draft_settings();e=energy_grid(cfg)
             if cfg.model=="imported":self.draw_manual_preview(cfg)
             if cfg.model=='imported' and self.manual_model.currentIndex()==1:return
-            from .generalized_forward import is_declared,source_for
+            from .material_inputs import is_declared, source_for
             if cfg.model=='atomic' and not is_declared(cfg):
                 e=np.unique(np.r_[np.linspace(max(.001,cfg.atomic.l3_ev-10),cfg.atomic.l2_ev+10,201),cfg.l3,cfg.l2])
                 plus,minus=tensors(cfg,e,np.eye(3))
@@ -566,6 +568,3 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
     def sync_result_capabilities(self,result):
         self.tabs.setTabText(1,'EMCD Angular Maps')
         self.tabs.setTabText(3,'Magnetic / Nonmagnetic')
-
-    # Retained for applications that initialized the former StageB mixin.
-    setup_stage_b = setup_calculation_controls

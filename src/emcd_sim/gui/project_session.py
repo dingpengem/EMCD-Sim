@@ -25,8 +25,8 @@ def capture_configuration(w):
                  or viewer.editor.excluded_groups!=viewer.editor._accepted_excluded
                  or viewer.editor.magnetization_mode!=viewer.editor._accepted_mode)):
         raise ValueError('Apply or Cancel pending Site Group direction/provider edits before saving or recalculating; accepted settings are unchanged')
-    from .emcd_forward import ForwardSettings
-    from .forward_pipeline import MultiSiteForwardSettings
+    from .forward_settings import NiForwardSettings
+    from .forward_settings import MultiSiteForwardSettings
     common=dict(propagation=('bloch','fft-multislice','both')[w.propagation_box.currentIndex()],
         channeling_model=('single','double')[w.channeling_box.currentIndex()],**w.sampling_fields(),
         centers=tuple(tuple(p) for p in w.detectors),systematic_row=w.row_projection.isChecked(),
@@ -40,11 +40,11 @@ def capture_configuration(w):
             mode=('xmcd','atomic','imported')[w.model_box.currentIndex()]
             if getattr(saved,'model',None)!=mode and getattr(getattr(w,'_saved_global_config',None),'model',None)==mode:saved=w._saved_global_config
             path=w.imported_path.text() if mode=='imported' else w.atomic_parameter_path.text() if mode=='atomic' else w.source_path.text()
-            cfg=ForwardSettings(**common,model=('xmcd','atomic','imported')[w.model_box.currentIndex()],
+            cfg=NiForwardSettings(**common,model=('xmcd','atomic','imported')[w.model_box.currentIndex()],
                 source=w.source_path.text(),source_sha256=(w.source_info or {}).get('sha256',''),axis_declared=False,
                 magnetization=w.material_magnetization,eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
                 l3=w.spin['xl3'].value(),l2=w.spin['xl2'].value())
-            from .generalized_forward import ImportedSettings,ProviderSettings
+            from .material_inputs import ImportedSettings, ProviderSettings
             effective=getattr(w,'_configuration_sources',{}).get('config')
             if isinstance(saved,ImportedSettings) and saved.model==mode and path in (saved.source,effective):
                 cfg=replace(saved,**common,magnetization=cfg.magnetization,axis_declared=False)
@@ -428,8 +428,8 @@ class ProjectSession:
             for widget,hidden in getattr(self,'_unavailable_input_widgets',[]):widget.setVisible(not hidden)
             self._unavailable_input_widgets=[];self._run_restore_error='';self.run_settings_notice.hide()
             self._reset_project_inputs();self.set_magnetization_mode('global')
-            from .emcd_forward import ForwardSettings
-            self.restore_sampling_controls(ForwardSettings())
+            from .forward_settings import NiForwardSettings
+            self.restore_sampling_controls(NiForwardSettings())
             self.spin['energy'].setValue(241)
             if getattr(self,'structure_viewer',None):self.structure_viewer.editor.load_groups(None)
             self.browser.registry.records=[];self.browser.cache={};self.browser.refresh()

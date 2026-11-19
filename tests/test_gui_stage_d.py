@@ -11,7 +11,8 @@ from contextlib import ExitStack
 import numpy as np
 from PySide6 import QtWidgets,QtCore
 from matplotlib.figure import Figure
-from emcd_sim.gui.emcd_forward import calculate,ForwardSettings,DEFAULT_SOURCE
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.gui.project_io import *
 from emcd_sim.gui.project_collection import load_collection
@@ -25,7 +26,7 @@ ROOT=Path('outputs/gui_stage_d')/('tests_'+uuid.uuid4().hex)
 
 def no_solvers():
     stack=ExitStack()
-    for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni','emcd_sim.gui.emcd_forward.tensors','emcd_sim.gui.emcd_forward.calculate'):
+    for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni','emcd_sim.historical_ni.tensors','emcd_sim.gui.forward_pipeline.calculate'):
         stack.enter_context(patch(name,side_effect=AssertionError('Forward solver called during read/compare')))
     return stack
 
@@ -33,7 +34,7 @@ def no_solvers():
 class ProjectTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        ROOT.mkdir(parents=True);cfg=ForwardSettings(propagation='both',axis_declared=True,source_sha256=sha256(DEFAULT_SOURCE),energy_points=17,grid=17,depth=12,subpixels=16)
+        ROOT.mkdir(parents=True);cfg=NiForwardSettings(propagation='both',axis_declared=True,source_sha256=sha256(DEFAULT_NI_SOURCE),energy_points=17,grid=17,depth=12,subpixels=16)
         cls.result=calculate(Structure.nickel(),Settings(),cfg)
         cls.atomic=calculate(Structure.nickel(),Settings(),replace(cfg,model='atomic',propagation='fft-multislice',l3=852.7,l2=870.,correction=False))
         cls.second=calculate(Structure.nickel(),replace(Settings(),tilt=(-6.5,0)),replace(cfg,energy_points=17))
@@ -62,7 +63,7 @@ class ProjectTests(unittest.TestCase):
                 with np.load(path/filename,allow_pickle=False) as data:
                     for k in data.files:self.assertFalse(data[k].dtype.hasobject)
     def test_external_sources_missing_no_recomputation(self):
-        path=ROOT/'source_copy.xmcd';path.write_bytes(DEFAULT_SOURCE.read_bytes());cfg=replace(self.result['config'],source=str(path),source_sha256=sha256(path))
+        path=ROOT/'source_copy.xmcd';path.write_bytes(DEFAULT_NI_SOURCE.read_bytes());cfg=replace(self.result['config'],source=str(path),source_sha256=sha256(path))
         changed=dict(self.result,config=cfg,methods={n:dict(m,config=cfg,metadata=dict(m['metadata'],mdff=asdict(cfg))) for n,m in self.result['methods'].items()},metadata=dict(self.result['metadata'],mdff=asdict(cfg)))
         save_project(changed,ROOT/'missing_source');path.unlink()
         with no_solvers():opened=load_project(ROOT/'missing_source');draw_maps(Figure(figsize=(12,8),layout='constrained'),opened,'L3');draw_eels(Figure(figsize=(10,8)),opened,method='overlay')
@@ -86,7 +87,7 @@ class ProjectTests(unittest.TestCase):
         with no_solvers():opened=load_project(ROOT/'cif_project')
         self.assertFalse(source_status(opened)['cif']['available']);self.assertIn('cif',rerun_reason(opened));self.assert_equal(result,opened)
         opened['source_overrides']={'cif':str(relocated)};self.assertEqual(rerun_reason(opened),'')
-        opened['source_overrides']['cif']=str(DEFAULT_SOURCE);self.assertIn('mismatch',rerun_reason(opened))
+        opened['source_overrides']['cif']=str(DEFAULT_NI_SOURCE);self.assertIn('mismatch',rerun_reason(opened))
     def test_atomic_save_failure_and_cancellation_preserve_existing(self):
         before=sha256(self.folder/'project.json')
         with patch('emcd_sim.gui.project_io.np.savez_compressed',side_effect=OSError('disk failure')):

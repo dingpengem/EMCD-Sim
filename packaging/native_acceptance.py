@@ -55,8 +55,8 @@ def run(output, historical_project=None):
             w.validate_xmcd(show_error=False)
         elif model=='ni-atomic':
             from emcd_sim.gui.saved_atomic_ui import restore
-            from emcd_sim.gui.emcd_forward import ForwardSettings
-            restore(w.atomic_editor,ForwardSettings(model='atomic',l3=852.7,l2=870.0),w.structure)
+            from emcd_sim.gui.forward_settings import NiForwardSettings
+            restore(w.atomic_editor,NiForwardSettings(model='atomic',l3=852.7,l2=870.0),w.structure)
         elif model=='imported':
             w.manual_model.setCurrentIndex(0);w.constant_input_mode.setCurrentIndex(1)
         w.axis.setText('0 0 1');w.declaration.setChecked(True);w.correction.setChecked(False)
@@ -111,7 +111,7 @@ def run(output, historical_project=None):
                     report['cases'].append(dict(name=name,project_roundtrip=True,methods=list(r['methods']),
                         comparison=r['comparison']['spectra']['I_A_plus']['l2_relative'],label=mdff_label(r)))
                     if model=='atomic' and channel=='double':
-                        from emcd_sim.gui.emcd_forward import export_result
+                        from emcd_sim.gui.forward_results import export_result
                         export_result(opened,out/(name+'_exports'))
                         record('Scientific PNG/SVG/CSV exports from completed generalized result')
                         original=w.forward_settings()
@@ -120,7 +120,7 @@ def run(output, historical_project=None):
                         assert w.atomic_provider_info is None and not w.atomic_declaration.isChecked()
                         assert not w.emcd_button.isEnabled()
                         record('Failed generation invalidates stale GUI state')
-                        from emcd_sim.gui.generalized_forward import source_for
+                        from emcd_sim.gui.material_inputs import source_for
                         raw=Path(original.source).read_bytes();Path(original.source).write_bytes(raw+b' ')
                         try:source_for(original)
                         except ValueError:record('Source checksum rejects replacement')
@@ -202,7 +202,7 @@ def _additional_provider_cases(out,app,windows,report,wait,*,coverage='edges',on
     from ase.build import bulk
     from emcd_sim.gui.app import MainWindow
     from emcd_sim.gui.geometry import Structure
-    from emcd_sim.gui.emcd_forward import export_result
+    from emcd_sim.gui.forward_results import export_result
     from emcd_sim.gui.project_io import save_project,load_project
     models=['XMCD-constrained MDFF','Atomic Ionization MDFF','Manual tensor']
     out.mkdir(parents=True,exist_ok=True)
@@ -443,7 +443,7 @@ def run_grouping(output, historical_project=None):
     from PySide6 import QtCore
     from emcd_sim.gui.app import MainWindow
     from emcd_sim.gui.runtime import build_info, resource_root
-    from emcd_sim.gui.generalized_forward import source_for
+    from emcd_sim.gui.material_inputs import source_for
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     app.setQuitOnLastWindowClosed(False)

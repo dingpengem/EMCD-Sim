@@ -9,9 +9,10 @@ from ase.build import bulk
 
 from emcd_sim.cancellation import Cancelled
 from emcd_sim.gui import forward_pipeline, propagation
-from emcd_sim.gui.emcd_forward import calculate
-from emcd_sim.gui.forward_pipeline import calculate_multisite, MultiSiteForwardSettings
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
+from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.multisite_single_channeling import run_multisite_with_coherence
@@ -66,7 +67,7 @@ def test_single_group_ni_matches_existing_pipeline(tmp_path,method):
         'grid','depth','subpixels','fft_grid','slice_step','halfwidth','centers','radius',
         'worker_mode','parallel_workers','propagation')})
     before=calculate(structure,settings,old_cfg,energy_ev=ENERGY)
-    result=calculate_multisite(structure,settings,sites,cfg,energy_ev=ENERGY)
+    result=calculate(structure, settings, cfg, energy_ev=ENERGY, sites=sites)
     for key in RAW_KEYS+PARITY_KEYS:
         np.testing.assert_allclose(result['spectra'][key],before['spectra'][key],rtol=2e-13,atol=1e-16)
     for edge in ('L3','L2'):
@@ -85,7 +86,7 @@ def test_afm_both_solvers_reuse_one_propagation_and_match_patch2a(tmp_path,monke
         calls.append(args[2].propagation)
         return original(*args,**kwargs)
     monkeypatch.setattr(propagation,'propagate',counted)
-    result=calculate_multisite(structure,settings,sites,configuration(propagation='both'),energy_ev=ENERGY)
+    result=calculate(structure, settings, configuration(propagation='both'), energy_ev=ENERGY, sites=sites)
     assert calls==['bloch','fft-multislice']
     for method,method_result in result['methods'].items():
         qx,qy=method_result['qx'],method_result['qy']
@@ -121,8 +122,8 @@ def test_global_reversal_of_unequal_sublattices(tmp_path):
     stronger=source(tmp_path,'stronger','Cr',down=True,scale=2.)
     sites=MultiSiteIonization(structure,[sites.groups[0],replace(sites.groups[1],mdff_reference=stronger)])
     cfg=configuration(angular_maps=False)
-    plus=calculate_multisite(structure,settings,sites,cfg,energy_ev=ENERGY)
-    minus=calculate_multisite(structure,settings,sites,cfg,energy_ev=ENERGY,reverse_magnetization=True)
+    plus=calculate(structure, settings, cfg, energy_ev=ENERGY, sites=sites)
+    minus=calculate(structure, settings, cfg, energy_ev=ENERGY, reverse_magnetization=True, sites=sites)
     assert np.linalg.norm(plus['spectra']['M_A'])>1e-8*np.linalg.norm(plus['spectra']['N_A'])
     assert plus['metadata']['scientific_status']=='SYNTHETIC TEST ONLY'
     for detector in ('A','B'):
@@ -135,8 +136,8 @@ def test_global_reversal_of_unequal_sublattices(tmp_path):
 
 def test_detector_only_reduction_matches_full_grid(tmp_path):
     structure,settings,sites,_=system(tmp_path,'Cr')
-    full=calculate_multisite(structure,settings,sites,configuration(),energy_ev=ENERGY)
-    sparse=calculate_multisite(structure,settings,sites,configuration(angular_maps=False),energy_ev=ENERGY)
+    full=calculate(structure, settings, configuration(), energy_ev=ENERGY, sites=sites)
+    sparse=calculate(structure, settings, configuration(angular_maps=False), energy_ev=ENERGY, sites=sites)
     assert sparse['maps']=={}
     for key in RAW_KEYS:
         np.testing.assert_allclose(full['spectra'][key],sparse['spectra'][key],rtol=2e-13)
@@ -180,7 +181,7 @@ def test_invalid_inputs_fail_before_geometry_or_propagation(tmp_path,monkeypatch
     monkeypatch.setattr(propagation,'numerical_info',forbidden)
     monkeypatch.setattr(propagation,'propagate',forbidden)
     with pytest.raises(ValueError):
-        calculate_multisite(structure,settings,sites,cfg,energy_ev=energy)
+        calculate(structure, settings, cfg, energy_ev=energy, sites=sites)
 
 
 def test_cancellation_inside_bounded_contraction_prevents_second_solver(tmp_path,monkeypatch):
@@ -203,5 +204,5 @@ def test_cancellation_inside_bounded_contraction_prevents_second_solver(tmp_path
     monkeypatch.setattr(propagation,'propagate',counted)
     monkeypatch.setattr(contraction,'_tensor_angular_maps',kernel)
     with pytest.raises(Cancelled):
-        calculate_multisite(structure,settings,sites,configuration(propagation='both'),energy_ev=ENERGY,cancelled=lambda:stop)
+        calculate(structure, settings, configuration(propagation='both'), energy_ev=ENERGY, cancelled=lambda : stop, sites=sites)
     assert calls==['bloch']

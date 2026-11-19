@@ -1,9 +1,10 @@
 """One production orchestration for all MDFF providers; accepted kernels unchanged."""
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from copy import deepcopy
 from time import perf_counter
 import numpy as np
-from .emcd_forward import Cancelled, ForwardSettings
+from ..cancellation import Cancelled, check_cancelled
+from .forward_settings import MultiSiteForwardSettings
 from .forward_results import assemble_forward_result
 from ..detector_signals import integrate_detector_block
 from .multisite_integration import (integrate_single_channeling_spectrum,
@@ -13,6 +14,64 @@ from .geometry import elastic_model,geometry
 from ..geometry import VirtualDetector
 from ..simulation import EMCDSimulation
 from ..multislice_reference import coherence_from_amplitudes
+
+
+__all__ = ['calculate']
+
+
+def calculate(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,
+              sites=None,energy_ev=None,energy_windows=None,reverse_magnetization=False,
+              energy_checkpoint=None,execution_policy=None):
+    """Canonical production entry point for explicit material and geometry inputs.
+
+    structure is the complete ordered ASE-backed crystal; settings declares the
+    oriented beam basis, voltage, tilt and thickness. cfg records acknowledged
+    material/provider and detector/numerical requests. Local material groups
+    are supplied explicitly as sites, each with its own provider/frame and M.
+    All materials use the same existing BW/FFT Single/Double kernels. The
+    uniform and grouped schedules retain their established numerical order.
+    No material preset, missing source or missing assignment is inferred here.
+    """
+    if cfg is None or not hasattr(cfg,'model'):raise ValueError('Explicit material/model and numerical settings are required')
+    if sites is not None:
+        if energy_checkpoint is not None:raise ValueError('Multi-site energy checkpoints are not supported')
+        return _calculate_multisite(structure,settings,sites,cfg,progress,cancelled,
+            energy_ev=energy_ev,energy_windows=energy_windows,
+            reverse_magnetization=reverse_magnetization,execution_policy=execution_policy)
+    if cfg.model=='multisite':raise ValueError('Missing multi-site assignments; material fallback is forbidden')
+    if energy_windows is not None or reverse_magnetization:
+        raise ValueError('Group energy windows/global pair reversal require explicit site assignments')
+    return _calculate_uniform(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,
+        energy_checkpoint=energy_checkpoint,execution_policy=execution_policy)
+
+
+def _calculate_uniform(structure,settings,cfg,progress=lambda s:None,cancelled=lambda:False,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
+    check_cancelled(cancelled)
+    if execution_policy is None:cfg=replace(cfg,resource_allocation=None)
+    validate_before_resources(structure,settings,cfg,energy_ev)
+    from .propagation import numerical_info,resolve_fft_configuration
+    cfg=resolve_fft_configuration(structure,settings,cfg)
+    from .memory_budget import reserve_memory
+    from ..mdff_providers import prepare_provider
+    from .provider_preparation import provider_energy_grid
+    actual_energy=provider_energy_grid(prepare_provider(cfg),cfg,energy_ev)
+    info=numerical_info(structure,settings,replace(cfg,energy_points=len(actual_energy)))
+    if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
+        raise ValueError('Resources changed since preflight; Run again to review the new effective worker counts.')
+    execution_policy=info['execution']
+    from .parallel_resources import bind_allocation
+    cfg=bind_allocation(cfg,info)
+    check_cancelled(cancelled)
+    # Double kernels make their own concurrent reservations. Reserve retained
+    # GUI arrays here, after admitting the complete estimated working set.
+    reserved=info['retained_results_working_mib'] if cfg.channeling_model=='double' else info['estimated_working_mib']
+    with reserve_memory(reserved,cfg.calculation_memory_budget_mib,dense_mib=info['dense_working_estimate_mib']) as admission:
+        result=_calculate_uniform_prepared(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,energy_checkpoint=energy_checkpoint,execution_policy=execution_policy)
+        result['metadata']['execution']=execution_policy
+        check_cancelled(cancelled)
+        result['metadata']['memory_admission']=admission
+        for r in result['methods'].values():r['metadata']['memory_admission']=admission
+        return result
 
 
 def validate_before_resources(structure,settings,cfg,requested=None):
@@ -25,7 +84,7 @@ def validate_before_resources(structure,settings,cfg,requested=None):
         raise ValueError('Energy loss must be below incident electron energy')
 
 
-def calculate_prepared(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
+def _calculate_uniform_prepared(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
     def stage(s):
         if cancelled():raise Cancelled()
         progress(s)
@@ -117,25 +176,7 @@ def provider_metadata(source,sites,structure,cfg):
     return result
 
 
-@dataclass(frozen=True)
-class MultiSiteForwardSettings(ForwardSettings):
-    """Numerical/detector controls for the programmatic multi-site entry point.
-
-    MDFF declarations belong exclusively to each site's provider reference.
-    selected_edges optionally names exact map energies on the requested grid;
-    otherwise use source selections present on that grid (or its endpoints).
-    Post-edge correction is outside this entry point's current scope.
-    """
-    model: str = 'multisite'
-    source: str = ''
-    source_sha256: str = ''
-    correction: bool = False
-    l3: float = float('nan')
-    l2: float = float('nan')
-    selected_edges: tuple = ()
-
-
-def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None,
+def _calculate_multisite(structure,settings,sites,cfg,progress=lambda s:None,
                        cancelled=lambda:False,*,energy_ev=None,energy_windows=None,reverse_magnetization=False,execution_policy=None):
     """Multi-site Single or Double Channeling with BW or FFT Multislice.
 
@@ -165,7 +206,6 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
         progress(message)
 
     stage('Validating multi-site assignments and required MDFF coverage')
-    cfg=cfg or MultiSiteForwardSettings()
     if execution_policy is None:cfg=replace(cfg,resource_allocation=None)
     if not isinstance(cfg,MultiSiteForwardSettings) or cfg.model!='multisite' or cfg.channeling_model not in ('single','double'):
         raise ValueError('MultiSiteForwardSettings with Single or Double Channeling required')
@@ -306,7 +346,7 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
             methods[method]=result
             del raw
         # Revalidate every source after both methods and all postprocessing.
-        from .generalized_forward import source_for
+        from .material_inputs import source_for
         for group in sites.groups:
             stage('Revalidating '+group.group_id+' MDFF source')
             source_for(group.mdff_reference)
@@ -326,8 +366,3 @@ def calculate_multisite(structure,settings,sites,cfg=None,progress=lambda s:None
         for method_result in methods.values():method_result['configuration']=result['configuration']
         check_cancelled(cancelled)
         return result
-
-
-# Documented common entry point. Legacy imports refer to this same callable;
-# _calculate remains an admission-test/public-API compatibility hook.
-from .emcd_forward import calculate

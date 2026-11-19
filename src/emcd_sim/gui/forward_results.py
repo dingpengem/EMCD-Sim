@@ -27,7 +27,7 @@ def assemble_forward_result(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,
     cycles/Angstrom; energy is eV. No propagation or tensor contraction runs
     here. Preserve the established result keys, source checks and parity guard.
     """
-    from .emcd_forward import inspect_source
+    from .xmcd_source import inspect_xmcd_source
     stage('Computing energy-resolved EELS and fractional detector integrals')
     spectra,maps,qx,qy,weights=[prepared[k] for k in ('spectra','maps','qx','qy','weights')]
     stage('Computing selected-edge map decomposition and post-edge diagnostics')
@@ -51,7 +51,7 @@ def assemble_forward_result(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,
             if alpha is None:
                 for key in ('D_corrected','D_mag_processed','D_nonmag_residual'):m.pop(key)
     if not np.allclose(spectra['D_raw'],spectra['D_mag']+spectra['D_nonmag'],rtol=1e-10,atol=1e-13*max(ap.max(),bp.max())):raise ArithmeticError('Detector parity identity failed')
-    audit=inspect_source(cfg.source) if cfg.model=='xmcd' else None
+    audit=inspect_xmcd_source(cfg.source) if cfg.model=='xmcd' else None
     if audit and cfg.source_sha256 and audit['sha256']!=cfg.source_sha256:
         raise ValueError('XMCD source changed during calculation; result discarded')
     build=build_info();commit=build['commit'];dirty=build.get('dirty')

@@ -9,7 +9,7 @@ import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.geometry import Settings,Structure
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.numerical_settings import resolve_parameters,REFERENCE_SOURCE_SHA256
 from emcd_sim.gui.project_io import load_project,save_project
 from emcd_sim.gui.propagation import numerical_info
@@ -22,8 +22,8 @@ def window(tmp_path):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with ExitStack() as stack:
         solvers=[]
-        for name in ('emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.stage_b.calculate',
-                     'emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.stage_b.EMCDWorker.run',
+        for name in ('emcd_sim.gui.forward_pipeline.calculate','emcd_sim.gui.calculation_worker.calculate',
+                     'emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run',
                      'emcd_sim.gui.propagation.propagate','emcd_sim.gui.channeling.double_channeling_response',
                      'emcd_sim.gui.channeling.multislice_double_channeling_response'):
             solvers.append(stack.enter_context(patch(name,side_effect=AssertionError('Unexpected scientific solve'))))
@@ -39,7 +39,7 @@ def window(tmp_path):
 
 
 def reference_config(**kwargs):
-    return replace(ForwardSettings(),source_sha256=REFERENCE_SOURCE_SHA256,axis_declared=True,l3=831.4778,**kwargs)
+    return replace(NiForwardSettings(),source_sha256=REFERENCE_SOURCE_SHA256,axis_declared=True,l3=831.4778,**kwargs)
 
 
 @pytest.mark.parametrize('minimum',[38,130])
@@ -50,7 +50,7 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
         if cfg.fft_grid<minimum:raise ValueError('Unsafe FFT Nyquist boundary')
         return {}
     monkeypatch.setattr('emcd_sim.gui.propagation.numerical_info',support)
-    cfg=replace(ForwardSettings(),propagation='both')
+    cfg=replace(NiForwardSettings(),propagation='both')
     if minimum>128:
         with pytest.raises(ValueError,match='Automatic FFT setup unavailable'):
             resolve_parameters(Structure.nickel(),Settings(),cfg)
@@ -63,7 +63,7 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
 
 def test_pure_resolution_never_calls_scientific_solvers():
     with ExitStack() as stack:
-        for name in ('emcd_sim.gui.propagation.propagate','emcd_sim.gui.emcd_forward.calculate',
+        for name in ('emcd_sim.gui.propagation.propagate','emcd_sim.gui.forward_pipeline.calculate',
                      'emcd_sim.gui.channeling.double_channeling_response',
                      'emcd_sim.gui.channeling.multislice_double_channeling_response',
                      'numpy.linalg.eigh'):
@@ -105,7 +105,7 @@ def test_unsupported_geometry_no_fallback():
     # The full basis admission cap can reject this geometry even before the
     # MS geometry gate; neither rejection may truncate beams or switch engines.
     with pytest.raises(ValueError,match='FFT EMCD supports Ni|interactive limit'):
-        resolve_parameters(Structure.nickel(),replace(Settings(),zone=(0,1,1)),replace(ForwardSettings(),propagation='both'))
+        resolve_parameters(Structure.nickel(),replace(Settings(),zone=(0,1,1)),replace(NiForwardSettings(),propagation='both'))
 
 
 def test_auto_defaults_display_and_no_solvers(window):
@@ -198,7 +198,7 @@ def test_legacy_keeps_explicit_manual(window,tmp_path):
 def test_historical_source_relocation_rejects_unverified_identity(tmp_path,failure):
     from emcd_sim.gui.project_io import source_status
     source=historical_xmcd_source(tmp_path)
-    cfg=ForwardSettings(source='recorded-original.xmcd',source_sha256=HISTORICAL_XMCD_SHA256)
+    cfg=NiForwardSettings(source='recorded-original.xmcd',source_sha256=HISTORICAL_XMCD_SHA256)
     positive=relocate_historical_xmcd_config(cfg,source)
     assert replace(positive,source=cfg.source)==cfg
     assert source_status(dict(config=cfg,metadata={},source_overrides=dict(xmcd=positive.source)))['xmcd']['verified']
@@ -224,7 +224,7 @@ def test_memory_rejection_does_not_lower_settings(window,monkeypatch):
 
 
 def test_run_starts_one_worker_only(window,monkeypatch):
-    import emcd_sim.gui.stage_b as sb
+    import emcd_sim.gui.calculation_worker as sb
     worker=Mock();worker.isInterruptionRequested.return_value=False
     factory=Mock(return_value=worker);monkeypatch.setattr(sb,'EMCDWorker',factory)
     window.start_emcd();assert factory.call_count==1 and worker.start.call_count==1

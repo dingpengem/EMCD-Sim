@@ -2,7 +2,7 @@
 
 Each site group retains its existing provider and declared core edge. For example,
 pass energy_windows={'Fe': ModeledEdgeWindow((704., 730.), (710., 723.)),
-'Ni': ModeledEdgeWindow((840., 866.), (846., 859.))} to calculate_multisite.
+'Ni': ModeledEdgeWindow((840., 866.), (846., 859.))} as energy_windows to forward_pipeline.calculate(..., sites=site_groups).
 Without energy_ev, window samples define the union grid. A common energy_ev may
 also be supplied; overlapping channels evaluate the same union samples inside
 their windows, using only the providers' established interpolation.

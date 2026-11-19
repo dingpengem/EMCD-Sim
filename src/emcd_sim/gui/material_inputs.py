@@ -1,14 +1,14 @@
-"""Provider eligibility and common forward entry point; no propagation kernels."""
+"""Explicit source-backed material declarations and eligibility; no propagation kernels."""
 from dataclasses import dataclass
 import numpy as np
-from . import emcd_forward as compatibility
+from .forward_settings import NiForwardSettings
 from ..imported_mdff import ImportedMDFF
 from ..mdff_edges import selected_samples, validate_selected
 from ..mdff_providers import load_provider
 
 
 @dataclass(frozen=True)
-class ImportedSettings(compatibility.ForwardSettings):
+class ImportedSettings(NiForwardSettings):
     """Explicit tensor identity and selected edges, without inherited Ni energies.
 
     The source declares element, core transition, crystal-frame reversal pair
@@ -87,9 +87,9 @@ def source_for(cfg):
     return source
 
 
-def material_reason(structure,cfg=None):
+def material_reason(structure,cfg):
     from ..mdff_providers import prepare_provider
-    return prepare_provider(cfg or compatibility.ForwardSettings()).material_reason(structure)
+    return prepare_provider(cfg).material_reason(structure)
 
 
 def energy_grid(cfg,requested=None):
@@ -101,7 +101,3 @@ def energy_grid(cfg,requested=None):
 def tensors(cfg,energy,R):
     from ..mdff_providers import prepare_provider
     return prepare_provider(cfg).tensors(energy,R)
-
-
-# Historical import path, same callable; no extra orchestration wrapper.
-from .emcd_forward import calculate

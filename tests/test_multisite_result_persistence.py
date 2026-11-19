@@ -13,7 +13,7 @@ from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from emcd_sim.mdff_providers import load_provider
 from emcd_sim.gui import project_io as io
 from emcd_sim.gui.geometry import Structure
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.multisite_results import SPECTRAL_KEYS, spectral_series, covered_segments, draw_totals
 from emcd_sim.gui.runtime import PHYSICS_CONVENTION
 from test_multisite_result_selection import stored_result
@@ -91,7 +91,7 @@ def no_simulation(monkeypatch):
     def forbidden(*a,**k):pytest.fail('Project IO invoked a simulation')
     monkeypatch.setattr('emcd_sim.gui.geometry.elastic_model',forbidden)
     monkeypatch.setattr('emcd_sim.gui.forward_pipeline.calculate_multisite',forbidden)
-    monkeypatch.setattr('emcd_sim.gui.emcd_forward.calculate',forbidden)
+    monkeypatch.setattr('emcd_sim.gui.forward_pipeline.calculate',forbidden)
 
 
 def load_without_mdff(root,monkeypatch):
@@ -167,7 +167,7 @@ def test_energy_exclusions_and_portable_manual_sources(tmp_path,monkeypatch):
 def test_embedded_atomic_evidence_uses_existing_portable_source_fallback(tmp_path,monkeypatch):
     from PySide6 import QtWidgets
     from emcd_sim.gui.atomic_editor import AtomicParameterEditor
-    from emcd_sim.gui.generalized_forward import ProviderSettings
+    from emcd_sim.gui.material_inputs import ProviderSettings
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     editor=AtomicParameterEditor(lambda:tmp_path)
     try:
@@ -190,7 +190,7 @@ def test_embedded_atomic_evidence_uses_existing_portable_source_fallback(tmp_pat
 
 def test_legacy_single_element_project_uses_original_layout_and_loader(tmp_path,monkeypatch):
     r=stored_project(tmp_path)
-    r['config']=ForwardSettings(model='atomic',l3=710,l2=723,energy_scope='full')
+    r['config']=NiForwardSettings(model='atomic',l3=710,l2=723,energy_scope='full')
     r['metadata'].pop('multisite');r['metadata'].pop('mdff_provider');r['metadata']['mdff']=asdict(r['config'])
     r.pop('groups');r.pop('weighted_sum');r.pop('configuration')
     atoms=Atoms('Ni4',scaled_positions=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]],cell=[3.52]*3,pbc=True)

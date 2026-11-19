@@ -137,7 +137,7 @@ def calculate_detector_signals(model,settings,cfg,method,C,energy,tensors,stage,
     outputs are raw detector spectra (energy,) and selected maps (qy,qx).
     No material model or GUI state is constructed here.
     """
-    from .emcd_forward import Cancelled
+    from ..cancellation import Cancelled
     from .propagation import projected_geometry_from_oriented_crystal,SINGLE_CHANNELING_PIXEL_BATCH
     qx,qy,weights,detector_support,selected=angular_schedule(model,cfg,energy)
     dq2=(qx[0,1]-qx[0,0])**2
@@ -253,7 +253,3 @@ def calculate_detector_signals(model,settings,cfg,method,C,energy,tensors,stage,
     return dict(spectra=spectra,maps=maps,qx=qx,qy=qy,weights=weights,diagnostics=diagnostics,
         angular_evaluation_policy='full_grid_all_energies' if cfg.angular_maps and cfg.angular_evaluation=='all' else EVALUATION_POLICY,
         incoming_preparation_seconds=incoming_seconds)
-
-
-# Historical scheduler import; a single implementation serves both names.
-contract = calculate_detector_signals

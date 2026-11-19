@@ -1,11 +1,12 @@
 """Independent Part 1B compatibility and element-independent source contracts."""
+from emcd_sim.gui.forward_pipeline import calculate
 from dataclasses import asdict,replace
 from pathlib import Path
 import hashlib,json,subprocess,sys,types
 import numpy as np
 import pytest
 from ase import Atoms
-from emcd_sim.gui import generalized_forward as forward
+from emcd_sim.gui import material_inputs as forward
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.gui.project_io import config_from_dict,save_project,load_project,rerun_reason
 from emcd_sim.imported_mdff import ImportedMDFF,CONVENTION
@@ -50,7 +51,7 @@ def test_non_3d_single_edge_shared_bw_ms_and_project(tmp_path,channel):
     settings=Settings(zone=(0,0,1),target=(1,0,0),thickness=.2,beam_cutoff=.6,potential_cutoff=1.2)
     assert not forward.material_reason(structure,cfg)
     np.testing.assert_array_equal(forward.energy_grid(cfg),[710.])
-    result=forward.calculate(structure,settings,cfg)
+    result=calculate(structure,settings,cfg)
     assert set(result['maps'])=={'K'}
     assert set(result['comparison']['edges'])=={'K'}
     for r in result['methods'].values():

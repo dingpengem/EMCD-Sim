@@ -13,7 +13,8 @@ import hashlib,json,os,shutil,uuid,zipfile,time
 import numpy as np
 from ase import Atoms
 from .geometry import Structure,Settings,excitation
-from .emcd_forward import ForwardSettings,Cancelled
+from .forward_settings import NiForwardSettings
+from ..cancellation import Cancelled
 from ..historical_ni import NiLocalConfig
 from ..geometry import VirtualDetector
 
@@ -118,18 +119,18 @@ def config_from_dict(value):
     for k in ('magnetization','centers','window','fft_generators'):
         if k in d and d[k] is not None:d[k]=tuple(tuple(v) if isinstance(v,list) else v for v in d[k])
     if d.get('model')=='multisite':
-        from .forward_pipeline import MultiSiteForwardSettings
+        from .forward_settings import MultiSiteForwardSettings
         d['selected_edges']=tuple(tuple(v) for v in d.get('selected_edges',()))
         return MultiSiteForwardSettings(**d)
     if d.get('model')=='imported' or 'provider_schema' in d:
-        from .generalized_forward import ImportedSettings,ProviderSettings
+        from .material_inputs import ImportedSettings, ProviderSettings
         if d.get('site_indices') is not None:d['site_indices']=tuple(d['site_indices'])
         if d.get('selected_edges') is not None:d['selected_edges']=tuple(tuple(v) for v in d.get('selected_edges',()))
         if 'provider_schema' in d:
             if d['provider_schema']!=1:raise ValueError('Unsupported MDFF provider configuration schema')
             return ProviderSettings(**d)
         return ImportedSettings(**d)
-    return ForwardSettings(**d)
+    return NiForwardSettings(**d)
 
 
 class SavedCrystal:
@@ -278,10 +279,10 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
         _json(temp/'input_parameters.json',dict(settings=asdict(result['settings']),mdff=saved_cfg,structure_snapshot=snapshot))
         _json(temp/'structure.json',snapshot)
         if result.get('display_state') is not None:_json(temp/'display_state.json',result['display_state'])
-        from .emcd_forward import metrics
+        from .forward_results import selected_edge_metrics
         _json(temp/'validity.json',{name:dict(postedge_valid=r['metadata']['alpha'] is not None,
             paired_map_valid={edge:'D_raw' in m for edge,m in r['maps'].items()},available_fields={edge:list(m) for edge,m in r['maps'].items()},
-            scalar_metric_valid={edge:{key:value is not None for key,value in row.items()} for edge,row in ({} if multisite else metrics(r)).items()}) for name,r in methods.items()})
+            scalar_metric_valid={edge:{key:value is not None for key,value in row.items()} for edge,row in ({} if multisite else selected_edge_metrics(r)).items()}) for name,r in methods.items()})
         if snapshot:
             from ase.io import write
             write(temp/'structure.cif',restore_structure(snapshot).atoms,format='cif')

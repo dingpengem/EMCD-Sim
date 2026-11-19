@@ -4,7 +4,8 @@ from pathlib import Path
 import numpy as np
 from legacy_geometry import Ni117Geometry
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.historical_ni import tensors
 from emcd_sim.single_channeling_tensor import _tensor_angular_maps,historical_ni_site_phase_matrix
 from emcd_sim.multislice_reference import coherence_from_amplitudes
 from emcd_sim.simulation import EMCDSimulation
@@ -24,7 +25,7 @@ def test_source001_components_actual_incident_and_single_rotation():
     assert 11<m['angle_to_incident_deg']<12
     assert m['longitudinal']!=m['local'][2]
     np.testing.assert_allclose(axes['incident']['local'],axes['incident']['incident_local'],atol=1e-15)
-    cfg=ForwardSettings(axis_declared=True,magnetization=(0,0,1))
+    cfg=NiForwardSettings(axis_declared=True,magnetization=(0,0,1))
     plus,minus=tensors(cfg,np.array(study.ENERGIES),R)
     T=plus.tensor_angstrom2_per_ev
     np.testing.assert_allclose(minus.tensor_angstrom2_per_ev,T.conj(),atol=1e-15)
@@ -50,7 +51,7 @@ def test_cartesian_single_response_matches_original_kernel():
     response=study.single_response(elastic,C,831.271,q,2)
     model=EMCDSimulation(elastic,{'A':VirtualDetector((0,0),.1),'B':VirtualDetector((0,1),.1)})
     for axis in study.axes(s.tilt).values():
-        cfg=ForwardSettings(axis_declared=True,magnetization=tuple(axis['crystal']))
+        cfg=NiForwardSettings(axis_declared=True,magnetization=tuple(axis['crystal']))
         for tensor in tensors(cfg,np.array(study.ENERGIES),Ni117Geometry().frame):
             T=tensor.tensor_angstrom2_per_ev[0]
             n,m=_tensor_angular_maps(model,T,831.271,C,historical_ni_site_phase_matrix(model),q[:,0],q[:,1])

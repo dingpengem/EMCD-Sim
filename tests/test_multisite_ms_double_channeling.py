@@ -11,8 +11,8 @@ from emcd_sim.cancellation import Cancelled
 from emcd_sim.double_channeling import intensities_from_response
 from emcd_sim.geometry import characteristic_qz_angstrom_inv
 from emcd_sim.gui import channeling
-from emcd_sim.gui.emcd_forward import calculate
-from emcd_sim.gui.forward_pipeline import calculate_multisite
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.multisite import MultiSiteIonization
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from test_multisite_forward import configuration, system as simple_system, source, RAW_KEYS, PARITY_KEYS
@@ -90,7 +90,7 @@ def test_single_group_ni_equivalence_and_diagnostics(tmp_path,systematic_row):
         'worker_mode','parallel_workers','channeling_model','propagation','systematic_row','angular_maps')
     old_cfg=replace(refs[0],**{key:getattr(cfg,key) for key in fields})
     old=calculate(structure,settings,old_cfg,energy_ev=[710.,723.])
-    result=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.])
+    result=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=sites)
     for key in RAW_KEYS+PARITY_KEYS:
         np.testing.assert_allclose(result['spectra'][key],old['spectra'][key],rtol=3e-13,atol=1e-17)
     assert result['metadata']['multisite']['depth_integration']=='trapezoidal'
@@ -111,8 +111,8 @@ def test_antiparallel_afm_ferrimagnetic_and_global_reversal(tmp_path,down_scale)
         stronger=source(tmp_path,'stronger','Cr',down=True,scale=down_scale)
         sites=MultiSiteIonization(structure,[sites.groups[0],replace(sites.groups[1],mdff_reference=stronger)])
     cfg=configuration(propagation='fft-multislice',channeling_model='double')
-    positive=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.])
-    reverse=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.],reverse_magnetization=True)
+    positive=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=sites)
+    reverse=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], reverse_magnetization=True, sites=sites)
     for detector in ('A','B'):
         for name in ('up','down'):
             np.testing.assert_allclose(positive['groups'][name]['spectra'][f'I_{detector}_plus'],
@@ -146,7 +146,7 @@ def test_noncollinear_frames_against_independent_forward_events(tmp_path,monkeyp
     monkeypatch.setattr(channeling,'fft_geometry',grid)
     monkeypatch.setattr(channeling,'incident_fields',incoming)
     cfg=configuration(propagation='fft-multislice',channeling_model='double',angular_maps=False)
-    result=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.])
+    result=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=sites)
     qx,qy=result['qx'],result['qy']
     support=np.logical_or.reduce([w.ravel()>0 for w in result['weights'].values()])
     queries=np.column_stack((qx.ravel()[support],qy.ravel()[support]))
@@ -182,8 +182,7 @@ def test_windows_weighting_and_one_complete_crystal_context(tmp_path,monkeypatch
     monkeypatch.setattr(channeling,'incident_fields',incoming)
     monkeypatch.setattr(ms.ProjectedFFT,'plan',plan)
     cfg=configuration(propagation='fft-multislice',channeling_model='double',angular_maps=False,worker_mode='automatic')
-    result=calculate_multisite(structure,settings,sites,cfg,energy_windows=windows,
-        energy_ev=None if overlap else [800.])
+    result=calculate(structure, settings, cfg, energy_windows=windows, energy_ev=None if overlap else [800.0], sites=sites)
     assert incoming_calls==[1]
     support=np.logical_or.reduce([w.ravel()>0 for w in result['weights'].values()])
     active=result['metadata']['multisite']['active_channels_by_energy']
@@ -202,7 +201,7 @@ def test_windows_weighting_and_one_complete_crystal_context(tmp_path,monkeypatch
         gap=int(np.flatnonzero(result['spectra']['energy_ev']==800.)[0])
         assert result['metadata']['angular_evaluation'][gap]['response_batches']==0
         for key in RAW_KEYS:assert result['spectra'][key][gap]==0
-        only=calculate_multisite(structure,settings,sites,cfg,energy_windows={'A':windows['A']})
+        only=calculate(structure, settings, cfg, energy_windows={'A': windows['A']}, sites=sites)
         for key in RAW_KEYS:np.testing.assert_allclose(only['spectra'][key],result['spectra'][key][:3],rtol=3e-13)
         assert only['metadata']['multisite']['selected_atom_count']==3
 
@@ -232,7 +231,7 @@ def test_selected_ms_queries_match_full_evaluation(tmp_path,monkeypatch,channel,
             record(args[3],args[5],args[6])
             return original(*args,**kwargs)
         monkeypatch.setattr(single,'_group_intensity_pair',response)
-    selected=calculate_multisite(structure,settings,sites,cfg,energy_ev=energy,reverse_magnetization=reverse)
+    selected=calculate(structure, settings, cfg, energy_ev=energy, reverse_magnetization=reverse, sites=sites)
     support=np.logical_or.reduce([w>0 for w in selected['weights'].values()])
     qx,qy=selected['qx'],selected['qy']
     full_points=set(zip(qx.ravel(),qy.ravel()))
@@ -245,8 +244,7 @@ def test_selected_ms_queries_match_full_evaluation(tmp_path,monkeypatch,channel,
     assert sum(d['evaluated_pixels'] for d in selected['metadata']['angular_evaluation'])==expected
     assert selected['metadata']['detector_evaluation']=='full_grid_selected_energies'
     queries.clear()
-    full=calculate_multisite(structure,settings,sites,replace(cfg,angular_evaluation='all'),
-                            energy_ev=energy,reverse_magnetization=reverse)
+    full=calculate(structure, settings, replace(cfg, angular_evaluation='all'), energy_ev=energy, reverse_magnetization=reverse, sites=sites)
     assert all(points==full_points for points in queries.values())
     assert sum(map(len,queries.values()))==len(energy)*qx.size
     assert full['metadata']['detector_evaluation']=='full_grid_all_energies'
@@ -278,8 +276,8 @@ def test_group_split_merge_invariance(tmp_path):
     split=MultiSiteIonization(structure,[replace(whole,group_id='one',indices=(0,),multiplicity=1),
         replace(whole,group_id='three',indices=(1,2,3),multiplicity=3)])
     cfg=configuration(propagation='fft-multislice',channeling_model='double',angular_maps=False)
-    merged=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.])
-    separate=calculate_multisite(structure,settings,split,cfg,energy_ev=[710.,723.])
+    merged=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=sites)
+    separate=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=split)
     for key in RAW_KEYS+PARITY_KEYS:
         np.testing.assert_allclose(merged['spectra'][key],separate['spectra'][key],rtol=3e-13,atol=1e-17)
 
@@ -310,7 +308,5 @@ def test_cancellation_during_shared_outgoing_propagation(tmp_path,monkeypatch):
         return original(self,coefficients,steps,dz,**kwargs)
     monkeypatch.setattr(ms.FFTSplitStep,'advance',advance)
     with pytest.raises(Cancelled):
-        calculate_multisite(structure,settings,sites,
-            configuration(propagation='fft-multislice',channeling_model='double',angular_maps=False),
-            energy_ev=[710.,723.],cancelled=lambda:stop)
+        calculate(structure, settings, configuration(propagation='fft-multislice', channeling_model='double', angular_maps=False), energy_ev=[710.0, 723.0], cancelled=lambda : stop, sites=sites)
     assert outgoing==[1]

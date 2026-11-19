@@ -8,7 +8,7 @@ from ase.build import bulk
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
 from emcd_sim.ionization_sites import IonizationSites
 from emcd_sim.imported_mdff import ImportedMDFF
-from emcd_sim.gui.generalized_forward import settings_for_source,energy_grid,material_reason
+from emcd_sim.gui.material_inputs import settings_for_source, energy_grid, material_reason
 from emcd_sim.single_channeling_tensor import _tensor_angular_maps,historical_ni_site_phase_matrix
 from emcd_sim.geometry import characteristic_qz_angstrom_inv,VirtualDetector
 from emcd_sim.simulation import EMCDSimulation

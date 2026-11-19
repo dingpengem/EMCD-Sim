@@ -4,7 +4,8 @@ import json
 import numpy as np
 from PySide6 import QtCore, QtWidgets
 from .geometry import geometry, excitation
-from .emcd_forward import material_reason, ForwardSettings
+from ..historical_ni import material_reason
+from .forward_settings import NiForwardSettings
 
 
 POLICY = 'automatic-starting-v5'

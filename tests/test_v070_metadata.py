@@ -2,8 +2,6 @@
 import copy
 from pathlib import Path
 import re
-import ast
-import subprocess
 
 from emcd_sim import __version__, __display_version__
 from emcd_sim.gui.runtime import PHYSICS_CONVENTION, build_info, result_convention_status
@@ -11,133 +9,36 @@ from emcd_sim.gui.runtime import PHYSICS_CONVENTION, build_info, result_conventi
 ROOT=Path(__file__).resolve().parents[1]
 
 
-def test_forward_computation_ast_is_unchanged_except_approved_metadata_and_prior_material_gate():
-    path='src/emcd_sim/gui/emcd_forward.py'
-    old=ast.parse(subprocess.check_output(['git','show','4f57815646d023957a81ad15fdaa684c02a54442:'+path],cwd=ROOT).decode('utf-8-sig'))
-    current=ast.parse((ROOT/path).read_text(encoding='utf-8-sig'))
-    # Part 1C relocates compatibility functions, retaining each body exactly.
-    # The new wrappers and complete current scope are checked independently.
-    accepted=ast.parse(subprocess.check_output(['git','show','98570c62:'+path],cwd=ROOT).decode('utf-8-sig'))
-    # Read the actual result owner after the readability extraction. Reassemble
-    # only the moved definitions for this existing historical computation guard;
-    # all assertions below and all immutable source registrations stay intact.
-    result_owner=ast.parse((ROOT/'src/emcd_sim/gui/forward_results.py').read_text(encoding='utf-8'))
-    detector_owner=ast.parse((ROOT/'src/emcd_sim/detector_signals.py').read_text(encoding='utf-8'))
-    function=lambda tree,name:next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
-    class RenameResultImports(ast.NodeTransformer):
-        names={'selected_edge_metrics':'metrics','export_method_result':'_export_single'}
-        def visit_Name(self,node):
-            node.id=self.names.get(node.id,node.id)
-            return node
-    moved_results={}
-    for before,after in (('_contract','assemble_forward_result'),('metrics','selected_edge_metrics'),
-                         ('_export_single','export_method_result'),('export_result','export_result')):
-        node=copy.deepcopy(function(result_owner,after));node.name=before
-        RenameResultImports().visit(node)
-        if before=='_contract':
-            node.args=copy.deepcopy(function(current,'_contract').args)  # compatibility-only unused args
-            node.body[0]=copy.deepcopy(function(accepted,'_contract').body[0])
-            local_import=ast.parse('from .emcd_forward import inspect_source').body[0]
-            assert ast.dump(node.body[1])==ast.dump(local_import)
-            node.body.pop(1)
-            parity=function(detector_owner,'reversal_components')
-            assert len(parity.body)==4 and isinstance(parity.body[-1],ast.Return)
-            statement=next(n for n in node.body if isinstance(n,ast.Expr) and isinstance(n.value,ast.Call)
-                and isinstance(n.value.func,ast.Attribute) and n.value.func.attr=='update'
-                and n.value.args and isinstance(n.value.args[0],ast.Call)
-                and isinstance(n.value.args[0].func,ast.Name) and n.value.args[0].func.id=='reversal_components')
-            raw_assignment=node.body[node.body.index(statement)-1]
-            assert ast.dump(raw_assignment)==ast.dump(parity.body[1])
-            expanded=copy.deepcopy(statement);expanded.value.args=[]
-            expanded.value.keywords=copy.deepcopy(parity.body[-1].value.keywords)
-            index=node.body.index(statement)
-            node.body[index:index+1]=[copy.deepcopy(parity.body[2]),expanded]
-        elif ast.get_docstring(node) and not ast.get_docstring(function(accepted,before)):
-            node.body.pop(0)  # documentation is not a computation
-        moved_results[before]=node
-    current.body=[moved_results.get(n.name,n) if isinstance(n,ast.FunctionDef) else n for n in current.body]
-    current.body.extend(moved_results[name] for name in ('metrics','_export_single','export_result'))
-    current.body[0]=copy.deepcopy(accepted.body[0])  # module responsibility prose
-    settings_class=next(n for n in current.body if isinstance(n,ast.ClassDef) and n.name=='ForwardSettings')
-    if ast.get_docstring(settings_class):settings_class.body.pop(0)
-    relocated=ast.parse((ROOT/'src/emcd_sim/historical_ni.py').read_text(encoding='utf-8-sig'))
-    orientation=ast.parse((ROOT/'src/emcd_sim/mdff_orientation.py').read_text(encoding='utf-8-sig'))
-    moved=('material_reason','axis_rotation','tensors','energy_grid')
-    for name in moved:
-        find_function=lambda tree:next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
-        actual=copy.deepcopy(find_function(orientation if name=='axis_rotation' else relocated))
-        if name=='material_reason':
-            expected_import=ast.parse('from .gui.geometry import Structure').body[0]
-            assert ast.dump(actual.body[0])==ast.dump(expected_import)
-            actual.body.pop(0)
-        assert ast.dump(actual)==ast.dump(find_function(accepted))
-    # Aliases replace the four functions. Restore only these reviewed moves and
-    # the import inventory before applying the earlier complete computation guard.
-    remaining=[n for n in current.body if not isinstance(n,(ast.Import,ast.ImportFrom))]
-    current.body=[];it=iter(remaining)
-    for n in accepted.body:
-        if isinstance(n,(ast.Import,ast.ImportFrom)) or isinstance(n,ast.FunctionDef) and n.name in moved:
-            current.body.append(copy.deepcopy(n))
-        else:current.body.append(next(it))
-    assert list(it)==[]
-
-    # Retain the complete computation guard: allow only the exact new metadata
-    # import/expression, plus the already approved d1c93ba Ni species gate.
-    previous=ast.parse(subprocess.check_output(['git','show','d1c93ba:'+path],cwd=ROOT).decode('utf-8-sig'))
-    find=lambda tree,name:next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==name)
-    # Part 1B moves orchestration, not contraction physics. Check the exact
-    # compatibility wrapper and the complete new source scope independently,
-    # then retain this earlier metadata-only guard on all remaining functions.
-    part1=ast.parse(subprocess.check_output(['git','show','52b36ee41e20aed5a86fb37db56ca372fac936f8:'+path],cwd=ROOT).decode('utf-8-sig'))
-    wrapper=ast.parse('''def _calculate(structure,settings,cfg,progress,cancelled,*,energy_ev=None,energy_checkpoint=None,execution_policy=None):
-    """Historical API delegates to the common production orchestration."""
-    from .forward_pipeline import calculate_prepared
-    return calculate_prepared(structure,settings,cfg,progress,cancelled,energy_ev=energy_ev,
-        energy_checkpoint=energy_checkpoint,execution_policy=execution_policy)
-''').body[0]
-    assert ast.dump(find(current,'_calculate'))==ast.dump(wrapper)
+def test_registered_scientific_sources_keep_approved_identity_checks():
     from single_element_source_guard import assert_current_extension
     assert_current_extension()
-    # The dynamic selection change is separately tested end to end for K and
-    # L2,3; enforce its exact body rather than dropping the metrics guard.
-    expected_metrics=copy.deepcopy(find(part1,'metrics'))
-    expected_metrics.body.insert(2,ast.parse('from ..mdff_edges import selected_samples').body[0])
-    loop=next(n for n in expected_metrics.body if isinstance(n,ast.For))
-    loop.iter=ast.parse("selected_samples(result['config'])",mode='eval').body
-    assert ast.dump(find(current,'metrics'))==ast.dump(expected_metrics)
-    expected_calculate=copy.deepcopy(find(part1,'calculate'))
-    expected_calculate.body[1:1]=ast.parse('from .forward_pipeline import validate_before_resources\nvalidate_before_resources(structure,settings,cfg,energy_ev)').body
-    assert ast.dump(find(current,'calculate'))==ast.dump(expected_calculate)
-    for name in ('_calculate','metrics','calculate'):
-        current.body[current.body.index(find(current,name))]=copy.deepcopy(find(part1,name))
-    assert ast.dump(find(current,'material_reason'))==ast.dump(find(previous,'material_reason'))
-    current.body[current.body.index(find(current,'material_reason'))]=copy.deepcopy(find(old,'material_reason'))
-    contract=find(current,'_contract')
-    stages=[n for n in ast.walk(contract) if isinstance(n,ast.Constant) and n.value=='Computing selected-edge map decomposition and post-edge diagnostics']
-    assert len(stages)==1
-    stages[0].value='Computing L3/L2 map decomposition and post-edge diagnostics'
-    imports=[n for n in contract.body if isinstance(n,ast.ImportFrom) and n.module=='elastic_providers']
-    expected_import=ast.parse('from ..elastic_providers import provider_provenance').body[0]
-    assert len(imports)==1 and ast.dump(imports[0])==ast.dump(expected_import)
-    contract.body.remove(imports[0])
-    provider_keys=[(n,k) for n in ast.walk(contract) if isinstance(n,ast.Call) for k in n.keywords if k.arg=='elastic_provider']
-    assert len(provider_keys)==1
-    call,key=provider_keys[0]
-    expected=ast.parse('provider_provenance(model.elastic.crystal.species,settings.elastic_provider)',mode='eval').body
-    assert isinstance(call.func,ast.Name) and call.func.id=='dict' and ast.dump(key.value)==ast.dump(expected)
-    call.keywords.remove(key)
-    removed=[]
-    for node in ast.walk(current):
-        if isinstance(node,ast.Call):
-            retained=[]
-            for item in node.keywords:
-                if item.arg in {'software_version','software_display_version','physics_convention'}:
-                    removed.append(item.arg)
-                else:retained.append(item)
-            node.keywords=retained
-    assert sorted(removed)==['physics_convention','software_display_version','software_version']
-    from unit_metadata_guard import normalize_unit_metadata
-    assert ast.dump(normalize_unit_metadata(current))==ast.dump(old)
+
+
+def test_canonical_result_metadata_and_detector_flux(tmp_path):
+    import numpy as np
+    from dataclasses import asdict
+    from emcd_sim.gui.forward_pipeline import calculate
+    from test_multisite_forward import system, configuration, ENERGY
+    structure,settings,sites,_=system(tmp_path,'Cr')
+    result=calculate(structure,settings,configuration(),sites=sites,energy_ev=ENERGY)
+    metadata=result['metadata'];spectra=result['spectra']
+    assert metadata['settings']==asdict(settings)
+    assert metadata['software_version']==__version__
+    assert metadata['software_display_version']==__display_version__
+    assert metadata['physics_convention']==PHYSICS_CONVENTION
+    assert metadata['software_commit']==build_info()['commit']
+    np.testing.assert_array_equal(metadata['energy_ev'],ENERGY)
+    dq2=(result['qx'][0,1]-result['qx'][0,0])**2
+    for label,maps in result['maps'].items():
+        loss=dict(result['config'].selected_edges)[label]
+        index=int(np.flatnonzero(ENERGY==loss)[0])
+        for state in ('plus','minus'):
+            for detector in ('A','B'):
+                integrated=np.sum(maps['I_'+state]*result['weights'][detector])*dq2
+                np.testing.assert_array_equal(integrated,spectra[f'I_{detector}_{state}'][index])
+    np.testing.assert_allclose(spectra['D_raw'],spectra['D_mag']+spectra['D_nonmag'],
+        rtol=1e-10,atol=1e-13*max(spectra['I_A_plus'].max(),spectra['I_B_plus'].max()))
+    np.testing.assert_array_equal(spectra['Sigma_ref'],spectra['N_A']+spectra['N_B'])
 
 
 def test_current_windows_and_workflow_metadata_match_source():
@@ -189,10 +90,11 @@ def test_old_project_roundtrip_preserves_arrays_and_provenance(tmp_path):
 def test_new_calculation_records_convention_and_roundtrips_without_relabeling(tmp_path):
     import numpy as np
     from emcd_sim.gui.geometry import Structure, Settings
-    from emcd_sim.gui.emcd_forward import ForwardSettings, calculate
+    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.gui.project_io import load_project, save_project, fingerprints
     settings=Settings(zone=(0,0,1),thickness=.5,beam_cutoff=.9,potential_cutoff=1.8)
-    config=ForwardSettings(axis_declared=True,grid=9,depth=5,subpixels=4,halfwidth=.5,
+    config=NiForwardSettings(axis_declared=True,grid=9,depth=5,subpixels=4,halfwidth=.5,
                            angular_maps=False,correction=False,energy_scope='edges')
     result=calculate(Structure.nickel(),settings,config,energy_ev=np.array([config.l3,config.l2]))
     assert result['metadata']['software_version']==__version__

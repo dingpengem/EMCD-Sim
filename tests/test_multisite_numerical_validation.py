@@ -14,9 +14,9 @@ from ase import Atoms
 
 from emcd_sim.double_channeling import prepare_incoming_bloch
 from emcd_sim.geometry import VirtualDetector
-from emcd_sim.gui.forward_pipeline import calculate_multisite
+from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.detector_signals import integrate_detector_block
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model, geometry
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.multisite_double_channeling import contract_multisite_bloch_double
@@ -61,9 +61,7 @@ def run(inputs,method,*,thickness,depth=33,mesh=16,slice_step=.01,sites=None,win
     settings=replace(settings,thickness=thickness)
     cfg=configuration(propagation=method,channeling_model='double',angular_maps=False,
         depth=depth,fft_grid=mesh,slice_step=slice_step)
-    return calculate_multisite(structure,settings,original_sites if sites is None else sites,cfg,
-        energy_ev=energy,energy_windows=original_windows if windows is None else windows,
-        reverse_magnetization=reverse)
+    return calculate(structure, settings, cfg, energy_ev=energy, energy_windows=original_windows if windows is None else windows, reverse_magnetization=reverse, sites=original_sites if sites is None else sites)
 
 
 def analytic_reference(inputs,thickness):

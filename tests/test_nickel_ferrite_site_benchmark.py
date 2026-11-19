@@ -30,8 +30,8 @@ from ase.spacegroup import crystal
 from emcd_sim.crystal import Crystal
 from emcd_sim.geometry import electron_wavelength_angstrom
 from emcd_sim.gui import forward_pipeline
-from emcd_sim.gui.forward_pipeline import calculate_multisite
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model, geometry, excitation
 from emcd_sim.gui.multisite_results import spectral_series, covered_segments
 from emcd_sim.mdff_providers import load_site_group_provider
@@ -121,9 +121,7 @@ def run(study, row, method, *, samples=None, reverse=False, selected=None,
         settings=None, cfg=None, sites=None):
     structure, original_sites, _ = study
     base_settings, base_cfg = controls(row)
-    return calculate_multisite(structure, settings or base_settings, sites or original_sites,
-        replace(cfg or base_cfg, propagation=method), energy_ev=samples,
-        energy_windows=windows(samples, selected), reverse_magnetization=reverse)
+    return calculate(structure, settings or base_settings, replace(cfg or base_cfg, propagation=method), energy_ev=samples, energy_windows=windows(samples, selected), reverse_magnetization=reverse, sites=sites or original_sites)
 
 
 def relative_gap(actual, reference):
@@ -302,7 +300,7 @@ def test_missing_required_coverage_is_not_a_zero(study, monkeypatch):
     bad['Ni(B)'] = ModeledEdgeWindow((840., 880.), tuple(NI))
     settings, cfg = controls('004')
     with pytest.raises(ValueError, match='Missing MDFF coverage'):
-        calculate_multisite(study[0], settings, study[1], cfg, energy_windows=bad)
+        calculate(study[0], settings, cfg, energy_windows=bad, sites=study[1])
 
 
 def test_one_beam_basis_control_and_supported_matched_solvers(study, calculated):

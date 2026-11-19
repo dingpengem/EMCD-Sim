@@ -6,7 +6,8 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from emcd_sim.gui.project_io import load_project,restore_structure
-from emcd_sim.gui.emcd_forward import calculate,export_result
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.forward_results import export_result
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.gui.results import draw_maps
 

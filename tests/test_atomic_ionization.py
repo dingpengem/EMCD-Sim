@@ -113,7 +113,7 @@ def test_export_provenance_and_no_overwrite(tmp_path):
 def test_atomic_fe_bw_ms_project(tmp_path,channel):
     from ase.build import bulk
     from emcd_sim.gui.geometry import Structure,Settings
-    from emcd_sim.gui.generalized_forward import calculate,settings_for_source
+    from emcd_sim.gui.material_inputs import calculate, settings_for_source
     from emcd_sim.gui.project_io import save_project,load_project,source_status
     source=export_atomic_parameters(parameter_file(tmp_path/'params.json'),tmp_path/'tensor.json')
     cfg=settings_for_source(source.path,energy_scope='edges',grid=9,depth=9,subpixels=8,fft_grid=16,slice_step=.01,

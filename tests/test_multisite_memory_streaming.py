@@ -34,8 +34,7 @@ def test_blocks_release_raw_arrays_and_match_unbatched_windows(tmp_path,monkeypa
         return raw
 
     monkeypatch.setattr(multisite_integration,'contract_single_channeling_block',bounded)
-    result=forward.calculate_multisite(structure,settings,sites,cfg,energy_ev=energy,
-        energy_windows=windows,reverse_magnetization=True)
+    result=forward.calculate(structure, settings, cfg, energy_ev=energy, energy_windows=windows, reverse_magnetization=True, sites=sites)
     assert len(sizes)>1 and max(sizes)<=propagation.MULTISITE_ENERGY_BATCH
     assert sum(sizes)==len(energy) and all(ref() is None for ref in previous)
     plan=multisite_spectrum.prepare_multisite_spectrum(sites,energy,windows)

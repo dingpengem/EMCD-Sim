@@ -10,7 +10,8 @@ import numpy as np
 
 def run(output):
     from .geometry import Structure, Settings, geometry, align_bragg, excitation
-    from .emcd_forward import ForwardSettings, calculate
+    from .forward_settings import NiForwardSettings
+    from .forward_pipeline import calculate
     from .project_io import save_project
     from .runtime import build_info
 
@@ -21,7 +22,7 @@ def run(output):
     _,frame,hkl,g,_=geometry(structure,settings)
     tilt=align_bragg(g[hkl.index(settings.target)],(0.,15.),settings.voltage,lock='Y')
     settings=replace(settings,tilt=tuple(tilt))
-    config=ForwardSettings(axis_declared=True,propagation='both',grid=17,depth=33,
+    config=NiForwardSettings(axis_declared=True,propagation='both',grid=17,depth=33,
         subpixels=32,fft_grid=32,slice_step=.04,angular_maps=False,
         energy_scope='edges',correction=False,worker_mode='manual',parallel_workers=1)
     energy=np.array([config.l3,config.l2])

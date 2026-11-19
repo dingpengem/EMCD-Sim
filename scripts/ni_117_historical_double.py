@@ -8,7 +8,8 @@ from dataclasses import replace
 import argparse
 import numpy as np
 from emcd_sim.gui.geometry import Structure,Settings,orientation,elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.historical_ni import tensors
 from emcd_sim.double_channeling import double_channeling_response,intensities_from_response,prepare_incoming_bloch
 from emcd_sim.geometry import electron_wavelength_angstrom
 from emcd_sim.elastic import BeamSet
@@ -22,7 +23,7 @@ if __name__=='__main__':
     s=Settings(zone=(1,1,7),target=(2,-2,0),tilt=tuple(tilt),thickness=8,beam_cutoff=3.8,potential_cutoff=6.2)
     model=elastic_model(structure,s);angle=np.arange(36)*2*np.pi/36
     q=np.column_stack((g/2+g/2*np.cos(angle),g/2*np.sin(angle)));query=q@S[:2,:2].T
-    ts=tensors(ForwardSettings(axis_declared=True,source=str(root/'data/wien2k_ni/Ni_fm.xmcd')),np.array([831.271,848.698]),R)
+    ts=tensors(NiForwardSettings(axis_declared=True,source=str(root/'data/wien2k_ni/Ni_fm.xmcd')),np.array([831.271,848.698]),R)
     out=dict(q_target_frame=q,frame=R,tilt=tilt,angle=angle)
     for name in ('two','full'):
         elastic=replace(model,beams=BeamSet(((0,0,0),(2,-2,0)))) if name=='two' else model

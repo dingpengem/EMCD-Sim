@@ -69,18 +69,6 @@ def projected_geometry_from_oriented_crystal(settings,crystal,fft_generators=Non
     return ProjectedGeometry.from_oriented(crystal,settings.zone,settings.target,generators=fft_generators)
 
 
-def projected_geometry_for(settings,crystal=None,fft_generators=None):
-    """Historical geometry API; an omitted crystal explicitly selects FCC Ni.
-
-    Production requests use projected_geometry_from_oriented_crystal and must
-    supply their complete crystal. Keep this old preset default for supported
-    external callers, without letting it enter a declared material calculation.
-    """
-    if crystal is None:
-        return ProjectedGeometry.from_crystal(fcc_nickel(),settings.zone,settings.target,generators=fft_generators)
-    return projected_geometry_from_oriented_crystal(settings,crystal,fft_generators)
-
-
 def resolve_fft_configuration(structure,settings,cfg):
     """Record the actual FFT cell, independent of orientation-specific presets."""
     if cfg.propagation=='bloch' or cfg.fft_generators is not None:return cfg
@@ -149,7 +137,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             'See docs/GENERALIZED_MULTISLICE_MERGE_READINESS.md.')
     if cfg.propagation!='bloch':
         if ionization_sites is None:
-            from .generalized_forward import material_reason
+            from .material_inputs import material_reason
             reason=material_reason(structure,cfg)
         else:
             # The multi-site entry point validates every MDFF before preflight.
@@ -322,13 +310,13 @@ def compare_methods(methods,fft):
     out=dict(warning='BW/MS agreement tests numerical propagation at fixed settings; it does not establish physical-potential or EMCD convergence.')
     if fft:out['fft']=fft['summary']
     if len(methods)!=2:return out
-    from .emcd_forward import metrics
+    from .forward_results import selected_edge_metrics
     b,m=[methods[k] for k in ('bloch','fft-multislice')];C,D=b['coherence'],m['coherence']
     diag=complex_wave_diagnostics(b['amplitudes'],m['amplitudes'])
     out.update(amplitudes=dict(max_abs_raw=float(diag['amplitude_max_abs_raw'].max()),max_abs_global_phase_aligned_diagnostic_only=float(np.nanmax(diag['amplitude_max_abs_aligned']))),
         coherence=error_pair(C,D,1e-14),elastic_exit=error_pair(abs(b['amplitudes'][-1])**2,abs(m['amplitudes'][-1])**2,1e-12),
         elastic_depth_average=error_pair(np.diag(C).real,np.diag(D).real,1e-12),edges={},spectra={})
-    bm,mm=metrics(b),metrics(m)
+    bm,mm=selected_edge_metrics(b),selected_edge_metrics(m)
     intensity_floor=1e-10*max(float(r['spectra']['Sigma_ref'].max()) for r in (b,m))
     for key in ('I_A_plus','I_B_plus','D_mag','D_nonmag','D_raw','D_corrected'):
         if key in b['spectra'] and key in m['spectra']:out['spectra'][key]=error_pair(b['spectra'][key],m['spectra'][key],intensity_floor*np.sqrt(len(b['spectra'][key])))
@@ -370,8 +358,8 @@ def export_comparison(result,root,export_single):
     if len(methods)==2:
         diag=complex_wave_diagnostics(methods['bloch']['amplitudes'],methods['fft-multislice']['amplitudes']);arrays.update(diag)
     np.savez_compressed(root/'diffraction_pattern.npz',**arrays)
-    from .emcd_forward import metrics
-    meta=dict(method_labels=labels,methods={name:dict(r['metadata'],edge_metrics=metrics(r)) for name,r in methods.items()},
+    from .forward_results import selected_edge_metrics
+    meta=dict(method_labels=labels,methods={name:dict(r['metadata'],edge_metrics=selected_edge_metrics(r)) for name,r in methods.items()},
         diagnostics=result.get('comparison',{}),array_schema='Unprefixed arrays: primary method. method__field and method__edge__field: explicit arrays; maps (qy,qx), spectra (energy), amplitudes (depth,beam). No implicit method dimension.',primary_method=result.get('method','bloch'))
     (root/'comparison_metadata.json').write_text(json.dumps(meta,indent=2,allow_nan=False)+'\n',encoding='utf-8')
     if len(methods)>1:

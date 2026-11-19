@@ -238,7 +238,7 @@ def test_gui_elastic_cif_and_inelastic_restrictions_remain_separate(table,tmp_pa
     from ase import Atoms
     from ase.io import write
     from emcd_sim.gui.geometry import Structure,Settings,elastic_model,preview
-    from emcd_sim.gui.emcd_forward import material_reason
+    from emcd_sim.historical_ni import material_reason
     monkeypatch.setenv(TABLE_ENVIRONMENT,table.source_path)
     atoms=Atoms('CsCl',scaled_positions=[[0,0,0],[.5,.5,.5]],cell=np.eye(3)*4.1,pbc=True)
     path=tmp_path/'cscl.cif';write(path,atoms)
@@ -265,7 +265,7 @@ def test_configured_desktop_elastic_button_and_missing_file_gate(table,tmp_path,
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow
     from emcd_sim.gui.geometry import Structure
-    from emcd_sim.gui.emcd_forward import material_reason
+    from emcd_sim.historical_ni import material_reason
     monkeypatch.setenv(TABLE_ENVIRONMENT,table.source_path)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window=MainWindow(workspace=tmp_path/'desktop')

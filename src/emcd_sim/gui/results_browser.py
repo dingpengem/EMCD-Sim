@@ -6,7 +6,8 @@ import json,uuid,logging
 import numpy as np
 from PySide6 import QtCore,QtWidgets,QtGui
 from .project_io import load_project,source_status,sha256,restore_structure,rerun_reason
-from .emcd_forward import Cancelled,inspect_source
+from ..cancellation import Cancelled
+from .xmcd_source import inspect_xmcd_source
 from .results import comparison_text
 from .project_session import ProjectSession
 
@@ -286,8 +287,8 @@ class ProjectWorkspace(ProjectSession):
         with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
         self.set_values(dict(kv=300,beam=2.5,potential=2.0))
         self.retire_post_edge();self._post_edge_disabled_on_restore=False;self.correction_notice.hide()
-        from .emcd_forward import ForwardSettings
-        self.compute_resources.restore(ForwardSettings(memory_mode='automatic'))
+        from .forward_settings import NiForwardSettings
+        self.compute_resources.restore(NiForwardSettings(memory_mode='automatic'))
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
         self._slice_step_override=None;self.set_values(dict(slice_step=2.))
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(1)
@@ -355,7 +356,7 @@ class ProjectWorkspace(ProjectSession):
             self.source_info=None;self.validated_path=None
             if c.model=='xmcd':
                 p=Path(self.source_path.text());expected=c.source_sha256 or (r['metadata'].get('source_audit') or {}).get('sha256')
-                if expected and p.is_file() and sha256(p)==expected:self.source_info=inspect_source(p);self.validated_path=str(p);self.source_status.setText('Restored saved source, verified SHA256; native selected energies preserved.')
+                if expected and p.is_file() and sha256(p)==expected:self.source_info=inspect_xmcd_source(p);self.validated_path=str(p);self.source_status.setText('Restored saved source, verified SHA256; native selected energies preserved.')
                 else:
                     with QtCore.QSignalBlocker(self.declaration):self.declaration.setChecked(False)
                     self.source_status.setText('Saved data remains available. Rerun disabled: locate original XMCD and verify SHA256.')
@@ -420,11 +421,3 @@ class ProjectWorkspace(ProjectSession):
         entries=[(label,dict(m,comparison=r.get('comparison',{})),name) for name,m in r['methods'].items()]
         path=Path(parent)/datetime.now(timezone.utc).strftime('data_%Y%m%d_%H%M%S_%fZ')
         self.io_operation(lambda cancel,progress:export_comparison_data(entries,path),lambda _:None)
-
-    # Historical initialization method, retained for embedded GUI consumers.
-    setup_stage_d = setup_project_workspace
-
-
-# Old import names remain aliases; saved index/project schemas are unchanged.
-Registry = ResultRegistry
-IOWorker = ProjectIOWorker

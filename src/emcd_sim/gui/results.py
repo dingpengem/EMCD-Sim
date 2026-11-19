@@ -6,7 +6,7 @@ from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from .responsive import ResponsiveCanvas as FigureCanvasQTAgg
 from PySide6 import QtWidgets,QtCore
 from ..emcd_angular_plots import decorate_reciprocal_map
-from .emcd_forward import metrics
+from .forward_results import selected_edge_metrics
 from .signal_normalization import DisplaySettings, normalized_spectra, angular_display, percentage_metrics
 from .normalization_controls import NormalizationControls
 from ..mdff_edges import selected_samples
@@ -600,7 +600,7 @@ class ResultsView(QtWidgets.QWidget):
                         method=self.method.currentData() or self.result.get('method','bloch'),**self.multisite_controls.options())
                     return
                 if not self.advanced.isChecked() or (self.kind=='eels' and self.component_diagnostic.currentData()=='relative'):
-                    from .emcd_forward import export_result
+                    from .forward_results import export_result
                     export_result(self.result,Path(parent)/datetime.now().strftime('emcd_%Y%m%d_%H%M%S_%f'),component_mode='relative' if self.advanced.isChecked() and self.kind=='eels' else self.owner.eels_view.component_mode.currentData(),map_signal_mode=self.owner.maps_view.component_mode.currentData())
                     return
                 from .prb_benchmark import data_origin
@@ -620,7 +620,7 @@ class ResultsView(QtWidgets.QWidget):
 
 
 def _single_comparison_text(result,windows=None,reference=None):
-    rows=metrics(result)
+    rows=selected_edge_metrics(result)
     try:
         for edge,extra in percentage_metrics(result,windows,reference).items():rows[edge].update(extra)
     except ValueError:pass

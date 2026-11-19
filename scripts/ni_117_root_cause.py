@@ -70,7 +70,8 @@ def inventory():
 
 def worker(destination):
     from emcd_sim.gui.geometry import Structure,Settings,elastic_model,orientation,excitation
-    from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
+    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.historical_ni import tensors
     from emcd_sim.geometry import electron_wavelength_angstrom,VirtualDetector
     from emcd_sim.elastic import BeamSet
     from emcd_sim.simulation import EMCDSimulation
@@ -92,7 +93,7 @@ def worker(destination):
             sim=EMCDSimulation(model,{'A':VirtualDetector((0,0),.1),'B':VirtualDetector((0,1),.1)})
             beam_axis=desired.T@np.array([tx*.001,0,1.])
             for axis in ((0,0,1),(1,1,7),tuple(beam_axis)):
-                cfg=ForwardSettings(axis_declared=True,magnetization=axis,source=str(ROOT/'data/wien2k_ni/Ni_fm.xmcd'))
+                cfg=NiForwardSettings(axis_declared=True,magnetization=axis,source=str(ROOT/'data/wien2k_ni/Ni_fm.xmcd'))
                 T=tensors(cfg,np.array([831.271,848.698]),R)[0].tensor_angstrom2_per_ev[0]
                 N,M=_tensor_angular_maps(sim,T,831.271,C,historical_ni_site_phase_matrix(sim),qold[:,0],qold[:,1])
                 axis_name='crystal001' if axis==(0,0,1) else ('zone117' if axis==(1,1,7) else 'incident')
@@ -138,8 +139,8 @@ def summarize():
 
 def incident_controls():
     from ni_117_emcd_validation import configurations,run_case,sha,PHYSICS_FILES
-    from emcd_sim.study_geometry import StudyGeometry
-    Ni117Geometry=lambda a_angstrom=3.524: StudyGeometry((1,1,7),(2,-2,0),a_angstrom)
+    from emcd_sim.study_presets import NickelStudyGeometry
+    Ni117Geometry=lambda a_angstrom=3.524: NickelStudyGeometry((1,1,7),(2,-2,0),a_angstrom)
     hashes={p:sha(ROOT/'src/emcd_sim'/p) for p in PHYSICS_FILES};records=[]
     for label,s,cfg in configurations():
         if not label.startswith('axis_control_'):continue

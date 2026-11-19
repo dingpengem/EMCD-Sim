@@ -103,9 +103,9 @@ def test_current_reciprocal_display_strings_and_legacy_project_keys():
     from emcd_sim.gui.geometry import Settings
     import emcd_sim
     assert Path(emcd_sim.__file__).resolve().is_relative_to(ROOT/'src')
-    from emcd_sim.gui.emcd_forward import ForwardSettings
+    from emcd_sim.gui.forward_settings import NiForwardSettings
     from emcd_sim.gui.project_io import settings_from_dict,config_from_dict
-    s=Settings();cfg=ForwardSettings()
+    s=Settings();cfg=NiForwardSettings()
     assert settings_from_dict(json.loads(json.dumps(asdict(s))))==s
     assert config_from_dict(json.loads(json.dumps(asdict(cfg))))==cfg
     # Compatibility names are intentionally not renamed or numerically converted.
@@ -142,7 +142,7 @@ def test_historical_windows_identity_and_original_units_preserved():
 def test_metadata_alias_guard_rejects_computational_or_unapproved_changes(mutation):
     import copy
     from unit_metadata_guard import normalize_unit_metadata,RECIPROCAL
-    original=ast.parse((ROOT/'src/emcd_sim/gui/emcd_forward.py').read_text(encoding='utf-8'))
+    original=ast.parse((ROOT/'src/emcd_sim/gui/forward_results.py').read_text(encoding='utf-8'))
     changed=copy.deepcopy(original)
     if mutation=='number':
         node=next(n for n in ast.walk(changed) if isinstance(n,ast.Constant) and type(n.value) in (int,float))
@@ -152,5 +152,5 @@ def test_metadata_alias_guard_rejects_computational_or_unapproved_changes(mutati
     elif mutation=='branch':
         node=next(n for n in ast.walk(changed) if isinstance(n,ast.If));node.test=ast.Constant(value=False)
     else:
-        node=next(n for n in ast.walk(changed) if isinstance(n,ast.Constant) and n.value==RECIPROCAL[0]);node.value='unapproved unit convention'
+        node=next(n for n in ast.walk(changed) if isinstance(n,ast.Constant) and n.value in RECIPROCAL);node.value='unapproved unit convention'
     assert ast.dump(normalize_unit_metadata(changed))!=ast.dump(normalize_unit_metadata(original))

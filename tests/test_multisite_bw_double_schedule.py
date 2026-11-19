@@ -1,4 +1,5 @@
 """Shared BW/MS DC query scheduling; the response solver is not executed."""
+from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
 from types import SimpleNamespace
 import weakref
 import numpy as np
@@ -19,7 +20,7 @@ def test_selected_double_support_and_reduction(monkeypatch,maps,reverse,propagat
     plan=dict(energy_ev=energy,sources={'site':{}},active={'site':np.ones(len(energy),bool)},
               metadata=dict(channels={'site':{}},coverage_mode='common'))
     model=SimpleNamespace(elastic=SimpleNamespace(microscope=SimpleNamespace(acceleration_kv=300.)))
-    cfg=forward.MultiSiteForwardSettings(grid=9,depth=64,subpixels=64,angular_maps=maps,
+    cfg=MultiSiteForwardSettings(grid=9,depth=64,subpixels=64,angular_maps=maps,
         angular_evaluation='selected',selected_edges=(('low',energy[0]),('high',energy[-1])),
         worker_mode='manual',parallel_workers=1)
     qx,qy=np.meshgrid(np.linspace(-1,1,9),np.linspace(-1,1,9))

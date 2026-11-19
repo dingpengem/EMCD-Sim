@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from ase.build import bulk
 from emcd_sim.gui.geometry import Structure,Settings
-from emcd_sim.gui.generalized_forward import calculate,settings_for_source
+from emcd_sim.gui.material_inputs import calculate, settings_for_source
 from emcd_sim.gui.project_io import save_project,load_project,source_status,rerun_reason
 from single_element_helpers import write_source
 

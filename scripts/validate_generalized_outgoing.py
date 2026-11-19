@@ -6,7 +6,8 @@ import numpy as np
 from emcd_sim.crystal import fcc_nickel
 from emcd_sim.projected_geometry import ProjectedGeometry
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.historical_ni import tensors
 from emcd_sim.double_channeling import double_channeling_response,intensities_from_response
 from emcd_sim.multislice_double_channeling import ProjectedFFT,incident_fields,multislice_double_channeling_response
 
@@ -17,7 +18,7 @@ def main():
     OUT.mkdir(parents=True,exist_ok=True)
     geo=ProjectedGeometry.from_crystal(fcc_nickel(),(1,1,1),(2,-2,0));g=geo.crystal.g_vector((2,-2,0))[0]
     q=np.array([[g/2,g/2],[g/2,-g/2],[g/2+.04,g/2],[g/2+.04,-g/2]])
-    energy=np.array([831.271,848.698]);ts=tensors(ForwardSettings(axis_declared=True),energy,geo.frame)
+    energy=np.array([831.271,848.698]);ts=tensors(NiForwardSettings(axis_declared=True),energy,geo.frame)
     code={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((ROOT/'src/emcd_sim').rglob('*.py'))}
     for incoming in (2.6,3.2):
         s=Settings(zone=(1,1,1),target=(2,-2,0),voltage=200,thickness=2,tilt=(geo.bragg_tilt(),0),beam_cutoff=incoming,potential_cutoff=3.8)

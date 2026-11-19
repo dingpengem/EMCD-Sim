@@ -9,7 +9,7 @@ from PySide6 import QtWidgets,QtCore
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.geometry import Structure
 from emcd_sim.gui.project_io import save_project,load_project
-from emcd_sim.gui.emcd_forward import export_result
+from emcd_sim.gui.forward_results import export_result
 from test_unified_mdff_providers import oxygen_source,xmcd_source
 from test_atomic_ionization import parameter_file
 
@@ -133,7 +133,7 @@ def test_atomic_input_route_and_failed_generation_clears_stale_state(tmp_path,mo
 
 
 def test_imported_reopen_and_revalidation_clear_acknowledgement(tmp_path,monkeypatch):
-    from emcd_sim.gui.generalized_forward import settings_for_source
+    from emcd_sim.gui.material_inputs import settings_for_source
     from single_element_helpers import write_source
     monkeypatch.setenv('EMCD_GUI_WORKSPACE',str(tmp_path/'workspace'))
     application=app();w=MainWindow()
@@ -187,13 +187,13 @@ def test_run_detects_source_change_without_prior_gui_event(tmp_path,monkeypatch)
 
 
 def test_historical_ni_missing_xmcd_clears_acknowledgement(tmp_path,monkeypatch):
-    from emcd_sim.gui.emcd_forward import DEFAULT_SOURCE
+    from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
     monkeypatch.setenv('EMCD_GUI_WORKSPACE',str(tmp_path/'workspace'))
     application=app();w=MainWindow();errors=[];w.error=errors.append
     try:
         w.numerical_mode.setCurrentIndex(1)
         w.model_box.setCurrentIndex(0)
-        p=tmp_path/'ni.xmcd';p.write_bytes(DEFAULT_SOURCE.read_bytes())
+        p=tmp_path/'ni.xmcd';p.write_bytes(DEFAULT_NI_SOURCE.read_bytes())
         w.source_path.setText(str(p));w.validate_xmcd();w.declaration.setChecked(True)
         p.unlink();w.start_emcd()
         assert errors and not w.busy and not w.declaration.isChecked()

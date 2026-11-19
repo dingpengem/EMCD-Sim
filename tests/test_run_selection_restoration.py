@@ -10,9 +10,9 @@ from PySide6 import QtCore, QtWidgets, QtTest
 
 from emcd_sim.gui import project_io as io
 from emcd_sim.gui.geometry import Structure, orientation
-from emcd_sim.gui.generalized_forward import settings_for_provider
+from emcd_sim.gui.material_inputs import settings_for_provider
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 from test_project_workflow import app, window, result_fixture, retain, wait
 from test_multisite_configuration import tensor_source
 import pytest
@@ -176,7 +176,7 @@ def test_xmcd_and_explicit_imported_pair_restore_independently(window,tmp_path):
     np.testing.assert_allclose(source.plus.tensor_angstrom2_per_ev[0,0,1],.1j)
     x=deepcopy(r);x.pop('input_configuration',None)
     source_path=Path(__file__).parents[1]/'data/wien2k_ni/Ni_fm.xmcd'
-    cfg=ForwardSettings(model='xmcd',source=str(source_path),source_sha256=io.sha256(source_path),axis_declared=True,
+    cfg=NiForwardSettings(model='xmcd',source=str(source_path),source_sha256=io.sha256(source_path),axis_declared=True,
         magnetization=(1.,0.,0.),eta=.7345678912345,beta=.61357913579,l3=831.271,l2=848.698,grid=9,depth=11,correction=False)
     x['config']=cfg;x['metadata']['mdff']=asdict(cfg)
     x['spectra']['energy_ev']=np.linspace(cfg.l3,cfg.l2,len(x['spectra']['energy_ev']))
@@ -248,7 +248,7 @@ def test_incomplete_legacy_does_not_show_previous_inputs(window,tmp_path):
 def test_legacy_atomic_model_is_not_replaced_by_a_generalized_provider(window,tmp_path):
     w=window
     r,_=global_atomic(tmp_path)
-    cfg=ForwardSettings(model='atomic',l3=710.,l2=723.,grid=9,depth=7,correction=False)
+    cfg=NiForwardSettings(model='atomic',l3=710.,l2=723.,grid=9,depth=7,correction=False)
     cfg=replace(cfg,atomic=replace(cfg.atomic,l3_ev=710.,l2_ev=723.))
     r['config']=cfg;r['metadata']['mdff']=asdict(cfg)
     crystal=Structure(Atoms('Ni4',scaled_positions=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]],cell=[3.524]*3,pbc=True))

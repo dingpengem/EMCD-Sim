@@ -57,17 +57,17 @@ def test_old_explicit_native_and_broad_field_choices_are_preserved():
     assert absent.energy_sampling=='uniform' and absent.angular_evaluation=='selected'
     legacy=config_from_dict(dict(model='xmcd',energy_scope='full',angular_maps=True))
     assert legacy.energy_sampling=='uniform' and legacy.angular_evaluation=='selected'
-    from emcd_sim.gui.generalized_forward import energy_grid
-    from emcd_sim.gui.emcd_forward import ForwardSettings
-    assert len(energy_grid(ForwardSettings(energy_sampling='native')))==4329
-    assert len(energy_grid(ForwardSettings()))==243
+    from emcd_sim.gui.material_inputs import energy_grid
+    from emcd_sim.gui.forward_settings import NiForwardSettings
+    assert len(energy_grid(NiForwardSettings(energy_sampling='native')))==4329
+    assert len(energy_grid(NiForwardSettings()))==243
 
 
 def test_selected_fields_match_full_grid_at_identical_energies(tmp_path,monkeypatch):
     structure,settings,sites,_=system(tmp_path)
     energy=np.unique(np.r_[np.linspace(710.,723.,35),716.])
     cfg=configuration(grid=97,subpixels=64,selected_edges=(('L3',710.),('L2',723.)))
-    result=forward.calculate_multisite(structure,settings,sites,cfg,energy_ev=energy)
+    result=forward.calculate(structure, settings, cfg, energy_ev=energy, sites=sites)
     diagnostics=result['metadata']['angular_evaluation']
     full=[d for d in diagnostics if d['full_field']]
     detector=[d for d in diagnostics if not d['full_field']]
@@ -85,6 +85,6 @@ def test_selected_fields_match_full_grid_at_identical_energies(tmp_path,monkeypa
         np.testing.assert_allclose(result['spectra'][key],expected['spectra'][key],rtol=2e-13,atol=1e-17)
     for label,maps in expected['maps'].items():
         for key,value in maps.items():np.testing.assert_allclose(result['maps'][label][key],value,rtol=2e-13,atol=1e-17)
-    broad=forward.calculate_multisite(structure,settings,sites,replace(cfg,angular_evaluation='all'),energy_ev=energy)
+    broad=forward.calculate(structure, settings, replace(cfg, angular_evaluation='all'), energy_ev=energy, sites=sites)
     assert all(d['full_field'] for d in broad['metadata']['angular_evaluation'])
     for key in RAW_KEYS:np.testing.assert_allclose(broad['spectra'][key],result['spectra'][key],rtol=2e-13,atol=1e-17)

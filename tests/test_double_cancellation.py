@@ -8,7 +8,8 @@ from emcd_sim.cancellation import Cancelled
 from legacy_geometry import Ni017Geometry
 from emcd_sim import double_channeling as bw, multislice_double_channeling as ms
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings,calculate
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.gui.forward_pipeline import calculate
 
 
 def reference_module(path,name):
@@ -71,7 +72,7 @@ def test_both_cancellation_prevents_incoming_ms():
     from emcd_sim.gui import channeling
     event=threading.Event();original=bw.depth_response
     def depth(*a,**kw):event.set();return original(*a,**kw)
-    cfg=ForwardSettings(axis_declared=True,channeling_model='double',propagation='both',
+    cfg=NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',
         energy_scope='edges',angular_maps=False,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
     with patch.object(bw,'depth_response',depth),patch.object(channeling,'fft_geometry') as fft:
         with pytest.raises(Cancelled):calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),cfg,cancelled=event.is_set)
@@ -84,7 +85,7 @@ def test_full_spectrum_unchanged(solver):
     oldms=reference_module('src/emcd_sim/multislice_double_channeling.py','emcd_sim._baseline_ms')
     oldbw.PreparedBlochIncoming=bw.PreparedBlochIncoming
     from emcd_sim.gui import channeling
-    cfg=ForwardSettings(axis_declared=True,channeling_model='double',propagation=solver,
+    cfg=NiForwardSettings(axis_declared=True,channeling_model='double',propagation=solver,
         energy_points=9,angular_maps=True,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
     structure=Structure.nickel();settings=Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
     def historical_arguments(elastic,kw):

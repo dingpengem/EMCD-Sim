@@ -10,8 +10,8 @@ from emcd_sim import double_channeling as bw
 from emcd_sim.cancellation import Cancelled
 from emcd_sim.geometry import characteristic_qz_angstrom_inv
 from emcd_sim.gui import channeling
-from emcd_sim.gui.emcd_forward import calculate
-from emcd_sim.gui.forward_pipeline import calculate_multisite
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.mdff_providers import load_site_group_provider
 from emcd_sim.multisite import MultiSiteIonization
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
@@ -88,7 +88,7 @@ def test_single_group_ni_matches_existing_bw_double_pipeline(tmp_path,systematic
     old_cfg=replace(refs[0],**{key:getattr(cfg,key) for key in fields})
     energy=[710.,723.]
     old=calculate(structure,settings,old_cfg,energy_ev=energy)
-    result=calculate_multisite(structure,settings,sites,cfg,energy_ev=energy)
+    result=calculate(structure, settings, cfg, energy_ev=energy, sites=sites)
     for key in RAW_KEYS+PARITY_KEYS:
         np.testing.assert_allclose(result['spectra'][key],old['spectra'][key],rtol=3e-13,atol=1e-17)
     np.testing.assert_array_equal(result['metadata']['outgoing_energy_ev'],[199290.,199277.])
@@ -98,8 +98,8 @@ def test_single_group_ni_matches_existing_bw_double_pipeline(tmp_path,systematic
 def test_afm_cr_and_global_reversal(tmp_path):
     structure,settings,sites,_=simple_system(tmp_path,'Cr')
     cfg=configuration(channeling_model='double',angular_maps=True)
-    positive=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.])
-    reversed_result=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.],reverse_magnetization=True)
+    positive=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=sites)
+    reversed_result=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], reverse_magnetization=True, sites=sites)
     for detector in ('A','B'):
         np.testing.assert_allclose(positive['spectra']['M_'+detector],0,atol=1e-16)
         for group in ('up','down'):
@@ -122,8 +122,8 @@ def test_noncollinear_local_frames_and_real_reversal_odd(tmp_path):
     sites=MultiSiteIonization(structure,[sites.groups[0],replace(sites.groups[1],
         mdff_reference=reference,magnetization=(1,0,0))])
     cfg=configuration(channeling_model='double',angular_maps=False)
-    result=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.])
-    reverse=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.],reverse_magnetization=True)
+    result=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=sites)
+    reverse=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], reverse_magnetization=True, sites=sites)
     qx,qy=result['qx'],result['qy']
     queries=np.column_stack((qx.ravel(),qy.ravel()))
     rotation=np.asarray(result['metadata']['frame'])
@@ -166,7 +166,7 @@ def test_windows_weighting_fixed_denominator_and_shared_solves(tmp_path,monkeypa
     monkeypatch.setattr(bw.BlochStates,'solve',classmethod(solve))
     monkeypatch.setattr(channeling,'bw_executor_guard',guard)
     cfg=configuration(channeling_model='double',angular_maps=False,worker_mode='automatic')
-    result=calculate_multisite(structure,settings,sites,cfg,energy_windows=windows)
+    result=calculate(structure, settings, cfg, energy_windows=windows, sites=sites)
     assert len(incoming_calls)==1 and incoming_calls[0]==sites.species
     assert len(guard_calls)==len(result['spectra']['energy_ev'])
     support=np.logical_or.reduce([w.ravel()>0 for w in result['weights'].values()])
@@ -184,7 +184,7 @@ def test_windows_weighting_fixed_denominator_and_shared_solves(tmp_path,monkeypa
     if overlap:
         assert result['metadata']['multisite']['active_channels_by_energy']==[['A'],['A','B'],['B']]
     else:
-        only=calculate_multisite(structure,settings,sites,cfg,energy_windows={'A':windows['A']})
+        only=calculate(structure, settings, cfg, energy_windows={'A': windows['A']}, sites=sites)
         for key in RAW_KEYS:
             np.testing.assert_allclose(only['spectra'][key],result['spectra'][key][:3],rtol=3e-13)
         assert only['metadata']['multisite']['selected_atom_count']==3
@@ -196,8 +196,8 @@ def test_equivalent_site_split_merge_pipeline(tmp_path):
     split=MultiSiteIonization(structure,[replace(whole,group_id='one',indices=(0,),multiplicity=1),
         replace(whole,group_id='three',indices=(1,2,3),multiplicity=3)])
     cfg=configuration(channeling_model='double',angular_maps=False)
-    merged=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,723.])
-    separate=calculate_multisite(structure,settings,split,cfg,energy_ev=[710.,723.])
+    merged=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=sites)
+    separate=calculate(structure, settings, cfg, energy_ev=[710.0, 723.0], sites=split)
     for key in RAW_KEYS+PARITY_KEYS:
         np.testing.assert_allclose(merged['spectra'][key],separate['spectra'][key],rtol=3e-13,atol=1e-17)
 
@@ -213,7 +213,7 @@ def test_unsupported_or_uncovered_double_rejected_before_propagation(tmp_path,mo
     def forbidden(*args,**kwargs):pytest.fail('Invalid multi-site double request started propagation')
     monkeypatch.setattr(bw,'prepare_incoming_bloch',forbidden)
     monkeypatch.setattr(channeling,'fft_geometry',forbidden)
-    with pytest.raises(ValueError):calculate_multisite(structure,settings,sites,cfg,energy_windows=windows)
+    with pytest.raises(ValueError):calculate(structure, settings, cfg, energy_windows=windows, sites=sites)
 
 
 def test_cancellation_between_site_events(tmp_path,monkeypatch):
@@ -227,5 +227,4 @@ def test_cancellation_between_site_events(tmp_path,monkeypatch):
         return value
     monkeypatch.setattr(bw,'depth_response',depth)
     with pytest.raises(Cancelled):
-        calculate_multisite(structure,settings,sites,configuration(channeling_model='double',angular_maps=False),
-            energy_ev=[710.,723.],cancelled=lambda:stopped)
+        calculate(structure, settings, configuration(channeling_model='double', angular_maps=False), energy_ev=[710.0, 723.0], cancelled=lambda : stopped, sites=sites)

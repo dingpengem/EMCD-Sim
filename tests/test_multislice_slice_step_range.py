@@ -8,7 +8,9 @@ import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings, calculate, export_result
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.forward_results import export_result
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.gui.project_io import save_project, load_project, fingerprints
 from emcd_sim.multislice_double_channeling import ProjectedFFT, incident_fields
@@ -21,7 +23,7 @@ def small():
     structure = Structure.nickel()
     settings = Settings(zone=(0,0,1), target=(2,0,0), voltage=200,
                         thickness=.5, beam_cutoff=.9, potential_cutoff=1.8)
-    cfg = ForwardSettings(model='atomic', propagation='fft-multislice',
+    cfg = NiForwardSettings(model='atomic', propagation='fft-multislice',
         grid=9, depth=3, fft_grid=12, subpixels=4, energy_scope='edges',
         l3=852.7, l2=870., correction=False, centers=((.2,.2),(.2,-.2)))
     return structure, settings, cfg
@@ -33,7 +35,7 @@ def test_manual_gui_preserves_requested_maximum(tmp_path, step, mode):
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     w = MainWindow(workspace=tmp_path/'workspace')
     try:
-        assert w.spin['slice_step'].value() == ForwardSettings().slice_step == 2.
+        assert w.spin['slice_step'].value() == NiForwardSettings().slice_step == 2.
         assert (w.spin['slice_step'].minimum(), w.spin['slice_step'].maximum()) == (.001,10.)
         w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
         w.numerical_mode.setCurrentIndex(mode)

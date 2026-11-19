@@ -60,17 +60,20 @@ def prepare_provider(cfg):
     Historical Ni deliberately uses direct evaluation, not converted-grid
     interpolation. Selection here changes no downstream propagation kernel.
     """
-    from .gui.generalized_forward import is_declared
-    if is_declared(cfg):
+    from .gui.material_inputs import ImportedSettings
+    from .gui.forward_settings import NiForwardSettings
+    if isinstance(cfg,ImportedSettings):
         from .gui.provider_preparation import DeclaredMDFFProvider
         return DeclaredMDFFProvider(cfg)
-    from .historical_ni import HistoricalNiProvider
-    return HistoricalNiProvider(cfg)
+    if type(cfg) is NiForwardSettings and cfg.model in ('xmcd','atomic'):
+        from .historical_ni import HistoricalNiProvider
+        return HistoricalNiProvider(cfg)
+    raise ValueError('Unsupported MDFF input: declare a source-backed material or an explicit NiForwardSettings preset')
 
 
 def load_site_group_provider(group):
     """Resolve an acknowledged group source, preserving existing identity checks."""
-    from .gui.generalized_forward import ImportedSettings, source_for
+    from .gui.material_inputs import ImportedSettings, source_for
 
     cfg = group.mdff_reference
     if not isinstance(cfg, ImportedSettings):

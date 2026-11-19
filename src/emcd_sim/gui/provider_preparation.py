@@ -6,7 +6,7 @@ adapter. Neither class implements propagation or tensor contraction.
 import numpy as np
 from ..ionization_sites import IonizationSites
 from ..mdff_edges import selected_samples
-from .generalized_forward import source_for
+from .material_inputs import source_for
 
 
 def declared_material_reason(structure,cfg):

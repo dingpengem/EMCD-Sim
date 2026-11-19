@@ -1,4 +1,5 @@
 """Configuration-level regression for shared/solver-specific UI; no propagation."""
+from reference_imports import relocate_reference_imports
 import os,sys,types,subprocess,json,ast,copy
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from contextlib import ExitStack
@@ -11,7 +12,7 @@ from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.project_io import config_from_dict,load_project
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.gui.geometry import Structure,Settings
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 from historical_xmcd_test_support import historical_xmcd_source,relocate_historical_xmcd_config
 
 BASE='2ede25e63827830617b335a4df6d9d521ac65a9b'
@@ -23,7 +24,7 @@ def app():
 @pytest.fixture
 def window(app,tmp_path):
     with ExitStack() as guards:
-        for name in ('emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.gui.channeling.double_channeling_response','emcd_sim.gui.channeling.multislice_double_channeling_response'):
+        for name in ('emcd_sim.gui.forward_pipeline.calculate','emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.gui.channeling.double_channeling_response','emcd_sim.gui.channeling.multislice_double_channeling_response'):
             guards.enter_context(patch(name,side_effect=AssertionError('No propagation allowed in presentation tests')))
         w=MainWindow(workspace=tmp_path/'workspace');w.numerical_mode.setCurrentIndex(1);w.model_box.setCurrentIndex(1)
         try:yield w
@@ -40,7 +41,7 @@ def baseline_window(path):
             source=source.replace('from .stage_b import StageB','from ._baseline_stage_b import StageB')
             source=source.replace('from .results_browser import ProjectWorkspace','from ._baseline_results_browser import ProjectWorkspace')
         module=types.ModuleType('emcd_sim.gui.'+name);module.__package__='emcd_sim.gui';module.__file__=str(Path('src/emcd_sim/gui')/filename)
-        sys.modules[module.__name__]=module;exec(compile(source,module.__file__,'exec'),module.__dict__);modules.append(module)
+        sys.modules[module.__name__]=module;exec(compile(relocate_reference_imports(source),module.__file__,'exec'),module.__dict__);modules.append(module)
     # The archived controls predate the provider field; represent their original
     # Ni identity explicitly in the current Settings schema.
     from functools import partial
@@ -120,10 +121,10 @@ def test_switching_updates_real_memory_estimates_without_mutating_settings(windo
 def test_general_ms_orientation_supported_but_non_zolz_target_rejected(window):
     window.spin['beam'].setValue(.9)
     window.zone.setText('0 1 1');window.propagation_box.setCurrentIndex(1);window.emcd_stale()
-    info=numerical_info(Structure.nickel(),replace(Settings(),zone=(0,1,1),beam_cutoff=.9),replace(ForwardSettings(),propagation='fft-multislice'),check_memory=False)
+    info=numerical_info(Structure.nickel(),replace(Settings(),zone=(0,1,1),beam_cutoff=.9),replace(NiForwardSettings(),propagation='fft-multislice'),check_memory=False)
     assert info['fft_harmonics']==1024
     with pytest.raises(ValueError,match='ZOLZ'):
-        numerical_info(Structure.nickel(),replace(Settings(),zone=(1,1,1),target=(2,0,0)),replace(ForwardSettings(),propagation='fft-multislice'),check_memory=False)
+        numerical_info(Structure.nickel(),replace(Settings(),zone=(1,1,1),target=(2,0,0)),replace(NiForwardSettings(),propagation='fft-multislice'),check_memory=False)
 
 
 def test_saved_settings_and_arrays_preserved_without_solver(window,tmp_path):
@@ -148,7 +149,7 @@ def test_solver_configuration_and_physics_unchanged():
     old=ast.parse(subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/stage_b.py']).decode('utf-8-sig'))
     find=lambda tree,name:next(n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef) and n.name==name)
     def mapped_keywords(tree):
-        call=next(n for n in ast.walk(find(tree,'forward_settings')) if isinstance(n,ast.Call) and isinstance(n.func,ast.Name) and n.func.id=='ForwardSettings')
+        call=next(n for n in ast.walk(find(tree,'forward_settings')) if isinstance(n,ast.Call) and isinstance(n.func,ast.Name) and n.func.id in ('ForwardSettings','NiForwardSettings'))
         return {k.arg:ast.dump(k.value) for k in call.keywords if k.arg not in ('worker_mode','parallel_workers','fft_generators')}
     assert mapped_keywords(current)==mapped_keywords(old)
     # The energy-support scheduler is now intentionally in emcd_forward/channeling.

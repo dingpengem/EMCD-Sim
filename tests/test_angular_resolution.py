@@ -8,14 +8,14 @@ import pytest
 from PySide6 import QtWidgets
 from matplotlib.figure import Figure
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.project_io import config_from_dict,load_project
 from emcd_sim.gui.results import draw_maps
 
 
 def test_defaults_and_legacy_memory():
-    assert ForwardSettings().grid==97
-    assert ForwardSettings().memory_budget_mib==config_from_dict({}).memory_budget_mib==2048
+    assert NiForwardSettings().grid==97
+    assert NiForwardSettings().memory_budget_mib==config_from_dict({}).memory_budget_mib==2048
     assert config_from_dict(dict(memory_budget_mib=512,grid=33)).memory_budget_mib==512
     assert config_from_dict(dict(memory_budget_mib=512,grid=33)).grid==33
 

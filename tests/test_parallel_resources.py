@@ -6,7 +6,7 @@ import json
 import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.geometry import Settings,Structure
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.parallel_resources import worker_plan,IMPLICATED_DLL_SHA256,native_backend_info
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.gui.project_io import config_from_dict
@@ -23,7 +23,7 @@ def primary():return replace(Settings(),thickness=8,tilt=(-7.11672544,0),beam_cu
 @pytest.mark.parametrize('method',['bloch','fft-multislice','both'])
 @pytest.mark.parametrize('channel',['single','double'])
 def test_automatic_counts(method,channel):
-    cfg=replace(ForwardSettings(),propagation=method,channeling_model=channel)
+    cfg=replace(NiForwardSettings(),propagation=method,channeling_model=channel)
     plan=worker_plan(primary(),cfg,27,native=native())
     assert not plan['blocked']
     for key,value in plan['effective_workers'].items():
@@ -31,7 +31,7 @@ def test_automatic_counts(method,channel):
 
 
 def test_known_unsafe_is_evidence_scoped_not_cutoff_rule():
-    cfg=replace(ForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=4)
+    cfg=replace(NiForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=4)
     assert worker_plan(primary(),cfg,27,native=native())['risk']=='KNOWN UNSAFE'
     assert worker_plan(replace(primary(),beam_cutoff=2.5),cfg,21,native=native())['risk']=='UNVERIFIED COMBINATION'
     p=worker_plan(primary(),cfg,27,native=native(1))
@@ -42,11 +42,11 @@ def test_known_unsafe_is_evidence_scoped_not_cutoff_rule():
 
 @pytest.mark.parametrize('count',[0,-1,1.5,True])
 def test_invalid_manual_count_never_clamped(count):
-    with pytest.raises(ValueError):worker_plan(primary(),replace(ForwardSettings(),worker_mode='manual',parallel_workers=count),27,native=native())
+    with pytest.raises(ValueError):worker_plan(primary(),replace(NiForwardSettings(),worker_mode='manual',parallel_workers=count),27,native=native())
 
 
 def test_single_has_no_detector_parallelism_and_both_retains_request():
-    cfg=replace(ForwardSettings(),worker_mode='manual',parallel_workers=4)
+    cfg=replace(NiForwardSettings(),worker_mode='manual',parallel_workers=4)
     assert worker_plan(primary(),cfg,27,native=native(1))['blocked']
     p=worker_plan(primary(),replace(cfg,channeling_model='double',propagation='both'),27,native=native())
     assert p['blocked'] and p['effective_workers']=={'bloch':4,'fft-multislice':4}
@@ -71,7 +71,7 @@ def test_memory_uses_actual_manual_concurrency_and_rejects_without_reduction(mon
     import emcd_sim.gui.parallel_resources as module
     monkeypatch.setattr(module,'native_backend_info',lambda:native(1))
     monkeypatch.setattr('emcd_sim.gui.memory_budget.memory_snapshot',lambda:dict(available_ram_mib=32768,process_rss_mib=120))
-    cfg=replace(ForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=1)
+    cfg=replace(NiForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=1)
     one=numerical_info(Structure.nickel(),primary(),cfg)
     four=numerical_info(Structure.nickel(),primary(),replace(cfg,parallel_workers=4))
     assert one['bw_beams']==four['bw_beams']==27
@@ -100,7 +100,7 @@ def test_legacy_configuration_defaults_workers_without_overwriting_values():
 def test_automatic_ms_reduces_only_workers_to_fit_ram(monkeypatch):
     monkeypatch.setattr('emcd_sim.gui.parallel_resources.native_backend_info',lambda:native(1))
     monkeypatch.setattr('emcd_sim.gui.memory_budget.memory_snapshot',lambda:dict(available_ram_mib=16384,process_rss_mib=64))
-    cfg=replace(ForwardSettings(),propagation='fft-multislice',channeling_model='double',fft_grid=128,memory_budget_mib=512)
+    cfg=replace(NiForwardSettings(),propagation='fft-multislice',channeling_model='double',fft_grid=128,memory_budget_mib=512)
     info=numerical_info(Structure.nickel(),primary(),cfg)
     assert 1<=info['execution']['effective_workers']['fft-multislice']<4
     assert cfg.fft_grid==128 and cfg.depth==64
@@ -109,12 +109,12 @@ def test_automatic_ms_reduces_only_workers_to_fit_ram(monkeypatch):
 
 
 def test_execution_plan_change_rejected_before_solver(monkeypatch):
-    from emcd_sim.gui import emcd_forward
+    from emcd_sim.gui import forward_pipeline
     monkeypatch.setattr('emcd_sim.gui.parallel_resources.native_backend_info',lambda:native(1))
-    solve=Mock();monkeypatch.setattr(emcd_forward,'_calculate',solve)
-    cfg=replace(ForwardSettings(),model='atomic',channeling_model='double',l3=852.7,l2=870.)
+    solve=Mock();monkeypatch.setattr(forward_pipeline,'_calculate_uniform_prepared',solve)
+    cfg=replace(NiForwardSettings(),model='atomic',channeling_model='double',l3=852.7,l2=870.)
     with pytest.raises(ValueError,match='Resources changed'):
-        emcd_forward.calculate(Structure.nickel(),primary(),cfg,execution_policy={'effective_workers':{'bloch':4}})
+        forward_pipeline.calculate(Structure.nickel(),primary(),cfg,execution_policy={'effective_workers':{'bloch':4}})
     assert not solve.called
 
 
@@ -124,7 +124,7 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
     import emcd_sim.gui.parallel_resources as module
     monkeypatch.setattr(module,'native_backend_info',lambda:native())
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    with patch('numpy.linalg.eigh',side_effect=AssertionError('Preflight must not solve')),patch('emcd_sim.gui.stage_b.EMCDWorker') as factory:
+    with patch('numpy.linalg.eigh',side_effect=AssertionError('Preflight must not solve')),patch('emcd_sim.gui.calculation_controls.EMCDWorker') as factory:
         w=MainWindow(workspace=tmp_path/'workspace')
         try:
             # Accept through the current Material-owned MDFF workflow. Hidden

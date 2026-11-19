@@ -90,7 +90,7 @@ def app():
 def window(app, tmp_path):
     with ExitStack() as guards:
         for target in ('emcd_sim.gui.app.preview', 'emcd_sim.gui.app.PreviewWorker.start',
-                       'emcd_sim.gui.stage_b.calculate', 'emcd_sim.gui.stage_b.EMCDWorker.start'):
+                       'emcd_sim.gui.calculation_worker.calculate', 'emcd_sim.gui.calculation_worker.EMCDWorker.start'):
             guards.enter_context(patch(target, side_effect=AssertionError('Layout must not calculate')))
         w = MainWindow(tmp_path/'workspace')
         w.show()

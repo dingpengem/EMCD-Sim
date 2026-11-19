@@ -7,8 +7,8 @@ import pytest
 from ase import Atoms
 
 from emcd_sim.gui import forward_pipeline, propagation
-from emcd_sim.gui.forward_pipeline import calculate_multisite
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.multisite_single_channeling import run_multisite_with_coherence
@@ -86,7 +86,7 @@ def test_disjoint_elements_and_edges_both_solvers(tmp_path,monkeypatch,fe_edge,o
         calls.append(args[2].propagation)
         return original(*args,**kwargs)
     monkeypatch.setattr(propagation,'propagate',counted)
-    result=calculate_multisite(structure,settings,sites,configuration(propagation='both'),energy_windows=disjoint_windows(offset))
+    result=calculate(structure, settings, configuration(propagation='both'), energy_windows=disjoint_windows(offset), sites=sites)
     assert calls==['bloch','fft-multislice']
     expected_energy=np.sort(np.r_[np.asarray(FE_GRID)+offset,NI_GRID])
     np.testing.assert_array_equal(result['spectra']['energy_ev'],expected_energy)
@@ -106,8 +106,8 @@ def test_disjoint_elements_and_edges_both_solvers(tmp_path,monkeypatch,fe_edge,o
 def test_window_selection_keeps_denominator_and_provider_amplitude(tmp_path):
     structure,settings,sites=system(tmp_path)
     cfg=configuration(angular_maps=False)
-    full=calculate_multisite(structure,settings,sites,cfg,energy_windows=disjoint_windows())
-    fe_only=calculate_multisite(structure,settings,sites,cfg,energy_windows={'A':disjoint_windows()['A']})
+    full=calculate(structure, settings, cfg, energy_windows=disjoint_windows(), sites=sites)
+    fe_only=calculate(structure, settings, cfg, energy_windows={'A': disjoint_windows()['A']}, sites=sites)
     for key in RAW_KEYS:
         np.testing.assert_allclose(fe_only['spectra'][key],full['spectra'][key][:3],rtol=3e-13)
         np.testing.assert_allclose(fe_only['spectra'][key],fe_only['groups']['A']['spectra'][key]/3,rtol=3e-13)
@@ -117,7 +117,7 @@ def test_window_selection_keeps_denominator_and_provider_amplitude(tmp_path):
     assert set(fe_only['groups']['B']['metadata']['coverage']['status_at_energy'])=={'omitted_by_request'}
     stronger=source(tmp_path,'stronger','Ni',offset=130,scale=15.,down=True)
     scaled_sites=MultiSiteIonization(structure,[sites.groups[0],replace(sites.groups[1],mdff_reference=stronger)])
-    scaled=calculate_multisite(structure,settings,scaled_sites,cfg,energy_windows=disjoint_windows())
+    scaled=calculate(structure, settings, cfg, energy_windows=disjoint_windows(), sites=scaled_sites)
     for key in RAW_KEYS:
         np.testing.assert_allclose(scaled['spectra'][key][:3],full['spectra'][key][:3],rtol=3e-13)
         np.testing.assert_allclose(scaled['spectra'][key][3:],5*full['spectra'][key][3:],rtol=3e-13)
@@ -137,12 +137,12 @@ def test_same_element_overlapping_grids_and_common_grid_compatibility(tmp_path,m
         return original(*args,**kwargs)
     monkeypatch.setattr(spectrum,'run_multisite_with_coherence',counted)
     cfg=configuration(angular_maps=False)
-    result=calculate_multisite(structure,settings,sites,cfg,energy_windows=windows)
+    result=calculate(structure, settings, cfg, energy_windows=windows, sites=sites)
     independently_accumulated(result,structure,settings,sites)
     if not partial_overlap:
         assert len(calls)==1 and calls[0][0]==('A','B')
         np.testing.assert_array_equal(calls[0][1],[710.,716.,723.])
-        common=calculate_multisite(structure,settings,sites,cfg,energy_ev=[710.,716.,723.])
+        common=calculate(structure, settings, cfg, energy_ev=[710.0, 716.0, 723.0], sites=sites)
         for key in RAW_KEYS+PARITY_KEYS:
             np.testing.assert_allclose(result['spectra'][key],common['spectra'][key],rtol=3e-13,atol=1e-18)
     else:
@@ -155,8 +155,8 @@ def test_explicit_exclusions_are_not_physical_zeros_and_reversal_is_global(tmp_p
     windows=dict(A=ModeledEdgeWindow((710.,720.)),B=ModeledEdgeWindow((840.,850.)))
     energy=[709.,710.,716.,720.,721.,800.,839.,840.,846.,850.,851.]
     cfg=configuration(angular_maps=False)
-    plus=calculate_multisite(structure,settings,sites,cfg,energy_ev=energy,energy_windows=windows)
-    minus=calculate_multisite(structure,settings,sites,cfg,energy_ev=energy,energy_windows=windows,reverse_magnetization=True)
+    plus=calculate(structure, settings, cfg, energy_ev=energy, energy_windows=windows, sites=sites)
+    minus=calculate(structure, settings, cfg, energy_ev=energy, energy_windows=windows, reverse_magnetization=True, sites=sites)
     outside=[0,4,5,6,10]
     for key in RAW_KEYS:
         np.testing.assert_array_equal(plus['spectra'][key][outside],0.)
@@ -175,14 +175,14 @@ def test_explicit_exclusions_are_not_physical_zeros_and_reversal_is_global(tmp_p
 
 def test_single_element_window_matches_existing_forward(tmp_path):
     from test_multisite_forward import system as ni_system
-    from emcd_sim.gui.emcd_forward import calculate
+    from emcd_sim.gui.forward_pipeline import calculate
 
     structure,settings,sites,refs=ni_system(tmp_path)
     cfg=configuration(angular_maps=False)
     old_cfg=replace(refs[0],**{key:getattr(cfg,key) for key in (
         'grid','depth','subpixels','halfwidth','centers','radius','angular_maps','worker_mode','parallel_workers')})
     old=calculate(structure,settings,old_cfg,energy_ev=FE_GRID)
-    result=calculate_multisite(structure,settings,sites,cfg,energy_windows={'Ni':ModeledEdgeWindow((704.,730.),FE_GRID)})
+    result=calculate(structure, settings, cfg, energy_windows={'Ni': ModeledEdgeWindow((704.0, 730.0), FE_GRID)}, sites=sites)
     for key in RAW_KEYS+PARITY_KEYS:
         np.testing.assert_allclose(result['spectra'][key],old['spectra'][key],rtol=3e-13,atol=1e-18)
 
@@ -204,7 +204,7 @@ def test_missing_required_data_rejected_before_geometry(tmp_path,monkeypatch,fai
     monkeypatch.setattr(propagation,'numerical_info',forbidden)
     monkeypatch.setattr(propagation,'propagate',forbidden)
     with pytest.raises(ValueError):
-        calculate_multisite(structure,settings,sites,configuration(),energy_ev=energy,energy_windows=windows)
+        calculate(structure, settings, configuration(), energy_ev=energy, energy_windows=windows, sites=sites)
 
 
 @pytest.mark.parametrize('bounds,samples',[((0.,730.),FE_GRID),((730.,704.),FE_GRID),

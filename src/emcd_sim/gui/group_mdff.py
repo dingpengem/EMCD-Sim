@@ -15,7 +15,7 @@ from ..imported_mdff import CONVENTION
 from ..mdff_providers import load_site_group_provider
 from ..multisite import IonizationSiteGroup
 from ..multisite_spectrum import ModeledEdgeWindow
-from .generalized_forward import ImportedSettings, settings_for_provider, settings_for_source
+from .material_inputs import ImportedSettings, settings_for_provider, settings_for_source
 from .provider_ui import ProviderUI
 from .group_mdff_controls import EdgeSelections, EnergySelection, energy_box
 from .mdff_workspace import MDFFWorkspace
@@ -207,8 +207,8 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
     def validate_xmcd_source(self):
         if self._loading:return
         try:
-            from .emcd_forward import inspect_source
-            info=inspect_source(self.source_path.text())
+            from .xmcd_source import inspect_xmcd_source
+            info=inspect_xmcd_source(self.source_path.text())
             unchanged=(self.source_info or {}).get('sha256')==info['sha256'] and self.validated_path==self.source_path.text()
             retained=(self.reference is not None and self.reference.source==self.source_path.text()
                       and self.reference.source_sha256==info['sha256'])
@@ -413,11 +413,11 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         if self.model.currentIndex() in (0,1) and self.row[3] is None:
             raise ValueError(f'Group {self.row[0]}: set its Material direction in Site groups and choose Update direction before configuring a magnetic model')
         if self.model.currentIndex() == 0:
-            from .emcd_forward import ForwardSettings
+            from .forward_settings import NiForwardSettings
             self.validate_xmcd_source()
             if self.source_info is None:raise ValueError(self.status.text())
             path=self.source_path.text().strip()
-            base=ForwardSettings(model='xmcd',source=path,source_sha256=self.source_info['sha256'],
+            base=NiForwardSettings(model='xmcd',source=path,source_sha256=self.source_info['sha256'],
                 magnetization=self.row[3],axis_declared=self.source_conventions_confirmed(),
                 l3=self.spin['xl3'].value(),l2=self.spin['xl2'].value(),eta=self.eta.value(),beta=self.beta.value())
             declaration=self.xmcd_source_declaration(base)
@@ -550,7 +550,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             self.model.setCurrentIndex(2);self.manual_mode.setCurrentIndex(3)
             self.import_path.setText(cfg.source);self.manual_edge.setText(cfg.core_edge)
             try:
-                from .generalized_forward import source_for
+                from .material_inputs import source_for
                 source = source_for(cfg);d = source.metadata
                 if 'manual_l23_model' in d and not cfg.pair_reversed:
                     self.manual_spectral.load_source(source);self.manual_spectral.frame_mode.setCurrentIndex(1)

@@ -18,7 +18,7 @@ from emcd_sim.gui.project_io import save_configuration, load_configuration
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from test_group_mdff import source
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.material_inputs import settings_for_source
 
 
 CIF=Path(__file__).parent/'fixtures/Fe3O4_inverse_spinel.cif'

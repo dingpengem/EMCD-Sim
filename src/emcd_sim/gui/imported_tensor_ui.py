@@ -163,7 +163,7 @@ class ImportedTensorUI:
             self.manual_tensor.error.setText(str(exc));raise
 
     def draw_manual_preview(self,cfg=None):
-        from .generalized_forward import source_for
+        from .material_inputs import source_for
         if cfg is None:cfg=self.forward_settings()
         source=source_for(cfg)
         if self.manual_model.currentIndex()==1:
@@ -252,7 +252,7 @@ class ImportedTensorUI:
                 (float(self.manual_l3.text()),float(self.manual_l2.text())),tuple(float(v) for v in self.axis.text().split()))
             raise ValueError('Manual draft ready for explicit preview or calculation')
         self.prepare_manual_tensor()
-        from .generalized_forward import ImportedSettings
+        from .material_inputs import ImportedSettings
         from ..mdff_edges import validate_selected
         source=self.imported_info
         if source is None or source.path!=str(Path(self.imported_path.text()).resolve()):raise ValueError('Validate the current imported MDFF source first')

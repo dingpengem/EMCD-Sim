@@ -10,7 +10,7 @@ from ase.build import bulk
 from emcd_sim.crystal import Crystal
 from emcd_sim.elastic import BeamSet, depth_coherence
 from emcd_sim.geometry import Microscope, VirtualDetector, characteristic_qz_angstrom_inv
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.ionization_sites import IonizationSites
 from emcd_sim.mdff_providers import load_provider
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization

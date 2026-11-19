@@ -12,7 +12,7 @@ from ase.io import write
 from emcd_sim.adaptive_scattering import adaptive_factor,coefficient_data,provenance,COEFFICIENT_SHA256
 from emcd_sim.elastic_providers import ADAPTIVE,LOBATO,LEGACY,factors_for_provider
 from emcd_sim.gui.geometry import Structure,Settings,geometry,elastic_model,align_bragg,indices,preview
-from emcd_sim.gui.emcd_forward import material_reason
+from emcd_sim.historical_ni import material_reason
 from unified_elastic_cases import cases,reciprocal_cross,analytical_frame,independent_factor,bw_ms
 
 
@@ -214,9 +214,10 @@ def test_packaged_resources_and_no_upstream_runtime_dependencies(tmp_path):
 
 def test_emcd_project_explicit_new_and_unversioned_lobato_compatibility(tmp_path):
     import copy
-    from emcd_sim.gui.emcd_forward import calculate,ForwardSettings
+    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.gui.forward_settings import NiForwardSettings
     from emcd_sim.gui.project_io import save_project,load_project,rerun_reason,fingerprints,elastic_provider_reason
-    cfg=ForwardSettings(energy_scope='edges',grid=9,depth=9,subpixels=16,axis_declared=True,angular_maps=False,channeling_model='single',correction=False)
+    cfg=NiForwardSettings(energy_scope='edges',grid=9,depth=9,subpixels=16,axis_declared=True,angular_maps=False,channeling_model='single',correction=False)
     for provider in (LOBATO,ADAPTIVE):
         s=Settings(zone=(0,0,1),target=(2,0,0),voltage=200,thickness=1,beam_cutoff=1.2,potential_cutoff=1.2,elastic_provider=provider)
         result=calculate(Structure.nickel(),s,cfg)

@@ -7,7 +7,8 @@ from PySide6 import QtCore,QtGui,QtWidgets,QtTest
 from test_multisite_gui_run import app,window
 from emcd_sim.gui.parameter_wheel import protect_parameter_wheels
 from emcd_sim.gui.group_mdff import GroupMDFFDialog
-from emcd_sim.gui.emcd_forward import DEFAULT_SOURCE,inspect_source
+from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
+from emcd_sim.gui.xmcd_source import inspect_xmcd_source
 
 
 def wheel(widget,delta=-120):
@@ -19,8 +20,8 @@ def wheel(widget,delta=-120):
 
 
 def xmcd(d):
-    d.model.setCurrentIndex(0);d.source_path.setText(str(DEFAULT_SOURCE));d.validate_xmcd_source()
-    info=inspect_source(DEFAULT_SOURCE)
+    d.model.setCurrentIndex(0);d.source_path.setText(str(DEFAULT_NI_SOURCE));d.validate_xmcd_source()
+    info=inspect_xmcd_source(DEFAULT_NI_SOURCE)
     d.spin['xl3'].setValue(info['selected']['L3']);d.spin['xl2'].setValue(info['selected']['L2'])
     d.xmcd_provenance.setText(info['provenance'])
     d.xmcd_validity.setText('Existing native Ni XAS/XMCD example; effective axisymmetric model, not full ab-initio MDFF')
@@ -64,7 +65,7 @@ def test_wheel_does_not_edit_working_drafts_or_dirty_state(window,app):
 def test_xmcd_source_guidance_reversed_group_and_global_context(window,tmp_path,app):
     window.show_structure_viewer(show=False)
     d=GroupMDFFDialog(('Ni','Ni',(0,1,2,3),(0.,0.,1.),None),tmp_path,window.structure_viewer.editor)
-    d.model.setCurrentIndex(0);d.source_path.setText(str(DEFAULT_SOURCE));d.validate_xmcd_source()
+    d.model.setCurrentIndex(0);d.source_path.setText(str(DEFAULT_NI_SOURCE));d.validate_xmcd_source()
     assert d.xmcd_preview.snapshot is None
     assert len(d.xmcd_preview.figure.axes[0].lines)==4  # Authenticated input, no invented tensor.
     d.declaration.setChecked(True);d.xmcd_preview.update_preview()

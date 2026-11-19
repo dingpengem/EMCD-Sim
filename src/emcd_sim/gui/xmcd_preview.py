@@ -57,7 +57,7 @@ class XMCDPreview(QtWidgets.QGroupBox):
         w=self.window
         self.snapshot=None;self.input_snapshot=None
         try:
-            from .emcd_forward import ForwardSettings
+            from .forward_settings import NiForwardSettings
             from ..wien2k_xmcd import load_wien2k_xmcd
             from ..mdff_providers import prepare_provider
             start=self.fingerprint()
@@ -70,7 +70,7 @@ class XMCDPreview(QtWidgets.QGroupBox):
             input_columns=np.loadtxt(io.BytesIO(raw),comments='#',ndmin=2)
             self.input_snapshot=dict(energy=source.energy_ev.copy(),input_columns=input_columns.copy())
             axis=w.material_direction()
-            base=ForwardSettings(model='xmcd',source=w.source_path.text(),source_sha256=source.source_sha256,
+            base=NiForwardSettings(model='xmcd',source=w.source_path.text(),source_sha256=source.source_sha256,
                 magnetization=axis,axis_declared=w.source_conventions_confirmed(),eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
                 l3=w.spin['xl3'].value(),l2=w.spin['xl2'].value())
             if not base.axis_declared:raise ValueError('Acknowledge this context\'s source conventions and native edge assignments before tensor preview. Material target M is set in the 3D Viewer.')

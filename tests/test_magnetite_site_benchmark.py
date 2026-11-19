@@ -20,8 +20,8 @@ import pytest
 from ase.spacegroup import crystal
 
 from emcd_sim.crystal import Crystal
-from emcd_sim.gui.forward_pipeline import calculate_multisite
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model, geometry
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.scattering import IndependentAtomPotential
@@ -79,9 +79,7 @@ def study(tmp_path_factory):
 
 def forward(study, method, channel, thickness, *, reverse=False, settings=None, cfg=None):
     structure, base_settings, sites, base_cfg, _ = study
-    return calculate_multisite(structure, replace(settings or base_settings, thickness=thickness), sites,
-        replace(cfg or base_cfg, propagation=method, channeling_model=channel),
-        energy_ev=[LOSS], reverse_magnetization=reverse)
+    return calculate(structure, replace(settings or base_settings, thickness=thickness), replace(cfg or base_cfg, propagation=method, channeling_model=channel), energy_ev=[LOSS], reverse_magnetization=reverse, sites=sites)
 
 
 def values(result, keys=('I_A_plus', 'I_B_plus', 'I_A_minus', 'I_B_minus')):

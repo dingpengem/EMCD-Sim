@@ -378,7 +378,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         if self.magnetization_mode != 'local':raise ValueError('Enable Local Site Magnetization Mode first')
         if not self.rows():raise ValueError('Declare local site groups before reversing M')
         if any(row[3] is None and getattr(row[4],'magnetic_state',None)!='nonmagnetic' for row in self.participating_rows()):raise ValueError('Declare all participating magnetic directions explicitly before reversing M')
-        from .generalized_forward import ImportedSettings
+        from .material_inputs import ImportedSettings
         declared = [isinstance(row[4],ImportedSettings) for row in self.participating_rows()]
         if any(declared):
             if not all(declared):raise ValueError('Configure all group MDFF providers before reversing their magnetic pairs')
@@ -396,7 +396,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         self.replace_rows(rows,row)
 
     def mdff_status(self, row):
-        from .generalized_forward import ImportedSettings
+        from .material_inputs import ImportedSettings
         if row[4] is None:return 'Incomplete'
         if not isinstance(row[4],ImportedSettings):return 'Unvalidated reference'
         context,reference,message = self._mdff_status.get(row[0],(None,None,''))
@@ -470,7 +470,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
 
     @property
     def validated_site_groups(self):
-        from .generalized_forward import ImportedSettings
+        from .material_inputs import ImportedSettings
         from .group_mdff import validate_group_reference
         rows = tuple(self.effective_row(row) for row in self.participating_rows())
         if not rows:raise ValueError('Select at least one participating ionization group')
@@ -508,7 +508,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         self.refresh_group_summary()
 
     def apply(self):
-        from .generalized_forward import ImportedSettings
+        from .material_inputs import ImportedSettings
         from .group_mdff import bind_group_direction
         for name,dialog in self.mdff_dialogs.items():
             if name in {row[0] for row in self.participating_rows()} and dialog.has_unapplied_edits():

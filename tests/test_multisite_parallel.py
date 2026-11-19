@@ -16,8 +16,8 @@ from emcd_sim import multislice_double_channeling as ms
 from emcd_sim import multisite_double_channeling as multi
 from emcd_sim.cancellation import Cancelled, check_cancelled
 from emcd_sim.gui import channeling, memory_budget, parallel_resources
-from emcd_sim.gui.emcd_forward import calculate
-from emcd_sim.gui.forward_pipeline import calculate_multisite
+from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from test_multisite_forward import configuration, system as ni_system, RAW_KEYS, PARITY_KEYS
@@ -55,10 +55,10 @@ def test_serial_parallel_group_totals_windows_and_reversal(tmp_path,method,overl
              if overlap else disjoint_windows())
     cfg=configuration(propagation=method,channeling_model='double',angular_maps=True)
     kwargs=dict(energy_windows=windows,reverse_magnetization=reverse)
-    serial=calculate_multisite(structure,settings,sites,cfg,**kwargs)
+    serial=calculate(structure, settings, cfg, **kwargs, sites=sites)
     for workers in (2,4):
         if workers>(parallel_resources.native_backend_info()['cpu_count'] or 1):continue
-        actual=calculate_multisite(structure,settings,sites,replace(cfg,parallel_workers=workers),**kwargs)
+        actual=calculate(structure, settings, replace(cfg, parallel_workers=workers), **kwargs, sites=sites)
         compare(actual,serial)
         assert actual['metadata']['execution']['effective_workers'][method]==workers
         assert all(d['workers']==workers for d in actual['metadata']['angular_evaluation'])
@@ -142,7 +142,7 @@ def test_parallel_pipeline_failure_stops_owned_tasks(tmp_path,monkeypatch,method
     cfg=configuration(propagation=method,channeling_model='double',parallel_workers=2,angular_maps=True)
     expected=Cancelled if failure=='cancel' else ValueError
     with pytest.raises(expected):
-        calculate_multisite(structure,settings,sites,cfg,energy_windows=disjoint_windows(),cancelled=stop.is_set)
+        calculate(structure, settings, cfg, energy_windows=disjoint_windows(), cancelled=stop.is_set, sites=sites)
     assert owned_threads()<=before
 
 
@@ -157,7 +157,7 @@ def test_windows_nested_blas_blocked_before_work(tmp_path,monkeypatch):
     monkeypatch.setattr(bw,'prepare_incoming_bloch',forbidden)
     cfg=configuration(channeling_model='double',parallel_workers=2)
     with pytest.raises(ValueError,match='single-thread'):
-        calculate_multisite(structure,settings,sites,cfg,energy_windows=disjoint_windows())
+        calculate(structure, settings, cfg, energy_windows=disjoint_windows(), sites=sites)
     with pytest.raises(ValueError,match='single-thread'):
         channeling.map_detector_batches(forbidden,[0,1],2,'bloch',lambda:False)
 
@@ -180,7 +180,7 @@ def test_one_bounded_timing_configuration_per_solver(tmp_path,monkeypatch,method
         if workers>(parallel_resources.native_backend_info()['cpu_count'] or 1):continue
         observed.clear()
         start=perf_counter()
-        result=calculate_multisite(structure,settings,sites,replace(cfg,parallel_workers=workers),energy_ev=energy,energy_windows=windows)
+        result=calculate(structure, settings, replace(cfg, parallel_workers=workers), energy_ev=energy, energy_windows=windows, sites=sites)
         elapsed=perf_counter()-start
         if serial is None:serial=result
         else:compare(result,serial)

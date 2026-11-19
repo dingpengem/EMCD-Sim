@@ -4,7 +4,7 @@ from ase.build import bulk
 
 from test_multisite_gui_run import app, window
 from emcd_sim.gui.geometry import Structure
-from emcd_sim.gui.emcd_forward import DEFAULT_SOURCE
+from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
 from emcd_sim.gui.project_configuration import save_configuration, load_configuration
 from emcd_sim.mdff_providers import prepare_provider
@@ -15,7 +15,7 @@ def xmcd_draft(w, lattice=3.52):
     w.structure=Structure(bulk('Ni','fcc',a=lattice,cubic=True))
     w.show_structure_viewer()
     w.model_box.setCurrentIndex(0)
-    w.source_path.setText(str(DEFAULT_SOURCE))
+    w.source_path.setText(str(DEFAULT_NI_SOURCE))
     w.source_path.editingFinished.emit()
     w.declaration.setChecked(True)
     return w.structure_viewer

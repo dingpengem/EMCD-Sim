@@ -33,10 +33,10 @@ def classification(record):
         return 'B,D','Retained shared angular/radial algebra or historical CLI/API'
     if not record['ni_mentions']:return 'general','Retained; no Ni-specific implementation identified'
     if module.endswith('/atomic_ionization.py'):return 'A','Provider-specific 2p-to-3d parameter eligibility; retained'
-    if module.endswith(('/benchmark.py','/study_geometry.py','/multislice_reference.py')):
+    if module.endswith(('/benchmark.py','/study_presets.py','/multislice_reference.py')):
         return 'E','Independent scientific benchmark/reference; retained'
-    if module.endswith('/gui/emcd_forward.py') and name=='_calculate':
-        return 'C,D','Production body extracted into common forward_pipeline; API retained'
+    if module.endswith('/gui/forward_pipeline.py'):
+        return 'general','Canonical explicit-input calculation API; shared kernels, no material fallback'
     if module.endswith(('/single_channeling_tensor.py','/double_channeling.py')):
         return 'B,D','Kernel unchanged; explicit generalized sites bypass historical Ni-only default domain'
     if module.endswith(('/gui/results.py','/gui/results_browser.py')):

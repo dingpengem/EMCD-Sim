@@ -6,8 +6,8 @@ import numpy as np
 from ase.build import bulk
 from ase.io import write
 from emcd_sim.gui.geometry import Structure,Settings
-from emcd_sim.gui.generalized_forward import calculate,settings_for_source
-from emcd_sim.gui.emcd_forward import export_result
+from emcd_sim.gui.material_inputs import calculate, settings_for_source
+from emcd_sim.gui.forward_results import export_result
 from emcd_sim.gui.runtime import build_info
 
 

@@ -11,7 +11,7 @@ import numpy as np
 
 def run(args):
     from emcd_sim.gui.project_io import load_project,restore_structure
-    from emcd_sim.gui.emcd_forward import calculate
+    from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.gui.channeling import worker_count
     from emcd_sim.gui.memory_budget import memory_snapshot
     from emcd_sim.gui.geometry import geometry
@@ -24,6 +24,7 @@ def run(args):
         import emcd_sim.gui.channeling as adapter
         old=types.ModuleType('emcd_sim.gui._crash_baseline');old.__package__='emcd_sim.gui'
         source=subprocess.check_output(['git','show','f947889252adc15da0413f7a97d03fb178bc8fa5:src/emcd_sim/gui/channeling.py'])
+        source=source.replace(b'from .emcd_forward import Cancelled',b'from ..cancellation import Cancelled')
         exec(compile(source,'baseline_channeling.py','exec'),old.__dict__)
         def baseline_contract(*args,**kwargs):
             kwargs.pop('execution_workers',None)

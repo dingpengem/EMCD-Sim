@@ -6,7 +6,7 @@ import pytest
 
 from emcd_sim.double_channeling import bloch_response_memory_terms
 from emcd_sim.gui import memory_budget as memory
-from emcd_sim.gui.forward_pipeline import MultiSiteForwardSettings
+from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
 from emcd_sim.gui.propagation import numerical_info,multisite_bw_double_memory_terms
 from emcd_sim.gui.geometry import Settings,Structure
 

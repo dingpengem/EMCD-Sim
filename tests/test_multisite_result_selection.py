@@ -11,8 +11,8 @@ import pytest
 from matplotlib.figure import Figure
 from PySide6 import QtCore,QtWidgets,QtTest
 
-from emcd_sim.gui.emcd_forward import ForwardSettings
-from emcd_sim.gui.forward_pipeline import MultiSiteForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
 from emcd_sim.gui.geometry import Settings
 from emcd_sim.gui.multisite_results import SPECTRAL_KEYS,spectral_series,covered_segments,draw_totals
 from emcd_sim.gui.results import ResultsView
@@ -113,9 +113,9 @@ def app():return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 @pytest.fixture
 def view(app,monkeypatch):
     def forbidden(*args,**kwargs):pytest.fail('Result selection invoked a numerical calculation')
-    for name in ('calculate','calculate_multisite'):
+    for name in ('calculate',):
         monkeypatch.setattr('emcd_sim.gui.forward_pipeline.'+name,forbidden)
-        monkeypatch.setattr('emcd_sim.gui.stage_b.'+name,forbidden)
+        monkeypatch.setattr('emcd_sim.gui.calculation_worker.'+name,forbidden)
     owner = QtWidgets.QMainWindow();owner.resize(1100,900);owner.dialogs=[]
     owner.comparison = QtWidgets.QPlainTextEdit();owner.error=forbidden
     owner.responsive=SimpleNamespace(show_panel=lambda *a:None,compact=False,focus_plot=lambda *a:None)
@@ -203,7 +203,7 @@ def test_gui_switching_means_comparison_elements_and_methods_without_recalculati
 
 
 def test_legacy_ni_view_remains_the_existing_two_panel_view(view):
-    result = stored_result();result['config']=ForwardSettings(model='atomic',l3=710,l2=723,energy_scope='full',angular_maps=False,correction=False)
+    result = stored_result();result['config']=NiForwardSettings(model='atomic',l3=710,l2=723,energy_scope='full',angular_maps=False,correction=False)
     result['model'].elastic.crystal.species=('Ni',)*4
     view.set_result(result)
     assert view.multisite_controls.isHidden() and view.multisite_banner.isHidden()
@@ -259,11 +259,11 @@ def test_shared_primary_total_components_and_display_restoration(view):
 
 
 def test_shared_tabs_and_saved_map_export(view,monkeypatch,tmp_path):
-    from emcd_sim.gui.stage_b import StageB
+    from emcd_sim.gui.calculation_controls import CalculationControls
     tabs=QtWidgets.QTabWidget()
     for _ in range(4):tabs.addTab(QtWidgets.QWidget(),'')
-    for result in (stored_result(),dict(config=ForwardSettings())):
-        StageB.sync_result_capabilities(SimpleNamespace(tabs=tabs),result)
+    for result in (stored_result(),dict(config=NiForwardSettings())):
+        CalculationControls.sync_result_capabilities(SimpleNamespace(tabs=tabs),result)
         assert tabs.tabText(1)=='EMCD Angular Maps' and tabs.tabText(3)=='Magnetic / Nonmagnetic'
     widget=ResultsView(view.owner,'maps');result=stored_result();widget.set_result(result)
     assert widget.export_button.isEnabled()
@@ -347,7 +347,7 @@ def test_native_windows_group_element_comparison(view,app):
     assert 'fixed N=3' in view.multisite_banner.text()
     if os.environ.get('EMCD_VIEWER_CHECK_IMAGE'):view.window().grab().save(os.environ['EMCD_VIEWER_CHECK_IMAGE']+'_groups.png')
     # Same production view, legacy Ni arrays and unchanged two-panel presentation.
-    ni=stored_result();ni['config']=ForwardSettings(model='atomic',l3=710,l2=723,energy_scope='full',angular_maps=False,correction=False)
+    ni=stored_result();ni['config']=NiForwardSettings(model='atomic',l3=710,l2=723,energy_scope='full',angular_maps=False,correction=False)
     ni['model'].elastic.crystal.species=('Ni',)*4
     view.set_result(ni);app.processEvents();view.canvas.draw()
     assert len(view.figure.axes)==2 and controls.sources.isHidden()

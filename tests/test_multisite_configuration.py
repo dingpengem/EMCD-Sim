@@ -16,9 +16,10 @@ from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from emcd_sim.mdff_providers import load_provider
 from emcd_sim.gui import project_io as io
 from emcd_sim.gui.geometry import Structure, Settings
-from emcd_sim.gui.emcd_forward import ForwardSettings, Cancelled
-from emcd_sim.gui.forward_pipeline import MultiSiteForwardSettings
-from emcd_sim.gui.generalized_forward import settings_for_source, settings_for_provider
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.cancellation import Cancelled
+from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
+from emcd_sim.gui.material_inputs import settings_for_source, settings_for_provider
 from single_element_helpers import document
 
 
@@ -47,7 +48,7 @@ def configuration(atoms,groups,**kwargs):
         config=MultiSiteForwardSettings(propagation='fft-multislice',channeling_model='double',
             grid=9,depth=7,fft_grid=16,slice_step=.2,centers=((.2,.3),(.2,-.3)),radius=.07),
         site_groups=sites,magnetization_mode='local',reverse_magnetization=True,
-        global_config=ForwardSettings(model='atomic',magnetization=(1.,0.,0.)),
+        global_config=NiForwardSettings(model='atomic',magnetization=(1.,0.,0.)),
         energy_windows={g.group_id:ModeledEdgeWindow(tuple(load_provider(g.mdff_reference).energy_ev[[0,-1]])) for g in groups},**kwargs)
 
 
@@ -148,7 +149,7 @@ def test_incomplete_local_drafts_survive_modes_without_inference(tmp_path,mode):
     records = [dict(group_id=name,label=name,element='Fe',indices=(i,),magnetization=direction,
         multiplicity=1,normalization='mean_per_selected_atom',mdff_reference=None)
         for i,(name,direction) in enumerate((('A',(1.,0.,0.)),('B',(0.,1.,0.))))]
-    cfg = MultiSiteForwardSettings() if mode=='local' else ForwardSettings(model='atomic',magnetization=(0.,0.,-1.))
+    cfg = MultiSiteForwardSettings() if mode=='local' else NiForwardSettings(model='atomic',magnetization=(0.,0.,-1.))
     state = dict(structure=Structure(atoms),settings=Settings(),config=cfg,magnetization_mode=mode,group_records=records)
     loaded = io.load_configuration(io.save_configuration(state,tmp_path/'drafts'))
     assert loaded['magnetization_mode']==mode and loaded['site_groups'] is None
@@ -201,7 +202,7 @@ def test_atomic_editor_source_parameters_are_portable_without_regeneration(tmp_p
 
 
 def test_legacy_project_configuration_is_global_and_needs_no_result_arrays(tmp_path):
-    root = tmp_path/'legacy';root.mkdir();cfg = ForwardSettings(model='atomic',magnetization=(1.,0.,0.))
+    root = tmp_path/'legacy';root.mkdir();cfg = NiForwardSettings(model='atomic',magnetization=(1.,0.,0.))
     snapshot = io.structure_snapshot(Structure.nickel())
     io._json(root/'structure.json',snapshot)
     settings = asdict(Settings());settings.pop('elastic_provider')
@@ -217,7 +218,7 @@ def test_legacy_xmcd_audit_identity_survives_configuration_save_as(tmp_path):
     root = tmp_path/'legacy-xmcd';root.mkdir()
     source = tmp_path/'legacy.xmcd';energy = np.linspace(830,860,5)
     np.savetxt(source,np.column_stack((energy,np.full(5,1.1),np.full(5,.9),np.full(5,.2),np.full(5,2.))))
-    cfg = ForwardSettings(source=str(source),source_sha256='',axis_declared=True)
+    cfg = NiForwardSettings(source=str(source),source_sha256='',axis_declared=True)
     snapshot = io.structure_snapshot(Structure.nickel())
     io._json(root/'structure.json',snapshot)
     io._json(root/'input_parameters.json',dict(settings=asdict(Settings()),mdff=asdict(cfg),structure_snapshot=snapshot))
@@ -273,7 +274,7 @@ def test_invalid_assignments_or_scientific_declarations_are_not_executable(tmp_p
 
 
 def test_existing_manifest_integrity_and_cancelled_save(tmp_path):
-    state = dict(structure=Structure.nickel(),settings=Settings(),config=ForwardSettings(model='atomic'),magnetization_mode='global')
+    state = dict(structure=Structure.nickel(),settings=Settings(),config=NiForwardSettings(model='atomic'),magnetization_mode='global')
     with pytest.raises(Cancelled):io.save_configuration(state,tmp_path/'cancelled',cancelled=lambda:True)
     assert not (tmp_path/'cancelled').exists() and not list(tmp_path.glob('.cancelled.saving_*'))
     root = io.save_configuration(state,tmp_path/'saved')

@@ -10,8 +10,8 @@ from test_mdff_workspace_participation import configure_fe
 from test_group_mdff import source
 from emcd_sim.gui import app as gui
 from emcd_sim.gui.geometry import Settings, Structure, geometry
-from emcd_sim.gui.emcd_forward import ForwardSettings
-from emcd_sim.gui.generalized_forward import settings_for_source
+from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.gui.numerical_settings import resolve_parameters
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
 from emcd_sim.gui.project_configuration import save_configuration, load_configuration
@@ -49,7 +49,7 @@ def test_manual_cutoff_refresh_and_absent_target_preview_request(window,monkeypa
 def test_fresh_reset_and_automatic_defaults(window):
     assert (Settings().beam_cutoff,Settings().potential_cutoff)==(2.5,2.)
     assert (window.settings().beam_cutoff,window.settings().potential_cutoff)==(2.5,2.)
-    values,_=resolve_parameters(window.structure,window.settings(),ForwardSettings(model='atomic'))
+    values,_=resolve_parameters(window.structure,window.settings(),NiForwardSettings(model='atomic'))
     assert (values['beam'],values['potential'])==(2.5,2.)
     assert not window.correction.isChecked() and not window.correction.isVisible()
     window.set_values(dict(beam=2.1,potential=1.7));window.correction.setChecked(True)

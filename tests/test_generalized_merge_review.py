@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from ase import Atoms
 from emcd_sim.gui.geometry import Structure,Settings,geometry,elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.multislice_double_channeling import ProjectedFFT,incident_fields,multislice_double_channeling_response
 
@@ -48,7 +48,7 @@ def test_large_cell_search_rejects_before_integer_overflow():
 @pytest.mark.parametrize('zone',[(1,1,1),(2,2,2)])
 def test_111_uncertified_scope_is_visible_for_every_solver(solver,zone):
     s=Settings(zone=zone,target=(2,-2,0),thickness=2,voltage=200,beam_cutoff=2.6,potential_cutoff=3.0)
-    c=ForwardSettings(propagation=solver,channeling_model='double',grid=97)
+    c=NiForwardSettings(propagation=solver,channeling_model='double',grid=97)
     info=numerical_info(Structure.nickel(),s,c,check_memory=False)
     assert any('0.1094%' in w and 'not certified' in w and 'Beam/potential support' in w for w in info['numerical_warnings'])
     assert info['bw_beams']==37

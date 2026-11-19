@@ -76,15 +76,15 @@ def test_executor_records_actual_shared_process_activity(workers):
 
 def test_qt_worker_surfaces_executor_failure_without_partial_results(monkeypatch):
     from types import SimpleNamespace
-    from emcd_sim.gui import stage_b
+    from emcd_sim.gui import calculation_worker
     from emcd_sim.gui.geometry import Settings
-    from emcd_sim.gui.emcd_forward import ForwardSettings
+    from emcd_sim.gui.forward_settings import NiForwardSettings
     before={t.ident for t in threading.enumerate() if t.name.startswith('ThreadPoolExecutor')}
     def fail(*args,**kwargs):
         def task(i,cancelled):raise ValueError('Detector task failed: diagnostic error')
-        map_detector_batches(task,range(4),2,'bloch',kwargs['cancelled'] if 'cancelled' in kwargs else args[5])
-    monkeypatch.setattr(stage_b,'calculate_multisite',fail)
-    worker=stage_b.EMCDWorker(None,Settings(),ForwardSettings(),sites=SimpleNamespace(groups=()))
+        map_detector_batches(task,range(4),2,'bloch',kwargs['cancelled'] if 'cancelled' in kwargs else args[4])
+    monkeypatch.setattr(calculation_worker,'calculate',fail)
+    worker=calculation_worker.EMCDWorker(None,Settings(),NiForwardSettings(),sites=SimpleNamespace(groups=()))
     failures=[];results=[]
     worker.failed.connect(failures.append);worker.result.connect(results.append)
     worker.run()

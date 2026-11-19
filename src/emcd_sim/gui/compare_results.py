@@ -8,7 +8,7 @@ from matplotlib import colormaps
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from .responsive import ResponsiveCanvas as FigureCanvasQTAgg
 from ..emcd_angular_plots import decorate_reciprocal_map
-from .emcd_forward import metrics
+from .forward_results import selected_edge_metrics
 from .signal_normalization import DisplaySettings, normalized_spectra, angular_display, percentage_metrics
 from .normalization_controls import NormalizationControls
 
@@ -48,7 +48,7 @@ def scalar_rows(entries,display=None):
     display=display or DisplaySettings()
     rows=[]
     for label,r,name in entries:
-        for edge,row in metrics(r).items():
+        for edge,row in selected_edge_metrics(r).items():
             e=r['spectra']['energy_ev'];i=int(np.argmin(abs(e-row['energy_ev'])));s=r['spectra'];sigma=row['Sigma_ref'];floor=1e-10*max(float(s['Sigma_ref'].max()),1e-30)
             denominator=float(s['I_A_plus'][i]+s['I_B_plus'][i])
             row=dict(row,run=identity(label,r,name),edge=edge,A_raw_plus_sum=row['D_raw']/denominator if denominator>floor else None,
