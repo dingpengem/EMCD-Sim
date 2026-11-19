@@ -1,11 +1,11 @@
-﻿"""Lightweight persistent project-path index and Stage D Qt workspace actions."""
+"""Persistent result-path index, asynchronous project IO and Qt workspace actions."""
 from dataclasses import replace,asdict
 from pathlib import Path
 from datetime import datetime,timezone
-import json,os,uuid,logging
+import json,uuid,logging
 import numpy as np
 from PySide6 import QtCore,QtWidgets,QtGui
-from .project_io import load_project,save_project,source_status,sha256,restore_structure,rerun_reason
+from .project_io import load_project,source_status,sha256,restore_structure,rerun_reason
 from .emcd_forward import Cancelled,inspect_source
 from .results import comparison_text
 from .project_session import ProjectSession
@@ -16,7 +16,8 @@ def default_workspace():
     return workspace()
 
 
-class Registry:
+class ResultRegistry:
+    """Persist result IDs, paths and display names; never mutate saved arrays."""
     def __init__(self,path):
         self.path=Path(path);self.records=[]
         if self.path.exists():
@@ -46,7 +47,8 @@ class Registry:
         record=next(r for r in self.records if r['id']==id);record['name']=name;record['custom_name']=True;self.persist()
 
 
-class IOWorker(QtCore.QThread):
+class ProjectIOWorker(QtCore.QThread):
+    """Run project file operations with queued progress and completion signals."""
     result=QtCore.Signal(object);failed=QtCore.Signal(str);stage=QtCore.Signal(str)
     def __init__(self,operation):super().__init__();self.operation=operation
     def run(self):
@@ -59,7 +61,6 @@ class IOWorker(QtCore.QThread):
             self.failed.emit(str(exc))
 
 
-from .responsive import FlowLayout
 
 
 class ResultsBrowser(QtWidgets.QWidget):
@@ -147,11 +148,11 @@ class ResultsBrowser(QtWidgets.QWidget):
 
 class ProjectWorkspace(ProjectSession):
     project_ready=QtCore.Signal()
-    def setup_stage_d(self,workspace=None):
+    def setup_project_workspace(self,workspace=None):
         self.workspace=Path(workspace or default_workspace());self.workspace.mkdir(parents=True,exist_ok=True);self.selected_record=None;self._io_success=False;self._restoring=False;self.input_source_requirements=[]
         self.ui_settings=QtCore.QSettings(str(self.workspace/'ui.ini'),QtCore.QSettings.Format.IniFormat)
-        try:index=Registry(self.workspace/'results_index.json')
-        except Exception as exc:self.statusBar().showMessage('Results index could not be read: '+str(exc));index=Registry(self.workspace/('recovered_index_'+uuid.uuid4().hex+'.json'))
+        try:index=ResultRegistry(self.workspace/'results_index.json')
+        except Exception as exc:self.statusBar().showMessage('Results index could not be read: '+str(exc));index=ResultRegistry(self.workspace/('recovered_index_'+uuid.uuid4().hex+'.json'))
         self.browser=ResultsBrowser(self,index);self.browser_dock=QtWidgets.QDockWidget('Results Browser',self);self.browser_dock.setObjectName('resultsBrowser');self.browser_dock.setWidget(self.browser);self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea,self.browser_dock);self.resizeDocks([self.browser_dock],[190],QtCore.Qt.Orientation.Vertical)
         from .runtime import LABEL
         self.setWindowTitle(LABEL)
@@ -225,7 +226,7 @@ class ProjectWorkspace(ProjectSession):
         if viewer is not None:dialogs.extend(viewer.editor.mdff_dialogs.values())
         self._io_edit_dialogs=[(dialog,dialog.isEnabled()) for dialog in dialogs if dialog is not None]
         for dialog,_ in self._io_edit_dialogs:dialog.setEnabled(False)
-        self.worker=IOWorker(operation);self.worker.stage.connect(self.statusBar().showMessage)
+        self.worker=ProjectIOWorker(operation);self.worker.stage.connect(self.statusBar().showMessage)
         def success(value):
             if self.worker.isInterruptionRequested():return
             try:completed(value)
@@ -419,3 +420,11 @@ class ProjectWorkspace(ProjectSession):
         entries=[(label,dict(m,comparison=r.get('comparison',{})),name) for name,m in r['methods'].items()]
         path=Path(parent)/datetime.now(timezone.utc).strftime('data_%Y%m%d_%H%M%S_%fZ')
         self.io_operation(lambda cancel,progress:export_comparison_data(entries,path),lambda _:None)
+
+    # Historical initialization method, retained for embedded GUI consumers.
+    setup_stage_d = setup_project_workspace
+
+
+# Old import names remain aliases; saved index/project schemas are unchanged.
+Registry = ResultRegistry
+IOWorker = ProjectIOWorker

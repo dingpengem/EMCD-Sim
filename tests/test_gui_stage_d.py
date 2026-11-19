@@ -15,7 +15,7 @@ from emcd_sim.gui.emcd_forward import calculate,ForwardSettings,DEFAULT_SOURCE
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.gui.project_io import *
 from emcd_sim.gui.project_collection import load_collection
-from emcd_sim.gui.results_browser import Registry
+from emcd_sim.gui.results_browser import ResultRegistry
 from emcd_sim.gui.compare_results import map_compatibility,draw_saved_comparison,scalar_rows,export_comparison_data
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.results import draw_maps,draw_eels
@@ -132,10 +132,10 @@ class ProjectTests(unittest.TestCase):
         self.assertIn('A_raw_plus_sum',rows[0]);self.assertIn('relative_detectability_proxy',rows[0])
         export_comparison_data(entries,ROOT/'comparison_csv');self.assertTrue((ROOT/'comparison_csv/scalar_metrics.csv').exists())
     def test_registry_rename_remove_missing_path(self):
-        path=ROOT/'registry.json';registry=Registry(path);record=registry.register(self.result,self.folder);before=sha256(self.folder/'project.json');registry.rename(record['id'],'User display name')
-        registry=Registry(path);self.assertEqual(registry.records[0]['name'],'User display name');self.assertEqual(before,sha256(self.folder/'project.json'))
-        registry.records[0]['path']=str(ROOT/'moved_project');registry.persist();self.assertEqual(len(Registry(path).records),1)
-        registry.remove(record['id']);self.assertTrue(self.folder.exists());self.assertEqual(Registry(path).records,[])
+        path=ROOT/'registry.json';registry=ResultRegistry(path);record=registry.register(self.result,self.folder);before=sha256(self.folder/'project.json');registry.rename(record['id'],'User display name')
+        registry=ResultRegistry(path);self.assertEqual(registry.records[0]['name'],'User display name');self.assertEqual(before,sha256(self.folder/'project.json'))
+        registry.records[0]['path']=str(ROOT/'moved_project');registry.persist();self.assertEqual(len(ResultRegistry(path).records),1)
+        registry.remove(record['id']);self.assertTrue(self.folder.exists());self.assertEqual(ResultRegistry(path).records,[])
 
 
 class ZWorkspaceTests(unittest.TestCase):

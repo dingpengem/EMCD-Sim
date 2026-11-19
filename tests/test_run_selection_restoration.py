@@ -289,7 +289,7 @@ def test_worker_completion_retains_inputs_captured_at_start(window,tmp_path,monk
     monkeypatch.setattr('emcd_sim.gui.parallel_resources.bind_allocation',lambda cfg,*a:cfg)
     monkeypatch.setattr(w.compute_resources,'show_estimate',lambda *a:None)
     started=[]
-    monkeypatch.setattr('emcd_sim.gui.stage_b.EMCDWorker.start',lambda worker:started.append(worker))
+    monkeypatch.setattr('emcd_sim.gui.calculation_worker.EMCDWorker.start',lambda worker:started.append(worker))
     w.start_emcd()
     assert started and w.busy,w.errors
     frozen=deepcopy(w._run_configuration)

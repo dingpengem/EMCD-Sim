@@ -25,8 +25,8 @@ def app():return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 @pytest.fixture
 def window(app,tmp_path,monkeypatch):
     def forbidden(*a,**k):pytest.fail('Project workflow started a numerical calculation')
-    monkeypatch.setattr('emcd_sim.gui.stage_b.calculate',forbidden)
-    monkeypatch.setattr('emcd_sim.gui.stage_b.calculate_multisite',forbidden)
+    monkeypatch.setattr('emcd_sim.gui.calculation_worker.calculate',forbidden)
+    monkeypatch.setattr('emcd_sim.gui.calculation_worker.calculate_multisite',forbidden)
     w=MainWindow(tmp_path/'workspace');w.errors=[];w.error=w.errors.append
     b=QtWidgets.QMessageBox.StandardButton
     monkeypatch.setattr(QtWidgets.QMessageBox,'warning',lambda *a,**k:b.Discard)

@@ -9,7 +9,7 @@ import hashlib,json,sys,threading,time,traceback
 from contextlib import ExitStack
 from PySide6 import QtCore,QtWidgets
 from .. import double_channeling as bw,multislice_double_channeling as ms
-from . import channeling,stage_b,memory_budget
+from . import channeling,calculation_worker,memory_budget
 from .project_io import save_project,load_project
 from .project_io import fingerprints
 from .runtime import build_info
@@ -88,10 +88,10 @@ def run(output,source):
                 def fft_geometry(*a,**kw):incoming_ms.append(True);return original_grid(*a,**kw)
                 stack.enter_context(patch.object(channeling,'fft_geometry',fft_geometry))
                 if target=='completion':
-                    original=stage_b.calculate
+                    original=calculation_worker.calculate
                     def complete(*a,**kw):
                         result=original(*a,**kw);work_boundary();return result
-                    stack.enter_context(patch.object(stage_b,'calculate',complete))
+                    stack.enter_context(patch.object(calculation_worker,'calculate',complete))
                 if target=='single':
                     original_single=channeling._tensor_angular_maps
                     def single(*a,**kw):work_boundary();return original_single(*a,**kw)

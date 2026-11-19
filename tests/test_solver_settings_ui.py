@@ -23,7 +23,7 @@ def app():
 @pytest.fixture
 def window(app,tmp_path):
     with ExitStack() as guards:
-        for name in ('emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.stage_b.EMCDWorker.run','emcd_sim.gui.channeling.double_channeling_response','emcd_sim.gui.channeling.multislice_double_channeling_response'):
+        for name in ('emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.gui.channeling.double_channeling_response','emcd_sim.gui.channeling.multislice_double_channeling_response'):
             guards.enter_context(patch(name,side_effect=AssertionError('No propagation allowed in presentation tests')))
         w=MainWindow(workspace=tmp_path/'workspace');w.numerical_mode.setCurrentIndex(1);w.model_box.setCurrentIndex(1)
         try:yield w
@@ -144,7 +144,7 @@ def test_saved_settings_and_arrays_preserved_without_solver(window,tmp_path):
 
 
 def test_solver_configuration_and_physics_unchanged():
-    current=ast.parse(Path('src/emcd_sim/gui/stage_b.py').read_text(encoding='utf-8-sig'))
+    current=ast.parse(Path('src/emcd_sim/gui/calculation_controls.py').read_text(encoding='utf-8-sig'))
     old=ast.parse(subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/stage_b.py']).decode('utf-8-sig'))
     find=lambda tree,name:next(n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef) and n.name==name)
     def mapped_keywords(tree):

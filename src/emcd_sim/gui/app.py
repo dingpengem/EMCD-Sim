@@ -1,4 +1,4 @@
-"""Native Qt diffraction controls and Stage B Bloch-wave EMCD/EELS."""
+"""Native Qt application window: diffraction inputs, calculation control and results."""
 from dataclasses import asdict
 from pathlib import Path
 import argparse,json,sys
@@ -26,11 +26,11 @@ class PreviewWorker(QtCore.QThread):
 
 
 from .responsive import FlowLayout, ResponsiveLayout, CollapsibleSection
-from .stage_b import StageB
+from .calculation_controls import CalculationControls
 from .results_browser import ProjectWorkspace
 
 
-class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
+class MainWindow(ProjectWorkspace,CalculationControls,QtWidgets.QMainWindow):
     preview_ready=QtCore.Signal()
     def __init__(self,workspace=None):
         super().__init__()
@@ -116,7 +116,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.canvas.mpl_connect('motion_notify_event',self.drag_za)
         self.canvas.mpl_connect('button_release_event',self.release_za)
         self.zone.returnPressed.connect(self.apply_orientation);self.target.returnPressed.connect(self.apply_orientation)
-        self.sync_za();self.restore_detectors();self.refresh();self.setup_stage_b();self.setup_stage_d(workspace)
+        self.sync_za();self.restore_detectors();self.refresh();self.setup_calculation_controls();self.setup_project_workspace(workspace)
         self.responsive=ResponsiveLayout(self)
         self.model_box.setCurrentIndex(1)
         from .mdff_usability import GlobalMDFFDialog

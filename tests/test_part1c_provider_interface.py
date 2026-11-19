@@ -10,8 +10,8 @@ from test_unified_mdff_providers import xmcd_source
 
 
 def test_forward_entry_points_are_aliases_not_parallel_orchestration():
-    from emcd_sim.gui import stage_b
-    assert stage_b.calculate is forward_pipeline.calculate
+    from emcd_sim.gui import calculation_worker
+    assert calculation_worker.calculate is forward_pipeline.calculate
     assert generalized_forward.calculate is forward_pipeline.calculate is emcd_forward.calculate
 
 

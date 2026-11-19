@@ -114,7 +114,7 @@ def test_current_reciprocal_display_strings_and_legacy_project_keys():
 
 def test_gui_units_do_not_start_workers(tmp_path):
     from emcd_sim.gui.app import MainWindow,PreviewWorker
-    from emcd_sim.gui.stage_b import EMCDWorker
+    from emcd_sim.gui.calculation_worker import EMCDWorker
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with patch.object(PreviewWorker,'start') as elastic,patch.object(EMCDWorker,'start') as inelastic:
         w=MainWindow(workspace=tmp_path)

@@ -45,7 +45,7 @@ def test_eels_widgets_modes_lock_and_no_calculation(result):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     w=MainWindow(workspace=Path('outputs')/('v060_gui_'+uuid4().hex))
     try:
-        with patch('emcd_sim.gui.stage_b.calculate',side_effect=AssertionError('Display must not calculate')):
+        with patch('emcd_sim.gui.calculation_worker.calculate',side_effect=AssertionError('Display must not calculate')):
             w.display_saved_result(result)
             for view in (w.eels_view,w.maps_view):
                 assert [view.component_mode.itemText(i) for i in range(2)]==['Raw (a.u.)','EMCD Asymmetry (%)']
@@ -143,7 +143,7 @@ def test_saved_display_migration_and_new_state_roundtrip(result):
     root=Path('outputs')/('v060_state_'+uuid4().hex);w=MainWindow(workspace=root/'workspace')
     try:
         legacy=dict(result,display_state=dict(component_mode='relative',advanced=False,locked=True,energy_ev=result['config'].l2,selection='selected'))
-        with patch('emcd_sim.gui.stage_b.calculate',side_effect=AssertionError('Display must not calculate')):
+        with patch('emcd_sim.gui.calculation_worker.calculate',side_effect=AssertionError('Display must not calculate')):
             w.register_completed(legacy);w.display_saved_result(legacy,w.selected_record)
             view=w.eels_view
             assert view.component_mode.currentData()=='raw' and view.advanced.isChecked()
