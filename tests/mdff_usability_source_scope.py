@@ -8,10 +8,12 @@ Current-file entries also include the authorized v0.9 multi-site revisions;
 updating those entries does not relabel any historical map or archive.
 """
 import hashlib
+import base64
 import io
 import json
 from pathlib import Path, PurePosixPath
 import zipfile
+import zlib
 
 ROOT=Path(__file__).resolve().parents[1]
 BASE='3b0ce6c386f3c815f85d8b9d64db679ff7622a94'
@@ -28,6 +30,17 @@ MODIFIED=('src/emcd_sim/gui/app.py','src/emcd_sim/gui/atomic_editor.py','src/emc
 INTEGRATIONS=('tests/unit_source_snapshots.py','tests/single_element_source_guard.py','tests/conftest.py','tests/test_mdff_editor_source_scope.py','tests/test_packaging_content_source_scope.py','tests/test_automatic_numerical_settings.py','.gitattributes','src/emcd_sim/gui/responsive.py','src/emcd_sim/gui/desktop_acceptance.py','packaging/native_acceptance.py','tests/test_bcc_fe_cif_gui.py','tests/test_generalized_emcd_gui.py','tests/test_gui_stage_b.py','tests/test_gui_stage_c.py','tests/test_multislice_slice_step_range.py','tests/test_ni_117.py','tests/test_parallel_resources.py','tests/test_single_element_gui.py','tests/test_solver_settings_ui.py','tests/test_unified_elastic_acceptance.py','tests/test_unified_provider_gui.py')
 BOOTSTRAP=INTEGRATIONS+('tests/mdff_usability_source_scope.py','tests/mdff_workflow_registration.py','tests/test_mdff_usability_source_scope.py','tests/fixtures/mdff_usability_scope_v1.json','tests/fixtures/mdff_usability_parent_v1.zip','tests/fixtures/mdff_usability_scope_v2.json','tests/fixtures/mdff_usability_parent_v2.zip','tests/fixtures/mdff_usability_scope_v3.json','tests/fixtures/mdff_usability_parent_v3.zip',MANIFEST_PATH,ARCHIVE_PATH,'scripts/verify_mdff_registration.py','docs/MDFF_USABILITY_REGISTRATION.md')
 TRUST_ROOTS=('tests/mdff_usability_source_scope.py',MANIFEST_PATH,ARCHIVE_PATH)
+READABILITY_PATH='tests/fixtures/physics_readability_current_v1.json'
+READABILITY_SHA256='187edb6b19a8a8e1d68aeae16ac358d8e1163c30940246b5c22e26e37692bb17'
+READABILITY_RENAMES={
+ 'src/emcd_sim/gui/stage_b.py':'src/emcd_sim/gui/calculation_controls.py',
+ 'src/emcd_sim/gui/emcd_forward.py':'src/emcd_sim/gui/forward_results.py',
+ 'src/emcd_sim/gui/generalized_forward.py':'src/emcd_sim/gui/material_inputs.py',
+ 'src/emcd_sim/study_geometry.py':'src/emcd_sim/study_presets.py'}
+READABILITY_ADDED=('src/emcd_sim/detector_signals.py','src/emcd_sim/gui/calculation_worker.py',
+ 'src/emcd_sim/gui/forward_settings.py','src/emcd_sim/gui/multisite_integration.py',
+ 'src/emcd_sim/gui/xmcd_source.py','tests/reference_imports.py',
+ 'tests/test_calculation_api.py','tests/test_detector_signals.py')
 # Only these previously protected files have authorized later revisions in
 # the editor's current map. Unchanged historical entries must still reject a
 # corrupt declaration even when a mutation test replaces its manifest pin.
@@ -122,9 +135,56 @@ def load_scope(root=None,overrides=None):
     return scope,parents
 
 
+def readability_scope(overrides=None,*,historical=None):
+    """Authenticate the additive current map and exact prior registered bytes.
+
+    Prior text is needed by the existing no-Git controls and historical workflow
+    trees. It must match the unchanged v4 identities, not the current engine.
+    """
+    if historical is None:historical,_=load_scope(overrides=overrides)
+    raw=read(ROOT,READABILITY_PATH,overrides)
+    assert digest(raw)==READABILITY_SHA256,'Unreviewed readability registration: '+READABILITY_PATH
+    scope=json.loads(raw,object_pairs_hook=unique)
+    assert set(scope)=={'schema','scope_id','pre_refactor','production_source','historical_registration','renamed','files','previous_sources','legacy_kernel_base','legacy_kernels'},'Unsupported readability registration schema'
+    assert type(scope['schema']) is int and scope['schema']==1 and scope['scope_id']=='physics-readability-current-v1','Unsupported readability registration identity'
+    assert scope['pre_refactor']=='cdb8836388c5ccc5ae7a614b47894c0ab158a824','Readability baseline identity mismatch'
+    assert scope['historical_registration']=='effb755b7ed907cb2b8d386c1b7b67d9c8c53ffc','Historical registration identity mismatch'
+    assert scope['legacy_kernel_base']=='2f9c130099dce5df4e4609b521c42f53c5385518','Recorded kernel source identity mismatch'
+    assert isinstance(scope['production_source'],str) and len(scope['production_source'])==40 and all(c in '0123456789abcdef' for c in scope['production_source']),'Malformed readability source commit'
+    assert set(scope['legacy_kernels'])=={'src/emcd_sim/'+name+'.py' for name in ('single_channeling_tensor','double_channeling','multislice_double_channeling')},'Unsupported recorded kernel paths'
+    assert scope['renamed']==READABILITY_RENAMES,'Unsupported readability relocation'
+    old={**historical['protected'],**historical['candidate'],**historical['bootstrap_hashes']}
+    allowed=(set(old)-set(READABILITY_RENAMES))|set(READABILITY_RENAMES.values())|set(READABILITY_ADDED)
+    assert set(scope['files'])<=allowed and set(READABILITY_ADDED)|set(READABILITY_RENAMES.values())<=set(scope['files']),'Unsupported readability source paths'
+    assert set(scope['previous_sources'])==(set(scope['files'])&set(old))|set(READABILITY_RENAMES),'Missing/extra historical readability sources'
+    previous={}
+    for path,entry in scope['files'].items():
+        safe_name(path)
+        assert set(entry)=={'mode','sha256'} and entry['mode']=='canonical','Unsupported readability byte mode: '+path
+        assert isinstance(entry['sha256'],str) and len(entry['sha256'])==64 and all(c in '0123456789abcdef' for c in entry['sha256']),'Malformed readability digest: '+path
+    for path,encoded in scope['previous_sources'].items():
+        safe_name(path);content=zlib.decompress(base64.b85decode(encoded))
+        entry=old[path];mode=entry.get('mode','canonical')
+        assert digest(content,mode)==entry[mode+'_sha256'],'Historical readability source identity mismatch: '+path
+        previous[path]=content
+    return scope,previous
+
+
 def current_sources(parent_sources,overrides=None,*,prefix='Unreviewed current source: '):
     scope,parents=load_scope(overrides=overrides)
+    current,previous=readability_scope(overrides,historical=scope)
     boundary=ROOT.resolve()
+    old_paths=set(scope['protected'])|set(ACCEPTED_PATHS)|set(BOOTSTRAP)
+    allowed=(old_paths-set(READABILITY_RENAMES))|set(current['files'])|{READABILITY_PATH}
+    for path in overrides or {}:
+        safe_name(path)
+        assert path in allowed,'Unregistered source override: '+path
+    for path,entry in current['files'].items():
+        raw=read(ROOT,path,overrides,resolved_root=boundary)
+        assert digest(raw,entry['mode'])==entry['sha256'],prefix+path
+    # Authenticate current bytes first. Only then use unchanged registered
+    # bytes inside the original historical chain; never relabel its records.
+    overrides={**{path:raw for path,raw in (overrides or {}).items() if path in old_paths},**previous}
     # Overrides are test inputs, never a way to silently authorize another path.
     if overrides:
         for path in overrides:
@@ -152,14 +212,18 @@ def current_sources(parent_sources,overrides=None,*,prefix='Unreviewed current s
         assert digest(raw,entry['mode'])==entry[entry['mode']+'_sha256'],prefix+path
     expected.update({path:entry['canonical_sha256'] for path,entry in scope['candidate'].items()})
     expected.update({path:entry['canonical_sha256'] for path,entry in scope['bootstrap_hashes'].items() if entry['mode']=='canonical'})
+    for path in READABILITY_RENAMES:expected.pop(path,None)
+    expected.update({path:entry['sha256'] for path,entry in current['files'].items()})
     return expected
 
 
 def support_paths():
     """Closed source set for disposable isolation trees; not a changed identity map."""
     scope,parents=load_scope()
+    current,previous=readability_scope(historical=scope)
     from packaging_content_source_scope import support_paths as packaging_support
-    return set(scope['protected'])|set(scope['candidate'])|set(scope['bootstrap'])|packaging_support(ROOT,parents)
+    paths=set(scope['protected'])|set(scope['candidate'])|set(scope['bootstrap'])|packaging_support(ROOT,{**previous,**parents})
+    return (paths-set(READABILITY_RENAMES))|set(current['files'])|{READABILITY_PATH}
 
 
 def packaging_parent_scope():
@@ -169,5 +233,6 @@ def packaging_parent_scope():
     gates. Parent bytes come only from the pinned actual-base archive.
     """
     _,parents=load_scope()
+    _,previous=readability_scope()
     from packaging_content_source_scope import load
-    return load(ROOT,parents)
+    return load(ROOT,{**previous,**parents})

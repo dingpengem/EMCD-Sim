@@ -18,6 +18,7 @@ def test_registered_correction_preserves_historical_source_identity():
         assert identity['canonical_sha256'] != manifest['versions'][manifest['active']]['files'][name]['canonical_sha256']
 
 
+@pytest.mark.parametrize('ordinary_registration',['checked','already_approved'])
 @pytest.mark.parametrize('path,before,after', [
     ('src/emcd_sim/double_channeling.py', "'...ab,ba->...'", "'...ab,ab->...'"),
     ('src/emcd_sim/double_channeling.py',
@@ -25,7 +26,10 @@ def test_registered_correction_preserves_historical_source_identity():
      'np.asarray(outgoing_hkl)[None,:,:]-np.asarray(incoming_hkl)[:,None,:]'),
     ('src/emcd_sim/multislice_double_channeling.py', 'transition_modes(tensor).conj()', 'transition_modes(tensor)'),
 ])
-def test_guard_rejects_reverted_conventions_without_writing_source(path,before,after):
+def test_guard_rejects_reverted_conventions_without_writing_source(path,before,after,ordinary_registration,monkeypatch):
+    if ordinary_registration=='already_approved':
+        # An ordinary current-file approval must not authorize kernel changes.
+        monkeypatch.setattr('single_element_source_guard.assert_current_extension',lambda overrides:None)
     source=(ROOT/path).read_text(encoding='utf-8-sig')
     assert source.count(before) == 1
     with pytest.raises(AssertionError,match='Unregistered physics change'):

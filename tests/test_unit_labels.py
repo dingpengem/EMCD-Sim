@@ -54,8 +54,8 @@ def test_snapshot_guard_rejects_unreviewed_fixture_changes(component):
 
 @pytest.mark.parametrize('name,before,after',[
     ('gui/geometry.py','.5*lam*','.6*lam*'),
-    ('gui/emcd_forward.py','slice_step: float=2.','slice_step: float=3.'),
-    ('gui/emcd_forward.py',"worker_mode: str='automatic'","worker_mode: str='manual'"),
+    ('gui/forward_settings.py','slice_step: float=2.','slice_step: float=3.'),
+    ('gui/forward_settings.py',"worker_mode: str='automatic'","worker_mode: str='manual'"),
     ('gui/geometry.py','np.asarray(tilt)*.001/','np.asarray(tilt)*.002/'),
     ('gui/project_io.py',"manifest.get('schema_version')","manifest.get('renamed_schema')"),
     ('gui/app.py','self.show_laue.setChecked(True)','self.show_laue.setChecked(False)'),
@@ -77,14 +77,17 @@ def test_historical_and_current_guards_work_without_git():
         assert_reviewed_current_sources()
 
 def test_approved_default_physics_kernel_content_unchanged_across_line_endings():
-    from physics_source_guard import canonical_sha256
-    from single_element_source_guard import assert_current_extension,legacy_kernel_source
+    from physics_source_guard import canonical_sha256,recorded_kernel_sources
+    from single_element_source_guard import assert_current_extension,extension
+    from mdff_usability_source_scope import current_sources
     assert_current_extension()
+    current=current_sources(extension());recorded=recorded_kernel_sources()
     for name,sha in KERNELS.items():
-        raw=(ROOT/'src/emcd_sim'/name).read_bytes()
-        lf=raw.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')
-        for checkout in (raw,lf,lf.replace(b'\n',b'\r\n')):
-            assert canonical_sha256(legacy_kernel_source('src/emcd_sim/'+name,checkout))==sha,name
+        path='src/emcd_sim/'+name
+        for raw,expected in (((ROOT/path).read_bytes(),current[path]),(recorded[path],sha)):
+            lf=raw.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')
+            for checkout in (raw,lf,lf.replace(b'\n',b'\r\n')):
+                assert canonical_sha256(checkout)==expected,name
 
 def test_unit_changes_give_identical_bw_ms_single_double_numerical_arrays():
     d=Path(os.environ.get('EMCD_UNIT_IDENTITY_DIRECTORY',str(ROOT/'outputs/unit_labels')))
@@ -95,10 +98,16 @@ def test_unit_changes_give_identical_bw_ms_single_double_numerical_arrays():
         for key in old.files:np.testing.assert_array_equal(new[key],old[key],err_msg=key)
 
 def test_current_reciprocal_display_strings_and_legacy_project_keys():
-    for name in FILES:
-        tree=ast.parse((ROOT/'src/emcd_sim'/name).read_text(encoding='utf-8'))
+    from mdff_usability_source_scope import READABILITY_RENAMES
+    paths={READABILITY_RENAMES.get('src/emcd_sim/'+name,'src/emcd_sim/'+name) for name in FILES}
+    paths.add('src/emcd_sim/gui/forward_settings.py')
+    for name in sorted(paths):
+        tree=ast.parse((ROOT/name).read_text(encoding='utf-8'))
+        documentation={item.body[0].value for item in ast.walk(tree)
+            if isinstance(item,(ast.Module,ast.ClassDef,ast.FunctionDef,ast.AsyncFunctionDef))
+            and ast.get_docstring(item,clean=False) is not None}
         for node in ast.walk(tree):
-            if isinstance(node,ast.Constant) and isinstance(node.value,str):
+            if isinstance(node,ast.Constant) and isinstance(node.value,str) and node not in documentation:
                 assert not re.search(r'cycles?\s*(?:/|per\s+)(?:angstrom|Å|A)',node.value,re.I),name
     from emcd_sim.gui.geometry import Settings
     import emcd_sim

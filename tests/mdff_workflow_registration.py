@@ -6,16 +6,18 @@ from pathlib import Path
 import subprocess
 import sys
 import uuid
-from mdff_usability_source_scope import ROOT,WORKFLOWS,load_scope,read,digest
+from mdff_usability_source_scope import ROOT,WORKFLOWS,load_scope,read,digest,readability_scope,support_paths
 
 
 def parent_snapshot(config,request):
     if hasattr(config,'_mdff_parent_snapshot'):return config._mdff_parent_snapshot
     scope,parents=load_scope()
+    _,previous=readability_scope(historical=scope)
     folder=request.getfixturevalue('tmp_path_factory').mktemp('authenticated-mdff-parent')
     boundary=ROOT.resolve()
     for path,entry in scope['protected'].items():
-        raw=read(ROOT,path,resolved_root=boundary);mode=entry['mode']
+        raw=previous[path] if path in previous else read(ROOT,path,resolved_root=boundary)
+        mode=entry['mode']
         assert digest(raw,mode)==entry[mode+'_sha256'],'Historical workflow source changed: '+path
         target=folder/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw)
     for path,raw in parents.items():
@@ -27,7 +29,9 @@ def parent_snapshot(config,request):
              'src/emcd_sim/gui/multisite_results.py','src/emcd_sim/gui/multisite_export.py',
              'src/emcd_sim/crystallographic_sites.py','src/emcd_sim/multisite.py')
     for path in support:
-        target=folder/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes((ROOT/path).read_bytes())
+        target=folder/path
+        if not target.exists():
+            target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes((ROOT/path).read_bytes())
     config._mdff_parent_snapshot=folder
     config._mdff_parent_paths=sorted(set(scope['protected'])|set(parents)|set(support))
     return folder
@@ -73,7 +77,7 @@ def install(config,items):
             folder=_item._request.getfixturevalue('tmp_path')/'registered-workflow'
             parent=parent_snapshot(config,_item._request)
             declaration,_=load_scope()
-            current_paths=sorted(set(declaration['protected'])|set(declaration['candidate'])|set(declaration['bootstrap']))
+            current_paths=sorted(support_paths())
             run_contract(parent,_node,folder/'historical',config._mdff_parent_paths)
             run_contract(ROOT,_target,folder/'current',current_paths)
         # Keep the original collected identity and assertions intact on disk.
