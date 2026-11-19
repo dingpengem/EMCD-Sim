@@ -43,10 +43,16 @@ def equivalent(old,new):
     # The archived scheduler predates runtime allocation records. Compare all
     # requested inputs, then verify the new observed allocation independently.
     assert replace(new['config'],fft_generators=None,resource_allocation=None)==replace(old['config'],fft_generators=None,resource_allocation=None)
-    assert old['settings']==new['settings'] and old['config'].resource_allocation is None
-    assert new['config'].resource_allocation==dict(
-        memory_budget_mib=new['metadata']['memory_admission']['memory_budget_mib'],
-        effective_workers=new['metadata']['execution']['effective_workers'])
+    assert old['settings']==new['settings']
+    # This helper also compares current checkpoint/reloaded results, for which
+    # both sides carry an observed allocation rather than an archived one.
+    for result in (old,new):
+        allocation=result['config'].resource_allocation
+        if allocation is not None:
+            assert allocation==dict(
+                memory_budget_mib=result['metadata']['memory_admission']['memory_budget_mib'],
+                effective_workers=result['metadata']['execution']['effective_workers'])
+    assert new['config'].resource_allocation is not None
     for method,a in old['methods'].items():
         b=new['methods'][method]
         for name,value in a['spectra'].items():np.testing.assert_allclose(b['spectra'][name],value,rtol=3e-12,atol=2e-14,equal_nan=True,err_msg=method+' '+name)
