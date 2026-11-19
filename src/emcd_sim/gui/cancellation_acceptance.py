@@ -35,20 +35,24 @@ def run(output,source):
     def check(value,message):
         if not value:raise AssertionError(message)
     try:
-        w.reset_reference();w.source_path.setText(str(source));w.validate_xmcd();w.declaration.setChecked(True)
+        w.reset_reference();w.model_box.setCurrentIndex(0)
+        w.source_path.setText(str(source));w.validate_xmcd();w.declaration.setChecked(True)
         # This bounded diagnostic profile must survive solver/geometry refreshes.
         w.numerical_mode.setCurrentIndex(1)
         w.set_values(dict(thickness=2,beam=.9,potential=1.8,xl3=831.4778,xl2=848.698,halfwidth=.5))
         for key,value in dict(energy=9,grid=9,depth=17,subpixels=16,fft_grid=24).items():w.spin[key].setValue(value)
-        w.correction.setChecked(False);w.angular_maps.setChecked(False);w.energy_scope.setCurrentIndex(0)
+        w.correction.setChecked(False);w.angular_maps.setChecked(False);w.energy_scope.setCurrentIndex(w.energy_scope.findData('uniform'))
         w.channeling_box.setCurrentIndex(1);w.propagation_box.setCurrentIndex(0);w.align();w.refresh()
         check(w.numerical_mode.currentIndex()==1, 'Cancellation profile stays Manual')
         expected=dict(beam=.9,potential=1.8,grid=9,depth=17,subpixels=16,fft_grid=24,energy=9,halfwidth=.5)
         actual=w.numerical_snapshot()
         check(all(actual[k]==v for k,v in expected.items()), 'Bounded cancellation profile preserved')
         from .geometry import geometry
-        hkl=geometry(w.structure,w.settings(),systematic_row=w.forward_settings().systematic_row)[2]
+        hkl=geometry(w.structure,w.settings(),systematic_row=w.row_projection.isChecked())[2]
         check(len(hkl)==3, 'Bounded cancellation profile has three retained beams')
+        w.show_structure_viewer();w.reference_ni.setChecked(True)
+        check(w.mdff_dialog.apply_configuration() is not None,w.mdff_dialog.status.text())
+        w.structure_viewer.apply_groups()
         report['requested_numerical_settings']=expected
         report['initial_numerical_settings']=actual
         report['initial_beam_basis']=dict(count=len(hkl),hkl=hkl)
@@ -57,6 +61,7 @@ def run(output,source):
         save_project(previous,output/'preserved_project')
         saved_hash=hashlib.sha256((output/'preserved_project'/'project.json').read_bytes()).hexdigest()
         browser_count=len(w.browser.registry.records)
+        w.browser.table.clearSelection()
         cases=[('bw_full','bloch','depth',True),('ms_outgoing','fft-multislice','outgoing',True),
             ('ms_depth','fft-multislice','depth',True),('both_first','both','depth',True),
             ('near_completion','bloch','completion',True),('repeat_cancel','bloch','depth',True),
@@ -74,7 +79,8 @@ def run(output,source):
                 def checked(cancelled=None):
                     frame=sys._getframe(1)
                     hit=(target=='depth' and (frame.f_code.co_name=='depth_response' or
-                        (frame.f_code.co_name=='multislice_double_channeling_response' and 'iz' in frame.f_locals)))
+                        (frame.f_code.co_name=='double_channeling_group_responses' and 'outgoing' in frame.f_locals) or
+                        (frame.f_code.co_name=='multislice_double_channeling_group_responses' and 'iz' in frame.f_locals)))
                     hit=hit or (target=='outgoing' and frame.f_code.co_name=='advance' and frame.f_locals.get('dz',0)<0)
                     if hit:work_boundary()
                     return original(cancelled)
@@ -139,6 +145,7 @@ def run(output,source):
         check(hashlib.sha256((output/'preserved_project'/'project.json').read_bytes()).hexdigest()==saved_hash,'Old project preserved')
         check(fingerprints(load_project(output/'preserved_project'))==before,'Old project arrays preserved')
         report['completed_solver_fingerprints']={'bloch':before}
+        w.browser.table.clearSelection()
         w.propagation_box.setCurrentIndex(1);w.start_emcd();idle()
         check(w.run_outcome=='completed','MS completes after cancellation')
         report['completed_solver_fingerprints']['fft-multislice']=fingerprints(w.emcd_result)
@@ -151,6 +158,6 @@ def run(output,source):
         report['outcome']='FAIL';report['traceback']=traceback.format_exc()
     finally:
         if w.busy:w.cancel();idle()
-        timer.stop();w.close();app.processEvents()
+        timer.stop();w.project_dirty=False;w.close();app.processEvents()
         (output/'acceptance.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
     return 0 if report.get('outcome')=='PASS' else 1

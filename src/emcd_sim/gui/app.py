@@ -645,7 +645,17 @@ def main():
         QtCore.QTimer.singleShot(30000,lambda:app.exit(2))
     if args.smoke_emcd_screenshot:
         window.propagation_box.setCurrentIndex(['bloch','fft-multislice','both'].index(args.smoke_propagation))
-        if args.smoke_atomic:window.model_box.setCurrentIndex(1)
+        # These opt-in smoke cases explicitly select the supported Ni preset.
+        window.model_box.setCurrentIndex(1 if args.smoke_atomic else 0)
+        if args.smoke_atomic:
+            from .forward_settings import NiForwardSettings
+            from .saved_atomic_ui import restore
+            restore(window.atomic_editor,NiForwardSettings(model='atomic',l3=852.7,l2=870.0),window.structure)
+        else:
+            window.validate_xmcd(show_error=False);window.declaration.setChecked(True);window.reference_ni.setChecked(True)
+        window.show_structure_viewer()
+        if window.mdff_dialog.apply_configuration() is None:raise ValueError(window.mdff_dialog.status.text())
+        window.structure_viewer.apply_groups()
         def capture_emcd():
             if window.busy:QtCore.QTimer.singleShot(100,capture_emcd);return
             from .forward_results import export_result

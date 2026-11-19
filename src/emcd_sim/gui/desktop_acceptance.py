@@ -48,12 +48,16 @@ def run(output, orientation='017'):
         if report.get('complete') or state.get('failed'):
             return
         state['failed'] = True
-        report['errors'].append(str(message)); report['complete'] = False
+        import traceback
+        report['errors'].append(repr(message)); report['complete'] = False
+        report['failure_stage'] = dict(state)
+        if isinstance(message, Exception):
+            report['traceback'] = ''.join(traceback.format_exception(message))
         write()
         if w.busy:
             w.cancel()
         else:
-            w.close(); app.exit(2)
+            w.project_dirty=False;w.close(); app.exit(2)
 
     w.error = fail
     previous_hook = sys.excepthook
@@ -62,10 +66,14 @@ def run(output, orientation='017'):
     def boot():
         try:
             s = w.settings()
-            assert (s.voltage, s.beam_cutoff, s.potential_cutoff) == (300, 3.2, 2.5)
-            assert w.spin['grid'].value() == 97 and w.memory_budget.currentData() == 2048
+            assert (s.voltage, s.beam_cutoff, s.potential_cutoff) == (300, 2.5, 2.0)
+            assert w.spin['grid'].value() == 97 and w.memory_budget.value() == 2048
             assert w.worker_mode.currentIndex() == 0
             assert w.spin['slice_step'].value() == 2.
+            # Automatic starting presets are an explicit historical Ni case.
+            w.declaration.setChecked(True);w.show_structure_viewer();w.reference_ni.setChecked(True)
+            assert w.mdff_dialog.apply_configuration() is not None,w.mdff_dialog.status.text()
+            w.structure_viewer.apply_groups()
             edits=[]
             for mode in (0,1):
                 w.numerical_mode.setCurrentIndex(mode)
@@ -81,6 +89,7 @@ def run(output, orientation='017'):
                     edits.append(dict(mode=mode,value=value))
                 w.numerical_mode.setCurrentIndex(1-mode)
                 assert w.spin['slice_step'].value()==10.
+            w.project_dirty=False  # Discard only this acceptance input draft.
             w.new_project();assert w.spin['slice_step'].value()==2.
             report['slice_step_control']=dict(default_nm=2.,range_nm=[.001,10.],edits=edits)
             report['defaults'] = dict(settings=asdict(s), grid=97, memory_budget_mib=2048,
@@ -150,7 +159,10 @@ def run(output, orientation='017'):
             w.zone.setText(' '.join(orientation)); w.target.setText(' '.join(map(str, _TARGETS[orientation])))
             w.apply_orientation(); w.align(); w.restore_detectors()
             w.propagation_box.setCurrentIndex(2); w.energy_scope.setCurrentIndex(w.energy_scope.findData('edges'))
-            w.declaration.setChecked(True)
+            w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
+            w.show_structure_viewer()
+            assert w.mdff_dialog.apply_configuration() is not None,w.mdff_dialog.status.text()
+            w.structure_viewer.apply_groups()
             w.refresh()
             report['smoke_profile'] = dict(settings=asdict(w.settings()), config=asdict(w.forward_settings()),
                                            scope='Tiny selected-energy smoke, not a convergence benchmark')
@@ -169,6 +181,7 @@ def run(output, orientation='017'):
             fail(exc)
 
     def launch_case(channeling):
+        w.browser.table.clearSelection()  # Retain each acceptance case as a new run.
         w.channeling_box.setCurrentIndex(channeling)
         state.update(stage='calculation', channeling=channeling)
         w.start_emcd()
@@ -178,7 +191,7 @@ def run(output, orientation='017'):
         report['heartbeats'] += 1
         if state.get('failed'):
             if not w.busy and (w.worker is None or not w.worker.isRunning()):
-                w.close(); app.exit(2)
+                w.project_dirty=False;w.close(); app.exit(2)
             return
         if time.perf_counter() - start > 180:
             fail('Desktop acceptance timeout'); return
@@ -201,7 +214,11 @@ def run(output, orientation='017'):
                 for method in r['methods'].values():
                     assert np.isfinite(method['spectra']['I_A_plus']).all()
                 execution = r['metadata']['execution']
-                assert execution['effective_workers']['bloch'] == 1
+                workers = execution['effective_workers']['bloch']
+                if state['channeling'] == 0:
+                    assert workers == 1
+                else:
+                    assert 1 <= workers <= execution['cpu_worker_limit']
                 before = fingerprints(r)
                 folder = output/('single' if state['channeling'] == 0 else 'double')
                 save_project(r, folder)
@@ -225,7 +242,7 @@ def run(output, orientation='017'):
                     QtCore.QTimer.singleShot(200, lambda: launch_case(1))
                 else:
                     state['stage'] = 'done'
-                    w.store_ui_preferences(); w.close()
+                    w.store_ui_preferences(); w.project_dirty=False;w.close()
                     report.update(complete=True, closed_cleanly=not w.isVisible(),
                                   elapsed_seconds=time.perf_counter()-start)
                     write(); app.quit()
