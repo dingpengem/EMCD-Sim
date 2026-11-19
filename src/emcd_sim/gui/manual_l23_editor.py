@@ -289,7 +289,13 @@ class ManualL23Editor(QtWidgets.QWidget):
                 candidate=saved['direction'];computed=axis_rotation([float(v) for v in candidate.replace(',',' ').split()])
                 if np.array_equal(computed,frame):direction=candidate;frame_mode=0
             except (KeyError,ValueError,TypeError):pass
-        self.restore_draft(dict(fields=fields,matrices=matrices,direction=direction,frame_mode=frame_mode,frame=frame.astype(str).tolist(),
+        frame_draft=frame.astype(str).tolist()
+        try:
+            saved_frame=np.asarray(saved.get('frame'),dtype=str)
+            if saved_frame.shape==(3,3) and (frame_mode==0 or np.array_equal(saved_frame.astype(float),frame)):
+                frame_draft=saved_frame.tolist()
+        except (TypeError,ValueError):pass
+        self.restore_draft(dict(fields=fields,matrices=matrices,direction=direction,frame_mode=frame_mode,frame=frame_draft,
             low=str(source.energy_ev[0]),high=str(source.energy_ev[-1]),samples=saved_count,
             view=1 if editor['view']=='full' or not representable else 0,reference=model['origin'].removeprefix(ORIGIN_PREFIX)))
         self.snapshot=None;self.is_stale=True
