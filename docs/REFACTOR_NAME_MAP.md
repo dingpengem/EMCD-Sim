@@ -264,3 +264,54 @@ name/import relocations; the setup method and Ni source constant have their
 reviewed new names. The Ni source value is unchanged. This supports identifying
 older GUI setup expectations separately from changed application behavior;
 it does not replace behavioral checks.
+
+## Development binary and source identity
+
+The established Windows workflow completed successfully from clean snapshot
+**`3f9112a28e99e05f2772fb5d0637e845bb2e82ac`**. Application source remains frozen
+at `db3a015aba91f32f90638e987416c19dd0388c32`; intervening commits contain only
+test-consumer corrections and documentation. The build keeps version
+`0.9.0b2` / `v0.9.0-beta.2` and uses the label
+**EMCD-Sim physics readability development (unpublished)**.
+
+Paths relative to this worktree:
+
+- EXE: `build/windows-physics-readability-dev/dist/EMCD-Sim/EMCD-Sim.exe`
+- Complete Windows bundle: `build/windows-physics-readability-dev/EMCD-Sim-physics-readability-Windows-dev.zip`
+- Corresponding application snapshot: `build/windows-physics-readability-dev/corresponding-source/EMCD-Sim-source.zip`
+- Application plus reviewed Qt sources: `build/windows-physics-readability-dev/EMCD-Sim-physics-readability-Qt-sources.zip`
+- Existing required inventory: `build/windows-physics-readability-dev/build_manifest.json` and `SHA256SUMS.txt`
+
+The source ZIP's Git comment matches the build commit. It includes
+`forward_pipeline.py` and excludes retired `stage_b.py`, `emcd_forward.py` and
+`generalized_forward.py`. Post-build validation passed **41 required assets,
+34 Qt binary components and 99 translation catalogs**. No existing distribution
+was replaced. The documented process-scoped PowerShell invocation was used;
+machine/user execution policy was not changed.
+
+The frozen EXE launched with `frozen=true`, `qt_platform=windows` and the expected
+clean source identity. Its existing desktop acceptance profile stopped before
+any scientific cases, at initial control/default assertions: it expects
+`(voltage, beam_cutoff, potential_cutoff)=(300,3.2,2.5)`, whereas current automatic
+startup resolves `(300,2.5,2.0)`. A native source-default inspection confirmed
+those current values; grid 97, 2048 MiB, automatic worker mode and 2 nm slice
+step remain recorded. The profile's JSON has `complete=false`, `cases=[]` and
+an empty assertion message; its shell exit alone is not treated as a pass.
+Evidence: `build/physics-readability/native-frozen-desktop/acceptance.json`.
+
+The existing `--smoke-screenshot` route then completed the normal frozen native
+elastic preview successfully. Its inspected screenshot is
+`build/physics-readability/native-ui/frozen-preview.png`, showing calculated
+diffraction and exit intensities. This verifies packaged startup and an actual
+elastic calculation, **not full frozen inelastic desktop acceptance**. The
+current native source MDFF/multisite checks above passed separately. No
+application code was changed to make the older profile pass.
+
+The build uses the existing Windows Python 3.11.17 environment (a venv over the
+installed Miniconda environment), NumPy 2.4.6, SciPy 1.17.1, PySide6 6.12.0 and
+PyInstaller 6.22.3. Reviewed corresponding-source archives came from
+`C:/Users/peng863/EMCD-Sim/build/v081b2-source-materials`. **Clean-machine
+installation is not tested**; the standard manifest retains that limitation.
+The later documentation commit records these results independently of the
+binary/source snapshot. Nothing was merged, pushed, published or installed over
+an existing release, and no future physics was implemented.
