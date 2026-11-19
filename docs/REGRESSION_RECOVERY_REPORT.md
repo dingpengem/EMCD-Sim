@@ -438,9 +438,10 @@ declaration mutation, one native-widget teardown regression and three extra
 independent-kernel negative controls with ordinary registration already
 approved. Renamed tests/path parameters are paired rather than treated as
 deleted coverage. One prior optional GUI artifact became available; no skip was
-added, giving 63 to 62 skips. Adding the newly edited ZOLZ test to the existing
-closed mutation scope is expected to add one further final case. Final counts
-will be taken from the final XML, not this expectation.
+added, giving 63 to 62 skips. Final XML confirms 1,760 cases: adding the current
+approval for the already declared ZOLZ path did not create a collected case.
+Relative to the first Phase 2 full run, exactly two test names changed and no
+case was added or removed. The 62 skipped node identities are unchanged.
 
 `phase1-final-classification.json` gives a primary category and reason for every
 one of the original 593 failure/error reports: A registration/API 211,
@@ -458,3 +459,47 @@ using the current MDFF workspace labels, scroll owner and semantic map choices.
 The eight core Ni/Fe cases passed calculation, Save/Open and recalculation in
 both full source attempts before their obsolete provider-stage widgets failed.
 These partial run records are not relabeled complete native acceptance.
+
+## Final complete regression and subsequent QA-only checkpoint
+
+The complete, unselected regression on clean
+`91aff158d7c6ec17a45196200830d3e1f7c178a3` finished with **1,692 passed,
+six failed, zero errors and 62 skipped** (1,760 total) in **4,311.19 s**.
+The recorded launcher duration, including startup/exit, is 4,318.11 s.
+`phase2-final-complete-suite-91aff15.log`, `.xml`, `-run.json` and
+`-lifecycle.jsonl` are the raw evidence; `phase2-final-inventory.json` contains
+all six full tracebacks and all skip identities/reasons. No early stopping or
+test selection was used. Its initial Git status was clean.
+
+All six failures are exactly the numerical checks already identified:
+`test_bw_unchanged_and_depth_cancel[numerical]`,
+`test_full_spectrum_unchanged[bloch]`, `[both]`, the unequal-MDFF Double Bloch
+Cr parity assertion, and the two older Ni Double exact-array comparisons.
+There are **zero registration, ordinary GUI/application, infrastructure or
+memory-admission failures** in this run. This is **NO-GO**, not a green suite.
+
+Actual calculation/pytest payload PID 8620 peaked at **972.1328125 MiB RSS**
+and **1,030.08203125 MiB commit**. The separate venv launcher PID 1700 peaked
+at 4.375 MiB RSS and is not used as the application measurement. The additional
+58 passing cases versus the first Phase 2 full run did not restore the original
+process-budget cascade. No budget, numerical dimensions or admission rule was
+relaxed.
+
+After that full run, local commit
+`4b5dc2bef22d9a5a283546cfb16420c055b581c9` corrects only the opt-in
+`gui.parallel_acceptance` QA route: current startup/control APIs, explicit Ni
+Material acceptance, controllable BLAS policy, admitted worker assertions and
+actual Save/Open restoration of visible resource fields. Its real four-worker
+source run passed with its original grid/dimensions and **2,048 MiB** request,
+unchanged output fingerprints and restored Manual memory/worker controls.
+The temporary 512 MiB value is only an unexecuted UI draft before restoration;
+no calculation or saved result is relabeled with that value. Evidence:
+`phase2-source-resource-current-api.*` and its `acceptance.json`.
+
+The affected current/historical registration and resource-control modules then
+passed **48 tests, one unchanged optional-project skip**, in 17.62 s
+(`phase2-resource-qa-affected-checks.*`). Current approval metadata is updated
+for that reviewed QA source. Scientific source, numerical fixtures, assertions,
+normal production GUI execution and all shared calculation kernels are unchanged
+from the full-run candidate. The full result remains attributed to `91aff15`;
+it is not silently relabeled as the later QA/build commit.
