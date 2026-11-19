@@ -57,7 +57,7 @@ def no_physical_calculation(monkeypatch):
     def forbidden(*args,**kwargs):pytest.fail('Configuration IO called a numerical propagation/result loader')
     monkeypatch.setattr(io,'_read_npz',forbidden)
     monkeypatch.setattr('emcd_sim.gui.geometry.elastic_model',forbidden)
-    monkeypatch.setattr('emcd_sim.gui.forward_pipeline.calculate_multisite',forbidden)
+    monkeypatch.setattr('emcd_sim.gui.forward_pipeline.calculate',forbidden)
 
 
 def test_afm_cr_indices_structure_arrays_modes_and_numerics_roundtrip(tmp_path):

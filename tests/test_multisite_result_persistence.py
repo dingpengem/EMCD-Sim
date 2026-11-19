@@ -90,7 +90,6 @@ def stored_project(tmp_path,kind='Fe3O4',channeling='single',both=False,manual=F
 def no_simulation(monkeypatch):
     def forbidden(*a,**k):pytest.fail('Project IO invoked a simulation')
     monkeypatch.setattr('emcd_sim.gui.geometry.elastic_model',forbidden)
-    monkeypatch.setattr('emcd_sim.gui.forward_pipeline.calculate_multisite',forbidden)
     monkeypatch.setattr('emcd_sim.gui.forward_pipeline.calculate',forbidden)
 
 

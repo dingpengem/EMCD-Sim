@@ -19,7 +19,6 @@ from emcd_sim.gui import channeling
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.historical_ni import tensors
-from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.material_inputs import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model, geometry
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
@@ -91,7 +90,7 @@ def test_historical_ni_matched_thicknesses(tmp_path, old_contract, method, chann
         'Ni', 'Ni', (0, 1, 2, 3), settings_for_source(path), (0, 0, 1), 4)])
     # Reuse the established pre-feature numerical reference, not only today's
     # shared kernels. The fixture adapts historical names, not equations.
-    with patch.object(channeling, 'contract', old_contract):
+    with patch.object(channeling, 'calculate_detector_signals', old_contract):
         legacy = calculate(structure, settings, historical, energy_ev=energy)
     result = calculate(structure, settings, cfg, energy_ev=energy, sites=sites)
     # Reversal/detector differences can be exactly zero in the reference.
