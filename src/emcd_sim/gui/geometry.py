@@ -9,6 +9,7 @@ import numpy as np
 from ase import Atoms
 from ase.build import bulk
 from ase.io import read
+from ..projected_geometry import ProjectedGeometry
 from emcd_sim.crystal import Crystal
 from emcd_sim.elastic import BeamSet
 from emcd_sim.geometry import Microscope,electron_wavelength_angstrom
@@ -198,3 +199,13 @@ def structures_match(snapshot,structure):
     return (snapshot['species']==current['species'] and snapshot.get('sha256','')==current.get('sha256','')
         and snapshot.get('occupancies',{})==current.get('occupancies',{})
         and all(np.allclose(snapshot[k],current[k],rtol=0,atol=1e-12) for k in ('lattice_angstrom','fractional_positions','pbc')))
+
+
+def projected_geometry_from_oriented_crystal(settings,crystal,fft_generators=None):
+    """Build FFT support from this request's explicit oriented elastic crystal.
+
+    The crystal includes all species/sites, with lattice rows already rotated
+    into beam Cartesian axes. No material or orientation preset is selected.
+    ProjectedGeometry validates periodic ZOLZ support for the declared zone.
+    """
+    return ProjectedGeometry.from_oriented(crystal,settings.zone,settings.target,generators=fft_generators)

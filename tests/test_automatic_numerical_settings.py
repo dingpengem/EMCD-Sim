@@ -24,7 +24,7 @@ def window(tmp_path):
         solvers=[]
         for name in ('emcd_sim.gui.forward_pipeline.calculate','emcd_sim.gui.calculation_worker.calculate',
                      'emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run',
-                     'emcd_sim.gui.propagation.propagate','emcd_sim.gui.channeling.double_channeling_response',
+                     'emcd_sim.gui.channeling.propagate','emcd_sim.gui.channeling.double_channeling_response',
                      'emcd_sim.gui.channeling.multislice_double_channeling_response'):
             solvers.append(stack.enter_context(patch(name,side_effect=AssertionError('Unexpected scientific solve'))))
         # Automatic starting presets apply to the built-in Ni workflow, not
@@ -71,7 +71,7 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
 
 def test_pure_resolution_never_calls_scientific_solvers():
     with ExitStack() as stack:
-        for name in ('emcd_sim.gui.propagation.propagate','emcd_sim.gui.forward_pipeline.calculate',
+        for name in ('emcd_sim.gui.channeling.propagate','emcd_sim.gui.forward_pipeline.calculate',
                      'emcd_sim.gui.channeling.double_channeling_response',
                      'emcd_sim.gui.channeling.multislice_double_channeling_response',
                      'numpy.linalg.eigh'):

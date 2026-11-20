@@ -1,5 +1,11 @@
 # Current calculation API and refactor decisions
 
+Phase 3D-1 moves the projected-cell adapter to `gui.geometry` and incoming
+`propagate` execution to `gui.channeling`, removing the planning/execution cycle
+without renaming their clear function interfaces. The
+[Phase 3D-1 report](PHASE3D1_NUMERICAL_CHANNELING_DECOUPLING.md) records the
+identified consumers, headless calculations and exact numerical verification.
+
 Phase 3C moves neutral structure helpers to `gui.geometry`, completed-method
 views to `gui.forward_results`, rendering/controls to `gui.result_presentation`
 and file exports to `gui.result_export`. The renamed `draw_multisite_panel`
@@ -70,7 +76,8 @@ Paths below are relative to `src/emcd_sim/`.
 | Repeated detector even/odd algebra | `detector_signals.reversal_components` | One implementation owns N/M, detector differences and the reference sum. Arithmetic/evaluation order and raw inputs are preserved. |
 | `_multisite_single_block` | `gui.multisite_integration.contract_single_channeling_block` | Contracts one bounded energy/support cohort with already prepared groups. Memory-lifetime tests target this owner. |
 | `_multisite_single_detector_data` / `_multisite_double_detector_data` | `gui.multisite_integration.integrate_single_channeling_spectrum` / `integrate_double_channeling_spectrum` | Separate bounded spectrum scheduling/reduction from request validation and propagation setup. Workers, source normalization and cancellation behavior are retained. |
-| `gui.propagation.projected_geometry_for` | `projected_geometry_from_oriented_crystal` in the same module | Production always supplied the actual oriented crystal. Make it required; remove the unused optional Ni fallback instead of preserving it as a facade. |
+| `gui.propagation.projected_geometry_for`, later `gui.propagation.projected_geometry_from_oriented_crystal` | `gui.geometry.projected_geometry_from_oriented_crystal` | The oriented crystal is required; the old Ni fallback remains removed. Phase 3D-1 places projected-cell geometry in its existing geometry owner. Channeling, planning, numerical controls and authenticated reference imports use that owner; no production alias is required. |
+| `gui.propagation.propagate` | `gui.channeling.propagate` | Incoming BW/FFT execution belongs beside FFT preparation and channeling execution, outside preflight planning. Both forward schedules, maintained test spies and benchmark instrumentation use the new owner; authenticated historical imports are translated only in test/reference infrastructure. No production wrapper remains. |
 | `gui.results_browser.Registry` / `IOWorker` | `ResultRegistry` / `ProjectIOWorker` | Identify the result-path index and project-file worker. All current calls/imports are migrated; old aliases are removed. Index/project JSON schemas are unchanged. |
 | `ProjectWorkspace.setup_stage_d` | `setup_project_workspace` | Initializes project actions, result browsing and layout. The old alias is removed. |
 | `study_geometry.StudyGeometry` | `study_presets.NickelStudyGeometry` | This is an FCC Ni preset builder over the common structural engine, not a general crystal implementation. Maintained Ni studies use the explicit name; the old module is removed. |

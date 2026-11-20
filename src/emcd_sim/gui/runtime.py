@@ -61,7 +61,7 @@ def build_info():
     return dict(label=LABEL, application_version=__version__, display_version=__display_version__, commit=commit, dirty=dirty, build_utc=None,
                 physics_convention=PHYSICS_CONVENTION,
                 implementation_sha256={p: hashlib.sha256(Path(__file__).with_name(p).read_bytes()).hexdigest()
-                                       for p in ('forward_pipeline.py', 'geometry.py', 'propagation.py', 'result_export.py')})
+                                       for p in ('forward_pipeline.py', 'geometry.py', 'propagation.py', 'channeling.py', 'result_export.py')})
 
 
 def configure_logging():

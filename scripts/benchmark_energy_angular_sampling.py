@@ -123,7 +123,7 @@ def run_case(a,s,c,e,method,policy):
     thread=threading.Thread(target=sampler,daemon=True);thread.start()
     try:
         with ExitStack() as stack:
-            stack.enter_context(patch.object(propagation,'propagate',wrapper(propagation.propagate,'incoming')))
+            stack.enter_context(patch.object(channeling,'propagate',wrapper(channeling.propagate,'incoming')))
             stack.enter_context(patch.object(adapter,'prepare_incoming_bloch',wrapper(adapter.prepare_incoming_bloch,'incoming')))
             name='double_channeling_response' if method=='bloch' else 'multislice_double_channeling_response'
             stack.enter_context(patch.object(adapter,name,wrapper(getattr(adapter,name),'outgoing',True)))

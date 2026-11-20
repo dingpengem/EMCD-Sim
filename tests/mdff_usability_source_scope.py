@@ -31,7 +31,7 @@ INTEGRATIONS=('tests/unit_source_snapshots.py','tests/single_element_source_guar
 BOOTSTRAP=INTEGRATIONS+('tests/mdff_usability_source_scope.py','tests/mdff_workflow_registration.py','tests/test_mdff_usability_source_scope.py','tests/fixtures/mdff_usability_scope_v1.json','tests/fixtures/mdff_usability_parent_v1.zip','tests/fixtures/mdff_usability_scope_v2.json','tests/fixtures/mdff_usability_parent_v2.zip','tests/fixtures/mdff_usability_scope_v3.json','tests/fixtures/mdff_usability_parent_v3.zip',MANIFEST_PATH,ARCHIVE_PATH,'scripts/verify_mdff_registration.py','docs/MDFF_USABILITY_REGISTRATION.md')
 TRUST_ROOTS=('tests/mdff_usability_source_scope.py',MANIFEST_PATH,ARCHIVE_PATH)
 READABILITY_PATH='tests/fixtures/physics_readability_current_v1.json'
-READABILITY_SHA256='7fa352588cc19f4ef7e5f9735da2be4631b9462bfa5ca7ccb7574101cfb3524a'
+READABILITY_SHA256='bfa7e4e9b902a7a8dc1944495cfee253c53660087cb102aff01bafe81060a88e'
 READABILITY_RENAMES={
  'src/emcd_sim/gui/stage_b.py':'src/emcd_sim/gui/calculation_controls.py',
  'src/emcd_sim/gui/emcd_forward.py':'src/emcd_sim/gui/forward_results.py',

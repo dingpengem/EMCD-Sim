@@ -8,7 +8,7 @@ import pytest
 from ase.build import bulk
 
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.gui import forward_pipeline, propagation
+from emcd_sim.gui import forward_pipeline, propagation, channeling
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
 from emcd_sim.mdff_providers import settings_for_source
@@ -80,11 +80,11 @@ def test_single_group_ni_matches_existing_pipeline(tmp_path,method):
 def test_afm_both_solvers_reuse_one_propagation_and_match_patch2a(tmp_path,monkeypatch):
     structure,settings,sites,_=system(tmp_path,'Cr')
     calls=[]
-    original=propagation.propagate
+    original=channeling.propagate
     def counted(*args,**kwargs):
         calls.append(args[2].propagation)
         return original(*args,**kwargs)
-    monkeypatch.setattr(propagation,'propagate',counted)
+    monkeypatch.setattr(channeling,'propagate',counted)
     result=calculate(structure, settings, configuration(propagation='both'), energy_ev=ENERGY, sites=sites)
     assert calls==['bloch','fft-multislice']
     for method,method_result in result['methods'].items():
@@ -178,7 +178,7 @@ def test_invalid_inputs_fail_before_geometry_or_propagation(tmp_path,monkeypatch
     monkeypatch.setattr(forward_pipeline,'geometry',forbidden)
     monkeypatch.setattr(forward_pipeline,'elastic_model',forbidden)
     monkeypatch.setattr(propagation,'numerical_info',forbidden)
-    monkeypatch.setattr(propagation,'propagate',forbidden)
+    monkeypatch.setattr(channeling,'propagate',forbidden)
     with pytest.raises(ValueError):
         calculate(structure, settings, cfg, energy_ev=energy, sites=sites)
 
@@ -189,7 +189,7 @@ def test_cancellation_inside_bounded_contraction_prevents_second_solver(tmp_path
     structure,settings,sites,_=system(tmp_path,'Cr')
     stop=False
     calls=[]
-    original_propagate=propagation.propagate
+    original_propagate=channeling.propagate
     original_kernel=contraction._tensor_angular_maps
     def counted(*args,**kwargs):
         calls.append(args[2].propagation)
@@ -200,7 +200,7 @@ def test_cancellation_inside_bounded_contraction_prevents_second_solver(tmp_path
         value=original_kernel(*args)
         stop=True
         return value
-    monkeypatch.setattr(propagation,'propagate',counted)
+    monkeypatch.setattr(channeling,'propagate',counted)
     monkeypatch.setattr(contraction,'_tensor_angular_maps',kernel)
     with pytest.raises(Cancelled):
         calculate(structure, settings, configuration(propagation='both'), energy_ev=ENERGY, cancelled=lambda : stop, sites=sites)

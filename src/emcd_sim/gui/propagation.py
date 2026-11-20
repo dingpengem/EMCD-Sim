@@ -1,8 +1,7 @@
-"""General projected-ZOLZ adapter and numerical planning/diagnostics."""
+"""Numerical planning, resource estimates and independent-method diagnostics."""
 
 import numpy as np
-from .geometry import geometry
-from ..projected_geometry import ProjectedGeometry
+from .geometry import geometry, projected_geometry_from_oriented_crystal
 
 from ..crystallography import primitive_direction
 from ..multislice_reference import complex_wave_diagnostics
@@ -56,16 +55,6 @@ def multisite_bw_double_memory_terms(cfg, group_count, detector_pixels=None):
         provider_tensors=576*energies*group_count/2**20,
         selected_group_maps=128*aliases*pixels*(group_count+2)/2**20,
         group_detector_spectra=256*energies*(group_count+2)/2**20)
-
-
-def projected_geometry_from_oriented_crystal(settings,crystal,fft_generators=None):
-    """Build FFT support from this request's explicit oriented elastic crystal.
-
-    The crystal includes all species/sites, with lattice rows already rotated
-    into beam Cartesian axes. No material or orientation preset is selected.
-    ProjectedGeometry validates periodic ZOLZ support for the declared zone.
-    """
-    return ProjectedGeometry.from_oriented(crystal,settings.zone,settings.target,generators=fft_generators)
 
 
 def resolve_fft_configuration(structure,settings,cfg):
@@ -276,26 +265,6 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     info['execution']=execution
     if check_memory and enforce_execution:require_supported(execution)
     return info
-
-
-def propagate(elastic,settings,cfg,z,stage,*,cancelled=None):
-    waves={};extra={}
-    if cfg.propagation in ('bloch','both'):
-        stage('Running Bloch-wave propagation');waves['bloch']=elastic.amplitudes(z)
-    if cfg.propagation in ('fft-multislice','both'):
-        from .channeling import fft_geometry,incident_fields
-        stage('Running incoming FFT propagation in the matched projected potential')
-        grid=fft_geometry(elastic,settings,cfg,cancelled=cancelled)
-        incoming=incident_fields(grid,settings.thickness,depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,cancelled=cancelled,memory_budget_mib=cfg.memory_budget_mib)
-        psi=incoming[0][:,grid.indices(elastic.beams.hkl)];waves['fft-multislice']=psi
-        total=np.sum(abs(incoming[0])**2,axis=1);outside=total-np.sum(abs(psi)**2,axis=1)
-        extra=dict(beam_hkl=grid.hkl,reciprocal_gxy=grid.g,exit_intensity=abs(incoming[0][-1])**2,
-            generators=grid.geometry.generators,
-            total_norm=total,excluded_intensity=outside,_prepared=(grid,incoming),
-            summary=dict(norm_error=float(abs(total-1).max()),max_excluded_population=float(outside.max()),exit_excluded_population=float(outside[-1]),
-                projected_norm_exit=float(np.sum(abs(psi[-1])**2)),renormalized=False,phase_convention='raw FFT coefficients; no conjugation or fitted factor'))
-        return waves,extra
-    return waves,extra
 
 
 def error_pair(a,b,floor=0.):

@@ -104,7 +104,8 @@ def _calculate_uniform_prepared(structure,settings,cfg,progress,cancelled,*,ener
         provider.simulation_magnetization)
     # Direct integration requires full physical aperture coverage as well.
     if any(max(abs(np.asarray(p)))+cfg.radius>cfg.halfwidth for p in cfg.centers):raise ValueError('Map halfwidth must fully cover both physical detector apertures')
-    from .propagation import propagate, compare_methods, numerical_info
+    from .channeling import propagate
+    from .propagation import compare_methods, numerical_info
     # Report the resolved grid, not the requested uniform-point control. Keep
     # cfg unchanged so legacy projects retain their original sampling request.
     info=numerical_info(structure,settings,replace(cfg,energy_points=len(energy)),hkl=hkl,check_memory=False)
@@ -197,7 +198,8 @@ def _calculate_multisite(structure,settings,sites,cfg,progress=lambda s:None,
     from ..cancellation import check_cancelled
     from ..multisite import MultiSiteIonization
     from ..multisite_spectrum import prepare_multisite_spectrum
-    from .propagation import resolve_fft_configuration,numerical_info,propagate,compare_methods
+    from .propagation import resolve_fft_configuration,numerical_info,compare_methods
+    from .channeling import propagate
     from .memory_budget import reserve_memory
     from .channeling import angular_schedule
 

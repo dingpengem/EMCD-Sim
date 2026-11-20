@@ -107,7 +107,7 @@ class SavedVisualizationTests(unittest.TestCase):
         cls.app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         cls.guards=ExitStack()
         for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni',
-                     'emcd_sim.gui.forward_pipeline.calculate','emcd_sim.historical_ni.tensors','emcd_sim.gui.propagation.propagate',
+                     'emcd_sim.gui.forward_pipeline.calculate','emcd_sim.historical_ni.tensors','emcd_sim.gui.channeling.propagate',
                      'emcd_sim.single_channeling_tensor.run_tensor_with_coherence','emcd_sim.single_channeling_tensor.run_tensor_with_coherence',
                      'emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.gui.app.PreviewWorker.run'):
             cls.guards.enter_context(patch(name,side_effect=AssertionError('Forward calculation forbidden in Stage F')))

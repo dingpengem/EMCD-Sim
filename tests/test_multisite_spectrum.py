@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from ase import Atoms
 
-from emcd_sim.gui import forward_pipeline, propagation
+from emcd_sim.gui import forward_pipeline, propagation, channeling
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings
@@ -81,11 +81,11 @@ def independently_accumulated(method,structure,settings,sites):
 def test_disjoint_elements_and_edges_both_solvers(tmp_path,monkeypatch,fe_edge,offset):
     structure,settings,sites=system(tmp_path,fe_edge=fe_edge)
     calls=[]
-    original=propagation.propagate
+    original=channeling.propagate
     def counted(*args,**kwargs):
         calls.append(args[2].propagation)
         return original(*args,**kwargs)
-    monkeypatch.setattr(propagation,'propagate',counted)
+    monkeypatch.setattr(channeling,'propagate',counted)
     result=calculate(structure, settings, configuration(propagation='both'), energy_windows=disjoint_windows(offset), sites=sites)
     assert calls==['bloch','fft-multislice']
     expected_energy=np.sort(np.r_[np.asarray(FE_GRID)+offset,NI_GRID])
@@ -202,7 +202,7 @@ def test_missing_required_data_rejected_before_geometry(tmp_path,monkeypatch,fai
     monkeypatch.setattr(forward_pipeline,'geometry',forbidden)
     monkeypatch.setattr(forward_pipeline,'elastic_model',forbidden)
     monkeypatch.setattr(propagation,'numerical_info',forbidden)
-    monkeypatch.setattr(propagation,'propagate',forbidden)
+    monkeypatch.setattr(channeling,'propagate',forbidden)
     with pytest.raises(ValueError):
         calculate(structure, settings, configuration(), energy_ev=energy, energy_windows=windows, sites=sites)
 

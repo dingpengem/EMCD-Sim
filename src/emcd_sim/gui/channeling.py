@@ -1,4 +1,4 @@
-"""Detector-support scheduling over the existing Single/Double Channeling kernels."""
+"""Incoming propagation and detector-support scheduling over existing channeling kernels."""
 from concurrent.futures import ThreadPoolExecutor,wait,FIRST_COMPLETED
 from contextlib import contextmanager
 import sys,threading,os
@@ -11,13 +11,32 @@ from ..mdff_edges import selected_samples
 
 
 def fft_geometry(elastic,settings,cfg,*,cancelled=None):
-    from .propagation import projected_geometry_from_oriented_crystal
+    from .geometry import projected_geometry_from_oriented_crystal
     return ProjectedFFT.build(elastic,grid_points=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
         systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
         projected_geometry=projected_geometry_from_oriented_crystal(settings,elastic.crystal,cfg.fft_generators),
         systematic_row_hkl=settings.target if cfg.systematic_row else None,
         retained_hkl=elastic.beams.hkl if settings.basis_mode=='two-beam' else None,
         memory_budget_mib=cfg.calculation_memory_budget_mib,cancelled=cancelled)
+
+
+def propagate(elastic,settings,cfg,z,stage,*,cancelled=None):
+    waves={};extra={}
+    if cfg.propagation in ('bloch','both'):
+        stage('Running Bloch-wave propagation');waves['bloch']=elastic.amplitudes(z)
+    if cfg.propagation in ('fft-multislice','both'):
+        stage('Running incoming FFT propagation in the matched projected potential')
+        grid=fft_geometry(elastic,settings,cfg,cancelled=cancelled)
+        incoming=incident_fields(grid,settings.thickness,depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,cancelled=cancelled,memory_budget_mib=cfg.memory_budget_mib)
+        psi=incoming[0][:,grid.indices(elastic.beams.hkl)];waves['fft-multislice']=psi
+        total=np.sum(abs(incoming[0])**2,axis=1);outside=total-np.sum(abs(psi)**2,axis=1)
+        extra=dict(beam_hkl=grid.hkl,reciprocal_gxy=grid.g,exit_intensity=abs(incoming[0][-1])**2,
+            generators=grid.geometry.generators,
+            total_norm=total,excluded_intensity=outside,_prepared=(grid,incoming),
+            summary=dict(norm_error=float(abs(total-1).max()),max_excluded_population=float(outside.max()),exit_excluded_population=float(outside[-1]),
+                projected_norm_exit=float(np.sum(abs(psi[-1])**2)),renormalized=False,phase_convention='raw FFT coefficients; no conjugation or fitted factor'))
+        return waves,extra
+    return waves,extra
 
 
 _windows_bw_lock=threading.Lock()
@@ -138,7 +157,8 @@ def calculate_detector_signals(model,settings,cfg,method,C,energy,tensors,stage,
     No material model or GUI state is constructed here.
     """
     from ..cancellation import Cancelled
-    from .propagation import projected_geometry_from_oriented_crystal,SINGLE_CHANNELING_PIXEL_BATCH
+    from .geometry import projected_geometry_from_oriented_crystal
+    from .propagation import SINGLE_CHANNELING_PIXEL_BATCH
     qx,qy,weights,detector_support,selected=angular_schedule(model,cfg,energy)
     dq2=(qx[0,1]-qx[0,0])**2
     full_weights=np.stack([weights[k].ravel() for k in ('A','B')])

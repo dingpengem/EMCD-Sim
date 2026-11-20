@@ -82,7 +82,7 @@
     },
     "scripts/benchmark_energy_angular_sampling.py": {
       "mode": "canonical",
-      "sha256": "19a8afaf76d6f37b79c9adb3f823f596aeb41647ab2e17e88e42c86a2ce1b6de"
+      "sha256": "49cc28a18a2a2d7d8dc740dea92c7c23b8d853d3b7297a9ab09a9ed44d18607a"
     },
     "scripts/benchmark_ms_double_buffers.py": {
       "mode": "canonical",
@@ -194,7 +194,7 @@
     },
     "src/emcd_sim/gui/channeling.py": {
       "mode": "canonical",
-      "sha256": "f5109e0d6f85af64efe59c24e731a4c836618a0171aa58ca69203bea9cdb2edb"
+      "sha256": "372feac826480aa02006f03d3f9898ebd251339a8cd4bfc8c8f9268b9dea68dd"
     },
     "src/emcd_sim/gui/compare_results.py": {
       "mode": "canonical",
@@ -206,7 +206,7 @@
     },
     "src/emcd_sim/gui/forward_pipeline.py": {
       "mode": "canonical",
-      "sha256": "05c91915d762d39aa8c9c3d21992810e713712b1b868fbfbfb5b28058449cc6a"
+      "sha256": "0ab0349a3f2b7e2a725ad547e569da02dcb3297b85bb6907115a86686e6a6347"
     },
     "src/emcd_sim/gui/forward_results.py": {
       "mode": "canonical",
@@ -218,7 +218,7 @@
     },
     "src/emcd_sim/gui/geometry.py": {
       "mode": "canonical",
-      "sha256": "2ab5ea9803b359513953482b5bd9f2aae80bffc97891d20ab2b624c1e55daddf"
+      "sha256": "769fc47e2b3a6822bf145cd06836017472906786e59364cb68dfb900e212b131"
     },
     "src/emcd_sim/gui/imported_tensor_ui.py": {
       "mode": "canonical",
@@ -246,7 +246,7 @@
     },
     "src/emcd_sim/gui/numerical_settings.py": {
       "mode": "canonical",
-      "sha256": "9b0f5dbcf1999c5d545334cd83bc155cd0049ed66512c5b91d6c7a1b89a534a7"
+      "sha256": "93b37f430d0f0112cd88c747c9271889943ca6ededf53c88879b58ba26dff356"
     },
     "src/emcd_sim/gui/parallel_acceptance.py": {
       "mode": "canonical",
@@ -262,7 +262,7 @@
     },
     "src/emcd_sim/gui/propagation.py": {
       "mode": "canonical",
-      "sha256": "ce6252a068a55d2d361afa4a514e4529d178e7fc9e8bf4671595bbe100fcff2a"
+      "sha256": "dfb20fea0ea7dd282b3881b81d4d6c96ccbb79d36a9dd6dc03b15b70b686511e"
     },
     "src/emcd_sim/gui/provider_ui.py": {
       "mode": "canonical",
@@ -282,7 +282,7 @@
     },
     "src/emcd_sim/gui/runtime.py": {
       "mode": "canonical",
-      "sha256": "18638a00c1680cc1bbd5a3a9f8bc8515b3e964181cca34d5784030fe4b83e217"
+      "sha256": "ab7ad511b555052588abffd84fab8bdd05f0de1219e6f08ddbdfbabcf452f414"
     },
     "src/emcd_sim/gui/saved_atomic_ui.py": {
       "mode": "canonical",
@@ -338,11 +338,11 @@
     },
     "tests/reference_imports.py": {
       "mode": "canonical",
-      "sha256": "293e95b4533d92fcbaf79d4f11abcc7d90a0ec3726710fb1c0b445d7d9a9820d"
+      "sha256": "0930af13ffc51d84ad8da84a8f1a3c491c969ed16929a46427a24617bd03facc"
     },
     "tests/runtime_fixtures.py": {
       "mode": "canonical",
-      "sha256": "0d48000442dd4583ec14452132c3fa465ada5e36f404233cb3aa4a08d3dbc54b"
+      "sha256": "813bef9fa20e000c3dd09e0c1ec00d277a77f5855bd3a61d7da08c489e97aeb5"
     },
     "tests/single_element_source_guard.py": {
       "mode": "canonical",
@@ -362,7 +362,7 @@
     },
     "tests/test_automatic_numerical_settings.py": {
       "mode": "canonical",
-      "sha256": "82e6a83e116f2607f90979d8d1c2624fc5cd4f16c6b4734f0099d7ceb026ce28"
+      "sha256": "60b4da099efb926227b85f45afd778079032f23c2dc2912d5907714dcb2147d8"
     },
     "tests/test_bcc_fe_cif_gui.py": {
       "mode": "canonical",
@@ -382,7 +382,7 @@
     },
     "tests/test_diffraction_view_toggle.py": {
       "mode": "canonical",
-      "sha256": "4018a8963d65ae25bd3549697f6d685cbc935fcc24104fc8dd515fade719133c"
+      "sha256": "56f85c37f5563ec2f50ef270e6b843b56def82688719e4c063a086362e787aad"
     },
     "tests/test_double_cancellation.py": {
       "mode": "canonical",
@@ -434,7 +434,7 @@
     },
     "tests/test_gui_stage_f.py": {
       "mode": "canonical",
-      "sha256": "5d0a2f0784a306959244e332514c47a6c177700dee22215431b9198fa2450b59"
+      "sha256": "ec2ad4d81f177ce634f5abf71c52c72782e88e9cdfc7c0e2a00f0f60000b612e"
     },
     "tests/test_legacy_atomic_factors.py": {
       "mode": "canonical",
@@ -522,7 +522,7 @@
     },
     "tests/test_solver_settings_ui.py": {
       "mode": "canonical",
-      "sha256": "00c6c3f42786cb37a0138a7d1580bacc40a122665701adba80b17230f43dc545"
+      "sha256": "750ffd303daa7a490e3068a243a68275a0d79475e9689dba5b911956bbcc0df0"
     },
     "tests/test_unified_elastic_acceptance.py": {
       "mode": "canonical",
@@ -558,7 +558,7 @@
     },
     "tests/test_zolz_laue_overlay.py": {
       "mode": "canonical",
-      "sha256": "cad3c31174d2ad9450e13f2d6e8b1021741e2b1f49bf1c86261cacf076e9294d"
+      "sha256": "9407bd5c8bf6eb335500ea1d4e2f54695e66eef9fa0890312df858fd0d11527e"
     },
     "src/emcd_sim/historical_ni.py": {
       "mode": "canonical",

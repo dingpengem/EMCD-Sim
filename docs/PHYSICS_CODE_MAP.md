@@ -14,6 +14,8 @@ in the elementwise contraction. See also [the refactor name map](REFACTOR_NAME_M
    `ionization_sites` own lattice, site and assignment rules.
    Neutral `structure_snapshot`, `restore_structure` and `structures_match`
    belong to `gui.geometry`; previews do not depend on project-file I/O.
+   `projected_geometry_from_oriented_crystal` also belongs here and delegates
+   to the existing `ProjectedGeometry.from_oriented` implementation.
 2. `gui.forward_settings.NiForwardSettings`, `gui.material_inputs` and
    `gui.forward_settings.MultiSiteForwardSettings` record existing model and
    sampling requests. A site-group provider reference owns its material source;
@@ -29,6 +31,8 @@ in the elementwise contraction. See also [the refactor name map](REFACTOR_NAME_M
 5. `gui.forward_pipeline.calculate` is the canonical entry point for explicit
    structure, geometry, source/model and optional site-group inputs; it orchestrates
    resource admission, propagation and result assembly.
+   `gui.propagation` owns numerical preflight, allocation estimates and method
+   diagnostics; `gui.channeling.propagate` owns incoming BW/FFT execution.
    `gui.channeling.calculate_detector_signals`
    schedules single-provider energies; `gui.multisite_integration` schedules and
    reduces bounded multisite blocks. These application services do not use widgets.
@@ -48,6 +52,11 @@ Paths above are relative to `src/emcd_sim/`. There are no retired production
 import aliases. GUI package placement is historical:
 `forward_pipeline` and `propagation` are application
 services, not alternate scientific engines. No backend framework is implied.
+The planning/execution cycle is removed in
+[Phase 3D-1](PHASE3D1_NUMERICAL_CHANNELING_DECOUPLING.md). Fresh-process tests
+execute the canonical API for Ni and explicit synthetic Cr multisite cases in
+all four BW/FFT Single/Double modes while rejecting Qt and presentation imports.
+GUI-namespaced settings and service ownership remain a later migration concern.
 
 ## Inputs and their authoritative owners
 

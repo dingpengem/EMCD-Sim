@@ -64,8 +64,10 @@ def relocate_reference_imports(source):
                 target,name='emcd_sim.gui.forward_pipeline','_calculate_uniform_prepared';changed=True
             elif node.module=='channeling' and item.name=='contract':
                 target,name='emcd_sim.gui.channeling','calculate_detector_signals';changed=True
-            elif node.module=='propagation' and item.name=='projected_geometry_for':
-                target,name='emcd_sim.gui.propagation','projected_geometry_from_oriented_crystal';changed=True
+            elif node.module in ('propagation','emcd_sim.gui.propagation') and item.name in ('projected_geometry_for','projected_geometry_from_oriented_crystal'):
+                target,name='emcd_sim.gui.geometry','projected_geometry_from_oriented_crystal';changed=True
+            elif node.module in ('propagation','emcd_sim.gui.propagation') and item.name=='propagate':
+                target='emcd_sim.gui.channeling';changed=True
             if target is None:target='.'*node.level+(node.module or '')
             binding=item.asname or item.name
             groups.setdefault(target,[]).append(name+(' as '+binding if name!=binding else ''))

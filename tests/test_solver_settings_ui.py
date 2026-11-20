@@ -173,10 +173,13 @@ def test_solver_configuration_and_physics_unchanged():
             # The species gate was approved at d1c93ba, before this continuation.
             previous=ast.parse(subprocess.check_output(['git','show','d1c93ba:'+path]).decode('utf-8-sig'))
             moved=copy.deepcopy(find(current_forward,name))
-            local_import=ast.parse('from .gui.geometry import Structure').body[0]
-            assert ast.dump(moved.body[0])==ast.dump(local_import)
-            moved.body.pop(0)
-            assert ast.dump(moved)==ast.dump(find(previous,name))
+            expected=copy.deepcopy(find(previous,name))
+            # Phase 3B removed the GUI dependency using the identical explicit
+            # ASE Ni cell. Keep every eligibility condition/error unchanged.
+            reference=ast.parse('ref=Structure.nickel().atoms').body[0]
+            assert ast.dump(expected.body[0])==ast.dump(reference)
+            expected.body[:1]=ast.parse("from ase.build import bulk\nref=bulk('Ni','fcc',a=3.524,cubic=True)").body
+            assert ast.dump(moved)==ast.dump(expected)
         else:
             actual=find(orientation if name=='axis_rotation' else current_forward,name)
             assert ast.dump(actual)==ast.dump(find(old_forward,name))
@@ -218,7 +221,13 @@ def test_solver_configuration_and_physics_unchanged():
     archived=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for name in ('save_project','_read_npz','safe_path','structures_match','restore_structure'):
         from unit_metadata_guard import normalize_unit_metadata
-        actual=find(present,name)
+        owner=ast.parse(Path('src/emcd_sim/gui/geometry.py').read_text(encoding='utf-8-sig')) if name in ('structures_match','restore_structure') else present
+        actual=find(owner,name)
+        if name in ('structures_match','restore_structure'):
+            # Phase 3C added responsibility docstrings at the new owner. Keep
+            # the complete executable AST comparison, including tolerances.
+            assert ast.get_docstring(actual)
+            actual=copy.deepcopy(actual);actual.body.pop(0)
         if name=='save_project':
             # Current complete file identity was checked above. Retain the
             # historical AST assertion against its authenticated parent source;
