@@ -2,6 +2,14 @@
 
 Date: 2026-11-19 (America/Los_Angeles).
 
+**GO for the requested test-only numerical-contract corrections.** All six
+affected cases, relevant scientific controls and comparison negative checks
+pass. The unchanged 22-case driver matches all 2,294 arrays exactly. One full
+regression plus the necessary targeted recovery covers all 1,768 distinct
+collected cases: **1,706 passed, 62 existing skips**, with no unresolved
+failures/errors. This is **combined coverage**, not a claim that the initial
+full invocation was clean. Its actual failed result is preserved below.
+
 This follows the completed
 [Phase 2.1 investigation](SCIENTIFIC_NUMERICAL_CONTRACT_REVIEW.md). Its original
 failures, raw arrays and scientific interpretation remain historical evidence.
@@ -182,10 +190,65 @@ physics/source guard; the unchanged current kernel identities also authenticated
 Evidence: `reviewed-registration-guard.log` and `-run.json`.
 
 The original complete-run failures/errors remain in their logs/XML. Only the
-failed/error nodes and affected source-guard/comparison checks are being rerun;
-no second complete regression is launched. Final recheck results and GO/NO-GO
-will be recorded below.
+failed/error nodes and affected source-guard/comparison checks were rerun;
+**no second complete regression was launched**.
+
+### Completed recovery and coverage verification
+
+The focused recovery ran at clean registration-integration commit
+`9c7e05e7798d455c9365f173eb9a8bed21454389`: **296 passed, one existing optional
+skip, zero failures/errors**, 297 collected, 3,695.33 pytest seconds (1h 01m).
+It selected all 233 original failed/error node IDs directly from the full-run
+XML. It also ran the complete affected physics/source, Fe GUI-scope and unit-label
+guard modules, the six corrected scientific cases, and eight comparison
+negative/identity cases. Whole guard modules ensure that negative controls are
+tested after their positive source preconditions succeed, rather than passing
+because an unrelated stale registration fails first.
+
+XML comparison confirms **every one of the 98 failed and 135 error cases passed**
+in recovery. No original failed/error case was omitted, skipped or deselected.
+The one recovery skip is
+`tests/test_unit_labels.py::test_unit_changes_give_identical_bw_ms_single_double_numerical_arrays`:
+the existing optional external 160-array evidence is unavailable without
+`EMCD_UNIT_IDENTITY_DIRECTORY`. This check did **not** execute; its skip is
+preserved, with no fabricated replacement arrays. Other actual serialization,
+NPZ round-trip, cached-buffer, grid and input-identity checks remain exact.
+
+| Evidence | Actual result | Exact source identity |
+| --- | --- | --- |
+| Six corrected cases plus comparison negative/identity checks | 14 passed | Working test changes subsequently committed as `7fd38620a7619362a0568d0414d58679d34a875e` |
+| Existing source-equivalence driver | 22 cases / 2,294 arrays exactly equal | Same working application source; no calculation source changed |
+| Single full regression | 1,473 passed / 98 failed / 135 errors / 62 skipped | `7fd38620a7619362a0568d0414d58679d34a875e`, clean at launch |
+| Failed/error recovery and affected controls | 296 passed / 1 optional skip / 0 failures / 0 errors | `9c7e05e7798d455c9365f173eb9a8bed21454389`, clean at launch |
+| Distinct-case coverage across full and recovery | **1,706 passed / 62 existing skips / 1,768 total** | Application and numerical comparison implementations identical between those commits; only current registration metadata and this report changed |
+
+Recovery evidence: `failed-error-recheck-short-tmp.log`, `.xml`, `-run.json`,
+and `-lifecycle.jsonl`. The launch record contains the exact selection program,
+original XML input, short temporary-root environment, owned PID and completion
+status. Its pytest list is constructed inside Python to avoid the Windows
+command-line length limit for 233 node IDs. These records supplement the
+initial complete-run evidence; they do not rewrite or relabel it.
+
+## Final scope and Git state
+
+Local implementation commit:
+`7fd38620a7619362a0568d0414d58679d34a875e`.
+Local reviewed-registration integration commit:
+`9c7e05e7798d455c9365f173eb9a8bed21454389`.
+This final report is a documentation-only successor; its commit ID is provided
+in the completion response. Final ordinary Git status is clean after that
+commit; ignored diagnostic evidence remains in place.
+
+The complete change consists of the three affected test modules, their shared
+test-only comparison helper and negative tests, the two existing current-source
+registration files, and this report. No other source/configuration cleanup was
+performed. No scientific reference array, historical archive, physical equation,
+kernel, physical setting, project data, packaging code, version or release
+inventory was changed. No push, publication, merge or tag was performed.
 
 Application source has not changed, so no Windows EXE rebuild is required or
-performed. Final GO/NO-GO and local commit identities will be recorded after
-the required checks finish.
+performed. The preserved 6d98694 development EXE still matches its existing
+SHA-256 `cefb4b7880930dba38e966f9f437d6b2a4fc90af9ceb0814feccddcebcccaaaa`.
+The GO recommendation applies to these comparison corrections and their
+documented validation. It does not expand the supported physical model or
+represent a newly built/released application.
