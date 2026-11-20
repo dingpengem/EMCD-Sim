@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from emcd_sim.gui import forward_pipeline
 from emcd_sim import mdff_providers as material_inputs
-from emcd_sim.gui.geometry import Structure
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.mdff_providers import prepare_provider
 from test_part1c_refactor import accepted_module
 from test_unified_mdff_providers import xmcd_source

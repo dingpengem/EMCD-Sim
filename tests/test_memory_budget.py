@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from emcd_sim.gui import memory_budget as memory
 from emcd_sim.gui.forward_settings import NiForwardSettings
-from emcd_sim.gui.geometry import Settings, Structure
+from emcd_sim.structure_geometry import Settings, Structure
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.gui.project_io import config_from_dict
 

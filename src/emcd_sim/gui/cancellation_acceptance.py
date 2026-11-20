@@ -12,7 +12,7 @@ from .. import double_channeling as bw,multislice_double_channeling as ms
 from . import channeling,calculation_worker,memory_budget
 from .project_io import save_project,load_project
 from .project_io import fingerprints
-from .runtime import build_info
+from emcd_sim.provenance import build_info
 
 
 def run(output,source):
@@ -47,7 +47,7 @@ def run(output,source):
         expected=dict(beam=.9,potential=1.8,grid=9,depth=17,subpixels=16,fft_grid=24,energy=9,halfwidth=.5)
         actual=w.numerical_snapshot()
         check(all(actual[k]==v for k,v in expected.items()), 'Bounded cancellation profile preserved')
-        from .geometry import geometry
+        from emcd_sim.structure_geometry import geometry
         hkl=geometry(w.structure,w.settings(),systematic_row=w.row_projection.isChecked())[2]
         check(len(hkl)==3, 'Bounded cancellation profile has three retained beams')
         w.show_structure_viewer();w.reference_ni.setChecked(True)

@@ -15,7 +15,7 @@ _TARGETS = {'001': (2, 0, 0), '017': (2, 0, 0), '117': (2, -2, 0),
 
 def run(output, orientation='017'):
     from .app import MainWindow, add_about_menu
-    from .runtime import build_info
+    from emcd_sim.provenance import build_info
     from .project_io import fingerprints, load_project, save_project
     from .result_export import export_result
     from .normalization_export import save_figure
@@ -166,7 +166,7 @@ def run(output, orientation='017'):
             w.refresh()
             report['smoke_profile'] = dict(settings=asdict(w.settings()), config=asdict(w.forward_settings()),
                                            scope='Tiny selected-energy smoke, not a convergence benchmark')
-            from .geometry import excitation
+            from emcd_sim.structure_geometry import excitation
             s = w.settings()
             g = w.current[3][w.current[2].index(s.target)]
             assert abs(float(excitation(g, s.tilt, s.voltage))) < 1e-10

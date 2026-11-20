@@ -8,7 +8,7 @@ import numpy as np
 from PySide6 import QtCore, QtWidgets
 
 from . import project_io as io
-from . import geometry as structure_data
+from emcd_sim import structure_geometry as structure_data
 from .project_collection import save_collection, load_collection
 
 
@@ -83,7 +83,7 @@ def capture_configuration(w):
 
 def restore_configuration(w,state):
     """Restore editable inputs, never results, and never infer a tensor frame."""
-    from .geometry import orientation
+    from emcd_sim.structure_geometry import orientation
     w._run_restore_error=''
     for widget,hidden in getattr(w,'_unavailable_input_widgets',[]):widget.setVisible(not hidden)
     w._unavailable_input_widgets=[]
@@ -323,7 +323,7 @@ class ProjectSession:
         self.project_save_status=status;name=Path(self.active_project_path).name if self.active_project_path else 'Untitled'
         self.project_status.setText(name+' · '+status)
         self.project_status.setToolTip(str(self.active_project_path or 'Not saved')+'\n'+getattr(self,'last_project_save',''))
-        from .runtime import LABEL
+        from emcd_sim.provenance import LABEL
         self.setWindowTitle(name+' · '+status+' — '+LABEL)
 
     def confirm_project_changes(self,continuation):

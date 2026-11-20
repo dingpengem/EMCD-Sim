@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from emcd_sim.crystal import fcc_nickel
 from emcd_sim.projected_geometry import ProjectedGeometry
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.multislice_double_channeling import ProjectedFFT
 
 @pytest.mark.parametrize('zone,target',[

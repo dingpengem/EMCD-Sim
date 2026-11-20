@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from ase import Atoms
 from ase.build import bulk
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.ionization_sites import IonizationSites
 from emcd_sim.imported_mdff import ImportedMDFF
 from emcd_sim.mdff_providers import settings_for_source, energy_grid, material_reason
@@ -20,7 +20,7 @@ def fe():return Structure(bulk('Fe','bcc',a=2.866,cubic=True),'Synthetic BCC Fe 
 
 
 def test_fe_coordinates_bcc_rules_and_independent_reciprocal_frame():
-    from emcd_sim.gui.geometry import geometry
+    from emcd_sim.structure_geometry import geometry
     s=fe();np.testing.assert_array_equal(s.atoms.get_scaled_positions(),[[0,0,0],[.5,.5,.5]])
     settings=Settings(zone=(0,0,1),target=(1,1,0),tilt=(0,0),beam_cutoff=.85,potential_cutoff=1.2)
     crystal,R,h,g,_=geometry(s,settings)

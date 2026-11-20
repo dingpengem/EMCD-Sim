@@ -11,7 +11,7 @@ from ase import Atoms
 from ase.io import read, write
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Structure
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.gui.atomic_editor import FIELDS
 from emcd_sim.gui.atomic_editor_model import (CAPABILITY, MAX_SAMPLES, capability_reason,
     crystal_elements, edge_references, explicit_grid, persist_document, read_document, validate_document)
@@ -55,7 +55,7 @@ def wait_gui(w, app):
 @pytest.mark.parametrize('browser_mapping', ['empty', 'missing', 'different_bytes'])
 def test_gui_reopens_relocated_editor_source_without_original(window, tmp_path, browser_mapping):
     from emcd_sim.gui.forward_pipeline import calculate
-    from emcd_sim.gui.geometry import Settings
+    from emcd_sim.structure_geometry import Settings
     from emcd_sim.gui.project_io import save_project, source_status
     w, app = window; e = demo(w); e.generate()
     cfg = replace(w.atomic_provider_info, propagation='both', energy_scope='edges',
@@ -493,7 +493,7 @@ def test_packaged_installation_is_never_a_managed_workspace(tmp_path, monkeypatc
 def test_editor_bw_ms_equivalence_and_portable_project(window, tmp_path, channel):
     from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.mdff_providers import settings_for_provider
-    from emcd_sim.gui.geometry import Settings
+    from emcd_sim.structure_geometry import Settings
     from emcd_sim.gui.project_io import save_project, load_project, source_status
     w, _ = window; e = demo(w); e.generate()
     cfg = replace(w.atomic_provider_info, propagation='both', channeling_model=channel, energy_scope='edges',

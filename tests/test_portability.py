@@ -12,7 +12,7 @@ def test_version_matches_source_metadata():
         import tomllib
     except ModuleNotFoundError:  # supported Python 3.10
         import tomli as tomllib
-    from emcd_sim.gui.runtime import build_info, LABEL
+    from emcd_sim.provenance import build_info, LABEL
     project = Path(__file__).resolve().parents[1]/'pyproject.toml'
     assert __version__ == '0.9.0b2' == tomllib.loads(project.read_text(encoding='utf-8'))['project']['version']
     assert build_info()['application_version'] == __version__

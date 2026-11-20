@@ -125,7 +125,7 @@ def _child(material, method, channel, directory):
     assert not memory_budget._reservations
     if material == 'Ni':
         from emcd_sim.gui.forward_settings import NiForwardSettings
-        from emcd_sim.gui.geometry import Structure, Settings
+        from emcd_sim.structure_geometry import Structure, Settings
         from test_single_element_ni_compatibility import old_contract
         from numerical_roundoff import assert_bloch_observables
 

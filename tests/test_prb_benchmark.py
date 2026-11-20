@@ -11,7 +11,8 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from emcd_sim.gui.prb_benchmark import relative_dichroism_percent, benchmark_readout, benchmark_spectra
+from emcd_sim.detector_signals import relative_dichroism_percent, benchmark_spectra
+from emcd_sim.gui.prb_benchmark import benchmark_readout
 
 
 def result():

@@ -8,7 +8,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from emcd_sim.gui import forward_pipeline as ni, channeling
-from emcd_sim.gui.geometry import Structure,Settings
+from emcd_sim.structure_geometry import Structure, Settings
 from numerical_roundoff import assert_bloch_observables
 
 BASE='2f9c130099dce5df4e4609b521c42f53c5385518'
@@ -68,8 +68,8 @@ def test_original_ni_all_numeric_arrays_exact(old_contract,model,channel):
 
 def test_genuine_historical_ni_project_remains_read_only_lobato():
     from emcd_sim.gui.project_io import load_project
-    from emcd_sim.gui.geometry import restore_structure
-    from emcd_sim.gui.geometry import elastic_model
+    from emcd_sim.structure_geometry import restore_structure
+    from emcd_sim.structure_geometry import elastic_model
     path=Path(os.environ.get('EMCD_HISTORICAL_NI_PROJECT','__missing_optional_historical_project__'))
     if not (path/'project.json').is_file():pytest.skip('Optional genuine historical Ni project unavailable')
     before=hashlib.sha256((path/'project.json').read_bytes()).hexdigest()

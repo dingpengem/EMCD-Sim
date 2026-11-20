@@ -14,12 +14,12 @@ from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from emcd_sim.mdff_providers import load_provider
 from emcd_sim.gui import project_io as io
-from emcd_sim.gui import geometry as structure_data
-from emcd_sim.gui.geometry import Structure
+from emcd_sim import structure_geometry as structure_data
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.multisite_results import SPECTRAL_KEYS, spectral_series, covered_segments
 from emcd_sim.gui.result_presentation import draw_multisite_panel
-from emcd_sim.gui.runtime import PHYSICS_CONVENTION
+from emcd_sim.provenance import PHYSICS_CONVENTION
 from test_multisite_result_selection import stored_result
 from test_multisite_configuration import tensor_source
 
@@ -93,7 +93,7 @@ def stored_project(tmp_path,kind='Fe3O4',channeling='single',both=False,manual=F
 @pytest.fixture(autouse=True)
 def no_simulation(monkeypatch):
     def forbidden(*a,**k):pytest.fail('Project IO invoked a simulation')
-    monkeypatch.setattr('emcd_sim.gui.geometry.elastic_model',forbidden)
+    monkeypatch.setattr('emcd_sim.structure_geometry.elastic_model',forbidden)
     monkeypatch.setattr('emcd_sim.gui.forward_pipeline.calculate',forbidden)
 
 
@@ -110,20 +110,26 @@ def test_result_roundtrip_without_qt_or_presentation(tmp_path,kind,channeling):
     original=stored_project(tmp_path,kind,channeling,both=True)
     root=io.save_project(original,tmp_path/'headless')
     program=r'''
-import builtins, sys
+import importlib.abc, sys
 from collections.abc import Mapping
-original_import=builtins.__import__
+from test_headless_calculation import forbidden as presentation_import
+block_gui=True
+attempts=[]
 forbidden={'results','result_presentation','result_export','forward_pipeline',
            'emcd_sim.gui.results','emcd_sim.gui.result_presentation',
            'emcd_sim.gui.result_export','emcd_sim.gui.forward_pipeline'}
-def headless_import(name,*args,**kwargs):
-    if name=='PySide6' or name.startswith('PySide6.') or name in forbidden:
-        raise AssertionError('Result persistence imported presentation or calculation execution: '+name)
-    return original_import(name,*args,**kwargs)
-builtins.__import__=headless_import
+class HeadlessImports(importlib.abc.MetaPathFinder):
+    def find_spec(self,name,path=None,target=None):
+        if presentation_import(name) or name in forbidden or (block_gui and (name=='emcd_sim.gui' or name.startswith('emcd_sim.gui.'))):
+            attempts.append(name)
+            raise AssertionError('Scientific data imported GUI ownership/presentation/execution: '+name)
+sys.meta_path.insert(0,HeadlessImports())
+from emcd_sim.forward_results import method_result
+assert not any(n=='emcd_sim.gui' or n.startswith('emcd_sim.gui.') for n in sys.modules)
+block_gui=False  # Existing persistence/settings namespaces remain supported.
 import numpy as np
 from emcd_sim.gui.project_io import load_project,save_project
-from emcd_sim.gui.forward_results import method_result
+from emcd_sim.forward_results import method_result
 from emcd_sim.gui.multisite_results import spectral_series
 first=load_project(sys.argv[1])
 assert set(first['methods'])=={'bloch','fft-multislice'}
@@ -151,6 +157,7 @@ for key,value in a.items():
     np.testing.assert_array_equal(value,other,err_msg=key)
 assert not any(n=='PySide6' or n.startswith('PySide6.') for n in sys.modules)
 assert not forbidden.intersection(sys.modules)
+assert not attempts
 '''
     completed=subprocess.run([sys.executable,'-B','-c',program,str(root),str(tmp_path/'again')],
         capture_output=True,text=True,timeout=60)

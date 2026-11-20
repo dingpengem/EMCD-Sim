@@ -136,7 +136,7 @@ def test_depth_endpoints_and_zero_thin_limit(row):
     def run(t):return multislice_double_channeling_response(row.elastic,831.4778,q,t,fft_grid=16,
         potential_cutoff=.75,systematic_row=True,row_reduction=True,depth_steps=17)[0]
     assert_allclose(run(0),0,atol=0)
-    from emcd_sim.gui.prb_benchmark import relative_dichroism_percent
+    from emcd_sim.detector_signals import relative_dichroism_percent
     percent,_=relative_dichroism_percent(np.array([0.]),np.array([0.]))
     assert np.isnan(percent[0])
     a,b=run(1e-5),run(2e-5)

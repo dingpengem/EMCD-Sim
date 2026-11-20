@@ -10,7 +10,7 @@ from ase.io import write
 from PySide6 import QtWidgets
 
 from emcd_sim.crystallographic_sites import crystallographic_sites
-from emcd_sim.gui.geometry import Structure, Settings
+from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.gui.structure_viewer import CrystalStructureDialog
 from emcd_sim.multisite import validate_site_rows
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration

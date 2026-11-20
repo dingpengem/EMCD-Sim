@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from test_zolz_laue_overlay import window,mouse,assert_circle
-from emcd_sim.gui.geometry import za_from_tilt
+from emcd_sim.structure_geometry import za_from_tilt
 
 
 def seed_preview(w):

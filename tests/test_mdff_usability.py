@@ -7,7 +7,7 @@ import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.mdff_orientation import axis_rotation
-from emcd_sim.gui.geometry import Structure, Settings
+from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.gui.mdff_usability import complex_cell
 from emcd_sim.mdff_providers import source_for
 from emcd_sim.gui.forward_pipeline import calculate

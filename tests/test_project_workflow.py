@@ -15,7 +15,7 @@ from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.project_session import restore_configuration, capture_configuration
 from emcd_sim.gui.project_collection import load_collection
 from emcd_sim.gui import project_io as io
-from emcd_sim.gui import geometry as structure_data
+from emcd_sim import structure_geometry as structure_data
 from test_multisite_result_persistence import stored_project
 
 
@@ -134,7 +134,7 @@ def test_close_cancel_discard_and_explicit_replace(window,app,tmp_path,monkeypat
 
 def test_missing_sources_and_legacy_ni_open_without_recalculation(window,app,tmp_path):
     from ase import Atoms
-    from emcd_sim.gui.geometry import Structure
+    from emcd_sim.structure_geometry import Structure
     from emcd_sim.gui.forward_settings import NiForwardSettings
     w=window;r=result_fixture(tmp_path,manual=False);restore_configuration(w,r['configuration']);retain(w,r)
     root=tmp_path/'External Project';w.save_to_path(root);wait(w,app);assert not w.errors
@@ -211,7 +211,7 @@ def test_failed_collection_stage_keeps_previous_run_files(tmp_path,monkeypatch):
 
 def test_unavailable_global_atomic_provider_is_not_saved_as_legacy_ni(window,app,tmp_path):
     from ase.build import bulk
-    from emcd_sim.gui.geometry import Structure,Settings
+    from emcd_sim.structure_geometry import Structure, Settings
     from emcd_sim.gui.material_inputs import ProviderSettings
     w=window;source=tmp_path/'missing-atomic.json'
     raw=(Path(__file__).resolve().parents[1]/'docs/examples/synthetic_fe_atomic_parameters.json').read_bytes()

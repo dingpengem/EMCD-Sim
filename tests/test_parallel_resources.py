@@ -5,7 +5,7 @@ from unittest.mock import Mock,patch
 import json
 import pytest
 from PySide6 import QtWidgets
-from emcd_sim.gui.geometry import Settings,Structure,align_bragg
+from emcd_sim.structure_geometry import Settings, Structure, align_bragg
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.parallel_resources import worker_plan,IMPLICATED_DLL_SHA256,native_backend_info
 from emcd_sim.gui.propagation import numerical_info

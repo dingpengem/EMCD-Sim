@@ -17,8 +17,8 @@ from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from emcd_sim.mdff_providers import load_provider
 from emcd_sim.gui import project_io as io
-from emcd_sim.gui import geometry as structure_data
-from emcd_sim.gui.geometry import Structure, Settings
+from emcd_sim import structure_geometry as structure_data
+from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.cancellation import Cancelled
 from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
@@ -59,7 +59,7 @@ def configuration(atoms,groups,**kwargs):
 def no_physical_calculation(monkeypatch):
     def forbidden(*args,**kwargs):pytest.fail('Configuration IO called a numerical propagation/result loader')
     monkeypatch.setattr(io,'_read_npz',forbidden)
-    monkeypatch.setattr('emcd_sim.gui.geometry.elastic_model',forbidden)
+    monkeypatch.setattr('emcd_sim.structure_geometry.elastic_model',forbidden)
     monkeypatch.setattr('emcd_sim.gui.forward_pipeline.calculate',forbidden)
 
 
@@ -107,12 +107,12 @@ import builtins, json, sys
 from pathlib import Path
 original_import=builtins.__import__
 def headless_import(name,*args,**kwargs):
-    if name=='PySide6' or name.startswith('PySide6.') or name in ('project_io','emcd_sim.gui.project_io'):
-        raise AssertionError('Neutral geometry imported widgets or project I/O')
+    if name.split('.')[0] in ('PySide6','PySide2','PyQt6','PyQt5') or name=='emcd_sim.gui' or name.startswith('emcd_sim.gui.') or name=='project_io':
+        raise AssertionError('Neutral geometry imported GUI ownership or project I/O')
     return original_import(name,*args,**kwargs)
 builtins.__import__=headless_import
 import numpy as np
-from emcd_sim.gui.geometry import Structure, structure_snapshot, restore_structure, structures_match, orientation
+from emcd_sim.structure_geometry import Structure, Settings, structure_snapshot, restore_structure, structures_match, orientation, geometry, projected_geometry_from_oriented_crystal, align_bragg, excitation
 original=Structure.nickel() if sys.argv[1]=='Ni' else Structure.from_cif(sys.argv[2])
 snapshot=structure_snapshot(original)
 restored=restore_structure(json.loads(json.dumps(snapshot)))
@@ -126,6 +126,19 @@ np.testing.assert_array_equal(orientation(original.atoms.cell.array,(0,0,1),(1,0
                               orientation(restored.atoms.cell.array,(0,0,1),(1,0,0)))
 if 'spacegroup_kinds' in original.atoms.arrays:
     np.testing.assert_array_equal(restored.atoms.arrays['spacegroup_kinds'],original.atoms.arrays['spacegroup_kinds'])
+target={'Ni':(2,0,0),'Fe':(1,1,0),'Fe3O4':(2,2,0)}[sys.argv[1]]
+settings=Settings(zone=(0,0,1),target=target,beam_cutoff=.6,potential_cutoff=1.2)
+a=geometry(original,settings);b=geometry(restored,settings)
+assert a[2]==b[2] and len(a[2])>1
+np.testing.assert_array_equal(a[1],b[1]);np.testing.assert_array_equal(a[3],b[3])
+cell=projected_geometry_from_oriented_crystal(settings,a[0])
+np.testing.assert_array_equal(cell.crystal.lattice_angstrom,a[0].lattice_angstrom)
+spot=a[3][next(i for i,h in enumerate(a[2]) if h!=(0,0,0))]
+assert abs(excitation(spot,align_bragg(spot,settings.tilt,settings.voltage),settings.voltage))<1e-12
+from dataclasses import replace
+try:geometry(original,replace(settings,voltage=-1.))
+except ValueError:pass
+else:raise AssertionError('Invalid physical geometry accepted')
 full=json.loads(Path(sys.argv[3]).read_text(encoding='utf-8'))
 rich=restore_structure(full)
 assert rich.atoms.get_chemical_symbols()==full['species']
@@ -137,7 +150,7 @@ for invalid in ({},dict(snapshot,atom_arrays={'numbers':dict(dtype='int64',value
     try:restore_structure(invalid)
     except ValueError:pass
     else:raise AssertionError('Invalid snapshot accepted')
-assert 'emcd_sim.gui.project_io' not in sys.modules
+assert not any(n=='emcd_sim.gui' or n.startswith('emcd_sim.gui.') for n in sys.modules)
 assert not any(n=='PySide6' or n.startswith('PySide6.') for n in sys.modules)
 '''
     completed=subprocess.run([sys.executable,'-B','-c',program,kind,str(cif or ''),str(root/'structure.json')],

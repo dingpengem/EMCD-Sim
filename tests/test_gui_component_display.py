@@ -13,8 +13,9 @@ from emcd_sim.gui.component_display import components,mirrored_angular_component
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.result_export import export_result
-from emcd_sim.gui.geometry import Structure,Settings
-from emcd_sim.gui.prb_benchmark import benchmark_readout,benchmark_spectra
+from emcd_sim.structure_geometry import Structure, Settings
+from emcd_sim.gui.prb_benchmark import benchmark_readout
+from emcd_sim.detector_signals import benchmark_spectra
 from emcd_sim.gui.result_presentation import draw_eels, draw_maps
 
 

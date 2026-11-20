@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Settings,Structure
+from emcd_sim.structure_geometry import Settings, Structure
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.numerical_settings import resolve_parameters,REFERENCE_SOURCE_SHA256
 from emcd_sim.gui.project_io import load_project,save_project

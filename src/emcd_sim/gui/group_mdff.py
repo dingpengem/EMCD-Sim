@@ -165,7 +165,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
     def validate_xmcd_source(self):
         if self._loading:return
         try:
-            from .xmcd_source import inspect_xmcd_source
+            from emcd_sim.xmcd_source import inspect_xmcd_source
             info=inspect_xmcd_source(self.source_path.text())
             unchanged=(self.source_info or {}).get('sha256')==info['sha256'] and self.validated_path==self.source_path.text()
             retained=(self.reference is not None and self.reference.source==self.source_path.text()

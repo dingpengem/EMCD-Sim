@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from emcd_sim.gui.forward_settings import NiForwardSettings
-from emcd_sim.gui.geometry import Settings,Structure
+from emcd_sim.structure_geometry import Settings, Structure
 from emcd_sim.gui.memory_budget import assess_memory,selected_memory_budget
 from emcd_sim.gui.parallel_resources import worker_plan,bind_allocation
 from emcd_sim.gui.propagation import numerical_info

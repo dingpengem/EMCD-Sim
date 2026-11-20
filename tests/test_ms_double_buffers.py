@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from emcd_sim import multislice_double_channeling as ms
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from legacy_geometry import Ni017Geometry
 
 BASE='39aafb6701f7cf84643c10366afac59401e8d91e'

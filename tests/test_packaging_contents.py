@@ -94,7 +94,7 @@ def test_required_asset_absence_rejected_after_positive_control(tmp_path, path):
     ('Ni_FCC_a3.52.cif', 'Ni', 3.52, [(0,0,0),(0,.5,.5),(.5,0,.5),(.5,.5,0)]),
 ])
 def test_packaged_cif_uses_application_loader(name, element, a, positions):
-    from emcd_sim.gui.geometry import Structure
+    from emcd_sim.structure_geometry import Structure
     atoms = Structure.from_cif(ROOT/'packaging/assets/examples'/name).atoms
     assert atoms.get_chemical_symbols() == [element]*len(positions)
     np.testing.assert_allclose(atoms.cell.array, np.eye(3)*a, rtol=0, atol=1e-12)

@@ -6,14 +6,23 @@ they are not specifications of today's implementation. In particular, the
 current forward contraction is **Re Tr(R T)**, with the material indices reversed
 in the elementwise contraction. See also [the refactor name map](REFACTOR_NAME_MAP.md).
 
+Phase 3D-2A gives structure/geometry and result assembly genuine non-GUI
+owners: `structure_geometry` and `forward_results`. `provenance` owns recorded
+build/source information and resource locations; `xmcd_source` owns source
+inspection. Existing denominator masks and signed percentage calculations live
+with `detector_signals`. GUI parsing/preview remain in `gui.geometry`; display
+settings/readouts, logging, persistence and forward orchestration retain their
+current responsibilities. See the
+[Phase 3D-2A report](PHASE3D2A_SCIENTIFIC_DATA_GEOMETRY_EXTRACTION.md).
+
 ## Reading the calculation
 
-1. `gui.geometry.Structure`, `Settings` and `geometry` supply the complete ASE
+1. `structure_geometry.Structure`, `Settings` and `geometry` supply the complete ASE
    crystal, proper crystal-to-beam rotation, ordered ZOLZ basis and microscope.
    `crystal`, `crystallography`, `crystallographic_sites`, `multisite` and
    `ionization_sites` own lattice, site and assignment rules.
    Neutral `structure_snapshot`, `restore_structure` and `structures_match`
-   belong to `gui.geometry`; previews do not depend on project-file I/O.
+   belong to `structure_geometry`; previews do not depend on project-file I/O.
    `projected_geometry_from_oriented_crystal` also belongs here and delegates
    to the existing `ProjectedGeometry.from_oriented` implementation.
 2. `gui.forward_settings.NiForwardSettings`, `gui.material_inputs` and
@@ -37,7 +46,7 @@ in the elementwise contraction. See also [the refactor name map](REFACTOR_NAME_M
    schedules single-provider energies; `gui.multisite_integration` schedules and
    reduces bounded multisite blocks. These application services do not use widgets.
 6. The Single/Double kernels below form intensities; `detector_signals` integrates
-   fractional apertures and constructs reversal components. `gui.forward_results`
+   fractional apertures and constructs reversal components. `forward_results`
    assembles result metadata, selected-edge metrics and completed-method views.
    `gui.multisite_results` owns stored group/element data projections and
    quantity definitions. `gui.result_export` serializes completed results;
@@ -73,8 +82,8 @@ mapping and remaining settings-schema limitation.
 
 | Input | Origin and calculation entry |
 | --- | --- |
-| Cell, positions, species, occupancy and site indices | ASE/CIF or an explicit preset → `gui.geometry.Structure` → `geometry`/`elastic_model`; all structural atoms contribute to the supplied elastic potential, including elastic-only groups. |
-| Zone/target, basis mode and beam cutoff | `gui.geometry.Settings` → `CrystalOrientation`, finite hkl selection and `ProjectedGeometry`. The target fixes beam-frame x, not material M. Default settings describe the starting Ni example; the engine never constructs a default crystal or geometry. |
+| Cell, positions, species, occupancy and site indices | ASE/CIF or an explicit preset → `structure_geometry.Structure` → `geometry`/`elastic_model`; all structural atoms contribute to the supplied elastic potential, including elastic-only groups. |
+| Zone/target, basis mode and beam cutoff | `structure_geometry.Settings` → `CrystalOrientation`, finite hkl selection and `ProjectedGeometry`. The target fixes beam-frame x, not material M. Default settings describe the starting Ni example; the engine never constructs a default crystal or geometry. |
 | Voltage and tilt | `Settings.voltage` in kV and `.tilt` in mrad → `Microscope`, relativistic wavelength/gamma, Hamiltonian/FFT kinetic phase, longitudinal transfer and post-loss exit energy. |
 | Thickness | `Settings.thickness` in nm → incoming depth samples and outgoing propagation distances; Single multiplies its depth mean once, while Double response already integrates depth. |
 | Elastic provider, B and potential cutoff | `Settings.elastic_provider`, `.b_factor` and `.potential_cutoff` → explicit per-species scattering factors, IAM structure factors and Fourier support. No material-specific propagation kernel is selected. |
@@ -98,7 +107,7 @@ calculation and is not a new material model or calibration rule.
 | --- | --- |
 | Lattice | `Crystal.lattice_angstrom` has direct-cell vectors in rows, in Å; fractional atom positions are `(n_atom,3)` in the same ordered cell. No automatic primitive reduction. |
 | Reciprocal coordinates | `g` and detector `q=(qx,qy)` are cycles/Å. `Q=2πq` is angular transfer in rad/Å. Fourier phases use `exp(+2πi g·r)`. The transfer kernel explicitly applies the conversion before its Coulomb denominator. |
-| Frames | `gui.geometry.orientation` returns a proper real orthogonal matrix `R`, with crystal Cartesian vectors transformed as `v_beam=R v_crystal`; beam z follows the declared direct-lattice zone, and the reciprocal target fixes x. Lattice rows transform as `cell @ R.T`. |
+| Frames | `structure_geometry.orientation` returns a proper real orthogonal matrix `R`, with crystal Cartesian vectors transformed as `v_beam=R v_crystal`; beam z follows the declared direct-lattice zone, and the reciprocal target fixes x. Lattice rows transform as `cell @ R.T`. |
 | Tensor frame | For a local-to-crystal proper frame `A`, `T_crystal=A T_local A.T`, then `T_beam=R T_crystal R.T`. Transposes here are ordinary transposes because rotations are real. The dagger belongs to complex amplitudes and wave propagation. |
 | Transition convention | `d_a=<initial|r_a|final>=∫Ψ_initial* r_a Ψ_final d³r`. `T_ab=Σ_n w_n d_na conj(d_nb) G(E−E_n)`. Forward excitation therefore uses conjugated material dipoles. |
 | Array precision | Production NumPy arithmetic uses float64/complex128. Energy is the first axis of spectral tensors `(n_energy,3,3)`; the last axes are Cartesian x,y,z in the declared frame. |
@@ -205,7 +214,7 @@ D_raw = D_mag + D_nonmag
 ```
 
 `detector_signals.reversal_components` owns these algebraic derived fields.
-`gui.forward_results.assemble_forward_result` retains the parity assertion,
+`forward_results.assemble_forward_result` retains the parity assertion,
 paired-map diagnostics, source revalidation and existing metadata.
 `gui.component_display` reports signed component percentages
 `100 D_component/Sigma_ref` with its existing denominator-floor policy.

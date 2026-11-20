@@ -139,7 +139,7 @@ def main():
         refs[label]=dict(status='Reused immutable Milestone-A result; not rerun',case_json=str(p.relative_to(ROOT)),arrays_sha256=d['arrays_sha256'],comparison=d['comparison'])
     for label in ('111_grid65','111_grid97','111_joint','117_legacy_t8'):
         r=load_project(OUT/'cases'/label/'project')
-        from emcd_sim.gui.prb_benchmark import benchmark_spectra
+        from emcd_sim.detector_signals import benchmark_spectra
         for method,m in r['methods'].items():
             sp=m['spectra'];curves,_=benchmark_spectra(sp)
             for edge,e in [('L3',r['config'].l3),('L2',r['config'].l2)]:

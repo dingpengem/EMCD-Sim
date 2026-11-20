@@ -10,7 +10,7 @@ import pytest
 from matplotlib.figure import Figure
 from emcd_sim.gui.result_presentation import draw_eels, draw_maps
 from emcd_sim.gui.component_display import primary_angular
-from emcd_sim.gui.prb_benchmark import benchmark_spectra
+from emcd_sim.detector_signals import benchmark_spectra
 
 
 @pytest.fixture(scope='module')
@@ -20,7 +20,7 @@ def result():
     if (saved/'project.json').exists():return load_project(saved)
     from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.gui.forward_settings import NiForwardSettings
-    from emcd_sim.gui.geometry import Structure,Settings
+    from emcd_sim.structure_geometry import Structure, Settings
     return calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),
         NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',energy_points=9,grid=9,depth=9,subpixels=16,fft_grid=24,angular_maps=True))
 
@@ -103,7 +103,7 @@ def test_angular_raw_total_layout_shared_scale_overlays_and_immutability(result)
 
 
 def test_detector_asymmetry_after_integration_not_average_of_percentages():
-    from emcd_sim.gui.prb_benchmark import relative_dichroism_percent
+    from emcd_sim.detector_signals import relative_dichroism_percent
     a=np.array([.65,.9]);b=np.array([.45,.1]);weights=np.array([1.,.01])
     integrated,_=relative_dichroism_percent(weights@a,weights@b)
     np.testing.assert_allclose(integrated,100*(weights@(a-b))/(weights@(a+b)))

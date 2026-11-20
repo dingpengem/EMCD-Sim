@@ -6,9 +6,9 @@ import json,uuid,logging
 import numpy as np
 from PySide6 import QtCore,QtWidgets,QtGui
 from .project_io import load_project, source_status, sha256, rerun_reason
-from .geometry import restore_structure
+from emcd_sim.structure_geometry import restore_structure
 from ..cancellation import Cancelled
-from .xmcd_source import inspect_xmcd_source
+from emcd_sim.xmcd_source import inspect_xmcd_source
 from .result_presentation import comparison_text
 from .project_session import ProjectSession
 
@@ -156,7 +156,7 @@ class ProjectWorkspace(ProjectSession):
         try:index=ResultRegistry(self.workspace/'results_index.json')
         except Exception as exc:self.statusBar().showMessage('Results index could not be read: '+str(exc));index=ResultRegistry(self.workspace/('recovered_index_'+uuid.uuid4().hex+'.json'))
         self.browser=ResultsBrowser(self,index);self.browser_dock=QtWidgets.QDockWidget('Results Browser',self);self.browser_dock.setObjectName('resultsBrowser');self.browser_dock.setWidget(self.browser);self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea,self.browser_dock);self.resizeDocks([self.browser_dock],[190],QtCore.Qt.Orientation.Vertical)
-        from .runtime import LABEL
+        from emcd_sim.provenance import LABEL
         self.setWindowTitle(LABEL)
         file=self.menuBar().addMenu('File');results=self.menuBar().addMenu('Results')
         for title,callback,shortcut in [('New Project',self.new_project,'Ctrl+N'),('Open Project…',self.open_project_dialog,'Ctrl+O'),('Save',self.save_project_action,'Ctrl+S'),('Save As…',lambda:self.save_project_action(save_as=True),'Ctrl+Shift+S'),('Close Project',self.close_project,'')]:

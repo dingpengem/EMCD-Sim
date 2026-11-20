@@ -10,7 +10,7 @@ import argparse,hashlib,json,subprocess,time
 import numpy as np
 from emcd_sim.study_presets import NickelStudyGeometry
 Ni117Geometry=lambda a_angstrom=3.524: NickelStudyGeometry((1,1,7),(2,-2,0),a_angstrom)
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model,excitation
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model, excitation
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.historical_ni import tensors
 from emcd_sim.geometry import characteristic_qz_angstrom_inv,VirtualDetector
@@ -95,7 +95,7 @@ def single_response(elastic,C,energy,q,thickness):
 
 def identities(profile,s,method,channel):
     files=['projected_geometry.py','crystallography.py','projected_potential.py','double_channeling.py','multislice_double_channeling.py',
-        'single_channeling_tensor.py','physical_elastic.py','scattering.py','gui/geometry.py','gui/forward_pipeline.py','gui/forward_settings.py','gui/forward_results.py',
+        'single_channeling_tensor.py','physical_elastic.py','scattering.py','gui/geometry.py','structure_geometry.py','gui/forward_pipeline.py','gui/forward_settings.py','forward_results.py',
         'xmcd_effective_mdff.py','mdff_tensor.py','geometry.py','multislice_reference.py']
     return dict(profile=asdict(profile),settings=asdict(s),method=method,channeling=channel,
         energies_ev=ENERGIES,source_sha256=sha(SOURCE),physics_sha256={f:sha(ROOT/'src/emcd_sim'/f) for f in files},

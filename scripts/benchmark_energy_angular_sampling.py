@@ -5,7 +5,7 @@ configured q grid. The baseline is the exact pre-scheduler GUI source in Git.
 """
 from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
 from emcd_sim.gui.forward_settings import NiForwardSettings
-from emcd_sim.gui.xmcd_source import inspect_xmcd_source
+from emcd_sim.xmcd_source import inspect_xmcd_source
 from emcd_sim.historical_ni import energy_grid
 import argparse,csv,hashlib,json,os,platform,subprocess,sys,threading,time,types
 from contextlib import ExitStack
@@ -14,7 +14,7 @@ from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 from emcd_sim.gui import forward_pipeline as f, channeling, propagation
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model,geometry
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model, geometry
 from emcd_sim.gui.memory_budget import memory_snapshot
 from emcd_sim.gui.project_io import save_project,load_project
 from emcd_sim.study_presets import NickelStudyGeometry

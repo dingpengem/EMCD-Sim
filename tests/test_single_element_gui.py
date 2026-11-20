@@ -3,7 +3,7 @@ import numpy as np
 from ase.build import bulk
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Structure
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.gui.project_io import save_project,load_project
 from single_element_helpers import write_source
 from runtime_fixtures import apply_global_mdff

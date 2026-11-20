@@ -11,7 +11,7 @@ from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.project_io import config_from_dict,load_project
 from emcd_sim.gui.propagation import numerical_info
-from emcd_sim.gui.geometry import Structure,Settings
+from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from historical_xmcd_test_support import historical_xmcd_source,relocate_historical_xmcd_config
 from runtime_fixtures import apply_global_mdff
@@ -211,7 +211,7 @@ def test_solver_configuration_and_physics_unchanged():
     for node in ast.walk(expected):
         if isinstance(node,ast.ImportFrom) and node.module=='emcd_forward':
             assert [item.name for item in node.names]==['metrics']
-            node.module='forward_results';node.names=[ast.alias(name='selected_edge_metrics')]
+            node.module='emcd_sim.forward_results';node.level=0;node.names=[ast.alias(name='selected_edge_metrics')]
         elif isinstance(node,ast.Name) and node.id=='metrics':node.id='selected_edge_metrics'
     assert ast.dump(find(now,'compare_methods'))==ast.dump(expected)
     # Save/load recipe migration has functional tests. Retain the unchanged
@@ -221,7 +221,7 @@ def test_solver_configuration_and_physics_unchanged():
     archived=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for name in ('save_project','_read_npz','safe_path','structures_match','restore_structure'):
         from unit_metadata_guard import normalize_unit_metadata
-        owner=ast.parse(Path('src/emcd_sim/gui/geometry.py').read_text(encoding='utf-8-sig')) if name in ('structures_match','restore_structure') else present
+        owner=ast.parse(Path('src/emcd_sim/structure_geometry.py').read_text(encoding='utf-8-sig')) if name in ('structures_match','restore_structure') else present
         actual=find(owner,name)
         if name in ('structures_match','restore_structure'):
             # Phase 3C added responsibility docstrings at the new owner. Keep

@@ -11,8 +11,8 @@ from types import SimpleNamespace
 from datetime import datetime,timezone
 import hashlib,json,os,shutil,uuid,zipfile,time
 import numpy as np
-from .geometry import Settings,excitation
-from . import geometry as structure_data
+from emcd_sim.structure_geometry import Settings, excitation
+from emcd_sim import structure_geometry as structure_data
 from .forward_settings import NiForwardSettings
 from ..cancellation import Cancelled
 from ..historical_ni import NiLocalConfig
@@ -135,7 +135,7 @@ def pack_arrays(result):
             continue
         angular.update({name+'__'+edge+'__'+k:v for edge,m in r['maps'].items() for k,v in m.items()})
         angular[name+'__coherence']=r['coherence']
-        from .prb_benchmark import benchmark_spectra
+        from emcd_sim.detector_signals import benchmark_spectra
         sp=dict(r['spectra'],**benchmark_spectra(r['spectra'])[0])
         spectra.update({name+'__'+k:v for k,v in sp.items()})
         diffraction[name+'__amplitudes']=r['amplitudes']
@@ -248,7 +248,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
         _json(temp/'input_parameters.json',dict(settings=asdict(result['settings']),mdff=saved_cfg,structure_snapshot=snapshot))
         _json(temp/'structure.json',snapshot)
         if result.get('display_state') is not None:_json(temp/'display_state.json',result['display_state'])
-        from .forward_results import selected_edge_metrics
+        from emcd_sim.forward_results import selected_edge_metrics
         _json(temp/'validity.json',{name:dict(postedge_valid=r['metadata']['alpha'] is not None,
             paired_map_valid={edge:'D_raw' in m for edge,m in r['maps'].items()},available_fields={edge:list(m) for edge,m in r['maps'].items()},
             scalar_metric_valid={edge:{key:value is not None for key,value in row.items()} for edge,row in ({} if multisite else selected_edge_metrics(r)).items()}) for name,r in methods.items()})
@@ -369,7 +369,7 @@ def frame_rerun_reason(result):
     except (TypeError,ValueError):return 'Saved frame is invalid; re-enter orientation-dependent inputs before rerunning.'
     if frame.shape!=(3,3) or not np.isfinite(frame).all():
         return 'Saved frame is invalid; re-enter orientation-dependent inputs before rerunning.'
-    from .geometry import orientation
+    from emcd_sim.structure_geometry import orientation
     try:expected=orientation(structure_data.restore_structure(snapshot).atoms.cell.array,result['settings'].zone,result['settings'].target)
     except (ValueError,TypeError,np.linalg.LinAlgError):
         return 'Saved structural orientation/target is incompatible; saved results remain viewable, but re-enter geometry before rerunning.'
@@ -531,7 +531,7 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     result['metadata']=meta;result['fft']={k[len('fft_full__'):]:v for k,v in diffraction.items() if k.startswith('fft_full__')}
     if result['fft']:result['fft']['summary']=result['comparison'].get('fft',{})
     warnings=list(manifest.get('limitations',[])) if manifest else ['Legacy read-only import: no integrity manifest; only available metadata retained.']
-    from .runtime import result_convention_status
+    from emcd_sim.provenance import result_convention_status
     convention_status=result_convention_status(meta)
     if convention_status['warning'] and convention_status['warning'] not in warnings:warnings.append(convention_status['warning'])
     if not snapshot:warnings.append('Missing numeric crystal snapshot: full reproducibility and Use These Settings/rerun are unavailable.')

@@ -14,7 +14,7 @@ from PySide6 import QtWidgets
 from matplotlib.backend_bases import MouseEvent
 from matplotlib.colors import to_rgba
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Settings, Structure, geometry, excitation, align_bragg, za_from_tilt
+from emcd_sim.structure_geometry import Settings, Structure, geometry, excitation, align_bragg, za_from_tilt
 
 
 @pytest.mark.parametrize('voltage',[200,300])

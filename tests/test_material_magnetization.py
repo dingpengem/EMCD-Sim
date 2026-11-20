@@ -6,7 +6,7 @@ import pytest
 from ase.build import bulk
 from PySide6 import QtWidgets
 
-from emcd_sim.gui.geometry import Structure
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.mdff_providers import source_for
 from emcd_sim.historical_ni import tensors
 from emcd_sim.gui.project_session import capture_configuration,restore_configuration

@@ -8,7 +8,7 @@ from matplotlib import colormaps
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from .responsive import ResponsiveCanvas as FigureCanvasQTAgg
 from ..emcd_angular_plots import decorate_reciprocal_map
-from .forward_results import selected_edge_metrics
+from emcd_sim.forward_results import selected_edge_metrics
 from .signal_normalization import DisplaySettings, normalized_spectra, angular_display, percentage_metrics
 from .normalization_controls import NormalizationControls
 

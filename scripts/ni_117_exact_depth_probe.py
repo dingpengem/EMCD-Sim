@@ -1,7 +1,7 @@
 """Independent exact-depth BW check on cached circle directions, same physics."""
 import argparse,json,time
 import numpy as np
-from emcd_sim.gui.geometry import Structure,elastic_model
+from emcd_sim.structure_geometry import Structure, elastic_model
 from emcd_sim.gui.project_io import settings_from_dict
 from emcd_sim.double_channeling import double_channeling_response,intensities_from_response
 from ni_117_magnetization import OUT as CACHE,ROOT,write_json,write_npz,sha

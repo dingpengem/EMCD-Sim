@@ -12,9 +12,9 @@ def relocate_reference_imports(source):
     routes={
         'ForwardSettings':('emcd_sim.gui.forward_settings','NiForwardSettings'),
         'DEFAULT_SOURCE':('emcd_sim.gui.forward_settings','DEFAULT_NI_SOURCE'),
-        'inspect_source':('emcd_sim.gui.xmcd_source','inspect_xmcd_source'),
+        'inspect_source':('emcd_sim.xmcd_source','inspect_xmcd_source'),
         'calculate':('emcd_sim.gui.forward_pipeline','calculate'),
-        'metrics':('emcd_sim.gui.forward_results','selected_edge_metrics'),
+        'metrics':('emcd_sim.forward_results','selected_edge_metrics'),
         'export_result':('emcd_sim.gui.result_export','export_result'),
         'Cancelled':('emcd_sim.cancellation','Cancelled'),
         'material_reason':('emcd_sim.historical_ni','material_reason'),
@@ -42,11 +42,11 @@ def relocate_reference_imports(source):
                 target='emcd_sim.mdff_providers';changed=True
             elif node.module in ('project_io','emcd_sim.gui.project_io') and item.name in (
                     'structure_snapshot','restore_structure','structures_match'):
-                target='emcd_sim.gui.geometry';changed=True
+                target='emcd_sim.structure_geometry';changed=True
             elif node.module in ('forward_results','emcd_sim.gui.forward_results') and item.name in ('export_result','export_method_result'):
                 target='emcd_sim.gui.result_export';changed=True
             elif node.module in ('results','emcd_sim.gui.results') and item.name=='method_result':
-                target='emcd_sim.gui.forward_results';changed=True
+                target='emcd_sim.forward_results';changed=True
             elif node.module in ('results','emcd_sim.gui.results') and item.name in (
                     'mdff_label','geometry_description','spectral_coverage_label','draw_maps',
                     '_draw_eels_diagnostics','draw_eels','draw_component_maps','draw_diffraction',
@@ -60,12 +60,24 @@ def relocate_reference_imports(source):
                 target,name='emcd_sim.gui.result_presentation','draw_multisite_panel';changed=True
             elif node.module in ('propagation','emcd_sim.gui.propagation') and item.name=='export_comparison':
                 target='emcd_sim.gui.result_export';changed=True
+            elif node.module in ('forward_results','emcd_sim.gui.forward_results') and item.name in ('assemble_forward_result','selected_edge_metrics','method_result'):
+                target='emcd_sim.forward_results';changed=True
+            elif node.module in ('xmcd_source','emcd_sim.gui.xmcd_source') and item.name=='inspect_xmcd_source':
+                target='emcd_sim.xmcd_source';changed=True
+            elif node.module in ('runtime','emcd_sim.gui.runtime') and item.name in ('LABEL','PHYSICS_CONVENTION','result_convention_status','resource_root','reference_source','build_info'):
+                target='emcd_sim.provenance';changed=True
+            elif node.module in ('prb_benchmark','emcd_sim.gui.prb_benchmark') and item.name in ('DEFINITION','relative_dichroism_percent','benchmark_spectra'):
+                target='emcd_sim.detector_signals';changed=True
+            elif node.module in ('signal_normalization','emcd_sim.gui.signal_normalization') and item.name in ('POLICY','EELS_FLOOR','scale95','divide_percent'):
+                target='emcd_sim.detector_signals';changed=True
             elif node.module=='forward_pipeline' and item.name=='calculate_prepared':
                 target,name='emcd_sim.gui.forward_pipeline','_calculate_uniform_prepared';changed=True
             elif node.module=='channeling' and item.name=='contract':
                 target,name='emcd_sim.gui.channeling','calculate_detector_signals';changed=True
+            elif node.module in ('geometry','emcd_sim.gui.geometry') and item.name in ('Structure','Settings','orientation','geometry','elastic_model','excitation','za_from_tilt','tilt_from_za','align_bragg','structure_snapshot','restore_structure','structures_match','projected_geometry_from_oriented_crystal'):
+                target='emcd_sim.structure_geometry';changed=True
             elif node.module in ('propagation','emcd_sim.gui.propagation') and item.name in ('projected_geometry_for','projected_geometry_from_oriented_crystal'):
-                target,name='emcd_sim.gui.geometry','projected_geometry_from_oriented_crystal';changed=True
+                target,name='emcd_sim.structure_geometry','projected_geometry_from_oriented_crystal';changed=True
             elif node.module in ('propagation','emcd_sim.gui.propagation') and item.name=='propagate':
                 target='emcd_sim.gui.channeling';changed=True
             if target is None:target='.'*node.level+(node.module or '')

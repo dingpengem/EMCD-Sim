@@ -13,9 +13,9 @@ import numpy as np
 from PySide6 import QtCore,QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg,NavigationToolbar2QT
-from .geometry import Structure
+from emcd_sim.structure_geometry import Structure
 from .forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
-from .xmcd_source import inspect_xmcd_source
+from emcd_sim.xmcd_source import inspect_xmcd_source
 from .result_export import export_result
 from ..historical_ni import NiLocalConfig
 from ..wien2k_xmcd import load_wien2k_xmcd
@@ -357,7 +357,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if hasattr(self,'xmcd_preview'):self.xmcd_preview.invalidate_if_changed()
         if hasattr(self,'atomic_editor') and hasattr(self.atomic_editor,'schematic') and 'kv' in self.spin:
             try:
-                from .geometry import orientation
+                from emcd_sim.structure_geometry import orientation
                 r=orientation(self.structure.atoms.cell.array,self.settings().zone,self.settings().target)
                 self.atomic_editor.beam_crystal=r.T@np.array([self.spin['tx'].value()*.001,self.spin['ty'].value()*.001,1.])
                 self.atomic_editor.schematic.draw()
@@ -399,7 +399,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
             structure_matches=self.emcd_result is not None and self.emcd_result['metadata']['structure']==self.structure.description()
             if self.emcd_result and self.emcd_result.get('structure_snapshot'):
-                from .geometry import structures_match
+                from emcd_sim.structure_geometry import structures_match
                 structure_matches=structures_match(self.emcd_result['structure_snapshot'],self.structure)
             from .multisite_run import configuration_equal,saved_inputs_match
             config_matches=self.emcd_result is not None and configuration_equal(self.emcd_result['config'],cfg)
@@ -494,7 +494,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             assessment=numerical_info(self.structure,s,planning_cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             self.compute_resources.show_estimate(cfg,assessment)
             from .parallel_resources import require_supported
-            from .runtime import build_info
+            from emcd_sim.provenance import build_info
             logger=logging.getLogger('emcd_sim.gui')
             logger.info('Run preflight build=%s cutoff=%s beams=%s solver=%s channeling=%s energy=%s grid=%s budget=%s execution=%s memory=%s',
                 build_info()['commit'],s.beam_cutoff,assessment['bw_beams'],cfg.propagation,cfg.channeling_model,

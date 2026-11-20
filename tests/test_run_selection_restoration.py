@@ -9,8 +9,8 @@ from ase import Atoms
 from PySide6 import QtCore, QtWidgets, QtTest
 
 from emcd_sim.gui import project_io as io
-from emcd_sim.gui import geometry as structure_data
-from emcd_sim.gui.geometry import Structure, orientation
+from emcd_sim import structure_geometry as structure_data
+from emcd_sim.structure_geometry import Structure, orientation
 from emcd_sim.mdff_providers import settings_for_provider
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
 from emcd_sim.gui.forward_settings import NiForwardSettings

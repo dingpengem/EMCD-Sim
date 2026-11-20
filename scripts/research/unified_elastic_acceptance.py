@@ -24,7 +24,7 @@ sys.path.insert(0,str(ROOT/'tests'))
 from unified_elastic_cases import cases,reciprocal_cross,analytical_frame,independent_factor,bw_ms
 from emcd_sim.adaptive_scattering import adaptive_factor,coefficient_data,provenance
 from emcd_sim.elastic_providers import ADAPTIVE,LOBATO,LEGACY,factors_for_provider
-from emcd_sim.gui.geometry import Structure,Settings,geometry,elastic_model,align_bragg
+from emcd_sim.structure_geometry import Structure, Settings, geometry, elastic_model, align_bragg
 from emcd_sim.scattering import nickel_lobato_factor,IndependentAtomPotential
 from emcd_sim.legacy_atomic_factors import configured_legacy_factors
 

@@ -6,10 +6,10 @@ from .responsive import FlowLayout
 import numpy as np
 from matplotlib import colormaps
 from ..emcd_angular_plots import decorate_reciprocal_map
-from .forward_results import selected_edge_metrics
+from emcd_sim.forward_results import selected_edge_metrics
 from .signal_normalization import DisplaySettings, normalized_spectra, angular_display, percentage_metrics
 from ..mdff_edges import selected_samples
-from .forward_results import method_result
+from emcd_sim.forward_results import method_result
 from .multisite_results import comparison_text as _multisite_comparison_text
 
 

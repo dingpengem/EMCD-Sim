@@ -27,7 +27,7 @@ def main():
     out.mkdir(parents=True,exist_ok=True);sys.path.insert(0,str(root/'src'))
     import numpy as np
     import emcd_sim.double_channeling as kernel
-    from emcd_sim.gui.geometry import Structure,geometry,align_bragg
+    from emcd_sim.structure_geometry import Structure, geometry, align_bragg
     from emcd_sim.gui.project_io import settings_from_dict,config_from_dict
     from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.gui.propagation import numerical_info

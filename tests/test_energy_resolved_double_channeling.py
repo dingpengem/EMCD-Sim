@@ -9,7 +9,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from emcd_sim.gui import forward_pipeline as f
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.double_channeling import prepare_incoming_bloch,double_channeling_response,outgoing_elastic
 
 

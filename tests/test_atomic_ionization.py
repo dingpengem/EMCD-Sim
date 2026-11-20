@@ -112,7 +112,7 @@ def test_export_provenance_and_no_overwrite(tmp_path):
 @pytest.mark.parametrize('channel',['single','double'])
 def test_atomic_fe_bw_ms_project(tmp_path,channel):
     from ase.build import bulk
-    from emcd_sim.gui.geometry import Structure,Settings
+    from emcd_sim.structure_geometry import Structure, Settings
     from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.mdff_providers import settings_for_source
     from emcd_sim.gui.project_io import save_project,load_project,source_status
@@ -160,7 +160,7 @@ def test_atomic_gui_generation_restoration_and_legacy_gate(tmp_path,monkeypatch)
     from PySide6 import QtWidgets
     from ase.build import bulk
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.geometry import Structure
+    from emcd_sim.structure_geometry import Structure
     from emcd_sim.gui.project_io import save_project,load_project
     import time
     monkeypatch.setenv('EMCD_GUI_WORKSPACE',str(tmp_path/'workspace'))

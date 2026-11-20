@@ -1,5 +1,14 @@
 # Current calculation API and refactor decisions
 
+Phase 3D-2A extracts scientific geometry/structure records to
+`structure_geometry`, scientific result assembly/method views to `forward_results`,
+build/source provenance to `provenance`, and source inspection to `xmcd_source`.
+Existing percentage/mask mathematics moves to `detector_signals`. GUI preview,
+parsing, readouts, logging and persistence remain separate. There are no retired
+geometry-class, result-module or source-inspection facades; maintained callers
+use the actual owner. The exact canonical calculation API remains. See the
+[Phase 3D-2A report](PHASE3D2A_SCIENTIFIC_DATA_GEOMETRY_EXTRACTION.md).
+
 Phase 3D-1 moves the projected-cell adapter to `gui.geometry` and incoming
 `propagate` execution to `gui.channeling`, removing the planning/execution cycle
 without renaming their clear function interfaces. The
@@ -58,6 +67,11 @@ Paths below are relative to `src/emcd_sim/`.
 
 | Previous name | Current owner/name | Reason and disposition |
 | --- | --- | --- |
+| `gui.geometry.Structure`, `Settings`, orientation/Bragg/model and snapshot operations | `structure_geometry` | Neutral scientific records and geometry; JSON/NPZ project fields remain identical, current consumers share one class definition, and no supported pickle/module-path contract was found. GUI parsing/preview stay in the existing GUI module. |
+| `gui.forward_results` | `forward_results` | Scientific assembly, selected-edge metrics and method views import only neutral services. Maintained callers and authenticated references migrate; no production forwarding module remains. |
+| `gui.runtime` build/source functions and resource locations | `provenance` | Record scientific provenance without importing desktop logging or writable-path services. GUI runtime retains those desktop operations; existing source/frozen metadata semantics and inventory coverage remain. |
+| `gui.xmcd_source` | `xmcd_source` | Source identity/optional original-Ni audit is scientific input data, independent of settings widgets. The old module is removed; explicit source inputs and audit behavior remain. |
+| `gui.signal_normalization.scale95`, `divide_percent`; `gui.prb_benchmark.relative_dichroism_percent`, `benchmark_spectra` | `detector_signals` | Preserve existing denominator masks and percentage arithmetic under the detector-data owner. GUI display choices, peak windows and readout formatting remain consumers of the same implementation. |
 | `gui.stage_b.StageB` | `gui.calculation_controls.CalculationControls` | Collects MDFF/numerical inputs and manages calculation/result state. The stage name and facade are removed; app and maintained tests use the current class. |
 | `gui.stage_b.EMCDWorker` | `gui.calculation_worker.EMCDWorker` | Background execution, progress, BLAS control and cancellation are separate from widgets. The already clear class name is retained at its actual owner; the old re-export is removed. |
 | `setup_stage_b` | `setup_calculation_controls` | Initializes calculation controls/signals. All current calls are migrated; no old alias remains. |
@@ -65,10 +79,10 @@ Paths below are relative to `src/emcd_sim/`.
 | `gui.emcd_forward.ForwardSettings` | `gui.forward_settings.NiForwardSettings` | The defaults are a Ni example, so its name must say so. Values and serialized fields are preserved; no old class alias remains. |
 | `gui.forward_pipeline.MultiSiteForwardSettings` | `gui.forward_settings.MultiSiteForwardSettings` | Input records belong to the settings owner, not calculation orchestration. Maintained imports use that owner. |
 | `gui.generalized_forward` | `gui.material_inputs` | Owns source declarations, eligibility, frames and coverage. The old module and calculation re-export are removed. Existing clear provider class/factory names are retained. |
-| `gui.emcd_forward.inspect_source` / `DEFAULT_SOURCE` | `gui.xmcd_source.inspect_xmcd_source` / `gui.forward_settings.DEFAULT_NI_SOURCE` | Distinguish five-column XMCD inspection from a general material provider and identify the bundled Ni preset explicitly. Old names are removed. |
+| `gui.emcd_forward.inspect_source` / `DEFAULT_SOURCE` | `xmcd_source.inspect_xmcd_source` / `gui.forward_settings.DEFAULT_NI_SOURCE` | Distinguish five-column XMCD inspection from a general material provider and identify the bundled Ni preset explicitly. Old names are removed. |
 | `gui.emcd_forward._calculate` / `calculate_prepared` | Internal `_calculate_uniform` / `_calculate_uniform_prepared` in `gui.forward_pipeline` | Remove an unnecessary delegation wrapper. Admission and prepared execution remain explicit stages of the canonical engine. |
-| `gui.emcd_forward._contract` | `gui.forward_results.assemble_forward_result` | Receives already calculated signals and assembles parity, diagnostics and metadata; it does not contract tensors. The old wrapper and its unused compatibility arguments are removed. |
-| `gui.emcd_forward.metrics` | `gui.forward_results.selected_edge_metrics` | Identifies selected-energy observables and dimensionless ratios. Current consumers use the new owner/name; no alias remains. |
+| `gui.emcd_forward._contract` | `forward_results.assemble_forward_result` | Receives already calculated signals and assembles parity, diagnostics and metadata; it does not contract tensors. The old wrapper and its unused compatibility arguments are removed. |
+| `gui.emcd_forward.metrics` | `forward_results.selected_edge_metrics` | Identifies selected-energy observables and dimensionless ratios. Current consumers use the new owner/name; no alias remains. |
 | `gui.emcd_forward._export_single` | `gui.result_export.export_method_result` | Exports one completed propagation-method result; "single" was ambiguous with Single Channeling. The old alias is removed. |
 | `gui.emcd_forward.export_result` | `gui.result_export.export_result` | Export has a nonvisual file/export owner, separate from scientific result assembly. The clear function name and behavior remain, with maintained consumers migrated. |
 | `gui.channeling.contract` | `gui.channeling.calculate_detector_signals` | Schedules energy/pixel supports, invokes kernels and integrates signals. The vague alias is removed; actual tensor contraction remains in the scientific kernels. |
@@ -76,7 +90,7 @@ Paths below are relative to `src/emcd_sim/`.
 | Repeated detector even/odd algebra | `detector_signals.reversal_components` | One implementation owns N/M, detector differences and the reference sum. Arithmetic/evaluation order and raw inputs are preserved. |
 | `_multisite_single_block` | `gui.multisite_integration.contract_single_channeling_block` | Contracts one bounded energy/support cohort with already prepared groups. Memory-lifetime tests target this owner. |
 | `_multisite_single_detector_data` / `_multisite_double_detector_data` | `gui.multisite_integration.integrate_single_channeling_spectrum` / `integrate_double_channeling_spectrum` | Separate bounded spectrum scheduling/reduction from request validation and propagation setup. Workers, source normalization and cancellation behavior are retained. |
-| `gui.propagation.projected_geometry_for`, later `gui.propagation.projected_geometry_from_oriented_crystal` | `gui.geometry.projected_geometry_from_oriented_crystal` | The oriented crystal is required; the old Ni fallback remains removed. Phase 3D-1 places projected-cell geometry in its existing geometry owner. Channeling, planning, numerical controls and authenticated reference imports use that owner; no production alias is required. |
+| `gui.propagation.projected_geometry_for`, later `gui.propagation.projected_geometry_from_oriented_crystal` | `structure_geometry.projected_geometry_from_oriented_crystal` | The oriented crystal is required; the old Ni fallback remains removed. Phase 3D-1 places projected-cell geometry in its existing geometry owner. Channeling, planning, numerical controls and authenticated reference imports use that owner; no production alias is required. |
 | `gui.propagation.propagate` | `gui.channeling.propagate` | Incoming BW/FFT execution belongs beside FFT preparation and channeling execution, outside preflight planning. Both forward schedules, maintained test spies and benchmark instrumentation use the new owner; authenticated historical imports are translated only in test/reference infrastructure. No production wrapper remains. |
 | `gui.results_browser.Registry` / `IOWorker` | `ResultRegistry` / `ProjectIOWorker` | Identify the result-path index and project-file worker. All current calls/imports are migrated; old aliases are removed. Index/project JSON schemas are unchanged. |
 | `ProjectWorkspace.setup_stage_d` | `setup_project_workspace` | Initializes project actions, result browsing and layout. The old alias is removed. |

@@ -5,7 +5,7 @@ import pytest
 from emcd_sim.cancellation import Cancelled,check_cancelled
 from emcd_sim.gui import parallel_resources as resources
 from emcd_sim.gui.channeling import map_detector_batches
-from emcd_sim.gui.geometry import Settings
+from emcd_sim.structure_geometry import Settings
 from emcd_sim.gui.forward_settings import NiForwardSettings
 
 
@@ -64,7 +64,7 @@ def test_preflight_preserves_four_workers_without_claiming_limits_applied():
 
 def test_memory_admission_still_rejects_without_reducing_manual_workers(monkeypatch):
     from emcd_sim.gui.propagation import numerical_info
-    from emcd_sim.gui.geometry import Structure
+    from emcd_sim.structure_geometry import Structure
     monkeypatch.setattr('emcd_sim.gui.memory_budget.memory_snapshot',
                         lambda:dict(available_ram_mib=64,process_rss_mib=120))
     cfg=replace(NiForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=4)

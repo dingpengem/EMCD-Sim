@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from ase import Atoms
 from emcd_sim import mdff_providers as forward
-from emcd_sim.gui.geometry import Structure,Settings
+from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.gui.project_io import config_from_dict,save_project,load_project,rerun_reason
 from emcd_sim.imported_mdff import ImportedMDFF,CONVENTION
 from emcd_sim.historical_ni import NiLocalConfig,ni_local_transitions

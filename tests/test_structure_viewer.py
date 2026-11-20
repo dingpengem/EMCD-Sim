@@ -14,7 +14,7 @@ from ase.io import write
 from ase.data.colors import jmol_colors
 from PySide6 import QtCore, QtGui, QtWidgets, QtTest
 
-from emcd_sim.gui.geometry import Structure
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.gui.structure_scene import build_scene, cell_segments, MAX_ATOMS
 from emcd_sim.gui.structure_viewer import CrystalStructureDialog
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization

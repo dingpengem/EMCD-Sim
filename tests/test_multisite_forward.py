@@ -12,7 +12,7 @@ from emcd_sim.gui import forward_pipeline, propagation, channeling
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
 from emcd_sim.mdff_providers import settings_for_source
-from emcd_sim.gui.geometry import Structure, Settings
+from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.multisite_single_channeling import run_multisite_with_coherence
 from single_element_helpers import document

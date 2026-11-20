@@ -25,10 +25,10 @@ def run(output, historical_project=None):
     from ase.build import bulk
     from ase.io import write
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.geometry import Structure, elastic_model
-    from emcd_sim.gui.runtime import build_info, resource_root
+    from emcd_sim.structure_geometry import Structure, elastic_model
+    from emcd_sim.provenance import build_info, resource_root
     from emcd_sim.gui.project_io import save_project, load_project, source_status, fingerprints
-    from emcd_sim.gui.geometry import restore_structure
+    from emcd_sim.structure_geometry import restore_structure
     from emcd_sim.atomic_ionization import export_atomic_parameters
     from emcd_sim.imported_mdff import ImportedMDFF
     from emcd_sim.gui.result_presentation import mdff_label
@@ -218,7 +218,7 @@ def _additional_provider_cases(out,app,windows,report,wait,*,coverage='edges',on
     from ase import Atoms
     from ase.build import bulk
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.geometry import Structure
+    from emcd_sim.structure_geometry import Structure
     from emcd_sim.gui.result_export import export_result
     from emcd_sim.gui.project_io import save_project,load_project
     models=['XMCD-constrained MDFF','Atomic Ionization MDFF','Manual tensor']
@@ -306,7 +306,7 @@ def run_multisite(output):
     from ase.io import write
     from PySide6 import QtCore
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.runtime import build_info, resource_root
+    from emcd_sim.provenance import build_info, resource_root
     from emcd_sim.gui.project_collection import load_collection
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -463,7 +463,7 @@ def run_grouping(output, historical_project=None):
     from ase.io import write
     from PySide6 import QtCore
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.runtime import build_info, resource_root
+    from emcd_sim.provenance import build_info, resource_root
     from emcd_sim.mdff_providers import source_for
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])

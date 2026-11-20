@@ -212,7 +212,7 @@ def test_mdff_cancel_and_parent_cancel_restore_configuration(viewer,tmp_path):
 @pytest.mark.skipif(sys.platform!='win32' or os.environ.get('QT_QPA_PLATFORM')!='windows',reason='Explicit native Windows check')
 def test_native_group_mdff(tmp_path,app,monkeypatch):
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.geometry import Structure
+    from emcd_sim.structure_geometry import Structure
     assert app.platformName() == 'windows'
     window = MainWindow(workspace=tmp_path/'workspace')
     monkeypatch.setattr(window,'store_ui_preferences',lambda:None)

@@ -7,7 +7,7 @@ material declaration, retaining historical serialized fields for project IO.
 """
 from dataclasses import dataclass, field
 from ..historical_ni import NiLocalConfig
-from .runtime import reference_source
+from emcd_sim.provenance import reference_source
 
 DEFAULT_NI_SOURCE = reference_source()
 

@@ -5,10 +5,10 @@ import csv,hashlib,json,subprocess,time
 import numpy as np
 from emcd_sim.crystal import fcc_nickel
 from emcd_sim.projected_geometry import ProjectedGeometry
-from emcd_sim.gui.geometry import Structure,Settings
+from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.gui.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.prb_benchmark import benchmark_spectra
+from emcd_sim.detector_signals import benchmark_spectra
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'outputs/general_zolz_multislice_validation'

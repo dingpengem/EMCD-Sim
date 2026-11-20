@@ -1,7 +1,7 @@
 """Explicit acceptance cells and analytical references, independent of engine geometry."""
 import numpy as np
 from ase import Atoms
-from emcd_sim.gui.geometry import Structure,Settings
+from emcd_sim.structure_geometry import Structure, Settings
 
 
 def cases():
@@ -43,7 +43,7 @@ def independent_factor(structure,hkl,factors,b=0.):
 
 
 def bw_ms(structure,settings,mesh=32,step=.005,beam_cutoff=None):
-    from emcd_sim.gui.geometry import geometry
+    from emcd_sim.structure_geometry import geometry
     from emcd_sim.scattering import IndependentAtomPotential,FourierCutoffPotential,elastic_reflection_allowed
     from emcd_sim.elastic_providers import factors_for_provider
     from emcd_sim.elastic import BeamSet

@@ -208,7 +208,7 @@ def test_native_windows_site_editor(app):
 
 def test_global_local_lock_legacy_settings_reopen_and_no_fallback(tmp_path,app,monkeypatch):
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.geometry import Structure
+    from emcd_sim.structure_geometry import Structure
     window = MainWindow(workspace=tmp_path/'workspace')
     errors = [];monkeypatch.setattr(window,'error',errors.append)
     monkeypatch.setattr(window,'store_ui_preferences',lambda:None)

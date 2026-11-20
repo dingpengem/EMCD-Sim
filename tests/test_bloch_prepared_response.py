@@ -77,7 +77,7 @@ def test_executor_records_actual_shared_process_activity(workers):
 def test_qt_worker_surfaces_executor_failure_without_partial_results(monkeypatch):
     from types import SimpleNamespace
     from emcd_sim.gui import calculation_worker
-    from emcd_sim.gui.geometry import Settings
+    from emcd_sim.structure_geometry import Settings
     from emcd_sim.gui.forward_settings import NiForwardSettings
     before={t.ident for t in threading.enumerate() if t.name.startswith('ThreadPoolExecutor')}
     def fail(*args,**kwargs):

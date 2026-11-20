@@ -530,7 +530,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
     def load_demo(self):
         if any(w.text() for k,w in self.fields.items() if k not in ('l3','l2')):
             if QtWidgets.QMessageBox.question(self, 'Replace current draft?', 'Load the explicitly synthetic Fe software demonstration into the editable fields?') != QtWidgets.QMessageBox.StandardButton.Yes: return
-        from .runtime import resource_root
+        from emcd_sim.provenance import resource_root
         root = resource_root(); path = root/'examples/synthetic_fe_atomic_parameters.json'
         if not path.exists(): path = root/'docs/examples/synthetic_fe_atomic_parameters.json'
         self.load_document(path)

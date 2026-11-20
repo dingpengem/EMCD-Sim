@@ -7,7 +7,7 @@ from PySide6 import QtWidgets
 from emcd_sim.mdff_tensor import DipoleTensor,TransitionDataset
 from emcd_sim.single_channeling_tensor import run_tensor_single_channeling
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
-from emcd_sim.gui.runtime import LABEL,build_info
+from emcd_sim.provenance import LABEL, build_info
 
 def apply_global_mdff(window):
     """Accept explicitly configured inputs through the real Material workflow."""

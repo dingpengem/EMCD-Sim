@@ -3,18 +3,18 @@
 assemble_forward_result receives detector signals already evaluated by the
 channeling kernels. It constructs reversal parity and optional post-edge/paired
 map diagnostics, validates source identity and records existing provenance.
-File exports and rendering belong to result_export and result_presentation.
+File exports and rendering belong to gui.result_export and gui.result_presentation.
 """
 from dataclasses import asdict
 
 import platform
 import numpy as np
-from ..detector_signals import reversal_components
-from ..emcd_angular_plots import paired_geometry, paired_maps
-from ..geometry import electron_wavelength_angstrom
-from ..xmcd_postedge_normalization import analyze_postedge_spectra
-from .geometry import excitation, za_from_tilt
-from .runtime import build_info
+from .detector_signals import reversal_components
+from .emcd_angular_plots import paired_geometry, paired_maps
+from .geometry import electron_wavelength_angstrom
+from .xmcd_postedge_normalization import analyze_postedge_spectra
+from emcd_sim.structure_geometry import excitation, za_from_tilt
+from .provenance import build_info
 
 
 def assemble_forward_result(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,energy,stage,*,prepared):
@@ -32,7 +32,7 @@ def assemble_forward_result(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,
     stage('Computing selected-edge map decomposition and post-edge diagnostics')
     ap,bp,am,bm=[spectra[k] for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')]
     spectra.update(reversal_components(spectra,energy))
-    from .prb_benchmark import benchmark_spectra
+    from .detector_signals import benchmark_spectra
     spectra.update(benchmark_spectra(spectra)[0])
     alpha=None;correction_reason='Correction disabled by user.'
     if cfg.correction:
@@ -54,7 +54,7 @@ def assemble_forward_result(structure,settings,cfg,model,R,hkl,g,memory,z,psi,C,
     if audit and cfg.source_sha256 and audit['sha256']!=cfg.source_sha256:
         raise ValueError('XMCD source changed during calculation; result discarded')
     build=build_info();commit=build['commit'];dirty=build.get('dirty')
-    from ..elastic_providers import provider_provenance
+    from .elastic_providers import provider_provenance
     meta=dict(settings=asdict(settings),elastic_provider=provider_provenance(model.elastic.crystal.species,settings.elastic_provider),mdff=asdict(cfg),structure=structure.description(),frame=R.tolist(),beam_hkl=[list(h) for h in hkl],g=g.tolist(),
         source_audit=audit,energy_ev=energy.tolist(),magnetization_crystal=(np.asarray(cfg.magnetization)/np.linalg.norm(cfg.magnetization)).tolist(),
         magnetization_local=(R@np.asarray(cfg.magnetization)/np.linalg.norm(cfg.magnetization)).tolist(),
@@ -89,7 +89,7 @@ def selected_edge_metrics(result):
     not percentage display values. Missing corrected components remain None.
     """
     s=result['spectra'];rows={}
-    from ..mdff_edges import selected_samples
+    from .mdff_edges import selected_samples
     for edge,e in selected_samples(result['config']):
         i=int(np.argmin(abs(s['energy_ev']-e)));sigma=s['Sigma_ref'][i];floor=1e-10*max(float(s['Sigma_ref'].max()),1e-30)
         row={k:float(s[k][i]) if k in s else None for k in ('D_mag','D_nonmag','D_raw','D_corrected','magnetic_bias','D_nonmag_residual_obs','Sigma_ref')}

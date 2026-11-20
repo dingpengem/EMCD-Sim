@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from scipy.linalg import expm
 from ase.build import bulk
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.double_channeling import BlochStates,depth_response,equivalent_site_phases,double_channeling_response,intensities_from_response

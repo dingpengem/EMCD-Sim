@@ -1,7 +1,7 @@
 """Numerical planning, resource estimates and independent-method diagnostics."""
 
 import numpy as np
-from .geometry import geometry, projected_geometry_from_oriented_crystal
+from emcd_sim.structure_geometry import geometry, projected_geometry_from_oriented_crystal
 
 from ..crystallography import primitive_direction
 from ..multislice_reference import complex_wave_diagnostics
@@ -278,7 +278,7 @@ def compare_methods(methods,fft):
     out=dict(warning='BW/MS agreement tests numerical propagation at fixed settings; it does not establish physical-potential or EMCD convergence.')
     if fft:out['fft']=fft['summary']
     if len(methods)!=2:return out
-    from .forward_results import selected_edge_metrics
+    from emcd_sim.forward_results import selected_edge_metrics
     b,m=[methods[k] for k in ('bloch','fft-multislice')];C,D=b['coherence'],m['coherence']
     diag=complex_wave_diagnostics(b['amplitudes'],m['amplitudes'])
     out.update(amplitudes=dict(max_abs_raw=float(diag['amplitude_max_abs_raw'].max()),max_abs_global_phase_aligned_diagnostic_only=float(np.nanmax(diag['amplitude_max_abs_aligned']))),

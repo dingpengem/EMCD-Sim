@@ -11,7 +11,7 @@ from ..mdff_edges import selected_samples
 
 
 def fft_geometry(elastic,settings,cfg,*,cancelled=None):
-    from .geometry import projected_geometry_from_oriented_crystal
+    from emcd_sim.structure_geometry import projected_geometry_from_oriented_crystal
     return ProjectedFFT.build(elastic,grid_points=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
         systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
         projected_geometry=projected_geometry_from_oriented_crystal(settings,elastic.crystal,cfg.fft_generators),
@@ -157,7 +157,7 @@ def calculate_detector_signals(model,settings,cfg,method,C,energy,tensors,stage,
     No material model or GUI state is constructed here.
     """
     from ..cancellation import Cancelled
-    from .geometry import projected_geometry_from_oriented_crystal
+    from emcd_sim.structure_geometry import projected_geometry_from_oriented_crystal
     from .propagation import SINGLE_CHANNELING_PIXEL_BATCH
     qx,qy,weights,detector_support,selected=angular_schedule(model,cfg,energy)
     dq2=(qx[0,1]-qx[0,0])**2

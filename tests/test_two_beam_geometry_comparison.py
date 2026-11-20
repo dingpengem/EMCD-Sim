@@ -4,10 +4,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from emcd_sim.gui.geometry import geometry
+from emcd_sim.structure_geometry import geometry
 from emcd_sim.elastic import depth_coherence
 from emcd_sim.elastic import BeamSet
-from emcd_sim.gui.geometry import Structure,Settings,orientation,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, orientation, elastic_model
 from emcd_sim.crystal import Crystal
 from emcd_sim.physical_elastic import excitation_errors_angstrom_inv
 from emcd_sim.gui.result_presentation import geometry_description

@@ -11,7 +11,8 @@ import pytest
 from ase.io import write
 from emcd_sim.adaptive_scattering import adaptive_factor,coefficient_data,provenance,COEFFICIENT_SHA256
 from emcd_sim.elastic_providers import ADAPTIVE,LOBATO,LEGACY,factors_for_provider
-from emcd_sim.gui.geometry import Structure,Settings,geometry,elastic_model,align_bragg,indices,preview
+from emcd_sim.structure_geometry import Structure, Settings, geometry, elastic_model, align_bragg
+from emcd_sim.gui.geometry import indices, preview
 from emcd_sim.historical_ni import material_reason
 from unified_elastic_cases import cases,reciprocal_cross,analytical_frame,independent_factor,bw_ms
 
@@ -251,7 +252,7 @@ def test_qt_open_elastic_project_keeps_current_inputs_and_saved_arrays(tmp_path)
     try:
         before=w.settings();source=w.structure.description()
         with patch.object(QtWidgets.QFileDialog,'getExistingDirectory',return_value=str(path)),patch(
-                'emcd_sim.gui.geometry.elastic_model',side_effect=AssertionError('solver during open')):
+                'emcd_sim.structure_geometry.elastic_model',side_effect=AssertionError('solver during open')):
             w.open_elastic_project_dialog()
         assert w.settings()==before and w.structure.description()==source
         saved=w.dialogs[-1].saved_elastic_result

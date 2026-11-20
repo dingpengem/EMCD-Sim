@@ -17,9 +17,9 @@ import numpy as np
 from emcd_sim import multislice_double_channeling as ms
 from emcd_sim.double_channeling import intensities_from_response
 from emcd_sim.gui import channeling, forward_pipeline as forward
-from emcd_sim.gui.geometry import elastic_model,geometry
+from emcd_sim.structure_geometry import elastic_model, geometry
 from emcd_sim.gui.project_io import load_project
-from emcd_sim.gui.geometry import restore_structure
+from emcd_sim.structure_geometry import restore_structure
 from emcd_sim.gui.memory_budget import memory_snapshot
 from emcd_sim.gui import memory_budget
 from emcd_sim.geometry import VirtualDetector

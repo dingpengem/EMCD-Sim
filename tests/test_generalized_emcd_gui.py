@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import excitation
+from emcd_sim.structure_geometry import excitation
 from emcd_sim.gui.project_io import save_project,load_project,fingerprints,frame_rerun_reason
 from runtime_fixtures import apply_global_mdff
 
@@ -87,7 +87,7 @@ def test_normal_gui_end_to_end(case,channel):
 def test_ideal_basis_description_is_not_full_multibeam():
     from types import SimpleNamespace
     from emcd_sim.gui.result_presentation import geometry_description
-    from emcd_sim.gui.geometry import Settings
+    from emcd_sim.structure_geometry import Settings
     from emcd_sim.gui.forward_settings import NiForwardSettings
     from dataclasses import replace
     result=dict(settings=replace(Settings(),basis_mode='two-beam'),config=NiForwardSettings())

@@ -3,7 +3,7 @@ from dataclasses import replace, asdict
 import json
 import numpy as np
 from PySide6 import QtCore, QtWidgets
-from .geometry import geometry, excitation
+from emcd_sim.structure_geometry import geometry, excitation
 from ..historical_ni import material_reason
 
 
@@ -45,7 +45,7 @@ def resolve_parameters(structure, settings, cfg):
             candidate=replace(cfg,fft_grid=mesh,depth=values['depth'],slice_step=values['slice_step'])
             try:
                 numerical_info(structure,resolved,candidate,hkl=hkl,check_memory=False)
-                from .geometry import projected_geometry_from_oriented_crystal
+                from emcd_sim.structure_geometry import projected_geometry_from_oriented_crystal
                 crystal=geometry(structure,resolved,systematic_row=cfg.systematic_row)[0]
                 projected_geometry_from_oriented_crystal(resolved,crystal,cfg.fft_generators).harmonics(mesh-4,max(resolved.beam_cutoff,resolved.potential_cutoff))
                 values['fft_grid']=mesh;break

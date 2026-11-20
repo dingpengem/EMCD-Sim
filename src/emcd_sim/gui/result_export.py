@@ -8,7 +8,7 @@ import numpy as np
 
 from .. import __version__
 from ..multislice_reference import complex_wave_diagnostics
-from .forward_results import selected_edge_metrics
+from emcd_sim.forward_results import selected_edge_metrics
 from .multisite_results import SPECTRAL_KEYS, QUANTITIES, material, spectral_series, selection_description, DEFINITIONS
 
 
@@ -127,7 +127,7 @@ def export_result(result,path,*,component_mode='raw',advanced=False,map_signal_m
     from matplotlib.figure import Figure
     from .project_io import save_project
     from emcd_sim.gui.result_presentation import draw_eels, draw_maps
-    from .prb_benchmark import benchmark_spectra
+    from emcd_sim.detector_signals import benchmark_spectra
     from .component_display import MODES,DEFINITIONS,exported_spectra,exported_angular
     if component_mode not in (*MODES,'relative'):raise ValueError('Unknown EMCD display mode')
     map_signal_mode=map_signal_mode or (component_mode if component_mode in MODES else 'raw')
@@ -180,7 +180,7 @@ def export_comparison(result,root,export_single):
     if len(methods)==2:
         diag=complex_wave_diagnostics(methods['bloch']['amplitudes'],methods['fft-multislice']['amplitudes']);arrays.update(diag)
     np.savez_compressed(root/'diffraction_pattern.npz',**arrays)
-    from .forward_results import selected_edge_metrics
+    from emcd_sim.forward_results import selected_edge_metrics
     meta=dict(method_labels=labels,methods={name:dict(r['metadata'],edge_metrics=selected_edge_metrics(r)) for name,r in methods.items()},
         diagnostics=result.get('comparison',{}),array_schema='Unprefixed arrays: primary method. method__field and method__edge__field: explicit arrays; maps (qy,qx), spectra (energy), amplitudes (depth,beam). No implicit method dimension.',primary_method=result.get('method','bloch'))
     (root/'comparison_metadata.json').write_text(json.dumps(meta,indent=2,allow_nan=False)+'\n',encoding='utf-8')

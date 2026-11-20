@@ -53,10 +53,10 @@ def test_snapshot_guard_rejects_unreviewed_fixture_changes(component):
 
 
 @pytest.mark.parametrize('name,before,after',[
-    ('gui/geometry.py','.5*lam*','.6*lam*'),
+    ('structure_geometry.py','.5*lam*','.6*lam*'),
     ('gui/forward_settings.py','slice_step: float=2.','slice_step: float=3.'),
     ('gui/forward_settings.py',"worker_mode: str='automatic'","worker_mode: str='manual'"),
-    ('gui/geometry.py','np.asarray(tilt)*.001/','np.asarray(tilt)*.002/'),
+    ('structure_geometry.py','np.asarray(tilt)*.001/','np.asarray(tilt)*.002/'),
     ('gui/project_io.py',"manifest.get('schema_version')","manifest.get('renamed_schema')"),
     ('gui/app.py','self.show_laue.setChecked(True)','self.show_laue.setChecked(False)'),
 ])
@@ -109,7 +109,7 @@ def test_current_reciprocal_display_strings_and_legacy_project_keys():
         for node in ast.walk(tree):
             if isinstance(node,ast.Constant) and isinstance(node.value,str) and node not in documentation:
                 assert not re.search(r'cycles?\s*(?:/|per\s+)(?:angstrom|Å|A)',node.value,re.I),name
-    from emcd_sim.gui.geometry import Settings
+    from emcd_sim.structure_geometry import Settings
     import emcd_sim
     assert Path(emcd_sim.__file__).resolve().is_relative_to(ROOT/'src')
     from emcd_sim.gui.forward_settings import NiForwardSettings
@@ -151,7 +151,7 @@ def test_historical_windows_identity_and_original_units_preserved():
 def test_metadata_alias_guard_rejects_computational_or_unapproved_changes(mutation):
     import copy
     from unit_metadata_guard import normalize_unit_metadata,RECIPROCAL
-    original=ast.parse((ROOT/'src/emcd_sim/gui/forward_results.py').read_text(encoding='utf-8'))
+    original=ast.parse((ROOT/'src/emcd_sim/forward_results.py').read_text(encoding='utf-8'))
     changed=copy.deepcopy(original)
     if mutation=='number':
         node=next(n for n in ast.walk(changed) if isinstance(n,ast.Constant) and type(n.value) in (int,float))

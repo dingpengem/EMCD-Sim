@@ -90,7 +90,7 @@ def test_baseline_snapshot_tampering_rejected():
 
 
 def test_unrelated_numerical_source_mutation_still_rejected():
-    path='src/emcd_sim/gui/geometry.py'
+    path='src/emcd_sim/structure_geometry.py'
     source=(ROOT/path).read_text(encoding='utf-8-sig');assert '.5*lam*' in source
     with pytest.raises(AssertionError,match='Unreviewed current source: '+path):
         assert_reviewed_current_sources({path:source.replace('.5*lam*','.6*lam*').encode()})

@@ -9,7 +9,7 @@ import shutil
 import uuid
 
 from . import project_io as io
-from . import geometry as structure_data
+from emcd_sim import structure_geometry as structure_data
 from ..cancellation import Cancelled
 
 

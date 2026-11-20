@@ -8,7 +8,7 @@ from test_multisite_gui_run import app,window
 from emcd_sim.gui.parameter_wheel import protect_parameter_wheels
 from emcd_sim.gui.group_mdff import GroupMDFFDialog
 from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
-from emcd_sim.gui.xmcd_source import inspect_xmcd_source
+from emcd_sim.xmcd_source import inspect_xmcd_source
 
 
 def wheel(widget,delta=-120):

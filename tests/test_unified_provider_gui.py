@@ -7,7 +7,7 @@ from ase import Atoms
 from ase.build import bulk
 from PySide6 import QtWidgets,QtCore
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Structure
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.gui.project_io import save_project,load_project
 from emcd_sim.gui.result_export import export_result
 from test_unified_mdff_providers import oxygen_source,xmcd_source

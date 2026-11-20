@@ -16,7 +16,7 @@ from scipy.linalg import expm
 from contract_capture import flatten, metrics, plain
 from emcd_sim import double_channeling as bw, multisite_double_channeling as mdc
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.gui.geometry import Settings, Structure, elastic_model
+from emcd_sim.structure_geometry import Settings, Structure, elastic_model
 from emcd_sim.gui.forward_pipeline import calculate
 from reference_imports import relocate_reference_imports
 from test_multisite_forward import configuration

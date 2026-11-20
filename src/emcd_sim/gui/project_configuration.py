@@ -23,7 +23,7 @@ import numpy as np
 from .. import __version__
 from ..multisite_spectrum import ModeledEdgeWindow, _samples
 from . import project_io as io
-from . import geometry as structure_data
+from emcd_sim import structure_geometry as structure_data
 from ..cancellation import Cancelled
 from .material_inputs import ImportedSettings
 from ..multisite import validate_site_rows

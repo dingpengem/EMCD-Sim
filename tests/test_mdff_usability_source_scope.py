@@ -59,7 +59,9 @@ def test_positive_and_independent_historical_queries():
         'test_missing_references_and_unsupported_element','test_historical_ni_is_not_silently_migrated'}
 
 
-@pytest.mark.parametrize('path',tuple(scope.READABILITY_RENAMES.get(p,p) for p in scope.ACCEPTED_PATHS)+scope.READABILITY_ADDED)
+@pytest.mark.parametrize('path',tuple(scope.READABILITY_RENAMES.get(p,p) for p in scope.ACCEPTED_PATHS)+scope.READABILITY_ADDED+
+    # Result assembly moved from an already protected (not additive) owner.
+    (scope.READABILITY_RENAMES['src/emcd_sim/gui/emcd_forward.py'],))
 def test_each_candidate_mutation(path):
     rejected({path:(scope.ROOT/path).read_bytes()+b'\nunauthorized bytes\n'},path)
 

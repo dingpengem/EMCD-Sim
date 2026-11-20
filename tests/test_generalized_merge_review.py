@@ -3,7 +3,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 from ase import Atoms
-from emcd_sim.gui.geometry import Structure,Settings,geometry,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, geometry, elastic_model
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.multislice_double_channeling import ProjectedFFT,incident_fields,multislice_double_channeling_response

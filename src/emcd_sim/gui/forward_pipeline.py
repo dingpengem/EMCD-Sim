@@ -5,12 +5,12 @@ from time import perf_counter
 import numpy as np
 from ..cancellation import Cancelled, check_cancelled
 from .forward_settings import MultiSiteForwardSettings
-from .forward_results import assemble_forward_result
+from emcd_sim.forward_results import assemble_forward_result
 from ..detector_signals import integrate_detector_block
 from .multisite_integration import (integrate_single_channeling_spectrum,
                                     integrate_double_channeling_spectrum)
 from ..mdff_providers import prepare_provider
-from .geometry import elastic_model,geometry
+from emcd_sim.structure_geometry import elastic_model, geometry
 from ..geometry import VirtualDetector
 from ..simulation import EMCDSimulation
 from ..multislice_reference import coherence_from_amplitudes
@@ -147,7 +147,7 @@ def _calculate_uniform_prepared(structure,settings,cfg,progress,cancelled,*,ener
     # contain the enclosing collection, avoiding recursive/ambiguous dimensions.
     result=dict(primary,methods=methods,comparison=comparison,fft=fft_info)
     result['metadata']=dict(primary['metadata'],method_labels=list(methods),comparison=comparison)
-    from .geometry import structure_snapshot
+    from emcd_sim.structure_geometry import structure_snapshot
     result['structure_snapshot']=structure_snapshot(structure)
     for r in methods.values():r['structure_snapshot']=result['structure_snapshot']
     stage('Preparing result visualizations')
@@ -356,7 +356,7 @@ def _calculate_multisite(structure,settings,sites,cfg,progress=lambda s:None,
         primary=methods.get('bloch',next(iter(methods.values())))
         result=dict(primary,methods=methods,comparison=comparison,fft=fft_info)
         result['metadata']=dict(primary['metadata'],method_labels=list(methods),comparison=comparison)
-        from .geometry import structure_snapshot
+        from emcd_sim.structure_geometry import structure_snapshot
         snapshot=structure_snapshot(structure)
         result['structure_snapshot']=snapshot
         for method_result in methods.values():method_result['structure_snapshot']=snapshot

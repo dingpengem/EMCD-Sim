@@ -13,8 +13,8 @@ from ase.io import write
 from ase.build import bulk
 from PySide6 import QtWidgets
 from matplotlib.backend_bases import MouseEvent
-from emcd_sim.gui.geometry import (Structure,Settings,orientation,indices,geometry,
-    elastic_model,preview,align_bragg,excitation,za_from_tilt,tilt_from_za)
+from emcd_sim.structure_geometry import Structure, Settings, orientation, geometry, elastic_model, align_bragg, excitation, za_from_tilt, tilt_from_za
+from emcd_sim.gui.geometry import indices, preview
 from emcd_sim.gui.app import MainWindow
 from legacy_geometry import Ni017Geometry
 

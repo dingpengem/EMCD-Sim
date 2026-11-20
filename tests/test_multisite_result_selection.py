@@ -13,7 +13,7 @@ from PySide6 import QtCore,QtWidgets,QtTest
 
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
-from emcd_sim.gui.geometry import Settings
+from emcd_sim.structure_geometry import Settings
 from emcd_sim.gui.multisite_results import SPECTRAL_KEYS, spectral_series, covered_segments
 from emcd_sim.gui.result_presentation import draw_multisite_panel
 from emcd_sim.gui.results import ResultsView

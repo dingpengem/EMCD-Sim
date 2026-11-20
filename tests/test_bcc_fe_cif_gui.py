@@ -17,7 +17,7 @@ pytest.importorskip('PySide6')
 pytest.importorskip('ase')
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Structure, Settings, geometry
+from emcd_sim.structure_geometry import Structure, Settings, geometry
 
 CIF=Path(__file__).parent/'fixtures/alpha_Fe_bcc_Im-3m.cif'
 CIF_SHA='e841d08df6ba5a2860385397a85da36856568d19e72250e1bebaa37885f595df'

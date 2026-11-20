@@ -8,8 +8,8 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from .responsive import ResponsiveCanvas as FigureCanvasQTAgg
 from matplotlib.patches import Circle
-from .geometry import (Structure,Settings,indices,geometry,preview,excitation,
-                       align_bragg,za_from_tilt,tilt_from_za)
+from emcd_sim.structure_geometry import Structure, Settings, geometry, excitation, align_bragg, za_from_tilt, tilt_from_za
+from .geometry import indices, preview
 
 
 class PreviewWorker(QtCore.QThread):
@@ -34,7 +34,7 @@ class MainWindow(ProjectWorkspace,CalculationControls,QtWidgets.QMainWindow):
     preview_ready=QtCore.Signal()
     def __init__(self,workspace=None):
         super().__init__()
-        from .runtime import LABEL
+        from emcd_sim.provenance import LABEL
         self.setWindowTitle(LABEL)
         self.resize(1550,960);self.structure=Structure.nickel();self.last_result=None;self.worker=None;self.busy=False
         self.magnetization_mode='global'
@@ -585,7 +585,7 @@ class MainWindow(ProjectWorkspace,CalculationControls,QtWidgets.QMainWindow):
 
 
 def add_about_menu(window):
-    from .runtime import LABEL, build_info
+    from emcd_sim.provenance import LABEL, build_info
     action=window.menuBar().addMenu('Help').addAction('About / build')
     action.triggered.connect(lambda:QtWidgets.QMessageBox.information(window,LABEL,json.dumps(build_info(),indent=2)))
     return action
@@ -608,7 +608,8 @@ def main():
     parser.add_argument('--unified-elastic-acceptance',type=Path,help='Opt-in bounded unified-provider native GUI acceptance in a new folder')
     parser.add_argument('--unified-historical-project',type=Path,help='Read-only historical Ni project for unified-provider acceptance')
     args=parser.parse_args()
-    from .runtime import configure_logging, LABEL, build_info
+    from .runtime import configure_logging
+    from emcd_sim.provenance import LABEL, build_info
     configure_logging()
     if args.unified_elastic_acceptance:
         from .unified_elastic_acceptance import run

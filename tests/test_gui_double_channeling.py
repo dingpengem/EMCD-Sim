@@ -8,7 +8,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from emcd_sim.gui import forward_pipeline as forward
-from emcd_sim.gui.geometry import Structure,Settings,geometry
+from emcd_sim.structure_geometry import Structure, Settings, geometry
 from emcd_sim.gui.project_io import config_from_dict,save_project,load_project
 from emcd_sim.gui.propagation import numerical_info
 

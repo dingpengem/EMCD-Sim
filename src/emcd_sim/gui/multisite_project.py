@@ -10,7 +10,7 @@ import numpy as np
 
 from .project_configuration import _encode_config, _decode_config, _records
 from .multisite_results import SPECTRAL_KEYS
-from . import geometry as structure_data
+from emcd_sim import structure_geometry as structure_data
 
 
 def _entry(prefix,entry,shared=False):
@@ -84,7 +84,7 @@ def restore_entry(record,angular,spectra,energy=None):
 
 def restore_groups(result,descriptor,angular,spectra):
     from ..multisite import validate_site_rows
-    from .geometry import restore_structure
+    from emcd_sim.structure_geometry import restore_structure
     energy=result['spectra']['energy_ev'];n=result['metadata']['multisite']['selected_atom_count']
     groups={};rows=[]
     for record in descriptor['groups']:

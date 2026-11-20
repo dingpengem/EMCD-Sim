@@ -70,7 +70,7 @@ def test_resident_reserved_arrays_are_not_added_to_rss_twice(monkeypatch):
 def test_saved_energy_diagnostics_distinguish_request_from_evaluated_grid(tmp_path,sampling,requested,actual):
     from emcd_sim.gui.forward_settings import NiForwardSettings
     from emcd_sim.gui.forward_pipeline import calculate
-    from emcd_sim.gui.geometry import Structure,Settings
+    from emcd_sim.structure_geometry import Structure, Settings
     from emcd_sim.gui.project_io import save_project,load_project
     cfg=NiForwardSettings(axis_declared=True,grid=9,depth=5,subpixels=8,
         energy_scope='edges' if sampling=='edges' else 'full',energy_sampling=sampling,

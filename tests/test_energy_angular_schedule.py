@@ -8,7 +8,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from emcd_sim.gui import forward_pipeline as f, channeling
-from emcd_sim.gui.geometry import Structure,Settings
+from emcd_sim.structure_geometry import Structure, Settings
 
 BASE='619a1969055ac6d717c092dcf663c3d58062b7e0'
 
