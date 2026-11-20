@@ -217,8 +217,9 @@ def test_unavailable_global_atomic_provider_is_not_saved_as_legacy_ni(window,app
     raw=(Path(__file__).resolve().parents[1]/'docs/examples/synthetic_fe_atomic_parameters.json').read_bytes()
     source.write_bytes(raw);digest=io.sha256(source);source.unlink()
     cfg=ProviderSettings(model='atomic',source=str(source),source_sha256=digest,ionizing_element='Fe',
-        magnetic_state='uniform_fm',magnetization=(0.,0.,1.),axis_declared=True,l3=710.,l2=723.)
-    state=dict(structure=Structure(bulk('Fe','bcc',a=2.87,cubic=True)),settings=Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=.9),
+        magnetic_state='uniform_fm',magnetization=(0.,0.,1.),axis_declared=True,l3=710.,l2=723.,
+        centers=((.2837684449489217,.2837684449489217),(.2837684449489217,-.2837684449489217)),radius=.0908059024)
+    state=dict(structure=Structure(bulk('Fe','bcc',a=2.87,cubic=True)),settings=Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=.9,tilt=(-5.5866881404, 0.0)),
         config=cfg,magnetization_mode='global')
     root=io.save_configuration(state,tmp_path/'Missing Provider');w.open_project_path(root);wait(w,app)
     assert w.active_project_path==str(root) and w.magnetization_mode=='global'

@@ -44,3 +44,17 @@ def xmcd_tensor_in_frame(path,energy_ev=None,*,eta=1.,beta=1.,frame):
     if R.shape!=(3,3) or not np.allclose(R@R.T,np.eye(3),atol=1e-12) or np.linalg.det(R)<0:raise ValueError('Proper orthonormal tensor frame required')
     t=effective_tensor_from_xmcd(path,energy_ev,eta=eta,beta=beta)
     return DipoleTensor(t.energy_ev,np.einsum('ia,eab,jb->eij',R,t.tensor_angstrom2_per_ev,R),t.source+';crystal_to_local_R_T_RT')
+
+
+def nickel_geometry_settings(**overrides):
+    """Select the historical Ni [017]/200/300 kV demonstration geometry.
+
+    Return the common geometry record. Explicit overrides preserve the old
+    constructor semantics, including its fixed reference tilt.
+    """
+    from .structure_geometry import Settings
+    from .geometry import electron_wavelength_angstrom
+    defaults=dict(zone=(0,1,7),target=(2,0,0),
+        tilt=(round(float(-1000*electron_wavelength_angstrom(300)/3.524),10),0.))
+    defaults.update(overrides)
+    return Settings(**defaults)

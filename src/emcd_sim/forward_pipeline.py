@@ -48,6 +48,9 @@ def _calculate_uniform(structure,settings,cfg,progress=lambda s:None,cancelled=l
     check_cancelled(cancelled)
     if execution_policy is None:cfg=replace(cfg,resource_allocation=None)
     validate_before_resources(structure,settings,cfg,energy_ev)
+    centers=np.asarray(cfg.centers,float)
+    if centers.shape!=(2,2) or not np.isfinite(centers).all() or not np.isfinite(cfg.radius) or cfg.radius<=0:
+        raise ValueError('Two explicit finite detector centers and a positive radius are required')
     from emcd_sim.propagation import numerical_info, resolve_fft_configuration
     cfg=resolve_fft_configuration(structure,settings,cfg)
     from emcd_sim.memory_budget import reserve_memory

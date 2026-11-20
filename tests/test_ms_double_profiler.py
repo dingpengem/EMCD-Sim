@@ -1,4 +1,5 @@
 """Optional external instrumentation preserves the production result exactly."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import importlib.util
 from pathlib import Path
 import numpy as np
@@ -21,7 +22,7 @@ def test_import_has_no_production_hooks():
 
 
 def test_profile_copy_and_fft_hooks_are_bitwise_identical():
-    p=tool();elastic=elastic_model(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
+    p=tool();elastic=elastic_model(Structure.nickel(),nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
     grid=ms.ProjectedFFT.build(elastic,grid_points=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry())
     incoming=ms.incident_fields(grid,2,depth_steps=5,slice_step_nm=.04)
     kwargs=dict(fft_grid=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry(),depth_steps=5,slice_step_nm=.04,prepared_grid=grid,prepared_incoming=incoming)

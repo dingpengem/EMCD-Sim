@@ -371,11 +371,11 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         if self.model.currentIndex() in (0,1) and self.row[3] is None:
             raise ValueError(f'Group {self.row[0]}: set its Material direction in Site groups and choose Update direction before configuring a magnetic model')
         if self.model.currentIndex() == 0:
-            from emcd_sim.forward_settings import NiForwardSettings
+            from emcd_sim.forward_settings import ForwardSettings
             self.validate_xmcd_source()
             if self.source_info is None:raise ValueError(self.status.text())
             path=self.source_path.text().strip()
-            base=NiForwardSettings(model='xmcd',source=path,source_sha256=self.source_info['sha256'],
+            base=ForwardSettings(model='xmcd',source=path,source_sha256=self.source_info['sha256'],
                 magnetization=self.row[3],axis_declared=self.source_conventions_confirmed(),
                 l3=self.spin['xl3'].value(),l2=self.spin['xl2'].value(),eta=self.eta.value(),beta=self.beta.value())
             declaration=self.xmcd_source_declaration(base)

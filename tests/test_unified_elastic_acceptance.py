@@ -1,4 +1,5 @@
 """Independent provider, non-FCC indexing, Qt and persistence acceptance."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from dataclasses import asdict,replace
@@ -152,16 +153,16 @@ def test_partial_unsupported_large_cell_and_legacy_low_g():
     from ase import Atoms
     from emcd_sim.legacy_atomic_factors import LegacyNeutralAtomFactors
     s=Structure(Atoms('Mo',cell=np.eye(3)*100,pbc=True))
-    settings=Settings(zone=(0,0,1),target=(1,0,0),beam_cutoff=.015,potential_cutoff=.015)
+    settings=Settings(zone=(0,0,1),target=(1,0,0),beam_cutoff=.015,potential_cutoff=.015,tilt=(-5.5866881404, 0.0))
     assert np.isfinite(elastic_model(s,settings).hamiltonian_nm_inv()).all()
     s.atoms.info['occupancy']={'0':{'Mo':.5}}
     assert s.elastic_reason
     unsupported=Structure(Atoms('X',cell=np.eye(3)*3,pbc=True))
     assert unsupported.elastic_reason
     huge=Structure(Atoms('Si',cell=np.eye(3)*10000,pbc=True))
-    with pytest.raises(ValueError,match='search too large'):geometry(huge,Settings(zone=(0,0,1),target=(1,0,0)))
+    with pytest.raises(ValueError,match='search too large'):geometry(huge,Settings(zone=(0,0,1),target=(1,0,0),tilt=(-5.5866881404, 0.0)))
     with pytest.raises(ValueError):indices('1 0 -1 0')
-    with pytest.raises(ValueError):geometry(Structure.nickel(),Settings(zone=(0,0,1),target=(0,0,1)))
+    with pytest.raises(ValueError):geometry(Structure.nickel(),Settings(zone=(0,0,1),target=(0,0,1),tilt=(-5.5866881404, 0.0)))
 
 
 def test_elastic_project_read_only_roundtrip_provider_and_historical_default(tmp_path):
@@ -173,7 +174,7 @@ def test_elastic_project_read_only_roundtrip_provider_and_historical_default(tmp
     for k in ('amplitudes','g','beam_hkl','intensity'):np.testing.assert_array_equal(restored[k],result[k])
     assert restored['elastic_provider']['provider']==ADAPTIVE
     assert not restored['amplitudes'].flags.writeable
-    historical=asdict(Settings());historical.pop('elastic_provider')
+    historical=asdict(nickel_geometry_settings());historical.pop('elastic_provider')
     assert settings_from_dict(historical).elastic_provider==LOBATO
     with pytest.raises(FileExistsError):save_elastic_project(result,path)
     with (path/'metadata.json').open('a') as f:f.write(' ')
@@ -220,7 +221,7 @@ def test_emcd_project_explicit_new_and_unversioned_lobato_compatibility(tmp_path
     from emcd_sim.gui.project_io import save_project,load_project,rerun_reason,fingerprints,elastic_provider_reason
     cfg=NiForwardSettings(energy_scope='edges',grid=9,depth=9,subpixels=16,axis_declared=True,angular_maps=False,channeling_model='single',correction=False)
     for provider in (LOBATO,ADAPTIVE):
-        s=Settings(zone=(0,0,1),target=(2,0,0),voltage=200,thickness=1,beam_cutoff=1.2,potential_cutoff=1.2,elastic_provider=provider)
+        s=Settings(zone=(0,0,1),target=(2,0,0),voltage=200,thickness=1,beam_cutoff=1.2,potential_cutoff=1.2,elastic_provider=provider,tilt=(-5.5866881404, 0.0))
         result=calculate(Structure.nickel(),s,cfg)
         assert result['metadata']['elastic_provider']['provider']==provider
         if provider==LOBATO:

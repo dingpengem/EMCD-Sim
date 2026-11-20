@@ -1,4 +1,5 @@
 """Normal Qt controls/workers, saved geometry and raw/relative result views."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from pathlib import Path
@@ -90,5 +91,5 @@ def test_ideal_basis_description_is_not_full_multibeam():
     from emcd_sim.structure_geometry import Settings
     from emcd_sim.forward_settings import NiForwardSettings
     from dataclasses import replace
-    result=dict(settings=replace(Settings(),basis_mode='two-beam'),config=NiForwardSettings())
+    result=dict(settings=replace(nickel_geometry_settings(),basis_mode='two-beam'),config=NiForwardSettings())
     assert 'ideal' in geometry_description(result) and 'full finite' not in geometry_description(result)

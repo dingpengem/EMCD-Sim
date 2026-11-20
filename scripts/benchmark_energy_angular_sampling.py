@@ -3,6 +3,7 @@
 Run --probe first. --run compares three unchanged energy samples at the full
 configured q grid. The baseline is the exact pre-scheduler GUI source in Git.
 """
+from emcd_sim.study_presets import nickel_geometry_settings
 from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
 from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.xmcd_source import inspect_xmcd_source
@@ -34,7 +35,7 @@ def configuration():
     # starting [017] finite basis/grid/depth, with the requested 300 kV/8 nm.
     info=inspect_xmcd_source(DEFAULT_NI_SOURCE)
     selected=info['selected'];assert selected
-    s=Settings(voltage=300,thickness=8,tilt=(Ni017Geometry().bragg_tilt(300),0.))
+    s=nickel_geometry_settings(voltage=300,thickness=8,tilt=(Ni017Geometry().bragg_tilt(300),0.))
     c=replace(NiForwardSettings(),axis_declared=True,source_sha256=info['sha256'],
         l3=selected['L3'],l2=selected['L2'],channeling_model='double',fft_grid=32,slice_step=.5)
     return Structure.nickel(),s,c,np.array([c.l3,(c.l3+c.l2)/2,c.l2])

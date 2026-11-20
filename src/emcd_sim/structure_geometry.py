@@ -1,7 +1,7 @@
 """Scientific structure records, oriented geometry and lossless snapshot operations.
 
-The explicit historical Ni record defaults/preset are retained unchanged.
-Calculation callers still supply the actual structure and geometry settings.
+Calculation callers supply the actual structure and geometry settings.
+Historical Ni demonstrations are selected explicitly through study_presets.
 """
 from dataclasses import dataclass
 from itertools import product
@@ -31,12 +31,12 @@ def orientation(cell,zone,target=None):
 @dataclass
 class Structure:
     atoms: object
-    source: str='Built-in FCC Ni, a=3.524 Å'
+    source: str='In-memory ASE structure'
     sha256: str=''
     import_warnings: str=''
 
     @classmethod
-    def nickel(cls):return cls(bulk('Ni','fcc',a=3.524,cubic=True))
+    def nickel(cls):return cls(bulk('Ni','fcc',a=3.524,cubic=True),'Built-in FCC Ni, a=3.524 Å')
 
     @classmethod
     def from_cif(cls,path):
@@ -71,9 +71,9 @@ class Structure:
 
 @dataclass(frozen=True)
 class Settings:
-    zone: tuple=(0,1,7)
+    zone: tuple=(0,0,1)
     target: tuple=(2,0,0)
-    tilt: tuple=(round(float(-1000*electron_wavelength_angstrom(300)/3.524),10),0.)
+    tilt: tuple=(0.,0.)
     voltage: float=300.
     thickness: float=30.
     beam_cutoff: float=2.5

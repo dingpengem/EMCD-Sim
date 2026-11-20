@@ -1,4 +1,5 @@
 """Strict pre-patch comparison for per-call MS buffer/temporary reuse."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import subprocess,sys,types
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -40,7 +41,7 @@ def test_advance_exact_ownership_adjoint_and_cached_factors(old,shape,steps,dz):
 def test_matched_reference_response_and_all_diagnostics_exact(old,thickness):
     # The same physical/numerical settings as the saved 300 kV case, on a
     # representative outgoing batch rather than another complete field.
-    settings=Settings(voltage=300,thickness=thickness,tilt=(Ni017Geometry().bragg_tilt(300),0.),beam_cutoff=3.2,potential_cutoff=2.2)
+    settings=nickel_geometry_settings(voltage=300,thickness=thickness,tilt=(Ni017Geometry().bragg_tilt(300),0.),beam_cutoff=3.2,potential_cutoff=2.2)
     elastic=elastic_model(Structure.nickel(),settings)
     q=np.array([[0.,0.],[.25,.25],[.25,-.25],[-.75,.5]])
     results=[];incoming=[]
@@ -57,7 +58,7 @@ def test_matched_reference_response_and_all_diagnostics_exact(old,thickness):
 
 
 def test_parallel_calls_keep_buffers_independent(old):
-    elastic=elastic_model(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
+    elastic=elastic_model(Structure.nickel(),nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
     kwargs=dict(fft_grid=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry(),depth_steps=9,slice_step_nm=.04)
     batches=[np.array([[.2,.1+i*.05],[.2,-.1-i*.05]]) for i in range(4)]
     expected=[old.multislice_double_channeling_response(elastic,831.271,q,2,**kwargs)[0] for q in batches]
@@ -69,7 +70,7 @@ def test_parallel_calls_keep_buffers_independent(old):
 
 
 def test_001_default_fft_path_matches_frozen_reference_to_roundoff(old):
-    settings=Settings(zone=(0,0,1),target=(2,0,0),thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
+    settings=Settings(zone=(0,0,1),target=(2,0,0),thickness=2,beam_cutoff=.9,potential_cutoff=1.8,tilt=(-5.5866881404, 0.0))
     elastic=elastic_model(Structure.nickel(),settings,systematic_row=True)
     q=np.array([[.28,.28],[.28,-.28]])
     results=[];fields=[]

@@ -23,7 +23,7 @@ STEPS = [.04, .5, 1., 2., 5., 10.]
 def small():
     structure = Structure.nickel()
     settings = Settings(zone=(0,0,1), target=(2,0,0), voltage=200,
-                        thickness=.5, beam_cutoff=.9, potential_cutoff=1.8)
+                        thickness=.5, beam_cutoff=.9, potential_cutoff=1.8,tilt=(-5.5866881404, 0.0))
     cfg = NiForwardSettings(model='atomic', propagation='fft-multislice',
         grid=9, depth=3, fft_grid=12, subpixels=4, energy_scope='edges',
         l3=852.7, l2=870., correction=False, centers=((.2,.2),(.2,-.2)))

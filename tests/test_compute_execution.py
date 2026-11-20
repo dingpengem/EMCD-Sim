@@ -1,4 +1,5 @@
 """Bounded existing Ni/AFM Cr fixtures; resource changes only, no benchmarks."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from dataclasses import replace
 import threading
 import numpy as np
@@ -76,7 +77,7 @@ def test_saved_energy_diagnostics_distinguish_request_from_evaluated_grid(tmp_pa
         energy_scope='edges' if sampling=='edges' else 'full',energy_sampling=sampling,
         energy_points=requested,worker_mode='manual',parallel_workers=1)
     with calculation_blas_guard():
-        result=calculate(Structure.nickel(),Settings(thickness=.2,beam_cutoff=.9,potential_cutoff=1.8),cfg)
+        result=calculate(Structure.nickel(),nickel_geometry_settings(thickness=.2,beam_cutoff=.9,potential_cutoff=1.8),cfg)
     assert len(result['spectra']['energy_ev'])==actual
     info=result['metadata']['numerics']
     assert info['energy_samples']==info['evaluated_energy_samples']==actual

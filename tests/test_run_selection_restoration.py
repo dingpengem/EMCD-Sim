@@ -163,7 +163,8 @@ def test_xmcd_and_explicit_imported_pair_restore_independently(window,tmp_path):
     w=window;r,_=global_atomic(tmp_path)
     imported=tensor_source(tmp_path,'explicit-pair',element='Fe',axis=(0,0,1),manual=True,
         frame=[[0,-1,0],[1,0,0],[0,0,1]])
-    imported=replace(imported,pair_reversed=True,magnetization=(0.,0.,-1.),grid=9,depth=7)
+    imported=replace(imported,pair_reversed=True,magnetization=(0.,0.,-1.),grid=9,depth=7,
+        centers=((.2837684449489217,.2837684449489217),(.2837684449489217,-.2837684449489217)),radius=.0908059024)
     r['config']=imported;r['metadata']['mdff']=asdict(imported)
     r['metadata']['magnetization_crystal']=list(imported.magnetization)
     r['methods']={'bloch':dict(r)};r['methods']['bloch'].pop('methods',None)

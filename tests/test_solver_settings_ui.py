@@ -1,4 +1,5 @@
 """Configuration-level regression for shared/solver-specific UI; no propagation."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from reference_imports import relocate_reference_imports
 import os,sys,types,subprocess,json,ast,copy
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
@@ -134,10 +135,10 @@ def test_switching_updates_real_memory_estimates_without_mutating_settings(windo
 def test_general_ms_orientation_supported_but_non_zolz_target_rejected(window):
     window.spin['beam'].setValue(.9)
     window.zone.setText('0 1 1');window.propagation_box.setCurrentIndex(1);window.emcd_stale()
-    info=numerical_info(Structure.nickel(),replace(Settings(),zone=(0,1,1),beam_cutoff=.9),replace(NiForwardSettings(),propagation='fft-multislice'),check_memory=False)
+    info=numerical_info(Structure.nickel(),replace(nickel_geometry_settings(),zone=(0,1,1),beam_cutoff=.9),replace(NiForwardSettings(),propagation='fft-multislice'),check_memory=False)
     assert info['fft_harmonics']==1024
     with pytest.raises(ValueError,match='ZOLZ'):
-        numerical_info(Structure.nickel(),replace(Settings(),zone=(1,1,1),target=(2,0,0)),replace(NiForwardSettings(),propagation='fft-multislice'),check_memory=False)
+        numerical_info(Structure.nickel(),replace(nickel_geometry_settings(),zone=(1,1,1),target=(2,0,0)),replace(NiForwardSettings(),propagation='fft-multislice'),check_memory=False)
 
 
 def test_saved_settings_and_arrays_preserved_without_solver(window,tmp_path):

@@ -1,4 +1,5 @@
 """Windows allocation policy/GUI tests; simulated machines are not native PCs."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from dataclasses import replace
 from types import SimpleNamespace
 import numpy as np
@@ -41,22 +42,22 @@ def test_auto_budget_uses_current_headroom_not_installed_ram(gib):
 def test_cpu_policy_scales_and_keeps_small_bw_jobs_serial(logical,physical):
     state=machine(128,logical,physical)
     cfg=NiForwardSettings(channeling_model='double',grid=97,depth=64)
-    plan=worker_plan(Settings(),cfg,59,native=native(state))
+    plan=worker_plan(nickel_geometry_settings(),cfg,59,native=native(state))
     count=plan['effective_workers']['bloch']
     assert 1<=count<=logical and (logical==1 or count<logical)
     if physical is not None and physical>=16:assert count>4
-    small=worker_plan(Settings(),replace(cfg,grid=9,depth=17),5,native=native(state))
+    small=worker_plan(nickel_geometry_settings(),replace(cfg,grid=9,depth=17),5,native=native(state))
     assert small['effective_workers']['bloch']==1
-    single=worker_plan(Settings(),replace(cfg,channeling_model='single'),59,native=native(state))
+    single=worker_plan(nickel_geometry_settings(),replace(cfg,channeling_model='single'),59,native=native(state))
     assert single['effective_workers']['bloch']==1
 
 
 def test_hybrid_and_manual_cpu_requests_are_not_silently_substituted():
     state=machine(64,32,24,classes={0:16,1:8})
     cfg=NiForwardSettings(channeling_model='double',grid=97)
-    plan=worker_plan(Settings(),cfg,59,native=native(state))
+    plan=worker_plan(nickel_geometry_settings(),cfg,59,native=native(state))
     assert plan['effective_workers']['bloch']==15
-    manual=worker_plan(Settings(),replace(cfg,worker_mode='manual',parallel_workers=40),59,native=native(state))
+    manual=worker_plan(nickel_geometry_settings(),replace(cfg,worker_mode='manual',parallel_workers=40),59,native=native(state))
     assert manual['blocked'] and manual['effective_workers']['bloch']==40
 
 
@@ -73,7 +74,7 @@ def test_affinity_and_cpu_set_allocation_filter_original_core_ids():
 def test_real_insufficiency_rejects_auto_without_forcing_one_worker(constraint,value):
     state=machine();state[constraint]=value
     cfg=NiForwardSettings(channeling_model='double',memory_mode='automatic',grid=9,depth=17)
-    info=numerical_info(Structure.nickel(),Settings(),cfg,enforce_execution=False,resource_snapshot=state,native=native(state))
+    info=numerical_info(Structure.nickel(),nickel_geometry_settings(),cfg,enforce_execution=False,resource_snapshot=state,native=native(state))
     assert info['execution']['blocked'] and info['execution']['effective_workers']['bloch']==0
     assert info['rejected'] and info['rejection_reason']
     assert cfg.grid==9 and cfg.memory_budget_mib==2048
@@ -82,7 +83,7 @@ def test_real_insufficiency_rejects_auto_without_forcing_one_worker(constraint,v
 def test_auto_workers_fit_budget_but_manual_values_never_change():
     state=machine(32,32,16)
     cfg=NiForwardSettings(channeling_model='double',memory_budget_mib=440,grid=97,depth=64)
-    structure=Structure.nickel();settings=Settings()
+    structure=Structure.nickel();settings=nickel_geometry_settings()
     auto=numerical_info(structure,settings,cfg,enforce_execution=False,resource_snapshot=state,native=native(state))
     manual=numerical_info(structure,settings,replace(cfg,worker_mode='manual',parallel_workers=15),
         enforce_execution=False,resource_snapshot=state,native=native(state))
@@ -93,12 +94,12 @@ def test_auto_workers_fit_budget_but_manual_values_never_change():
 
 def test_run_allocation_preserves_manual_requests_and_rechecks_changed_resources():
     state=machine(32,16,8);cfg=NiForwardSettings(channeling_model='double',memory_mode='automatic',grid=9,depth=17)
-    info=numerical_info(Structure.nickel(),Settings(),cfg,resource_snapshot=state,native=native(state))
+    info=numerical_info(Structure.nickel(),nickel_geometry_settings(),cfg,resource_snapshot=state,native=native(state))
     accepted=bind_allocation(cfg,info)
     assert accepted.memory_budget_mib==2048 and accepted.parallel_workers==1
     assert accepted.calculation_memory_budget_mib==info['memory_budget_mib']
     changed=dict(state,available_ram_mib=100)
-    rejected=numerical_info(Structure.nickel(),Settings(),accepted,enforce_execution=False,resource_snapshot=changed,native=native(changed))
+    rejected=numerical_info(Structure.nickel(),nickel_geometry_settings(),accepted,enforce_execution=False,resource_snapshot=changed,native=native(changed))
     assert rejected['rejected'] and accepted.resource_allocation==bind_allocation(cfg,info).resource_allocation
 
 
@@ -138,14 +139,14 @@ def test_project_roundtrip_retains_modes_and_remembered_manual_values(tmp_path,m
 
 def test_no_maps_uses_detector_support_for_cpu_tasks():
     state=machine();cfg=NiForwardSettings(channeling_model='double',angular_maps=False,angular_evaluation='all')
-    info=numerical_info(Structure.nickel(),Settings(),cfg,resource_snapshot=state,native=native(state))
+    info=numerical_info(Structure.nickel(),nickel_geometry_settings(),cfg,resource_snapshot=state,native=native(state))
     assert info['execution']['detector_task_pixels']==info['detector_support_pixels']<cfg.grid**2
 
 
 @pytest.mark.parametrize('method',['bloch','fft-multislice'])
 def test_single_full_maps_fit_budget_without_hypothetical_full_field_scratch(method):
     state=machine();state['process_rss_mib']=64.
-    settings=Settings();structure=Structure.nickel()
+    settings=nickel_geometry_settings();structure=Structure.nickel()
     cfg=NiForwardSettings(propagation=method,grid=97,depth=64,memory_budget_mib=256,
         worker_mode='manual',parallel_workers=1)
     info=numerical_info(structure,settings,cfg,resource_snapshot=state,native=native(state))

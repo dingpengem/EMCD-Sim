@@ -1,4 +1,5 @@
 """Focused investigation checks; never an application or acceptance entry point."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from dataclasses import asdict, field, make_dataclass
 import inspect
 import json
@@ -92,7 +93,7 @@ def check_current():
 
     # The historical test mixes bitwise preservation with an old internal hook.
     # Check cancellation behavior without changing its original assertions.
-    elastic = elastic_model(Structure.nickel(), Settings(thickness=2, beam_cutoff=.9, potential_cutoff=1.8))
+    elastic = elastic_model(Structure.nickel(), nickel_geometry_settings(thickness=2, beam_cutoff=.9, potential_cutoff=1.8))
     queries = np.array([[.15, .2], [.15, -.2]])
     cancel_rows = []
     for method in ('analytic', 'numerical'):

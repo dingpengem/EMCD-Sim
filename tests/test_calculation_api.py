@@ -1,4 +1,5 @@
 """Explicit model/geometry requests cannot fall through to an unrelated material."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from types import SimpleNamespace
 
 import pytest
@@ -14,7 +15,7 @@ def test_missing_model_or_assignments_fail_before_elastic_work(monkeypatch,confi
     def forbidden(*args,**kwargs):pytest.fail('Invalid request reached elastic preparation')
     monkeypatch.setattr('emcd_sim.forward_pipeline.elastic_model',forbidden)
     with pytest.raises(ValueError,match='Explicit material/model|Missing multi-site assignments'):
-        calculate(Structure.nickel(),Settings(),config)
+        calculate(Structure.nickel(),nickel_geometry_settings(),config)
 
 
 @pytest.mark.parametrize('model',['xmcd','atomic','imported','multisite'])
@@ -32,7 +33,7 @@ def test_supported_gui_entry_is_the_scientific_callable_and_result():
     assert public_calculate is calculate
     assert inspect.signature(public_calculate) == inspect.signature(calculate)
     assert calculate.__module__ == 'emcd_sim.forward_pipeline'
-    settings = Settings(thickness=.3, beam_cutoff=.9, potential_cutoff=1.8)
+    settings = nickel_geometry_settings(thickness=.3, beam_cutoff=.9, potential_cutoff=1.8)
     cfg = NiForwardSettings(model='xmcd', axis_declared=True, propagation='bloch',
         channeling_model='single', energy_scope='edges', grid=9, depth=9,
         subpixels=8, fft_grid=16, slice_step=.01, halfwidth=.7,

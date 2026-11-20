@@ -6,7 +6,7 @@ from time import perf_counter,thread_time
 import numpy as np
 from .double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch,prepare_outgoing_bloch
 from .multislice_double_channeling import ProjectedFFT, incident_fields, multislice_double_channeling_response
-from .single_channeling_tensor import _tensor_angular_maps, historical_ni_site_phase_matrix
+from .single_channeling_tensor import _tensor_angular_maps
 from .mdff_edges import selected_samples
 
 
@@ -156,6 +156,8 @@ def calculate_detector_signals(model,settings,cfg,method,C,energy,tensors,stage,
     outputs are raw detector spectra (energy,) and selected maps (qy,qx).
     No material model or GUI state is constructed here.
     """
+    if ionization_sites is None:
+        raise ValueError('Explicit ionization_sites are required for detector signals')
     from .cancellation import Cancelled
     from emcd_sim.structure_geometry import projected_geometry_from_oriented_crystal
     from emcd_sim.propagation import SINGLE_CHANNELING_PIXEL_BATCH
@@ -164,8 +166,8 @@ def calculate_detector_signals(model,settings,cfg,method,C,energy,tensors,stage,
     full_weights=np.stack([weights[k].ravel() for k in ('A','B')])
     spectra={f'I_{d}_{s}':np.empty(len(energy)) for s in ('plus','minus') for d in ('A','B')}
     maps={};elastic=model.elastic
-    phase=historical_ni_site_phase_matrix(model) if ionization_sites is None else ionization_sites.single_phase(elastic.crystal,elastic.beams.hkl)
-    site_arguments={} if ionization_sites is None else dict(ionization_sites=ionization_sites)
+    phase=ionization_sites.single_phase(elastic.crystal,elastic.beams.hkl)
+    site_arguments=dict(ionization_sites=ionization_sites)
     # Directly evaluate both mirror directions for any orientation. A reference
     # symmetry is a diagnostic, not an input used to manufacture a response.
     supports={}

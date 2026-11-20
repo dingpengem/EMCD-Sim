@@ -13,7 +13,7 @@ import hashlib,json,os,shutil,uuid,zipfile,time
 import numpy as np
 from emcd_sim.structure_geometry import Settings, excitation
 from emcd_sim import structure_geometry as structure_data
-from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import ForwardSettings, NiForwardSettings
 from ..cancellation import Cancelled
 from ..historical_ni import NiLocalConfig
 from ..geometry import VirtualDetector
@@ -29,11 +29,13 @@ def sha256(path):
     return h.hexdigest()
 
 
-def settings_from_dict(value):
+def settings_from_dict(value,*,historical_ni=True):
+    """Decode old omitted Ni geometry only in the historical loading context."""
     d={k:tuple(v) if k in ('zone','target','tilt') else v for k,v in value.items()}
-    # Historical projects predate provider selection and used Ni Lobato.
-    # Preserve that identity explicitly even if a future default changes.
-    d.setdefault('elastic_provider','nickel-lobato-2014')
+    if historical_ni:
+        from emcd_sim.study_presets import nickel_geometry_settings
+        d.setdefault('elastic_provider','nickel-lobato-2014')
+        return nickel_geometry_settings(**d)
     return Settings(**d)
 
 
@@ -74,14 +76,21 @@ def load_elastic_project(path):
 
 
 def config_from_dict(value):
-    d=dict(value);d['atomic']=NiLocalConfig(**d.get('atomic',{}))
+    d=dict(value)
+    declared=d.get('model') in ('multisite','imported') or 'provider_schema' in d
+    if not declared and any(k in d for k in ('provider_declaration','ionizing_element','site_indices','selected_edges')):
+        raise ValueError('Declared MDFF settings require their provider schema/model')
+    historical=not declared and d.get('model','xmcd') in ('xmcd','atomic') and ('atomic' not in d or d['atomic'] is not None)
+    if isinstance(d.get('atomic'),dict):d['atomic']=NiLocalConfig(**d['atomic'])
+    elif historical:d['atomic']=NiLocalConfig()
+    else:d.setdefault('atomic',None)
     # Saved Local full spectra used their declared/native grids and full-field
     # evaluation. Preserve those explicit old choices; absent choices use the
     # new uniform/selected defaults. Historical Global full means uniform.
     d.setdefault('energy_sampling','edges' if d.get('energy_scope')=='edges' else
                  'native' if d.get('model')=='multisite' and d.get('energy_scope')=='full' else 'uniform')
     d.setdefault('angular_evaluation','all' if d.get('model')=='multisite' and d.get('angular_maps') else 'selected')
-    if d.get('model')=='atomic' and 'provider_schema' not in d:
+    if historical and d.get('model')=='atomic':
         # Old Atomic schemas may omit redundant selected-energy fields. Only
         # absent keys inherit their saved atomic peaks; explicit values survive.
         d.setdefault('l3',d['atomic'].l3_ev);d.setdefault('l2',d['atomic'].l2_ev)
@@ -99,7 +108,10 @@ def config_from_dict(value):
             if d['provider_schema']!=1:raise ValueError('Unsupported MDFF provider configuration schema')
             return ProviderSettings(**d)
         return ImportedSettings(**d)
-    return NiForwardSettings(**d)
+    if historical:return NiForwardSettings(**d)
+    if d.get('model') not in ('xmcd','atomic'):
+        raise ValueError('Unsupported or missing MDFF configuration model')
+    return ForwardSettings(**d)
 
 
 class SavedCrystal:
@@ -115,7 +127,7 @@ class SavedCrystal:
 
 
 def plotting_model(meta,snapshot,cfg=None):
-    cfg=cfg or config_from_dict(meta['mdff']);settings=settings_from_dict(meta['settings'])
+    cfg=cfg or config_from_dict(meta['mdff']);settings=settings_from_dict(meta['settings'],historical_ni=type(cfg) is NiForwardSettings)
     elastic=SimpleNamespace(crystal=SavedCrystal(meta,snapshot),beams=SimpleNamespace(hkl=tuple(tuple(h) for h in meta['beam_hkl'])),
         reciprocal_vectors_xy=np.asarray(meta['g']),microscope=SimpleNamespace(incident_k_xy=-np.asarray(meta['za_q']),acceleration_kv=settings.voltage,tilt_mrad_xy=settings.tilt))
     return SimpleNamespace(elastic=elastic,detectors={k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),cfg.centers)},chiral_groups=None)
@@ -466,13 +478,13 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
     methods={};q=angular['qx'];qy=angular['qy'];fft_recipe_error=''
     for name in labels:
         check('Reconstructing saved '+name+' plotting context');mmeta=cm.get('methods',{}).get(name,meta)
-        settings=settings_from_dict(mmeta['settings'])
         multisite='multisite_results' in cm
         descriptor=cm.get('multisite_results',{}).get('methods',{}).get(name)
         if multisite:
             from .project_configuration import _decode_config
             cfg=_decode_config(descriptor['config'])
         else:cfg=config_from_dict(mmeta['mdff'])
+        settings=settings_from_dict(mmeta['settings'],historical_ni=type(cfg) is NiForwardSettings)
         if cfg.propagation!='bloch' and cfg.fft_generators is None:
             from dataclasses import replace
             try:

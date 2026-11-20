@@ -1,4 +1,5 @@
 """Focused Stage B real-kernel, source, atomic reversal and Qt lifecycle checks."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import unittest,uuid,threading,importlib.util
@@ -28,7 +29,7 @@ from emcd_sim.single_channeling_tensor import run_tensor_with_coherence
 class ForwardTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.structure=Structure.nickel();cls.settings=Settings(beam_cutoff=2.2,potential_cutoff=2.2,voltage=200,tilt=(-7.116725439974256,0))
+        cls.structure=Structure.nickel();cls.settings=nickel_geometry_settings(beam_cutoff=2.2,potential_cutoff=2.2,voltage=200,tilt=(-7.116725439974256,0))
         cls.cfg=NiForwardSettings(energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True)
         cls.result=calculate(cls.structure,cls.settings,cls.cfg)
     def test_source_native_and_independent_import_validation(self):
@@ -100,7 +101,7 @@ class ForwardTests(unittest.TestCase):
         # 512 MiB in a fresh process; force genuine pressure for this rejection
         # check instead of depending on memory retained by earlier tests.
         with patch('emcd_sim.memory_budget.memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=512.)):
-            with self.assertRaisesRegex(ValueError,'512 MiB'):calculate(self.structure,Settings(beam_cutoff=6.5),replace(self.cfg,grid=97,memory_budget_mib=512))
+            with self.assertRaisesRegex(ValueError,'512 MiB'):calculate(self.structure,nickel_geometry_settings(beam_cutoff=6.5),replace(self.cfg,grid=97,memory_budget_mib=512))
 
 
 class WorkerTests(unittest.TestCase):

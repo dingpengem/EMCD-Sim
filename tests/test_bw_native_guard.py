@@ -1,4 +1,5 @@
 """Windows BW executor isolation without changing process-wide BLAS settings."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 import threading,time
@@ -82,7 +83,7 @@ def test_worker_logs_inputs_and_last_stage_without_changing_results(monkeypatch,
     def calculate(structure,settings,cfg,progress,cancelled):
         progress('outgoing eigenproblem diagnostic');return expected
     monkeypatch.setattr('emcd_sim.gui.calculation_worker.calculate',calculate)
-    worker=EMCDWorker(Structure.nickel(),replace(Settings(),beam_cutoff=3.),NiForwardSettings(source='C:/private/user_sample.xmcd'))
+    worker=EMCDWorker(Structure.nickel(),replace(nickel_geometry_settings(),beam_cutoff=3.),NiForwardSettings(source='C:/private/user_sample.xmcd'))
     result=[];errors=[];worker.result.connect(result.append);worker.failed.connect(errors.append)
     with caplog.at_level(logging.INFO,logger='emcd_sim.gui'):worker.run()
     assert result==[expected] and result[0] is expected and not errors

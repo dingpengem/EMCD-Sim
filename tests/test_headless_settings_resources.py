@@ -1,4 +1,5 @@
 """Fresh-process settings/resource behavior and the pinned-import state bridge."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import importlib.abc
 import os
 from pathlib import Path
@@ -50,7 +51,7 @@ def _child(mode, directory):
     import threading
     from dataclasses import asdict, fields, replace
     from emcd_sim import memory_budget as memory
-    from emcd_sim.forward_settings import NiForwardSettings, MultiSiteForwardSettings
+    from emcd_sim.forward_settings import ForwardSettings, NiForwardSettings, MultiSiteForwardSettings
     from emcd_sim.material_inputs import ImportedSettings, ProviderSettings
     from emcd_sim import mdff_providers
 
@@ -60,9 +61,14 @@ def _child(mode, directory):
         assert mdff_providers.NiForwardSettings is NiForwardSettings
         assert mdff_providers.ImportedSettings is ImportedSettings
         assert mdff_providers.ProviderSettings is ProviderSettings
-        assert issubclass(MultiSiteForwardSettings, NiForwardSettings)
+        assert issubclass(MultiSiteForwardSettings, ForwardSettings)
         assert issubclass(ProviderSettings, ImportedSettings)
-        assert issubclass(ImportedSettings, NiForwardSettings)
+        assert issubclass(ImportedSettings, ForwardSettings)
+        for cls in (MultiSiteForwardSettings, ImportedSettings, ProviderSettings):
+            assert not issubclass(cls, NiForwardSettings)
+            general = cls()
+            assert general.atomic is None and not general.source
+            assert not general.centers and not general.window
         first, second = NiForwardSettings(), NiForwardSettings()
         assert first.atomic is not second.atomic
         for cls in (NiForwardSettings, MultiSiteForwardSettings, ImportedSettings, ProviderSettings):
@@ -111,7 +117,7 @@ def _child(mode, directory):
         assert not memory._reservations
         state = hardware.hardware_snapshot()
         native = policy.native_backend_info(hardware=state)
-        settings = Settings(thickness=.3,beam_cutoff=.9,potential_cutoff=1.8)
+        settings = nickel_geometry_settings(thickness=.3,beam_cutoff=.9,potential_cutoff=1.8)
         cfg = NiForwardSettings(propagation='fft-multislice',channeling_model='double',
             worker_mode='manual',parallel_workers=1,grid=9,depth=9,fft_grid=16)
         manual = policy.worker_plan(settings,cfg,5,native=native,hardware=state)

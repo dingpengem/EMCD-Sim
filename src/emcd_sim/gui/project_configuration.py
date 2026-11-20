@@ -179,8 +179,10 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
         raise ValueError('Invalid saved magnetization mode or reversal state')
     records = [dict(r,indices=tuple(r['indices']),magnetization=None if r['magnetization'] is None else tuple(r['magnetization']),
                     mdff_reference=None if r['mdff_reference'] is None else _decode_config(r['mdff_reference'])) for r in extension['groups']]
-    state = dict(structure=structure,structure_snapshot=snapshot,settings=io.settings_from_dict(parameters['settings']),
-        config=_decode_config(parameters['mdff']),metadata=saved_metadata,magnetization_mode=mode,reverse_magnetization=extension['reverse_magnetization'],
+    cfg=_decode_config(parameters['mdff'])
+    from emcd_sim.forward_settings import NiForwardSettings
+    state = dict(structure=structure,structure_snapshot=snapshot,settings=io.settings_from_dict(parameters['settings'],historical_ni=type(cfg) is NiForwardSettings),
+        config=cfg,metadata=saved_metadata,magnetization_mode=mode,reverse_magnetization=extension['reverse_magnetization'],
         group_records=records,global_config=None if extension['global_config'] is None else _decode_config(extension['global_config']),
         editor_drafts=extension['editor_drafts'],energy_ev=extension['energy_ev'],project_path=str(root))
     _records(state)

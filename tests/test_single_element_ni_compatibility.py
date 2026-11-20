@@ -1,4 +1,5 @@
 """Immutable-source compatibility: unchanged arrays exact, optimized BW rounded."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from reference_imports import relocate_reference_imports
 from emcd_sim.forward_settings import NiForwardSettings
 import subprocess,sys,types,os,hashlib
@@ -44,7 +45,7 @@ def old_contract():
 @pytest.mark.parametrize('model',['xmcd','atomic'])
 @pytest.mark.parametrize('channel',['single','double'])
 def test_original_ni_all_numeric_arrays_exact(old_contract,model,channel):
-    settings=Settings(thickness=.3,beam_cutoff=.9,potential_cutoff=1.8)
+    settings=nickel_geometry_settings(thickness=.3,beam_cutoff=.9,potential_cutoff=1.8)
     cfg=NiForwardSettings(model=model,axis_declared=True,channeling_model=channel,propagation='both',
         energy_scope='edges',grid=9,depth=9,subpixels=8,fft_grid=16,slice_step=.01,halfwidth=.7,
         centers=((.2,.2),(.2,-.2)),radius=.12,correction=False,worker_mode='manual',parallel_workers=1)

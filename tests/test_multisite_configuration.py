@@ -1,4 +1,5 @@
 """Configuration round trips only: synthetic sources, no elastic calculation."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import json
@@ -47,7 +48,7 @@ def tensor_source(tmp_path,name,element='Fe',axis=(0,0,1),shift=0.,scale=1.,manu
 
 def configuration(atoms,groups,**kwargs):
     sites = MultiSiteIonization(atoms,groups)
-    return dict(structure=Structure(atoms,source='Synthetic ordered crystal'),settings=Settings(zone=(0,0,1),target=(1,0,0)),
+    return dict(structure=Structure(atoms,source='Synthetic ordered crystal'),settings=Settings(zone=(0,0,1),target=(1,0,0),tilt=(-5.5866881404, 0.0)),
         config=MultiSiteForwardSettings(propagation='fft-multislice',channeling_model='double',
             grid=9,depth=7,fft_grid=16,slice_step=.2,centers=((.2,.3),(.2,-.3)),radius=.07),
         site_groups=sites,magnetization_mode='local',reverse_magnetization=True,
@@ -252,7 +253,7 @@ def test_incomplete_local_drafts_survive_modes_without_inference(tmp_path,mode):
         multiplicity=1,normalization='mean_per_selected_atom',mdff_reference=None)
         for i,(name,direction) in enumerate((('A',(1.,0.,0.)),('B',(0.,1.,0.))))]
     cfg = MultiSiteForwardSettings() if mode=='local' else NiForwardSettings(model='atomic',magnetization=(0.,0.,-1.))
-    state = dict(structure=Structure(atoms),settings=Settings(),config=cfg,magnetization_mode=mode,group_records=records)
+    state = dict(structure=Structure(atoms),settings=nickel_geometry_settings(),config=cfg,magnetization_mode=mode,group_records=records)
     loaded = io.load_configuration(io.save_configuration(state,tmp_path/'drafts'))
     assert loaded['magnetization_mode']==mode and loaded['site_groups'] is None
     assert loaded['ready_for_calculation']==(mode=='global')
@@ -307,7 +308,7 @@ def test_legacy_project_configuration_is_global_and_needs_no_result_arrays(tmp_p
     root = tmp_path/'legacy';root.mkdir();cfg = NiForwardSettings(model='atomic',magnetization=(1.,0.,0.))
     snapshot = structure_data.structure_snapshot(Structure.nickel())
     io._json(root/'structure.json',snapshot)
-    settings = asdict(Settings());settings.pop('elastic_provider')
+    settings = asdict(nickel_geometry_settings());settings.pop('elastic_provider')
     io._json(root/'input_parameters.json',dict(settings=settings,mdff=asdict(cfg),structure_snapshot=snapshot))
     io._json(root/'project.json',dict(schema_version=1,complete=True,files={p.name:io.sha256(p) for p in root.iterdir()}))
     loaded = io.load_configuration(root)
@@ -323,7 +324,7 @@ def test_legacy_xmcd_audit_identity_survives_configuration_save_as(tmp_path):
     cfg = NiForwardSettings(source=str(source),source_sha256='',axis_declared=True)
     snapshot = structure_data.structure_snapshot(Structure.nickel())
     io._json(root/'structure.json',snapshot)
-    io._json(root/'input_parameters.json',dict(settings=asdict(Settings()),mdff=asdict(cfg),structure_snapshot=snapshot))
+    io._json(root/'input_parameters.json',dict(settings=asdict(nickel_geometry_settings()),mdff=asdict(cfg),structure_snapshot=snapshot))
     io._json(root/'metadata.json',dict(source_audit={'sha256':io.sha256(source)},source_note='Original legacy audit'))
     io._json(root/'project.json',dict(schema_version=1,complete=True,files={p.name:io.sha256(p) for p in root.iterdir()}))
     old = io.load_configuration(root)
@@ -338,7 +339,7 @@ def test_legacy_xmcd_audit_identity_survives_configuration_save_as(tmp_path):
 
 def test_global_manual_portable_source_exposes_verified_effective_settings(tmp_path):
     cfg = tensor_source(tmp_path,'Ni-manual',element='Ni',manual=True)
-    state = dict(structure=Structure.nickel(),settings=Settings(),config=cfg,magnetization_mode='global')
+    state = dict(structure=Structure.nickel(),settings=nickel_geometry_settings(),config=cfg,magnetization_mode='global')
     root = io.save_configuration(state,tmp_path/'global-portable');Path(cfg.source).unlink()
     loaded = io.load_configuration(root)
     assert loaded['ready_for_calculation'] and loaded['config']==cfg
@@ -376,7 +377,7 @@ def test_invalid_assignments_or_scientific_declarations_are_not_executable(tmp_p
 
 
 def test_existing_manifest_integrity_and_cancelled_save(tmp_path):
-    state = dict(structure=Structure.nickel(),settings=Settings(),config=NiForwardSettings(model='atomic'),magnetization_mode='global')
+    state = dict(structure=Structure.nickel(),settings=nickel_geometry_settings(),config=NiForwardSettings(model='atomic'),magnetization_mode='global')
     with pytest.raises(Cancelled):io.save_configuration(state,tmp_path/'cancelled',cancelled=lambda:True)
     assert not (tmp_path/'cancelled').exists() and not list(tmp_path.glob('.cancelled.saving_*'))
     root = io.save_configuration(state,tmp_path/'saved')

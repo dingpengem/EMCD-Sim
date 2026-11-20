@@ -1,4 +1,5 @@
 """Energy streaming, prepared incoming fields and unchanged per-energy physics."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from emcd_sim.cancellation import Cancelled
 from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.historical_ni import energy_grid
@@ -15,7 +16,7 @@ from emcd_sim.double_channeling import prepare_incoming_bloch,double_channeling_
 
 @pytest.fixture
 def small():
-    return Structure.nickel(),Settings(voltage=200,tilt=(-7.116725439974256,0),thickness=8,beam_cutoff=.9,potential_cutoff=1.8),NiForwardSettings(
+    return Structure.nickel(),nickel_geometry_settings(voltage=200,tilt=(-7.116725439974256,0),thickness=8,beam_cutoff=.9,potential_cutoff=1.8),NiForwardSettings(
         axis_declared=True,channeling_model='double',energy_scope='full',energy_points=9,grid=9,depth=9,
         fft_grid=24,angular_maps=False,correction=False,l3=831.4778,l2=848.698)
 

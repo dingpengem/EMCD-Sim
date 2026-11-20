@@ -1,4 +1,5 @@
 """Focused Stage B default BW/CLI comparison; no multislice or orientation sweep."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from emcd_sim.forward_results import selected_edge_metrics
 import argparse,json
 from dataclasses import replace
@@ -49,7 +50,7 @@ def main():
     parser.add_argument('--gui-export',type=Path,help='Compare an actual native default [017] XMCD GUI export with CLI using its saved controls');args=parser.parse_args()
     if args.gui_export:compare_gui_export(args.gui_export);return
     info=inspect_xmcd_source(DEFAULT_NI_SOURCE);cfg=NiForwardSettings(source_sha256=info['sha256'],axis_declared=True)
-    result=calculate(Structure.nickel(),Settings(),cfg,lambda s:print(s,flush=True))
+    result=calculate(Structure.nickel(),nickel_geometry_settings(),cfg,lambda s:print(s,flush=True))
     # Independently use the established [017] CLI model, rotation and coherence.
     model=Ni017Geometry().model();C=depth_coherence(model.elastic,30,64);e=result['spectra']['energy_ev']
     comparisons={};opts=dict(thickness_nm=30,grid_size=33,integration_mode='fractional',aperture_subpixels=64)

@@ -7,6 +7,7 @@ order. Opposite unit directions do not declare calibrated magnetic moments.
 These bounded finite-ZOLZ tests establish algebra/compatibility, not general
 beam, angular, depth or physical-model convergence.
 """
+from emcd_sim.study_presets import nickel_geometry_settings
 from dataclasses import replace
 import json
 from unittest.mock import patch
@@ -85,7 +86,7 @@ def test_historical_ni_matched_thicknesses(tmp_path, old_contract, method, chann
     path = tmp_path/'ni-pair.json'
     path.write_text(json.dumps(data), encoding='utf-8')
     structure = Structure.nickel()
-    settings = Settings(thickness=thickness, beam_cutoff=.9, potential_cutoff=1.8,
+    settings = nickel_geometry_settings(thickness=thickness, beam_cutoff=.9, potential_cutoff=1.8,
                         elastic_provider='nickel-lobato-2014')
     sites = MultiSiteIonization(structure, [IonizationSiteGroup(
         'Ni', 'Ni', (0, 1, 2, 3), settings_for_source(path), (0, 0, 1), 4)])
@@ -147,7 +148,7 @@ def test_ni_bounded_depth_quadrature_against_independent_gauss(tmp_path):
     structure = Structure.nickel()
     queries = np.array([[.2, .2], [.2, -.2]])
     for thickness in (2., 10.):
-        settings = Settings(thickness=thickness, beam_cutoff=.9, potential_cutoff=1.8,
+        settings = nickel_geometry_settings(thickness=thickness, beam_cutoff=.9, potential_cutoff=1.8,
                             elastic_provider='nickel-lobato-2014')
         elastic = elastic_model(structure, settings)
         rotation = geometry(structure, settings)[1]

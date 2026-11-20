@@ -72,5 +72,5 @@ def test_saved_row_sampling_uses_verified_row_and_general_complement():
 def test_invalid_legacy_target_blocks_reuse_without_raising():
     from emcd_sim.structure_geometry import structure_snapshot
     from emcd_sim.gui.project_io import frame_rerun_reason
-    result=dict(settings=Settings(zone=(1,1,1),target=(2,0,0)),metadata=dict(frame=np.eye(3)),structure_snapshot=structure_snapshot(Structure.nickel()))
+    result=dict(settings=Settings(zone=(1,1,1),target=(2,0,0),tilt=(-5.5866881404, 0.0)),metadata=dict(frame=np.eye(3)),structure_snapshot=structure_snapshot(Structure.nickel()))
     assert 'incompatible' in frame_rerun_reason(result)

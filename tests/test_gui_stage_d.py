@@ -1,4 +1,5 @@
 """Stage D persistence and scientific comparison using compact real fixtures."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import unittest,uuid,json,threading
@@ -35,9 +36,9 @@ class ProjectTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         ROOT.mkdir(parents=True);cfg=NiForwardSettings(propagation='both',axis_declared=True,source_sha256=sha256(DEFAULT_NI_SOURCE),energy_points=17,grid=17,depth=12,subpixels=16)
-        cls.result=calculate(Structure.nickel(),Settings(),cfg)
-        cls.atomic=calculate(Structure.nickel(),Settings(),replace(cfg,model='atomic',propagation='fft-multislice',l3=852.7,l2=870.,correction=False))
-        cls.second=calculate(Structure.nickel(),replace(Settings(),tilt=(-6.5,0)),replace(cfg,energy_points=17))
+        cls.result=calculate(Structure.nickel(),nickel_geometry_settings(),cfg)
+        cls.atomic=calculate(Structure.nickel(),nickel_geometry_settings(),replace(cfg,model='atomic',propagation='fft-multislice',l3=852.7,l2=870.,correction=False))
+        cls.second=calculate(Structure.nickel(),replace(nickel_geometry_settings(),tilt=(-6.5,0)),replace(cfg,energy_points=17))
         cls.folder=ROOT/'complete';save_project(cls.result,cls.folder);save_project(cls.second,ROOT/'second_complete')
     def assert_equal(self,a,b):
         self.assertEqual(list(a['methods']),list(b['methods']))
@@ -82,7 +83,7 @@ class ProjectTests(unittest.TestCase):
         from ase.io import write
         original=ROOT/'original_Ni.cif';relocated=ROOT/'relocated_Ni.cif';write(original,Structure.nickel().atoms,format='cif');relocated.write_bytes(original.read_bytes())
         structure=Structure.from_cif(original)
-        result=calculate(structure,Settings(),replace(self.result['config'],propagation='bloch',grid=9,depth=4,energy_points=9))
+        result=calculate(structure,nickel_geometry_settings(),replace(self.result['config'],propagation='bloch',grid=9,depth=4,energy_points=9))
         save_project(result,ROOT/'cif_project');original.unlink()
         with no_solvers():opened=load_project(ROOT/'cif_project')
         self.assertFalse(source_status(opened)['cif']['available']);self.assertIn('cif',rerun_reason(opened));self.assert_equal(result,opened)
@@ -162,7 +163,7 @@ class ZWorkspaceTests(unittest.TestCase):
         project=self.workspace/'Project';w.save_to_path(project);self.wait_io();self.assertTrue(w._io_success)
         before=w.settings();w.close();w=MainWindow(workspace=self.workspace);self.w=w;w.error=lambda message:None
         self.assertEqual(len(w.browser.registry.records),0)  # history belongs to the explicitly opened project
-        self.assertEqual(w.settings().zone,Settings().zone)
+        self.assertEqual(w.settings().zone,nickel_geometry_settings().zone)
         with no_solvers():w.open_project_path(project);self.wait_io()
         self.assertEqual(len(w.browser.registry.records),1);self.assertEqual(w.settings(),before)
     def test_threaded_open_failed_load_preserves_previous(self):

@@ -2,8 +2,8 @@
 
 NiForwardSettings records the established Ni example defaults. It supplies
 explicit inputs to the common forward_pipeline.calculate engine; it is not a
-generic material fallback. Source-backed and multisite settings override its
-material declaration, retaining historical serialized fields for project IO.
+generic material fallback. Source-backed and multisite settings share the
+neutral ForwardSettings base, retaining serialized field names for project IO.
 """
 from dataclasses import dataclass, field
 from .historical_ni import NiLocalConfig
@@ -13,26 +13,24 @@ DEFAULT_NI_SOURCE = reference_source()
 
 
 @dataclass(frozen=True)
-class NiForwardSettings:
-    """Historical Ni material preset, detector geometry and numerical requests.
+class ForwardSettings:
+    """Material-neutral numerical controls and explicitly supplied response inputs.
 
-    Source fields/atomic parameters describe the target response; propagation
-    and channeling_model select existing elastic/inelastic approximations.
-    centers/radius/halfwidth are cycles/Angstrom, energy values are eV,
-    slice_step is nm and memory_budget_mib is MiB. Geometry/beam energy/depth
-    belong to structure_geometry.Settings. Defaults and serialized field names are
-    retained, including historical Ni compatibility inputs.
+    Detector centers/radius are cycles/Angstrom, energies are eV, slice_step
+    is nm and memory_budget_mib is MiB. A source/provider or sites, selected
+    energies and detector geometry must be supplied before calculation.
+    Geometry/beam energy/depth belong to structure_geometry.Settings.
     """
-    model: str='xmcd'
-    source: str=str(DEFAULT_NI_SOURCE)
+    model: str=''
+    source: str=''
     source_sha256: str=''
     axis_declared: bool=False
     magnetization: tuple=(0.,0.,1.)
     eta: float=1.
     beta: float=1.
-    l3: float=831.271
-    l2: float=848.698
-    atomic: NiLocalConfig=field(default_factory=NiLocalConfig)
+    l3: float=float('nan')
+    l2: float=float('nan')
+    atomic: NiLocalConfig|None=None
     sigma: float=.8
     radial: float|None=None
     energy_points: int=241
@@ -40,10 +38,10 @@ class NiForwardSettings:
     depth: int=64
     subpixels: int=64
     halfwidth: float=1.
-    centers: tuple=((.2837684449489217,.2837684449489217),(.2837684449489217,-.2837684449489217))
-    radius: float=.0908059024
-    correction: bool=True
-    window: tuple=(878.,882.)
+    centers: tuple=()
+    radius: float=0.
+    correction: bool=False
+    window: tuple=()
     propagation: str='bloch'
     fft_grid: int=32
     slice_step: float=2.
@@ -68,7 +66,21 @@ class NiForwardSettings:
 
 
 @dataclass(frozen=True)
-class MultiSiteForwardSettings(NiForwardSettings):
+class NiForwardSettings(ForwardSettings):
+    """Explicit historical Ni preset; old defaults and saved field order retained."""
+    model: str='xmcd'
+    source: str=str(DEFAULT_NI_SOURCE)
+    l3: float=831.271
+    l2: float=848.698
+    atomic: NiLocalConfig=field(default_factory=NiLocalConfig)
+    centers: tuple=((.2837684449489217,.2837684449489217),(.2837684449489217,-.2837684449489217))
+    radius: float=.0908059024
+    correction: bool=True
+    window: tuple=(878.,882.)
+
+
+@dataclass(frozen=True)
+class MultiSiteForwardSettings(ForwardSettings):
     """Numerical/detector controls for the programmatic multi-site entry point.
 
     MDFF declarations belong exclusively to each site's provider reference.
@@ -77,9 +89,4 @@ class MultiSiteForwardSettings(NiForwardSettings):
     Post-edge correction is outside this entry point's current scope.
     """
     model: str = 'multisite'
-    source: str = ''
-    source_sha256: str = ''
-    correction: bool = False
-    l3: float = float('nan')
-    l2: float = float('nan')
     selected_edges: tuple = ()

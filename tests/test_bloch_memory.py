@@ -1,4 +1,5 @@
 """BW admission follows live numerical/analytic allocations; no large jobs."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from dataclasses import replace
 from unittest.mock import patch
 import numpy as np
@@ -42,8 +43,8 @@ def test_thread_workers_share_preparation_and_retained_data_once():
         grid=9,energy_points=3,selected_edges=(('one',708.1),))
     snap=dict(available_ram_mib=32768.,process_rss_mib=100.)
     with patch.object(memory,'memory_snapshot',return_value=snap):
-        a=numerical_info(Structure.nickel(),Settings(),c,enforce_execution=False)
-        b=numerical_info(Structure.nickel(),Settings(),replace(c,parallel_workers=4),enforce_execution=False)
+        a=numerical_info(Structure.nickel(),nickel_geometry_settings(),c,enforce_execution=False)
+        b=numerical_info(Structure.nickel(),nickel_geometry_settings(),replace(c,parallel_workers=4),enforce_execution=False)
     assert a['retained_results_working_mib']==b['retained_results_working_mib']
     scratch=a['memory_breakdown_mib']['per_worker_scratch']
     np.testing.assert_allclose(b['estimated_working_mib']-a['estimated_working_mib'],3*scratch)
@@ -55,4 +56,4 @@ def test_budget_and_ram_rejections_remain_active():
     c=MultiSiteForwardSettings(channeling_model='double',worker_mode='manual',parallel_workers=4)
     with patch.object(memory,'memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=5000.)):
         with pytest.raises(ValueError,match='Memory admission rejected'):
-            numerical_info(Structure.nickel(),Settings(),c)
+            numerical_info(Structure.nickel(),nickel_geometry_settings(),c)

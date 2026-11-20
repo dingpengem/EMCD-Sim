@@ -50,8 +50,10 @@ def stored_result(kind='Fe3O4',omit=False):
             active_energy_mask=mask.tolist(),omitted_by_request=excluded)
     total = dict(energy_ev=energy.copy())
     for key in SPECTRAL_KEYS:total[key] = sum(g['metadata']['multiplicity']/count*g['spectra'][key] for g in groups.values())
-    settings = Settings(zone=(0,0,1),target=(2,0,0))
-    cfg = MultiSiteForwardSettings(energy_scope='full',angular_maps=False,selected_edges=(('L3',710.),('L2',723.)))
+    settings = Settings(zone=(0,0,1),target=(2,0,0),tilt=(-5.5866881404, 0.0))
+    # Preserve this stored fixture's original apertures as explicit inputs.
+    cfg = MultiSiteForwardSettings(energy_scope='full',angular_maps=False,selected_edges=(('L3',710.),('L2',723.)),
+        centers=((.2837684449489217,.2837684449489217),(.2837684449489217,-.2837684449489217)),radius=.0908059024)
     return dict(config=cfg,settings=settings,spectra=total,groups=groups,method='bloch',maps={},
         model=SimpleNamespace(elastic=SimpleNamespace(crystal=SimpleNamespace(species=species))),
         metadata=dict(structure='Synthetic stored result',settings=asdict(settings),solver='bloch Single Channeling',

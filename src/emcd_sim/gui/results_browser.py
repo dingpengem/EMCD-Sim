@@ -288,8 +288,8 @@ class ProjectWorkspace(ProjectSession):
         with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
         self.set_values(dict(kv=300,beam=2.5,potential=2.0))
         self.retire_post_edge();self._post_edge_disabled_on_restore=False;self.correction_notice.hide()
-        from emcd_sim.forward_settings import NiForwardSettings
-        self.compute_resources.restore(NiForwardSettings(memory_mode='automatic'))
+        from emcd_sim.forward_settings import ForwardSettings
+        self.compute_resources.restore(ForwardSettings(memory_mode='automatic'))
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
         self._slice_step_override=None;self.set_values(dict(slice_step=2.))
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(1)
@@ -351,8 +351,10 @@ class ProjectWorkspace(ProjectSession):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
             self.model_changed(self.model_box.currentIndex())
             self.compute_resources.restore(c)
-            values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial if c.radial is not None else .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,window_lo=c.window[0],window_hi=c.window[1],fft_grid=c.fft_grid,slice_step=c.slice_step)
-            values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()});self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()
+            values=dict(tx=s.tilt[0],ty=s.tilt[1],kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,eta=c.eta,beta=c.beta,xl3=c.l3,xl2=c.l2,sigma=c.sigma,radial=c.radial if c.radial is not None else .05,energy=c.energy_points,grid=c.grid,depth=c.depth,subpixels=c.subpixels,halfwidth=c.halfwidth,radius=c.radius,fft_grid=c.fft_grid,slice_step=c.slice_step)
+            if len(c.window)==2:values.update(window_lo=c.window[0],window_hi=c.window[1])
+            if c.atomic is not None:values.update({'atomic_'+k:v for k,v in asdict(c.atomic).items()})
+            self.set_values(values);self.detectors=np.asarray(c.centers);self.sync_detectors();self.sync_za()
             self.sync_angular_resolution()
             for widget,checked in ((self.radial_override,c.radial is not None),(self.declaration,c.axis_declared)):
                 with QtCore.QSignalBlocker(widget):widget.setChecked(checked)
@@ -365,8 +367,9 @@ class ProjectWorkspace(ProjectSession):
                     self.source_status.setText('Saved data remains available. Rerun disabled: locate original XMCD and verify SHA256.')
             self.input_source_requirements=[]
             if c.model=='imported':self.restore_imported_settings(c,r.get('source_overrides',{}).get('mdff'))
+            from emcd_sim.forward_settings import NiForwardSettings
             if hasattr(c,'provider_schema'):self.restore_provider_settings(c,r.get('source_overrides',{}).get('mdff'))
-            else:
+            elif type(c) is NiForwardSettings:
                 with QtCore.QSignalBlocker(self.explicit_xmcd):self.explicit_xmcd.setChecked(False)
                 with QtCore.QSignalBlocker(self.atomic_parameter_path):self.atomic_parameter_path.clear()
                 self.atomic_provider_info=None

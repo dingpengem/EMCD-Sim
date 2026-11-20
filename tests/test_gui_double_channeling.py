@@ -1,4 +1,5 @@
 """Focused actual-kernel dispatch, parity, memory and compatibility checks."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from emcd_sim.cancellation import Cancelled
 from emcd_sim.forward_settings import NiForwardSettings
 import os
@@ -15,7 +16,7 @@ from emcd_sim.propagation import numerical_info
 
 @pytest.fixture
 def small():
-    return Structure.nickel(),Settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),NiForwardSettings(
+    return Structure.nickel(),nickel_geometry_settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),NiForwardSettings(
         axis_declared=True,energy_scope='edges',angular_maps=False,grid=17,depth=17,subpixels=16,fft_grid=24,correction=False)
 
 

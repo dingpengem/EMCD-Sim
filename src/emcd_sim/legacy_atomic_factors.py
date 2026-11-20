@@ -137,11 +137,3 @@ def configured_legacy_factors():
     if not path:
         raise ValueError(f'Configure {TABLE_ENVIRONMENT} with the reviewed external scattering.py for non-Ni elastic diffraction')
     return LegacyNeutralAtomFactors.from_file(path)
-
-
-def factors_for_elastic_species(species):
-    """Ni-only structures retain Lobato; opt-in multi-species use one table."""
-    from .scattering import nickel_lobato_factor
-    if set(species) == {'Ni'}:
-        return {'Ni': nickel_lobato_factor}
-    return configured_legacy_factors().atomic_factors(species)

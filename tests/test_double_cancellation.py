@@ -1,4 +1,5 @@
 """Kernel cancellation, exact callback neutrality and historical equivalence."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import subprocess,types,sys,threading,time
 from dataclasses import replace
 from unittest.mock import patch
@@ -22,7 +23,7 @@ def reference_module(path,name):
 
 @pytest.fixture
 def elastic():
-    return elastic_model(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
+    return elastic_model(Structure.nickel(),nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
 
 
 @pytest.mark.parametrize('method',['analytic','numerical'])
@@ -85,7 +86,7 @@ def test_both_cancellation_prevents_incoming_ms():
     cfg=NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',
         energy_scope='edges',angular_maps=False,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
     with patch.object(channeling,'calculate_detector_signals',signals),patch.object(channeling,'fft_geometry') as fft:
-        with pytest.raises(Cancelled):calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),cfg,cancelled=event.is_set)
+        with pytest.raises(Cancelled):calculate(Structure.nickel(),nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),cfg,cancelled=event.is_set)
     fft.assert_not_called()
 
 
@@ -97,7 +98,7 @@ def test_full_spectrum_unchanged(solver):
     from emcd_sim import channeling as channeling
     cfg=NiForwardSettings(axis_declared=True,channeling_model='double',propagation=solver,
         energy_points=9,angular_maps=True,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
-    structure=Structure.nickel();settings=Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
+    structure=Structure.nickel();settings=nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
     def historical_arguments(elastic,kw):
         from emcd_sim.historical_ni import HistoricalNiSites
         kw.pop('cancelled',None)

@@ -1,4 +1,5 @@
 """Configuration-only acceptance: scientific propagation is forbidden throughout."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import json
 from contextlib import ExitStack
 from dataclasses import asdict,replace
@@ -61,9 +62,9 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
     cfg=replace(NiForwardSettings(),propagation='both')
     if minimum>128:
         with pytest.raises(ValueError,match='Automatic FFT setup unavailable'):
-            resolve_parameters(Structure.nickel(),Settings(),cfg)
+            resolve_parameters(Structure.nickel(),nickel_geometry_settings(),cfg)
     else:
-        values,_=resolve_parameters(Structure.nickel(),Settings(),cfg)
+        values,_=resolve_parameters(Structure.nickel(),nickel_geometry_settings(),cfg)
         assert values['fft_grid']==minimum
     assert [c.fft_grid for s,c in calls]==list(range(32,min(minimum,128)+1,2))
     assert all(s.beam_cutoff==2.5 and s.potential_cutoff==2.0 and c.depth==64 and c.slice_step==2. for s,c in calls)
@@ -77,14 +78,14 @@ def test_pure_resolution_never_calls_scientific_solvers():
                      'numpy.linalg.eigh'):
             stack.enter_context(patch(name,side_effect=AssertionError('Unexpected scientific solve')))
         for method in ('bloch','fft-multislice','both'):
-            resolve_parameters(Structure.nickel(),Settings(),reference_config(propagation=method))
+            resolve_parameters(Structure.nickel(),nickel_geometry_settings(),reference_config(propagation=method))
 
 
 @pytest.mark.parametrize('method',['bloch','fft-multislice','both'])
 @pytest.mark.parametrize('channel',['single','double'])
 def test_reference_selection_and_fft_support(method,channel):
     cfg=reference_config(propagation=method,channeling_model=channel)
-    reference=replace(Settings(elastic_provider='nickel-lobato-2014'),voltage=200,tilt=(-7.116725439974256,0))
+    reference=replace(nickel_geometry_settings(elastic_provider='nickel-lobato-2014'),voltage=200,tilt=(-7.116725439974256,0))
     values,meta=resolve_parameters(Structure.nickel(),reference,cfg)
     assert (values['beam'],values['potential'],values['fft_grid'],values['depth'],values['slice_step'])==(4.6,6.2,48,257,.04)
     assert meta['source']=='Matching reference configuration'
@@ -93,15 +94,15 @@ def test_reference_selection_and_fft_support(method,channel):
 
 
 @pytest.mark.parametrize('settings,cfg',[
-    (replace(Settings(),thickness=31),reference_config()),
-    (replace(Settings(),voltage=300),reference_config()),
-    (replace(Settings(),tilt=(-7,0)),reference_config()),
-    (replace(Settings(),b_factor=.1),reference_config()),
-    (Settings(),replace(reference_config(),source_sha256='other')),
-    (Settings(),replace(reference_config(),magnetization=(1,0,0))),
-    (Settings(),replace(reference_config(),centers=((0,0),(0,0)))),
-    (Settings(),replace(reference_config(),radial=.05)),
-    (Settings(),replace(reference_config(),l3=852.7)),
+    (replace(nickel_geometry_settings(),thickness=31),reference_config()),
+    (replace(nickel_geometry_settings(),voltage=300),reference_config()),
+    (replace(nickel_geometry_settings(),tilt=(-7,0)),reference_config()),
+    (replace(nickel_geometry_settings(),b_factor=.1),reference_config()),
+    (nickel_geometry_settings(),replace(reference_config(),source_sha256='other')),
+    (nickel_geometry_settings(),replace(reference_config(),magnetization=(1,0,0))),
+    (nickel_geometry_settings(),replace(reference_config(),centers=((0,0),(0,0)))),
+    (nickel_geometry_settings(),replace(reference_config(),radial=.05)),
+    (nickel_geometry_settings(),replace(reference_config(),l3=852.7)),
 ])
 def test_unmatched_never_claims_convergence(settings,cfg):
     values,meta=resolve_parameters(Structure.nickel(),settings,cfg)
@@ -111,11 +112,11 @@ def test_unmatched_never_claims_convergence(settings,cfg):
 
 def test_supported_orientation_and_invalid_geometry_no_fallback():
     cfg=replace(NiForwardSettings(),propagation='both')
-    values,meta=resolve_parameters(Structure.nickel(),replace(Settings(),zone=(0,1,1)),cfg)
+    values,meta=resolve_parameters(Structure.nickel(),replace(nickel_geometry_settings(),zone=(0,1,1)),cfg)
     assert values['fft_grid']>=32 and meta['physical_settings']['zone']==(0,1,1)
     assert 'convergence not established' in meta['status']
     with pytest.raises(ValueError,match=r'Zone direction cannot be \[000\]'):
-        resolve_parameters(Structure.nickel(),replace(Settings(),zone=(0,0,0)),cfg)
+        resolve_parameters(Structure.nickel(),replace(nickel_geometry_settings(),zone=(0,0,0)),cfg)
 
 
 def test_auto_defaults_display_and_no_solvers(window):

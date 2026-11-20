@@ -88,6 +88,8 @@ def relocate_reference_imports(source):
                 target,name='emcd_sim.forward_pipeline','_calculate_uniform_prepared';changed=True
             elif node.module=='channeling' and item.name=='contract':
                 target,name='emcd_sim.channeling','calculate_detector_signals';changed=True
+            elif node.module in ('geometry','emcd_sim.gui.geometry','emcd_sim.structure_geometry') and item.name=='Settings':
+                target,name='emcd_sim.study_presets','nickel_geometry_settings';changed=True
             elif node.module in ('geometry','emcd_sim.gui.geometry') and item.name in ('Structure','Settings','orientation','geometry','elastic_model','excitation','za_from_tilt','tilt_from_za','align_bragg','structure_snapshot','restore_structure','structures_match','projected_geometry_from_oriented_crystal'):
                 target='emcd_sim.structure_geometry';changed=True
             elif node.module in ('propagation','emcd_sim.gui.propagation') and item.name in ('projected_geometry_for','projected_geometry_from_oriented_crystal'):

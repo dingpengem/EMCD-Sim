@@ -1,4 +1,5 @@
 """Loss-specific preparation and batched independent events against scalar equations."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from dataclasses import replace
 import threading
 import numpy as np
@@ -84,7 +85,7 @@ def test_qt_worker_surfaces_executor_failure_without_partial_results(monkeypatch
         def task(i,cancelled):raise ValueError('Detector task failed: diagnostic error')
         map_detector_batches(task,range(4),2,'bloch',kwargs['cancelled'] if 'cancelled' in kwargs else args[4])
     monkeypatch.setattr(calculation_worker,'calculate',fail)
-    worker=calculation_worker.EMCDWorker(None,Settings(),NiForwardSettings(),sites=SimpleNamespace(groups=()))
+    worker=calculation_worker.EMCDWorker(None,nickel_geometry_settings(),NiForwardSettings(),sites=SimpleNamespace(groups=()))
     failures=[];results=[]
     worker.failed.connect(failures.append);worker.result.connect(results.append)
     worker.run()

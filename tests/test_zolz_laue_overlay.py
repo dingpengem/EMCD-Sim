@@ -1,4 +1,5 @@
 """Geometry and interaction controls for the display-only zero-excitation circle."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from dataclasses import replace
@@ -19,7 +20,7 @@ from emcd_sim.structure_geometry import Settings, Structure, geometry, excitatio
 
 @pytest.mark.parametrize('voltage',[200,300])
 def test_bragg_circle_and_sampled_excitation(voltage):
-    s=replace(Settings(),voltage=voltage)
+    s=replace(nickel_geometry_settings(),voltage=voltage)
     _,_,hkl,g,_=geometry(Structure.nickel(),s)
     target=g[hkl.index((2,0,0))]
     tilt=align_bragg(target,[0,15],voltage,'Y')

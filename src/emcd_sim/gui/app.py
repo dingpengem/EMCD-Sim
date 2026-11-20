@@ -66,7 +66,8 @@ class MainWindow(ProjectWorkspace,CalculationControls,QtWidgets.QMainWindow):
         self.number('qy','ZA qy (Å⁻¹)',0,-20,20,self.za_changed)
         self.lock=QtWidgets.QComboBox();self.lock.addItems(['None','X','Y']);self.form.addRow('Lock for Bragg alignment',self.lock)
         self.form=geometry_form
-        self.number('tx','Tilt X (mrad)',Settings().tilt[0],-100,100,self.tilt_changed)
+        from emcd_sim.study_presets import nickel_geometry_settings
+        self.number('tx','Tilt X (mrad)',nickel_geometry_settings().tilt[0],-100,100,self.tilt_changed)
         self.number('ty','Tilt Y (mrad)',0,-100,100,self.tilt_changed)
         self.step=QtWidgets.QComboBox();self.step.addItems(['0.01','0.1','1']);self.step.setCurrentText('0.1');self.step.currentTextChanged.connect(self.step_changed);self.form.addRow('Tilt step (mrad)',self.step)
         self.align_button=self.button('Align to selected Bragg',self.align)

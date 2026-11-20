@@ -1,4 +1,5 @@
 """Focused memory admission and sequential scan cleanup; no large allocations."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from dataclasses import replace
 from unittest.mock import patch
 import gc
@@ -28,7 +29,7 @@ def test_larger_dense_kernel_admitted_only_with_larger_budget():
     cfg = NiForwardSettings(propagation='bloch',grid=33)
     # Use a real large basis. Preflight intentionally rejects synthetic hkl
     # counts that disagree with the actual oriented diffraction geometry.
-    settings = Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=3.2)
+    settings = Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=3.2,tilt=(-5.5866881404, 0.0))
     assert cfg.memory_budget_mib == config_from_dict({}).memory_budget_mib == 2048
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         info = numerical_info(Structure.nickel(), settings, cfg)
@@ -43,7 +44,7 @@ def test_larger_dense_kernel_admitted_only_with_larger_budget():
 
 def test_preflight_rejects_incompatible_hkl_before_admission():
     with pytest.raises(ValueError,match='Beam support changed'):
-        numerical_info(Structure.nickel(),Settings(),NiForwardSettings(),hkl=tuple(range(100)))
+        numerical_info(Structure.nickel(),nickel_geometry_settings(),NiForwardSettings(),hkl=tuple(range(100)))
 
 
 def test_available_ram_and_invalid_measurement_fail_closed():
@@ -119,5 +120,5 @@ def test_gui_budget_selector_and_start_admission(tmp_path, monkeypatch):
     with patch.object(memory, 'memory_snapshot', return_value=dict(available_ram_mib=100, process_rss_mib=64)):
         with patch('emcd_sim.forward_pipeline._calculate_uniform_prepared') as engine:
             with pytest.raises(ValueError, match='currently available RAM'):
-                calculate(Structure.nickel(), Settings(), NiForwardSettings())
+                calculate(Structure.nickel(), nickel_geometry_settings(), NiForwardSettings())
             engine.assert_not_called()

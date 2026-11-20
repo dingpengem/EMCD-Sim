@@ -1,4 +1,5 @@
 """Display-only changes preserve computations and project values."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from pathlib import Path
@@ -114,7 +115,7 @@ def test_current_reciprocal_display_strings_and_legacy_project_keys():
     assert Path(emcd_sim.__file__).resolve().is_relative_to(ROOT/'src')
     from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.gui.project_io import settings_from_dict,config_from_dict
-    s=Settings();cfg=NiForwardSettings()
+    s=nickel_geometry_settings();cfg=NiForwardSettings()
     assert settings_from_dict(json.loads(json.dumps(asdict(s))))==s
     assert config_from_dict(json.loads(json.dumps(asdict(cfg))))==cfg
     # Compatibility names are intentionally not renamed or numerically converted.
@@ -124,8 +125,11 @@ def test_current_reciprocal_display_strings_and_legacy_project_keys():
 def test_gui_units_do_not_start_workers(tmp_path):
     from emcd_sim.gui.app import MainWindow,PreviewWorker
     from emcd_sim.gui.calculation_worker import EMCDWorker
+    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    with patch.object(PreviewWorker,'start') as elastic,patch.object(EMCDWorker,'start') as inelastic:
+    # This units/worker assertion needs widget state, not queued painting of a
+    # hidden window. Real rendering remains covered by the GUI workflow tests.
+    with patch.object(FigureCanvasQTAgg,'draw_idle'),patch.object(PreviewWorker,'start') as elastic,patch.object(EMCDWorker,'start') as inelastic:
         w=MainWindow(workspace=tmp_path)
         assert [w.table.horizontalHeaderItem(i).text() for i in range(1,4)]==['qx (Å⁻¹)','qy (Å⁻¹)','s_g (Å⁻¹)']
         assert w.spin['kv'].value()==300 and w.spin['slice_step'].value()==2.

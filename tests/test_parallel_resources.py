@@ -1,4 +1,5 @@
 """No-solver preflight, persisted worker settings and resource safety."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from dataclasses import replace,asdict
 from types import SimpleNamespace
 from unittest.mock import Mock,patch
@@ -17,7 +18,7 @@ def native(threads=12):
         platform='win32',numpy_version='2.4.6',cpu_count=12,machine='AMD64')
 
 
-def primary():return replace(Settings(),thickness=8,tilt=(-7.11672544,0),beam_cutoff=3.,potential_cutoff=2.)
+def primary():return replace(nickel_geometry_settings(),thickness=8,tilt=(-7.11672544,0),beam_cutoff=3.,potential_cutoff=2.)
 
 
 @pytest.mark.parametrize('method',['bloch','fft-multislice','both'])
@@ -136,7 +137,7 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
             w.channeling_box.setCurrentIndex(1)
             assert (w.settings().voltage,w.settings().beam_cutoff,w.settings().potential_cutoff)==(300,2.5,2.0)
             initial_settings=w.settings()
-            assert initial_settings==Settings()
+            assert initial_settings==nickel_geometry_settings()
             assert w.spin['grid'].value()==97 and w.memory_budget.value()==2048
             assert not w.shared_resources_group.isHidden()
             original=w.numerical_snapshot();w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(4)
@@ -148,8 +149,8 @@ def test_gui_defaults_worker_independence_and_blocked_run(tmp_path,monkeypatch):
             assert w.compute_resources.info['bw_beams']==21
             w.spin['kv'].setValue(200);assert w.compute_resources.info['incident_voltage_kv']==200
             w.new_project()
-            g=w.current[3][w.current[2].index(Settings().target)]
-            expected=replace(Settings(),tilt=tuple(align_bragg(g,(0,0),Settings().voltage,'Y')))
+            g=w.current[3][w.current[2].index(nickel_geometry_settings().target)]
+            expected=replace(nickel_geometry_settings(),tilt=tuple(align_bragg(g,(0,0),nickel_geometry_settings().voltage,'Y')))
             assert w.settings()==expected and w.worker_mode.currentIndex()==0
         finally:w.close();app.processEvents()
 

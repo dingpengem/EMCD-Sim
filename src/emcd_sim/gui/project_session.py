@@ -26,7 +26,7 @@ def capture_configuration(w):
                  or viewer.editor.excluded_groups!=viewer.editor._accepted_excluded
                  or viewer.editor.magnetization_mode!=viewer.editor._accepted_mode)):
         raise ValueError('Apply or Cancel pending Site Group direction/provider edits before saving or recalculating; accepted settings are unchanged')
-    from emcd_sim.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import ForwardSettings
     from emcd_sim.forward_settings import MultiSiteForwardSettings
     common=w.forward_control_fields()
     if w.magnetization_mode=='local':cfg=MultiSiteForwardSettings(**common)
@@ -37,7 +37,7 @@ def capture_configuration(w):
             mode=('xmcd','atomic','imported')[w.model_box.currentIndex()]
             if getattr(saved,'model',None)!=mode and getattr(getattr(w,'_saved_global_config',None),'model',None)==mode:saved=w._saved_global_config
             path=w.imported_path.text() if mode=='imported' else w.atomic_parameter_path.text() if mode=='atomic' else w.source_path.text()
-            cfg=NiForwardSettings(**common,model=('xmcd','atomic','imported')[w.model_box.currentIndex()],
+            cfg=ForwardSettings(**common,model=('xmcd','atomic','imported')[w.model_box.currentIndex()],
                 source=w.source_path.text(),source_sha256=(w.source_info or {}).get('sha256',''),axis_declared=False,
                 magnetization=w.material_magnetization,eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
                 l3=w.spin['xl3'].value(),l2=w.spin['xl2'].value())
@@ -424,8 +424,8 @@ class ProjectSession:
             for widget,hidden in getattr(self,'_unavailable_input_widgets',[]):widget.setVisible(not hidden)
             self._unavailable_input_widgets=[];self._run_restore_error='';self.run_settings_notice.hide()
             self._reset_project_inputs();self.set_magnetization_mode('global')
-            from emcd_sim.forward_settings import NiForwardSettings
-            self.restore_sampling_controls(NiForwardSettings())
+            from emcd_sim.forward_settings import ForwardSettings
+            self.restore_sampling_controls(ForwardSettings())
             self.spin['energy'].setValue(241)
             if getattr(self,'structure_viewer',None):self.structure_viewer.editor.load_groups(None)
             self.browser.registry.records=[];self.browser.cache={};self.browser.refresh()

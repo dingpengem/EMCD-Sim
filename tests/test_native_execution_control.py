@@ -1,4 +1,5 @@
 """Scoped native limits and responsive ordered detector execution."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import threading
 from dataclasses import replace
 import pytest
@@ -56,10 +57,10 @@ def test_failed_verification_restores_partial_changes(monkeypatch):
 def test_preflight_preserves_four_workers_without_claiming_limits_applied():
     native=dict(resources.native_backend_info(),threads=12,automatic_thread_control=True)
     cfg=replace(NiForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=4)
-    plan=resources.worker_plan(Settings(),cfg,21,native=native)
+    plan=resources.worker_plan(nickel_geometry_settings(),cfg,21,native=native)
     assert not plan['blocked'] and plan['effective_workers']['bloch']==4
     assert plan['native']['threads']==12
-    assert resources.worker_plan(Settings(),cfg,21,native=dict(native,automatic_thread_control=False))['blocked']
+    assert resources.worker_plan(nickel_geometry_settings(),cfg,21,native=dict(native,automatic_thread_control=False))['blocked']
 
 
 def test_memory_admission_still_rejects_without_reducing_manual_workers(monkeypatch):
@@ -68,7 +69,7 @@ def test_memory_admission_still_rejects_without_reducing_manual_workers(monkeypa
     monkeypatch.setattr('emcd_sim.memory_budget.memory_snapshot',
                         lambda:dict(available_ram_mib=64,process_rss_mib=120))
     cfg=replace(NiForwardSettings(),channeling_model='double',worker_mode='manual',parallel_workers=4)
-    info=numerical_info(Structure.nickel(),Settings(),cfg,enforce_execution=False)
+    info=numerical_info(Structure.nickel(),nickel_geometry_settings(),cfg,enforce_execution=False)
     assert info['execution']['risk']=='RESOURCE REJECTED'
     assert info['execution']['effective_workers']['bloch']==4
 

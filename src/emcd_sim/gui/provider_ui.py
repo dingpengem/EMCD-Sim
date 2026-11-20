@@ -196,7 +196,9 @@ class ProviderUI:
             path=self.atomic_parameter_path.text().strip()
             if not path:
                 if self.atomic_editor.active:raise ValueError('Generalized atomic editor has unvalidated edits; generate the current source first')
-                if symbols!={'Ni'}:raise ValueError('Atomic Ionization requires explicit element-specific parameters; Ni defaults are not transferred')
+                if self.atomic_editor.historical_config is None:
+                    raise ValueError('Atomic Ionization requires explicit element-specific parameters or a retained historical project')
+                if symbols!={'Ni'}:raise ValueError('Retained historical Atomic source supports only Ni')
                 return base
             cfg=self.atomic_provider_info
             if cfg is None or cfg.source!=str(Path(path).resolve()):raise ValueError('Validate the current atomic parameter source first')

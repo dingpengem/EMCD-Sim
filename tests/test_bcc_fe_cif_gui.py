@@ -84,7 +84,7 @@ def test_bcc_001_counts_from_independent_parity_and_reciprocal_radius(cutoff,cou
     expected={(h,k,0) for h in range(-bound,bound+1) for k in range(-bound,bound+1)
               if (h+k)%2==0 and math.hypot(h,k)/2.8665<=cutoff+1e-10}
     assert len(expected)==count
-    s=Structure.from_cif(CIF);cfg=Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=cutoff)
+    s=Structure.from_cif(CIF);cfg=Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=cutoff,tilt=(-5.5866881404, 0.0))
     if count>121:
         with pytest.raises(ValueError,match='137 beams exceed the interactive limit 121'):geometry(s,cfg)
     else:

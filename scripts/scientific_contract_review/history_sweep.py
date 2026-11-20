@@ -1,4 +1,5 @@
 """Frozen Git-source comparisons with original inputs, not new golden arrays."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import ast
 from dataclasses import asdict,replace
 import inspect
@@ -62,14 +63,14 @@ def cases(calc,contract=None):
     for solver in ('bloch','both'):
         cfg=NiForwardSettings(axis_declared=True,channeling_model='double',propagation=solver,
             energy_points=9,angular_maps=True,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
-        s=Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
+        s=nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
         results['a2' if solver=='bloch' else 'a3']=calc(Structure.nickel(),s,cfg)
     for model in ('xmcd','atomic'):
         cfg=NiForwardSettings(model=model,axis_declared=True,channeling_model='double',propagation='both',
             energy_scope='edges',grid=9,depth=9,subpixels=8,fft_grid=16,slice_step=.01,halfwidth=.7,
             centers=((.2,.2),(.2,-.2)),radius=.12,correction=False,worker_mode='manual',parallel_workers=1)
         if model=='atomic':cfg=replace(cfg,l3=cfg.atomic.l3_ev,l2=cfg.atomic.l2_ev)
-        results['c1' if model=='xmcd' else 'c2']=calc(Structure.nickel(),Settings(thickness=.3,beam_cutoff=.9,potential_cutoff=1.8),cfg)
+        results['c1' if model=='xmcd' else 'c2']=calc(Structure.nickel(),nickel_geometry_settings(thickness=.3,beam_cutoff=.9,potential_cutoff=1.8),cfg)
     return results
 
 current=cases(forward_pipeline.calculate)
@@ -78,7 +79,7 @@ with patch.object(channeling,'calculate_detector_signals',older_ni):old_ni=cases
 baseline=archived_bw('7bebdce')
 with patch.object(channeling,'double_channeling_response',adapted(baseline)):
     old7=cases(forward_pipeline.calculate)
-elastic=elastic_model(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
+elastic=elastic_model(Structure.nickel(),nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
 queries=np.array([[.15,.2],[.15,-.2]])
 numeric7=baseline.double_channeling_response(elastic,831.4778,queries,2,method='numerical',depth_steps=9)
 revisions=['7bebdce','f030556','5347f44','2f9c130','76deb65','a87f5df','ef54a53','e5b6e4a','cdb8836','91aff15','6d98694']

@@ -1,4 +1,5 @@
 """Raw/relative toggles are presentation only; all exports retain both."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import csv
@@ -58,7 +59,7 @@ def test_prb_denominator_can_differ_without_reversal_even_contamination():
 
 @pytest.fixture(scope='module')
 def result():
-    return calculate(Structure.nickel(),Settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),
+    return calculate(Structure.nickel(),nickel_geometry_settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),
         NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',energy_scope='edges',
             angular_maps=True,grid=9,depth=5,fft_grid=24,subpixels=16,correction=False))
 

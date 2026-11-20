@@ -375,3 +375,21 @@ installation is not tested**; the standard manifest retains that limitation.
 The later documentation commit records these results independently of the
 binary/source snapshot. Nothing was merged, pushed, published or installed over
 an existing release, and no future physics was implemented.
+
+
+## Phase 3E-1: input responsibilities and obsolete interfaces
+
+| Previous interface/behavior | Current owner/interface | Reason and consumers |
+|---|---|---|
+| Common fields inherited from `NiForwardSettings` | `ForwardSettings`; Ni preset subclasses it | General multisite/imported/provider records, GUI drafts and resource controls need numerical inputs without constructing Ni physics. Historical Ni class name, field order and explicit preset remain supported. |
+| Implicit Ni [017] geometry in `Settings()` | Neutral `Settings()`; explicit `study_presets.nickel_geometry_settings()` | Current Ni demonstrations, maintained scripts, historical test fixtures and old project loading deliberately request the old inputs. General structure geometry does not infer a Ni Bragg tilt. |
+| `legacy_atomic_factors.factors_for_elastic_species` | Removed; four test calls use `elastic_providers.factors_for_provider(species, provider)` | No production consumer. Redundant implicit Ni/external dispatch duplicated the canonical explicit provider interface. External table checks and factor equations are unchanged. |
+| `SimulationResult.at_edge(edge_ev=852.7)` | Removed | No source, script, test or documentation consumer; an unused Ni-energy convenience is not a compatibility requirement. Generic result spectra and contrast interfaces remain. |
+| Omitted sites in `channeling.calculate_detector_signals` | Explicit `ionization_sites` required | The maintained forward caller already supplies provider sites. Missing input now fails instead of selecting historical Ni phases. |
+
+No clear scientific interface is renamed for stylistic uniformity. Saved-file
+compatibility lives in loading, not obsolete API aliases. The nine top-level
+`historical_ni` symbols and their protocol methods remain for the explicit
+historical model, `emcd-ni-local-mdff` CLI, retained old projects and independent
+scientific references. Neither the canonical calculation nor its GUI re-export
+has changed location or identity.

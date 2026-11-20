@@ -24,10 +24,10 @@ def test_full_zolz_enumeration_and_frame(zone):
         # The production GUI deliberately rejects this 213-beam preview.
         # Verify the complete low-level basis without bypassing that guard.
         with pytest.raises(ValueError,match='interactive limit 121'):
-            geometry(Structure.nickel(),Settings(zone=zone,beam_cutoff=4.6))
+            geometry(Structure.nickel(),Settings(zone=zone,beam_cutoff=4.6,tilt=(-5.5866881404, 0.0)))
         hkl=BeamSet.zolz(c,4.6,max_beams=10000).hkl
     else:
-        hkl=geometry(Structure.nickel(),Settings(zone=zone,beam_cutoff=4.6))[2]
+        hkl=geometry(Structure.nickel(),Settings(zone=zone,beam_cutoff=4.6,tilt=(-5.5866881404, 0.0)))[2]
     assert hkl[0]==(0,0,0) and (2,0,0) in hkl
     for h in hkl:
         assert np.dot(h,zone)==0 and len(set(v%2 for v in h))==1
@@ -36,7 +36,7 @@ def test_full_zolz_enumeration_and_frame(zone):
     assert any(h[1:]!=(0,0) for h in hkl)
     if zone==(0,0,1):
         for h in ((0,2,0),(2,2,0),(0,-2,0),(-2,-2,0)):assert h in hkl
-        row=geometry(Structure.nickel(),Settings(zone=zone,beam_cutoff=4.6),systematic_row=True)[2]
+        row=geometry(Structure.nickel(),Settings(zone=zone,beam_cutoff=4.6,tilt=(-5.5866881404, 0.0)),systematic_row=True)[2]
         assert len(row)==17 and set(row)<set(hkl)
     else:
         assert (1,7,-1) in hkl and (0,7,-1) not in hkl

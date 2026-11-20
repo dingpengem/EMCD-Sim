@@ -41,9 +41,9 @@ See the [forward-engine report](PHASE3D2B2_FORWARD_ENGINE_EXTRACTION.md).
    belong to `structure_geometry`; previews do not depend on project-file I/O.
    `projected_geometry_from_oriented_crystal` also belongs here and delegates
    to the existing `ProjectedGeometry.from_oriented` implementation.
-2. `forward_settings.NiForwardSettings`, `material_inputs` and
-   `forward_settings.MultiSiteForwardSettings` record existing model and
-   sampling requests. A site-group provider reference owns its material source;
+2. `forward_settings.ForwardSettings`, `material_inputs` and
+   `forward_settings.MultiSiteForwardSettings` record explicit source/model and
+   sampling requests. `NiForwardSettings` is the separate explicit historical preset. A site-group provider reference owns its material source;
    the complete crystal, including elastic-only atoms, owns the elastic potential.
 3. `scattering`, `elastic_providers` and `projected_potential` prepare the IAM.
    `physical_elastic`, `multislice_reference` and `multislice_double_channeling`
@@ -75,14 +75,14 @@ See the [forward-engine report](PHASE3D2B2_FORWARD_ENGINE_EXTRACTION.md).
    results, editable inputs, per-run restoration and project collections.
 
 Paths above are relative to `src/emcd_sim/`. There are no retired production
-import aliases. GUI package placement is historical:
-`forward_pipeline` and `propagation` are application
-services, not alternate scientific engines. No backend framework is implied.
+import aliases. `forward_pipeline` and `propagation` are root scientific/application services,
+not alternate material engines. No backend framework is implied.
 The planning/execution cycle is removed in
 [Phase 3D-1](PHASE3D1_NUMERICAL_CHANNELING_DECOUPLING.md). Fresh-process tests
 execute the canonical API for Ni and explicit synthetic Cr multisite cases in
 all four BW/FFT Single/Double modes while rejecting Qt and presentation imports.
-GUI-namespaced settings and service ownership remain a later migration concern.
+Four pinned scientific owners still use the GUI-namespaced memory state bridge;
+that reviewed compatibility edge remains separate from GUI application services.
 
 ## Inputs and their authoritative owners
 
@@ -94,13 +94,13 @@ the engine. Source-backed configurations are built by `mdff_providers`;
 `material_inputs` retains only the saved record definitions and their
 existing historical field identities. The provider services no longer reside
 in `gui.provider_preparation` or `gui.provider_direction`. See the
-[Phase 3B report](PHASE3B_HEADLESS_PROVIDER_SIMPLIFICATION.md) for the ownership
-mapping and remaining settings-schema limitation.
+[Phase 3E-1 report](PHASE3E1_MATERIAL_INDEPENDENT_CORE_CLEANUP.md) for neutral
+settings ownership, explicit presets and retained saved-field compatibility.
 
 | Input | Origin and calculation entry |
 | --- | --- |
 | Cell, positions, species, occupancy and site indices | ASE/CIF or an explicit preset → `structure_geometry.Structure` → `geometry`/`elastic_model`; all structural atoms contribute to the supplied elastic potential, including elastic-only groups. |
-| Zone/target, basis mode and beam cutoff | `structure_geometry.Settings` → `CrystalOrientation`, finite hkl selection and `ProjectedGeometry`. The target fixes beam-frame x, not material M. Default settings describe the starting Ni example; the engine never constructs a default crystal or geometry. |
+| Zone/target, basis mode and beam cutoff | `structure_geometry.Settings` → `CrystalOrientation`, finite hkl selection and `ProjectedGeometry`. The target fixes beam-frame x, not material M. New settings use [001] and zero tilt; the starting Ni demonstration selects `nickel_geometry_settings` explicitly. The engine never constructs a default crystal or geometry. |
 | Voltage and tilt | `Settings.voltage` in kV and `.tilt` in mrad → `Microscope`, relativistic wavelength/gamma, Hamiltonian/FFT kinetic phase, longitudinal transfer and post-loss exit energy. |
 | Thickness | `Settings.thickness` in nm → incoming depth samples and outgoing propagation distances; Single multiplies its depth mean once, while Double response already integrates depth. |
 | Elastic provider, B and potential cutoff | `Settings.elastic_provider`, `.b_factor` and `.potential_cutoff` → explicit per-species scattering factors, IAM structure factors and Fourier support. No material-specific propagation kernel is selected. |
@@ -109,7 +109,7 @@ mapping and remaining settings-schema limitation.
 | Legacy Ni material inputs | Explicit `NiForwardSettings`/`NiLocalConfig` → `HistoricalNiProvider` → common transition/tensor and propagation kernels. Direct Ni evaluation keeps its established requested-energy and amplitude policy; non-Ni use is rejected. |
 | Local material/M assignments | `MultiSiteIonization.groups`, each group's provider reference, indices, multiplicity, frame and M → shared complete-crystal waves plus group-specific target tensors/site phases. `energy_windows` declares modeled coverage and never requests extrapolation. |
 | Detectors | `cfg.centers`, `.radius`, `.halfwidth` in cycles/Å → `VirtualDetector`, the original reciprocal grid and fractional aperture weights. Material response and incident waves do not choose apertures. |
-| Numerical sampling | Energy scope/grid/selection, angular grid/evaluation, depth count, subpixels, FFT grid and slice step → provider sampling and bounded application schedules. These retain existing defaults and supported choices; no probe/backend framework is introduced. |
+| Numerical sampling | Energy scope/grid/selection, angular grid/evaluation, depth count, subpixels, FFT grid and slice step → provider sampling and bounded application schedules. Sampling defaults and supported choices are retained; source energies and detector geometry are explicit. No probe/backend framework is introduced. |
 | Resource request vs observation | Worker/memory modes and requested counts/budget enter existing admission/executor policy. `resource_allocation` records the resolved runtime allocation; it is not an additional physical input or a substitution for another run's request. |
 
 Shared serialized request records still contain historical fields used for
@@ -269,3 +269,39 @@ scanning probe, absorption/TDS, full momentum-dependent target MDFF, band
 structure, multiplets, absolute calibration or future physics is implemented by
 the readability refactor. Possible physics issues discovered during mapping
 must be reported separately rather than corrected inside a refactor.
+
+
+## Phase 3E-1: neutral inputs and explicit historical presets
+
+`forward_settings.ForwardSettings` owns common numerical, detector, resource
+and source-input fields. `MultiSiteForwardSettings` and
+`material_inputs.ImportedSettings` derive from that neutral record;
+`ProviderSettings` derives from `ImportedSettings`. Their constructors do not
+create a Ni atomic model, source, edge energies, correction window or detector
+geometry. Supply those inputs explicitly before calculation.
+
+`NiForwardSettings` is the explicit historical Ni preset over the same base.
+It retains its constructor field order and old values. It still selects
+`HistoricalNiProvider` only through the existing exact-type dispatch, then
+uses the common `forward_pipeline.calculate` implementation.
+
+New `structure_geometry.Settings` records use [001], target (200), zero tilt
+and the existing adaptive elastic provider. These are generic coordinates and
+controls, not a material-specific Bragg alignment. Select orientation, target
+and tilt for the supplied structure; unsupported geometry is rejected by the
+existing validators. `study_presets.nickel_geometry_settings(**overrides)`
+returns the same record with the explicit historical Ni [017] demonstration
+geometry. The GUI's initial built-in Ni example selects that preset explicitly.
+Arbitrary ASE structures receive neutral provenance; saved source labels survive
+loading unchanged.
+
+`gui.project_io` reconstructs omitted old Ni geometry/provider fields only in
+its historical loading context. Declared and multisite project readers select
+the neutral context. Explicit saved values override either set of defaults.
+Old unused `atomic` dictionaries remain decodable; generic absent atomic
+parameters remain absent. Missing declared-provider identity is an error,
+never a route to historical Ni. The shared detector scheduler requires explicit
+ionization sites. Protected standalone historical kernels retain their bounded
+Ni conveniences and independent references; they are not an alternate general
+forward engine. See `PHASE3E1_MATERIAL_INDEPENDENT_CORE_CLEANUP.md` for the full
+retained-interface inventory and focused verification limits.

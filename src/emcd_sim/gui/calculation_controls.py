@@ -14,7 +14,7 @@ from PySide6 import QtCore,QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg,NavigationToolbar2QT
 from emcd_sim.structure_geometry import Structure
-from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
+from emcd_sim.forward_settings import ForwardSettings, NiForwardSettings, DEFAULT_NI_SOURCE
 from emcd_sim.xmcd_source import inspect_xmcd_source
 from .result_export import export_result
 from ..historical_ni import NiLocalConfig
@@ -324,7 +324,6 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if prepare and self.model_box.currentIndex()==1 and self.atomic_editor.active and not self.atomic_editor.validated_path:
             self.atomic_editor.generate()
         if self.spin['grid'].value()%2==0:raise ValueError('Choose an odd angular / detector grid size so qy=0 is sampled exactly.')
-        atomic=NiLocalConfig(**{k:self.spin['atomic_'+k].value() for k in asdict(NiLocalConfig())})
         mode=('xmcd','atomic','imported')[self.model_box.currentIndex()];axis=self.material_direction()
         if len(axis)!=3:raise ValueError('Magnetization needs three Cartesian components')
         if mode=='xmcd' and (not self.source_info or self.validated_path!=self.source_path.text()):
@@ -332,16 +331,18 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if not self.source_info:raise ValueError('Five-column XMCD: select a readable valid source file. '+self.source_status.text())
         if mode=='xmcd' and not self.declaration.isChecked():
             raise ValueError('Source conventions: confirm RP−LP about Material +M and the displayed L3/L2 assignments beside the source controls; parsing cannot establish these choices')
-        cfg=NiForwardSettings(**self.forward_control_fields(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
-            eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
+        historical=mode=='xmcd' and self.reference_ni.isChecked()
+        atomic=NiLocalConfig(**{k:self.spin['atomic_'+k].value() for k in asdict(NiLocalConfig())}) if historical else None
+        cfg=(NiForwardSettings if historical else ForwardSettings)(**self.forward_control_fields(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+            eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else float('nan'),l2=self.spin['xl2'].value() if mode=='xmcd' else float('nan'),
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
             window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
         if mode=='atomic' and self.atomic_editor.historical_config is not None:
             saved=self.atomic_editor.historical_config
             if not np.allclose(np.asarray(axis)/np.linalg.norm(axis),np.asarray(saved.magnetization)/np.linalg.norm(saved.magnetization)):
                 raise ValueError('Retained historical Atomic source requires its saved axis; Material M is incompatible. Reset defaults to configure a new source.')
-            cfg=replace(cfg,atomic=saved.atomic,l3=saved.l3,l2=saved.l2,sigma=saved.sigma,radial=saved.radial,
-                axis_declared=saved.axis_declared)
+            cfg=NiForwardSettings(**dict(asdict(cfg),atomic=saved.atomic,l3=saved.l3,l2=saved.l2,sigma=saved.sigma,radial=saved.radial,
+                axis_declared=saved.axis_declared))
         if mode=='imported':cfg=self.imported_forward_settings(cfg,prepare=prepare)
         else:cfg=self.declared_provider_settings(cfg,prepare=prepare)
         from emcd_sim.propagation import resolve_fft_configuration

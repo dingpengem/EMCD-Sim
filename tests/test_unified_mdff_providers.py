@@ -48,7 +48,7 @@ def test_non_3d_single_edge_shared_bw_ms_and_project(tmp_path,channel):
         grid=9,depth=9,subpixels=8,fft_grid=16,slice_step=.01,halfwidth=.7,
         centers=((.2,.2),(.2,-.2)),radius=.12,worker_mode='manual',parallel_workers=1)
     structure=Structure(Atoms('O',cell=np.eye(3)*4,scaled_positions=[[0,0,0]],pbc=True),'Synthetic O K algebra test; energies not physical O spectroscopy')
-    settings=Settings(zone=(0,0,1),target=(1,0,0),thickness=.2,beam_cutoff=.6,potential_cutoff=1.2)
+    settings=Settings(zone=(0,0,1),target=(1,0,0),thickness=.2,beam_cutoff=.6,potential_cutoff=1.2,tilt=(-5.5866881404, 0.0))
     assert not forward.material_reason(structure,cfg)
     np.testing.assert_array_equal(forward.energy_grid(cfg),[710.])
     result=calculate(structure,settings,cfg)
@@ -97,7 +97,8 @@ from ase import Atoms
 from emcd_sim.mdff_providers import (settings_for_source, settings_for_provider,
     source_for, prepare_provider, bind_group_direction)
 kind, path, declaration = json.loads(sys.argv[1])
-controls = dict(energy_scope='edges', grid=9, depth=3, subpixels=4)
+controls = dict(energy_scope='edges', grid=9, depth=3, subpixels=4,
+    centers=((.2837684449489217,.2837684449489217),(.2837684449489217,-.2837684449489217)),radius=.0908059024)
 cfg = (settings_for_source(path, **controls) if kind == 'manual' else
        settings_for_provider(path, kind, declaration, **controls))
 source = source_for(cfg)

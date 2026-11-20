@@ -1,4 +1,5 @@
 """Scheduling equivalence against the exact pre-optimization GUI adapters."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from reference_imports import relocate_reference_imports
 from emcd_sim.cancellation import Cancelled
 from emcd_sim.forward_settings import NiForwardSettings
@@ -33,7 +34,7 @@ def reference():
 
 @pytest.fixture
 def small():
-    s=Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
+    s=nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
     c=NiForwardSettings(axis_declared=True,grid=9,depth=5,fft_grid=24,subpixels=16,
         correction=False,energy_points=9,l3=831.4778,l2=848.698)
     energy=np.array([826.,c.l3,840.,c.l2,850.])

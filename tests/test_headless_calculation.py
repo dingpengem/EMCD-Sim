@@ -4,6 +4,7 @@ Reuse the established Ni archived-kernel comparison and Cr independent-event
 assertions. The Cr case is the existing synthetic ordered BCC benchmark, not a
 claim to describe bulk Cr spin-density-wave order or calibrated spectroscopy.
 """
+from emcd_sim.study_presets import nickel_geometry_settings
 import importlib.abc
 import json
 import os
@@ -139,7 +140,7 @@ def _child(material, method, channel, directory):
         from test_single_element_ni_compatibility import old_contract
         from numerical_roundoff import assert_bloch_observables
 
-        settings = Settings(thickness=.3, beam_cutoff=.9, potential_cutoff=1.8)
+        settings = nickel_geometry_settings(thickness=.3, beam_cutoff=.9, potential_cutoff=1.8)
         cfg = NiForwardSettings(model='xmcd', axis_declared=True,
             channeling_model=channel, propagation=method, energy_scope='edges',
             grid=9, depth=9, subpixels=8, fft_grid=16, slice_step=.01, halfwidth=.7,

@@ -1,4 +1,5 @@
 """Independent general row selection, reduced-energy propagation and export."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from pathlib import Path
 from dataclasses import replace
 import json
@@ -14,7 +15,7 @@ from emcd_sim.multislice_double_channeling import ProjectedFFT
     ((1,1,1),(2,-2,0)),((7,1,0),(0,0,2))])
 def test_row_uses_actual_target_or_actual_local_x_support(zone,target):
     geo=ProjectedGeometry.from_crystal(fcc_nickel(),zone,target)
-    s=Settings(zone=zone,target=target,thickness=2,voltage=200,beam_cutoff=3.2,potential_cutoff=3.8)
+    s=Settings(zone=zone,target=target,thickness=2,voltage=200,beam_cutoff=3.2,potential_cutoff=3.8,tilt=(-5.5866881404, 0.0))
     elastic=elastic_model(Structure.nickel(),s,systematic_row=True)
     results=[]
     for descriptor in (geo,None):
@@ -86,7 +87,7 @@ def test_validation_driver_resumes_json_checkpoint_without_solver(tmp_path,monke
     m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
     monkeypatch.setattr(m,'OUT',tmp_path/'results')
     source=tmp_path/'source.txt';source.write_text('source identity only',encoding='utf-8')
-    s=Settings();c=NiForwardSettings(source=str(source))
+    s=nickel_geometry_settings();c=NiForwardSettings(source=str(source))
     folder=m.OUT/'cases'/'finished';folder.mkdir(parents=True)
     record=dict(identity=m.case_identity(s,c),fingerprints={'array':'unchanged'})
     checkpoint=folder/'case.json';checkpoint.write_text(json.dumps(record),encoding='utf-8');before=checkpoint.read_bytes()
