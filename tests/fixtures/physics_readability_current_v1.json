@@ -332,6 +332,10 @@
       "mode": "canonical",
       "sha256": "7390a43a0749eed9da81a5227b74158bf47c93cdb96c4b1f6266e0eac169556b"
     },
+    "tests/numerical_roundoff.py": {
+      "mode": "canonical",
+      "sha256": "1d54816a2acd26165ec736f12f6310204b27078921de3922d3c7c6b4ce76f87c"
+    },
     "tests/physics_source_guard.py": {
       "mode": "canonical",
       "sha256": "013323aea177c0b60d994281c57f97ff77022549cabec045fd2d6a940beaf439"
@@ -386,7 +390,7 @@
     },
     "tests/test_double_cancellation.py": {
       "mode": "canonical",
-      "sha256": "55d260912d5a5ea9edb1e2c9436a3dfa4dd378b293e45ad78feac31e227be381"
+      "sha256": "ec9b3e0b8e60a0ab253c0a8d5457d762bf32fc1778caa161a165ff2af6309ca7"
     },
     "tests/test_energy_angular_schedule.py": {
       "mode": "canonical",
@@ -518,7 +522,7 @@
     },
     "tests/test_single_element_ni_compatibility.py": {
       "mode": "canonical",
-      "sha256": "2dd7b5b7732fb6b4a882acae05269eb37901c8b56dfae318b58307556953d7ae"
+      "sha256": "196ce0737e3f7017ae532b7bcb1de1dd8139334cc40ad2c57921f97d5b708da5"
     },
     "tests/test_solver_settings_ui.py": {
       "mode": "canonical",

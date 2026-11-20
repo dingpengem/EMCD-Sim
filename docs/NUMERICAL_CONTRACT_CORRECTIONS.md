@@ -138,8 +138,53 @@ recovery evidence is preserved.
 - Existing exact 22-case / 2,294-array source equivalence: **passed unchanged**,
   including physical metadata and selected-edge metrics, 44.718 s launcher
   duration. Evidence: `exact-22-case-equivalence.log` and `-run.json`.
-- Complete regression: not started until the prerequisites pass; one complete
-  run is authorized. Final counts/source identity will be recorded here.
+- Complete regression ran **once**, at clean test-correction commit
+  `7fd38620a7619362a0568d0414d58679d34a875e`: **1,473 passed, 98 failed,
+  135 setup errors, 62 skipped**, 1,768 collected, 10,985.88 pytest seconds
+  (3h 03m). All six corrected cases and eight comparison negative/identity
+  cases passed within this run. Evidence: `complete-regression-7fd3862.log`,
+  `.xml`, `-run.json`, and the existing test-lifecycle log.
+
+### Required registration integration and temporary-path correction
+
+The full run exposed two validation-integration issues. They were not additional
+numerical tolerance failures in the six corrected cases:
+
+- The existing reviewed-current-source map pins
+  `tests/test_double_cancellation.py` and
+  `tests/test_single_element_ni_compatibility.py`. Their authorized comparison
+  changes require reviewed current identities. Stale registrations caused all
+  135 source-scope setup errors and direct guard failures; they must be updated
+  explicitly, rather than bypassing the checks.
+- I used a longer pytest temporary root inside the worktree than the established
+  Phase 2 main-repository build temporary root. All **26 direct file-not-found
+  failures have 260-265-character paths**. Transactional save/bundle nesting hit
+  the Windows path boundary; GUI source generation also produced subsequent
+  missing-source/state failures. The affected recheck uses
+  `C:\Users\peng863\EMCD-Sim\build\nc-tmp` and a short unique pytest basename,
+  while keeping the same checkout, interpreter, physical inputs and code.
+
+The registration-only correction changes the two existing **current test-file**
+digests, registers their new shared `tests/numerical_roundoff.py` dependency,
+and updates the existing current-manifest pin and exact path allowlist in
+`tests/mdff_usability_source_scope.py`. All other current entries, the
+`production_source` identity, historical maps, compressed prior sources,
+archives, kernel identities and reference-data pins remain unchanged.
+
+Registering the helper preserves an existing scientific-check boundary: these
+two already-pinned tests now delegate comparison decisions to it. Leaving that
+dependency unprotected would allow an unreviewed helper edit to loosen the
+checks while both callers still matched their pins. Git records the change but
+does not replace the existing runtime override/mutation checks. No new guard or
+general hash layer is introduced. A direct controlled helper mutation
+(`return 1.` instead of the rounding factor) was rejected by the existing
+physics/source guard; the unchanged current kernel identities also authenticated.
+Evidence: `reviewed-registration-guard.log` and `-run.json`.
+
+The original complete-run failures/errors remain in their logs/XML. Only the
+failed/error nodes and affected source-guard/comparison checks are being rerun;
+no second complete regression is launched. Final recheck results and GO/NO-GO
+will be recorded below.
 
 Application source has not changed, so no Windows EXE rebuild is required or
 performed. Final GO/NO-GO and local commit identities will be recorded after
