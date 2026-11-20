@@ -74,10 +74,10 @@ def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics
     originating exception even if an earlier batch subsequently cancels.
     """
     from ..cancellation import check_cancelled
-    from .parallel_resources import MAX_WORKERS,calculation_blas_guard
+    from emcd_sim.parallel_resources import MAX_WORKERS, calculation_blas_guard
     if type(workers) is not int or not 1<=workers<=MAX_WORKERS:
         raise ValueError('Unsupported detector worker count')
-    from .hardware_resources import cpu_capacity
+    from emcd_sim.hardware_resources import cpu_capacity
     if workers>cpu_capacity()['logical_processors']:
         raise ValueError('Detector worker allocation exceeds current process CPU capacity')
     stop=threading.Event();errors=[];error_lock=threading.Lock()

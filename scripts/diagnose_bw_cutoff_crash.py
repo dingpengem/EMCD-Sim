@@ -14,7 +14,7 @@ def run(args):
     from emcd_sim.structure_geometry import restore_structure
     from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.gui.channeling import worker_count
-    from emcd_sim.gui.memory_budget import memory_snapshot
+    from emcd_sim.memory_budget import memory_snapshot
     from emcd_sim.structure_geometry import geometry
     from emcd_sim.provenance import build_info
     baseline_workers=None

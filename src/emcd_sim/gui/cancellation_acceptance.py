@@ -9,7 +9,8 @@ import hashlib,json,sys,threading,time,traceback
 from contextlib import ExitStack
 from PySide6 import QtCore,QtWidgets
 from .. import double_channeling as bw,multislice_double_channeling as ms
-from . import channeling,calculation_worker,memory_budget
+from . import channeling, calculation_worker
+from emcd_sim import memory_budget as memory_budget
 from .project_io import save_project,load_project
 from .project_io import fingerprints
 from emcd_sim.provenance import build_info

@@ -11,7 +11,7 @@ import numpy as np
 from emcd_sim.study_presets import NickelStudyGeometry
 Ni117Geometry=lambda a_angstrom=3.524: NickelStudyGeometry((1,1,7),(2,-2,0),a_angstrom)
 from emcd_sim.structure_geometry import Structure, Settings, geometry, excitation
-from emcd_sim.gui.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
+from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.mirror_parity import row_mirror_diagnostics
 

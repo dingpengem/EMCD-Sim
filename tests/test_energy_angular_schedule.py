@@ -1,7 +1,7 @@
 """Scheduling equivalence against the exact pre-optimization GUI adapters."""
 from reference_imports import relocate_reference_imports
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 import json,subprocess,sys,types
 from dataclasses import replace,asdict
 from unittest.mock import patch

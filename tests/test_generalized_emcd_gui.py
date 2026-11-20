@@ -88,7 +88,7 @@ def test_ideal_basis_description_is_not_full_multibeam():
     from types import SimpleNamespace
     from emcd_sim.gui.result_presentation import geometry_description
     from emcd_sim.structure_geometry import Settings
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     from dataclasses import replace
     result=dict(settings=replace(Settings(),basis_mode='two-beam'),config=NiForwardSettings())
     assert 'ideal' in geometry_description(result) and 'full finite' not in geometry_description(result)

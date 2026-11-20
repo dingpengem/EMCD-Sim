@@ -1,8 +1,8 @@
 """Compact resource controls; numerical_info owns allocation/admission."""
 from PySide6 import QtCore,QtWidgets
-from .hardware_resources import hardware_snapshot
-from .memory_budget import DEFAULT_BUDGET_MIB
-from .parallel_resources import MAX_WORKERS
+from emcd_sim.hardware_resources import hardware_snapshot
+from emcd_sim.memory_budget import DEFAULT_BUDGET_MIB
+from emcd_sim.parallel_resources import MAX_WORKERS
 
 
 class ComputeResourcesPanel(QtWidgets.QWidget):

@@ -57,7 +57,7 @@ class XMCDPreview(QtWidgets.QGroupBox):
         w=self.window
         self.snapshot=None;self.input_snapshot=None
         try:
-            from .forward_settings import NiForwardSettings
+            from emcd_sim.forward_settings import NiForwardSettings
             from ..wien2k_xmcd import load_wien2k_xmcd
             from ..mdff_providers import prepare_provider
             start=self.fingerprint()

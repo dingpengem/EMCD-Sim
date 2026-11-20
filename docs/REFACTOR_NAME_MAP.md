@@ -1,5 +1,12 @@
 # Current calculation API and refactor decisions
 
+Phase 3D-2B-1 moves the existing settings hierarchy and memory/hardware/worker
+services to the scientific package. The only retained resource import adapter is
+`gui.memory_budget.reserve_memory`, required by four authenticated kernel source
+files; all state/logic is in root `memory_budget`. No kernel source or historical
+identity is changed. See the
+[Phase 3D-2B-1 report](PHASE3D2B1_SETTINGS_RESOURCE_OWNERSHIP.md).
+
 Phase 3D-2A extracts scientific geometry/structure records to
 `structure_geometry`, scientific result assembly/method views to `forward_results`,
 build/source provenance to `provenance`, and source inspection to `xmcd_source`.
@@ -67,6 +74,10 @@ Paths below are relative to `src/emcd_sim/`.
 
 | Previous name | Current owner/name | Reason and disposition |
 | --- | --- | --- |
+| `gui.memory_budget` implementation/state | `memory_budget` | One authoritative registry/lock and unchanged admission/reservation code. The old GUI path exports only the identical reserve function for four concrete authenticated kernel consumers; no wrapper, counter or policy copy exists. |
+| `gui.hardware_resources` | `hardware_resources` | Shared measurements/topology serve scientific and GUI resource requests without importing GUI. Old module removed. |
+| `gui.parallel_resources` | `parallel_resources` | One BLAS control lock and unchanged worker/allocation policy. Old module removed; unused `preview_text` has no maintained consumer and is deleted. |
+| `gui.forward_settings`, `gui.material_inputs` | `forward_settings`, `material_inputs` | Existing four dataclasses keep their names, hierarchy, constructors/defaults and JSON fields. Providers/editors/loaders all share the same new class definitions; no duplicate schema or old-class facade. |
 | `gui.geometry.Structure`, `Settings`, orientation/Bragg/model and snapshot operations | `structure_geometry` | Neutral scientific records and geometry; JSON/NPZ project fields remain identical, current consumers share one class definition, and no supported pickle/module-path contract was found. GUI parsing/preview stay in the existing GUI module. |
 | `gui.forward_results` | `forward_results` | Scientific assembly, selected-edge metrics and method views import only neutral services. Maintained callers and authenticated references migrate; no production forwarding module remains. |
 | `gui.runtime` build/source functions and resource locations | `provenance` | Record scientific provenance without importing desktop logging or writable-path services. GUI runtime retains those desktop operations; existing source/frozen metadata semantics and inventory coverage remain. |
@@ -76,10 +87,10 @@ Paths below are relative to `src/emcd_sim/`.
 | `gui.stage_b.EMCDWorker` | `gui.calculation_worker.EMCDWorker` | Background execution, progress, BLAS control and cancellation are separate from widgets. The already clear class name is retained at its actual owner; the old re-export is removed. |
 | `setup_stage_b` | `setup_calculation_controls` | Initializes calculation controls/signals. All current calls are migrated; no old alias remains. |
 | `gui.emcd_forward.calculate`, `gui.generalized_forward.calculate`, `gui.forward_pipeline.calculate_multisite` | `gui.forward_pipeline.calculate` | One public execution entry point for explicit material/structure/geometry requests. Group assignments are passed as `sites=`. Old aliases and wrappers are removed. Uniform/grouped schedules remain private implementation steps rather than material-specific engines. |
-| `gui.emcd_forward.ForwardSettings` | `gui.forward_settings.NiForwardSettings` | The defaults are a Ni example, so its name must say so. Values and serialized fields are preserved; no old class alias remains. |
-| `gui.forward_pipeline.MultiSiteForwardSettings` | `gui.forward_settings.MultiSiteForwardSettings` | Input records belong to the settings owner, not calculation orchestration. Maintained imports use that owner. |
-| `gui.generalized_forward` | `gui.material_inputs` | Owns source declarations, eligibility, frames and coverage. The old module and calculation re-export are removed. Existing clear provider class/factory names are retained. |
-| `gui.emcd_forward.inspect_source` / `DEFAULT_SOURCE` | `xmcd_source.inspect_xmcd_source` / `gui.forward_settings.DEFAULT_NI_SOURCE` | Distinguish five-column XMCD inspection from a general material provider and identify the bundled Ni preset explicitly. Old names are removed. |
+| `gui.emcd_forward.ForwardSettings` | `forward_settings.NiForwardSettings` | The defaults are a Ni example, so its name must say so. Values and serialized fields are preserved; no old class alias remains. |
+| `gui.forward_pipeline.MultiSiteForwardSettings` | `forward_settings.MultiSiteForwardSettings` | Input records belong to the settings owner, not calculation orchestration. Maintained imports use that owner. |
+| `gui.generalized_forward` | `material_inputs` / `mdff_providers` | Saved input records belong to `material_inputs`; source preparation, eligibility, frames and coverage belong to `mdff_providers`. The old module and calculation re-export are removed. Existing clear class/factory names are retained. |
+| `gui.emcd_forward.inspect_source` / `DEFAULT_SOURCE` | `xmcd_source.inspect_xmcd_source` / `forward_settings.DEFAULT_NI_SOURCE` | Distinguish five-column XMCD inspection from a general material provider and identify the bundled Ni preset explicitly. Old names are removed. |
 | `gui.emcd_forward._calculate` / `calculate_prepared` | Internal `_calculate_uniform` / `_calculate_uniform_prepared` in `gui.forward_pipeline` | Remove an unnecessary delegation wrapper. Admission and prepared execution remain explicit stages of the canonical engine. |
 | `gui.emcd_forward._contract` | `forward_results.assemble_forward_result` | Receives already calculated signals and assembles parity, diagnostics and metadata; it does not contract tensors. The old wrapper and its unused compatibility arguments are removed. |
 | `gui.emcd_forward.metrics` | `forward_results.selected_edge_metrics` | Identifies selected-energy observables and dimensionless ratios. Current consumers use the new owner/name; no alias remains. |

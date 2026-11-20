@@ -4,7 +4,7 @@ from ase.build import bulk
 
 from test_multisite_gui_run import app, window
 from emcd_sim.structure_geometry import Structure
-from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
+from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
 from emcd_sim.gui.project_configuration import save_configuration, load_configuration
 from emcd_sim.mdff_providers import prepare_provider

@@ -79,7 +79,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     if hkl is None:hkl=actual_geometry[2]
     if tuple(hkl)!=actual_geometry[2]:raise ValueError('Beam support changed during numerical preflight')
     n=len(hkl);pixels=cfg.grid**2;mesh=cfg.fft_grid**2
-    from .parallel_resources import worker_plan,require_supported
+    from emcd_sim.parallel_resources import worker_plan, require_supported
     if detector_support_pixels is None:
         from ..geometry import VirtualDetector
         q=np.linspace(-cfg.halfwidth,cfg.halfwidth,cfg.grid);qx,qy=np.meshgrid(q,q,indexing='xy')
@@ -90,7 +90,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     selected_maps=cfg.angular_maps and bool(getattr(cfg,'selected_edges',()) or cfg.model!='multisite')
     task_pixels=pixels if selected_maps or (cfg.angular_maps and cfg.angular_evaluation=='all') else detector_support_pixels
     if check_memory:
-        from .hardware_resources import hardware_snapshot
+        from emcd_sim.hardware_resources import hardware_snapshot
         snapshot=hardware_snapshot() if resource_snapshot is None else resource_snapshot
     else:snapshot=resource_snapshot
     execution=worker_plan(settings,cfg,n,native=native,task_pixels=task_pixels,
@@ -227,7 +227,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             **multisite_terms)
     info['memory_note']='Dense arrays plus FFT/depth storage, retained method results and coordinate/work arrays. Total process estimate adds current RSS, concurrent reservations, 25% allocation margin and 128 MiB reserve. Conservative estimate, not guaranteed peak RSS.'
     if check_memory:
-        from .memory_budget import assess_memory
+        from emcd_sim.memory_budget import assess_memory
         allocation=cfg.resource_allocation
         mode=cfg.memory_mode if allocation is None else 'manual'
         budget=cfg.memory_budget_mib if allocation is None else allocation['memory_budget_mib']
@@ -260,7 +260,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             if cfg.worker_mode=='automatic':execution['effective_workers']={method:0 for method in execution['effective_workers']}
             execution['messages'].append(admission['rejection_reason'])
             if info.get('memory_breakdown_mib'):
-                from .parallel_resources import memory_contributors
+                from emcd_sim.parallel_resources import memory_contributors
                 execution['messages'].append(memory_contributors(info))
     info['execution']=execution
     if check_memory and enforce_execution:require_supported(execution)

@@ -12,7 +12,7 @@ import numpy as np
 from PySide6 import QtWidgets,QtCore
 from matplotlib.figure import Figure
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
+from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
 from emcd_sim.structure_geometry import Structure, Settings, restore_structure
 from emcd_sim.gui.project_io import *
 from emcd_sim.gui.project_collection import load_collection

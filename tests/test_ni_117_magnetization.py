@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from legacy_geometry import Ni117Geometry
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.historical_ni import tensors
 from emcd_sim.single_channeling_tensor import _tensor_angular_maps,historical_ni_site_phase_matrix
 from emcd_sim.multislice_reference import coherence_from_amplitudes

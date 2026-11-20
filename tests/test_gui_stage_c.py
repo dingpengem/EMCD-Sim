@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from PySide6 import QtWidgets
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.structure_geometry import Settings, Structure
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.result_export import export_result
@@ -90,7 +90,7 @@ class PropagationTests(unittest.TestCase):
         for cfg in (replace(self.cfg,fft_grid=13),replace(self.cfg,fft_grid=10),replace(self.cfg,slice_step=0)):
             with self.assertRaises(ValueError):calculate(self.structure,self.settings,cfg)
         self.assertEqual(numerical_info(self.structure,self.settings,self.cfg)['fft_harmonics'],1024)
-        with patch('emcd_sim.gui.memory_budget.memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=512.)):
+        with patch('emcd_sim.memory_budget.memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=512.)):
             with self.assertRaisesRegex(ValueError,'512 MiB'):numerical_info(self.structure,self.settings,replace(self.cfg,grid=193,memory_budget_mib=512,propagation='bloch'))
     def test_shared_scales_difference_maps_and_export(self):
         r=self.result;figs=[Figure(figsize=(14,9),layout='constrained') for _ in range(3)]

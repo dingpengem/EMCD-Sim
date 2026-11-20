@@ -50,7 +50,7 @@ def calculation_blas_guard(cancelled=None):
     while limits are active. OpenMP/unknown implementations are not asserted
     controllable through this API. Nested detector dispatch is reentrant.
     """
-    from ..cancellation import check_cancelled
+    from .cancellation import check_cancelled
     while not _blas_control_lock.acquire(timeout=.05):check_cancelled(cancelled)
     previous=[]
     try:
@@ -217,18 +217,3 @@ def bind_allocation(cfg, info):
 def memory_contributors(info):
     terms=sorted(info.get('memory_breakdown_mib',{}).items(),key=lambda item:item[1],reverse=True)
     return 'Largest array bounds: '+', '.join(f'{key.replace("_"," ")} {value:.1f} MiB' for key,value in terms[:3])+'.'
-
-
-def preview_text(settings,cfg,info):
-    p=info['execution'];native=p['native'];counts=', '.join(k+': '+str(v) for k,v in p['effective_workers'].items())
-    peak=info.get('estimated_process_peak_mib')
-    peak_text=f'{peak:.1f} MiB' if peak is not None else 'Unknown'
-    return (f'Voltage: {settings.voltage:g} kV | Beam cutoff: {settings.beam_cutoff:g} Å⁻¹ | Potential cutoff: {settings.potential_cutoff:g} Å⁻¹\n'
-        f"Retained beams: {info['bw_beams']} / {info['fft_harmonics']} FFT harmonics | Propagation: {cfg.propagation} | {cfg.channeling_model.title()} Channeling\n"
-        f"Energy samples: {cfg.energy_points} | Angular grid: {cfg.grid}×{cfg.grid}\n"
-        f"Requested workers: {p['requested_workers']} | Effective workers: {counts}\n"
-        f"NumPy BLAS: {native['backend']} {native['version']} | BLAS threads: {native['threads'] if native['threads'] is not None else 'Unknown'} | CPUs: {native['cpu_count']}\n"
-        f"Estimated peak RAM: {peak_text} | Budget: {cfg.memory_budget_mib} MiB\n"
-        f"Available RAM: {info.get('available_ram_mib',0):.1f} MiB (50% guard); active reservations: {info.get('concurrent_reserved_working_mib',0):.1f} MiB. Dense bound: {info['dense_working_estimate_mib']:.1f} MiB.\n") + (
-        f"Status: {p['status']} — {p['risk']}\n"+' '.join(p['messages'])+'\n'+p['policy']+
-        ('\n'+memory_contributors(info) if info.get('memory_breakdown_mib') else ''))

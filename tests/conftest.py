@@ -91,7 +91,7 @@ def release_test_owned_gui_resources(request, monkeypatch):
         app.processEvents()
         log = os.environ.get('EMCD_TEST_LIFECYCLE_LOG')
         if log:
-            from emcd_sim.gui.memory_budget import memory_snapshot
+            from emcd_sim.memory_budget import memory_snapshot
             data = dict(test=request.node.nodeid, destroyed_windows=destroyed,
                         destroyed_top_level_widgets=destroyed_widgets,
                         remaining_top_level_widgets=len(app.topLevelWidgets()),

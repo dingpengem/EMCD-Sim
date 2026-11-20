@@ -1,6 +1,6 @@
 """Focused actual-kernel dispatch, parity, memory and compatibility checks."""
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from dataclasses import replace,asdict
@@ -119,7 +119,7 @@ def test_double_full_energy_coverage_is_actually_evaluated(small):
 
 
 def test_cancelled_double_job_releases_reservation(small):
-    from emcd_sim.gui import memory_budget
+    from emcd_sim import memory_budget as memory_budget
     with pytest.raises(Cancelled):
         forward.calculate(*small[:2],replace(small[2],channeling_model='double'),cancelled=lambda:True)
     assert memory_budget.assess_memory(0)['concurrent_calculations']==0

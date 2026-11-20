@@ -7,7 +7,7 @@ from PySide6 import QtCore,QtWidgets
 
 from test_multisite_result_selection import app,view,stored_result,spectra
 from emcd_sim.gui.results import ResultsView
-from emcd_sim.gui.material_inputs import ImportedSettings
+from emcd_sim.material_inputs import ImportedSettings
 from emcd_sim.gui.multisite_results import angular_choices,total_energy_samples,SPECTRAL_KEYS
 
 

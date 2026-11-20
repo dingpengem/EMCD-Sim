@@ -1,6 +1,6 @@
 """Energy streaming, prepared incoming fields and unchanged per-energy physics."""
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.historical_ni import energy_grid
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
@@ -92,7 +92,8 @@ def test_reversal_and_single_unchanged(small):
 
 
 def test_cancelled_spectrum_resumes_without_repeating_completed_energy(small):
-    from emcd_sim.gui import channeling,memory_budget
+    from emcd_sim.gui import channeling
+    from emcd_sim import memory_budget as memory_budget
     a,s,c=small;energy=np.array([c.l3,c.l2]);cache={};stop=[False]
     def checkpoint(method,e,data):
         if data is None:return cache.get(e)

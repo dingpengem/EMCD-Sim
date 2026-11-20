@@ -158,7 +158,7 @@ def test_legacy_global_ni_gui_matches_existing_calculation(window,app,channel):
     controls(window,Structure.nickel(),channel=channel)
     window.atomic_editor.use_editor.setChecked(False);window.atomic_parameter_path.clear()
     window.model_box.setCurrentIndex(1)
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.gui.saved_atomic_ui import restore
     saved=NiForwardSettings(model='atomic',axis_declared=True)
     restore(window.atomic_editor,replace(saved,l3=saved.atomic.l3_ev,l2=saved.atomic.l2_ev),window.structure)
@@ -180,7 +180,7 @@ def test_incomplete_stale_and_resource_errors_do_not_start_workers(window,tmp_pa
     path = Path(original);raw = path.read_bytes();path.write_bytes(raw+b'\n')
     window.start_emcd();assert window.worker is None and 'checksum' in window.test_errors[-1]
     path.write_bytes(raw);window.test_errors.clear()
-    from emcd_sim.gui import parallel_resources
+    from emcd_sim import parallel_resources as parallel_resources
     monkeypatch.setattr(parallel_resources,'require_supported',lambda policy:(_ for _ in ()).throw(ValueError('Test resource admission blocked')))
     window.start_emcd();assert window.worker is None and 'admission' in window.test_errors[-1]
     assert not window.busy

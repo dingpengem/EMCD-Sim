@@ -3,8 +3,8 @@
 Run --probe first. --run compares three unchanged energy samples at the full
 configured q grid. The baseline is the exact pre-scheduler GUI source in Git.
 """
-from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.xmcd_source import inspect_xmcd_source
 from emcd_sim.historical_ni import energy_grid
 import argparse,csv,hashlib,json,os,platform,subprocess,sys,threading,time,types
@@ -15,7 +15,7 @@ from unittest.mock import patch
 import numpy as np
 from emcd_sim.gui import forward_pipeline as f, channeling, propagation
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model, geometry
-from emcd_sim.gui.memory_budget import memory_snapshot
+from emcd_sim.memory_budget import memory_snapshot
 from emcd_sim.gui.project_io import save_project,load_project
 from emcd_sim.study_presets import NickelStudyGeometry
 Ni017Geometry=lambda a_angstrom=3.524: NickelStudyGeometry((0,1,7),(2,0,0),a_angstrom)
@@ -104,7 +104,7 @@ def run_case(a,s,c,e,method,policy):
     old,old_channel=baseline();forward,adapter=(old,old_channel) if policy=='original' else (f,channeling)
     path=ROOT/(method+'_'+policy)
     signature=dict(settings=asdict(s),config=asdict(c),energy=e.tolist(),baseline=BASE,
-        adapter_hashes={p:hashlib.sha256(Path('src/emcd_sim/gui/'+p).read_bytes()).hexdigest() for p in ('channeling.py','forward_pipeline.py','forward_settings.py','forward_results.py')})
+        adapter_hashes={p:hashlib.sha256((Path('src/emcd_sim')/('gui/'+p if p in ('channeling.py','forward_pipeline.py') else p)).read_bytes()).hexdigest() for p in ('channeling.py','forward_pipeline.py','forward_settings.py','forward_results.py')})
     signature=json.loads(json.dumps(signature))
     if (path/'benchmark.json').exists():
         meta=json.loads((path/'benchmark.json').read_text());assert meta['signature']==signature

@@ -13,7 +13,7 @@ import numpy as np
 from contract_capture import flatten,metrics,plain
 from reference_imports import relocate_reference_imports
 from emcd_sim.gui import channeling,forward_pipeline
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.historical_ni import HistoricalNiSites
 from emcd_sim import double_channeling as bw

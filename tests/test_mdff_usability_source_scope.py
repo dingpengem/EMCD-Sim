@@ -60,8 +60,12 @@ def test_positive_and_independent_historical_queries():
 
 
 @pytest.mark.parametrize('path',tuple(scope.READABILITY_RENAMES.get(p,p) for p in scope.ACCEPTED_PATHS)+scope.READABILITY_ADDED+
-    # Result assembly moved from an already protected (not additive) owner.
-    (scope.READABILITY_RENAMES['src/emcd_sim/gui/emcd_forward.py'],))
+    # These services moved from already protected (not additive) owners.
+    tuple(scope.READABILITY_RENAMES[p] for p in (
+        'src/emcd_sim/gui/emcd_forward.py',
+        'src/emcd_sim/gui/generalized_forward.py',
+        'src/emcd_sim/gui/parallel_resources.py'))+
+    ('src/emcd_sim/gui/memory_budget.py',))
 def test_each_candidate_mutation(path):
     rejected({path:(scope.ROOT/path).read_bytes()+b'\nunauthorized bytes\n'},path)
 

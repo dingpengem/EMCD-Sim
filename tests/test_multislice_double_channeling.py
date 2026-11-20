@@ -226,7 +226,7 @@ def test_complete_direct_forward_depth_sum_matches_adjoint(row):
 
 
 def test_memory_budgets_and_available_ram_rejection(row,monkeypatch):
-    from emcd_sim.gui import memory_budget
+    from emcd_sim import memory_budget as memory_budget
     monkeypatch.setattr(memory_budget,'memory_snapshot',lambda:dict(available_ram_mib=32768.,process_rss_mib=100.))
     for budget in (512,1024,2048,4096,8192):
         response,diag=multislice_double_channeling_response(row.elastic,831.4778,[[.28,.28]],0.,

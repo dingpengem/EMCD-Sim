@@ -90,7 +90,7 @@ def test_old_project_roundtrip_preserves_arrays_and_provenance(tmp_path):
 def test_new_calculation_records_convention_and_roundtrips_without_relabeling(tmp_path):
     import numpy as np
     from emcd_sim.structure_geometry import Structure, Settings
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.gui.project_io import load_project, save_project, fingerprints
     settings=Settings(zone=(0,0,1),thickness=.5,beam_cutoff=.9,potential_cutoff=1.8)

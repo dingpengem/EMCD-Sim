@@ -1,6 +1,6 @@
 """Provider contract and exact historical evaluation through common preparation."""
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from dataclasses import replace
 import numpy as np
 import pytest

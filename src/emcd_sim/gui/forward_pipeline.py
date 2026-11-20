@@ -4,7 +4,7 @@ from copy import deepcopy
 from time import perf_counter
 import numpy as np
 from ..cancellation import Cancelled, check_cancelled
-from .forward_settings import MultiSiteForwardSettings
+from emcd_sim.forward_settings import MultiSiteForwardSettings
 from emcd_sim.forward_results import assemble_forward_result
 from ..detector_signals import integrate_detector_block
 from .multisite_integration import (integrate_single_channeling_spectrum,
@@ -51,7 +51,7 @@ def _calculate_uniform(structure,settings,cfg,progress=lambda s:None,cancelled=l
     validate_before_resources(structure,settings,cfg,energy_ev)
     from .propagation import numerical_info,resolve_fft_configuration
     cfg=resolve_fft_configuration(structure,settings,cfg)
-    from .memory_budget import reserve_memory
+    from emcd_sim.memory_budget import reserve_memory
     from ..mdff_providers import prepare_provider
     from ..mdff_providers import provider_energy_grid
     actual_energy=provider_energy_grid(prepare_provider(cfg),cfg,energy_ev)
@@ -59,7 +59,7 @@ def _calculate_uniform(structure,settings,cfg,progress=lambda s:None,cancelled=l
     if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
         raise ValueError('Resources changed since preflight; Run again to review the new effective worker counts.')
     execution_policy=info['execution']
-    from .parallel_resources import bind_allocation
+    from emcd_sim.parallel_resources import bind_allocation
     cfg=bind_allocation(cfg,info)
     check_cancelled(cancelled)
     # Double kernels make their own concurrent reservations. Reserve retained
@@ -200,7 +200,7 @@ def _calculate_multisite(structure,settings,sites,cfg,progress=lambda s:None,
     from ..multisite_spectrum import prepare_multisite_spectrum
     from .propagation import resolve_fft_configuration,numerical_info,compare_methods
     from .channeling import propagate
-    from .memory_budget import reserve_memory
+    from emcd_sim.memory_budget import reserve_memory
     from .channeling import angular_schedule
 
     def stage(message):
@@ -258,7 +258,7 @@ def _calculate_multisite(structure,settings,sites,cfg,progress=lambda s:None,
     info=numerical_info(structure,settings,cfg,hkl=hkl,ionization_sites=sites)
     if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
         raise ValueError('Resources changed after Run admission; review Compute Resources and Run again')
-    from .parallel_resources import bind_allocation
+    from emcd_sim.parallel_resources import bind_allocation
     cfg=bind_allocation(cfg,info)
     elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row)
     model=EMCDSimulation(elastic,{k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),centers)},

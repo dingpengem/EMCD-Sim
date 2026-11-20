@@ -192,7 +192,7 @@ def test_run_detects_source_change_without_prior_gui_event(tmp_path,monkeypatch)
 
 
 def test_historical_ni_missing_xmcd_clears_acknowledgement(tmp_path,monkeypatch):
-    from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
+    from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
     monkeypatch.setenv('EMCD_GUI_WORKSPACE',str(tmp_path/'workspace'))
     application=app();w=MainWindow();errors=[];w.error=errors.append
     try:

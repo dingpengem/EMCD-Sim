@@ -70,7 +70,7 @@ def inventory():
 
 def worker(destination):
     from emcd_sim.structure_geometry import Structure, Settings, elastic_model, orientation, excitation
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.historical_ni import tensors
     from emcd_sim.geometry import electron_wavelength_angstrom,VirtualDetector
     from emcd_sim.elastic import BeamSet

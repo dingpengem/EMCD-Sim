@@ -6,7 +6,7 @@ import numpy as np
 from emcd_sim.crystal import fcc_nickel
 from emcd_sim.projected_geometry import ProjectedGeometry
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.historical_ni import tensors
 from emcd_sim.double_channeling import double_channeling_response,intensities_from_response
 from emcd_sim.multislice_double_channeling import ProjectedFFT,incident_fields,multislice_double_channeling_response

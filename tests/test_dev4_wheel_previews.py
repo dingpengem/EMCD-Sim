@@ -7,7 +7,7 @@ from PySide6 import QtCore,QtGui,QtWidgets,QtTest
 from test_multisite_gui_run import app,window
 from emcd_sim.gui.parameter_wheel import protect_parameter_wheels
 from emcd_sim.gui.group_mdff import GroupMDFFDialog
-from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
+from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
 from emcd_sim.xmcd_source import inspect_xmcd_source
 
 

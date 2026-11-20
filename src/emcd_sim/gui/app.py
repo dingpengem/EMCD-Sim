@@ -649,7 +649,7 @@ def main():
         # These opt-in smoke cases explicitly select the supported Ni preset.
         window.model_box.setCurrentIndex(1 if args.smoke_atomic else 0)
         if args.smoke_atomic:
-            from .forward_settings import NiForwardSettings
+            from emcd_sim.forward_settings import NiForwardSettings
             from .saved_atomic_ui import restore
             restore(window.atomic_editor,NiForwardSettings(model='atomic',l3=852.7,l2=870.0),window.structure)
         else:

@@ -14,8 +14,8 @@ import numpy as np
 from .imported_mdff import ImportedMDFF
 from .ionization_sites import IonizationSites
 from .mdff_edges import selected_samples, validate_selected
-from .gui.material_inputs import ImportedSettings, ProviderSettings
-from .gui.forward_settings import NiForwardSettings
+from emcd_sim.material_inputs import ImportedSettings, ProviderSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from .historical_ni import HistoricalNiProvider
 
 

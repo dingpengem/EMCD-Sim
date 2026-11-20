@@ -12,7 +12,7 @@ from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.project_io import config_from_dict,load_project
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.structure_geometry import Structure, Settings
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from historical_xmcd_test_support import historical_xmcd_source,relocate_historical_xmcd_config
 from runtime_fixtures import apply_global_mdff
 

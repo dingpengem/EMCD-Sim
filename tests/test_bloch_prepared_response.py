@@ -78,7 +78,7 @@ def test_qt_worker_surfaces_executor_failure_without_partial_results(monkeypatch
     from types import SimpleNamespace
     from emcd_sim.gui import calculation_worker
     from emcd_sim.structure_geometry import Settings
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     before={t.ident for t in threading.enumerate() if t.name.startswith('ThreadPoolExecutor')}
     def fail(*args,**kwargs):
         def task(i,cancelled):raise ValueError('Detector task failed: diagnostic error')

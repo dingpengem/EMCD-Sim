@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 from PySide6 import QtWidgets
-from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE, NiForwardSettings
+from emcd_sim.forward_settings import DEFAULT_NI_SOURCE, NiForwardSettings
 from emcd_sim.historical_ni import NiLocalConfig, energy_grid, material_reason, tensors
 from emcd_sim.structure_geometry import Settings, Structure
 from emcd_sim.gui.forward_pipeline import calculate
@@ -99,7 +99,7 @@ class ForwardTests(unittest.TestCase):
         # Admission includes current RSS. A bounded SC calculation can fit
         # 512 MiB in a fresh process; force genuine pressure for this rejection
         # check instead of depending on memory retained by earlier tests.
-        with patch('emcd_sim.gui.memory_budget.memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=512.)):
+        with patch('emcd_sim.memory_budget.memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=512.)):
             with self.assertRaisesRegex(ValueError,'512 MiB'):calculate(self.structure,Settings(beam_cutoff=6.5),replace(self.cfg,grid=97,memory_budget_mib=512))
 
 

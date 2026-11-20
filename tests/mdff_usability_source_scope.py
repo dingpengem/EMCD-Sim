@@ -31,15 +31,16 @@ INTEGRATIONS=('tests/unit_source_snapshots.py','tests/single_element_source_guar
 BOOTSTRAP=INTEGRATIONS+('tests/mdff_usability_source_scope.py','tests/mdff_workflow_registration.py','tests/test_mdff_usability_source_scope.py','tests/fixtures/mdff_usability_scope_v1.json','tests/fixtures/mdff_usability_parent_v1.zip','tests/fixtures/mdff_usability_scope_v2.json','tests/fixtures/mdff_usability_parent_v2.zip','tests/fixtures/mdff_usability_scope_v3.json','tests/fixtures/mdff_usability_parent_v3.zip',MANIFEST_PATH,ARCHIVE_PATH,'scripts/verify_mdff_registration.py','docs/MDFF_USABILITY_REGISTRATION.md')
 TRUST_ROOTS=('tests/mdff_usability_source_scope.py',MANIFEST_PATH,ARCHIVE_PATH)
 READABILITY_PATH='tests/fixtures/physics_readability_current_v1.json'
-READABILITY_SHA256='ecef3f3edfc185b4bcef7c7eb20a5feeba980a3e06cca21fd3cf04d2d571c3f2'
+READABILITY_SHA256='d1717dd9b5e97d7f3a1899fb5250df082c310925e7884e5e7250b3fa31089eaf'
 READABILITY_RENAMES={
+ 'src/emcd_sim/gui/parallel_resources.py':'src/emcd_sim/parallel_resources.py',
  'src/emcd_sim/gui/stage_b.py':'src/emcd_sim/gui/calculation_controls.py',
  'src/emcd_sim/gui/emcd_forward.py':'src/emcd_sim/forward_results.py',
- 'src/emcd_sim/gui/generalized_forward.py':'src/emcd_sim/gui/material_inputs.py',
+ 'src/emcd_sim/gui/generalized_forward.py':'src/emcd_sim/material_inputs.py',
  'src/emcd_sim/gui/provider_preparation.py':'src/emcd_sim/mdff_providers.py',
  'src/emcd_sim/study_geometry.py':'src/emcd_sim/study_presets.py'}
-READABILITY_ADDED=('src/emcd_sim/provenance.py','src/emcd_sim/structure_geometry.py','src/emcd_sim/detector_signals.py','src/emcd_sim/gui/calculation_worker.py',
- 'src/emcd_sim/gui/forward_settings.py','src/emcd_sim/gui/multisite_integration.py',
+READABILITY_ADDED=('src/emcd_sim/memory_budget.py','src/emcd_sim/hardware_resources.py','src/emcd_sim/provenance.py','src/emcd_sim/structure_geometry.py','src/emcd_sim/detector_signals.py','src/emcd_sim/gui/calculation_worker.py',
+ 'src/emcd_sim/forward_settings.py','src/emcd_sim/gui/multisite_integration.py',
  'src/emcd_sim/xmcd_source.py','tests/reference_imports.py',
  # Protected result/export bodies now have these reviewed presentation owners.
  'src/emcd_sim/gui/result_export.py','src/emcd_sim/gui/result_presentation.py',

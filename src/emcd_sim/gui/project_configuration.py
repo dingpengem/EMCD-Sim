@@ -25,7 +25,7 @@ from ..multisite_spectrum import ModeledEdgeWindow, _samples
 from . import project_io as io
 from emcd_sim import structure_geometry as structure_data
 from ..cancellation import Cancelled
-from .material_inputs import ImportedSettings
+from emcd_sim.material_inputs import ImportedSettings
 from ..multisite import validate_site_rows
 
 

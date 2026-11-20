@@ -15,6 +15,15 @@ settings/readouts, logging, persistence and forward orchestration retain their
 current responsibilities. See the
 [Phase 3D-2A report](PHASE3D2A_SCIENTIFIC_DATA_GEOMETRY_EXTRACTION.md).
 
+Phase 3D-2B-1 gives settings records, hardware measurements, worker/BLAS policy
+and the single memory reservation state non-GUI owners: `forward_settings`,
+`material_inputs`, `hardware_resources`, `parallel_resources`, `memory_budget`.
+The four authenticated numerical consumers still import `reserve_memory` through
+`gui.memory_budget`, a required one-name import adapter with no state or logic.
+All other current callers use the real owner. The Ni-derived record hierarchy,
+parameters, schema interpretation and public calculation API are unchanged.
+See the [settings/resource report](PHASE3D2B1_SETTINGS_RESOURCE_OWNERSHIP.md).
+
 ## Reading the calculation
 
 1. `structure_geometry.Structure`, `Settings` and `geometry` supply the complete ASE
@@ -25,8 +34,8 @@ current responsibilities. See the
    belong to `structure_geometry`; previews do not depend on project-file I/O.
    `projected_geometry_from_oriented_crystal` also belongs here and delegates
    to the existing `ProjectedGeometry.from_oriented` implementation.
-2. `gui.forward_settings.NiForwardSettings`, `gui.material_inputs` and
-   `gui.forward_settings.MultiSiteForwardSettings` record existing model and
+2. `forward_settings.NiForwardSettings`, `material_inputs` and
+   `forward_settings.MultiSiteForwardSettings` record existing model and
    sampling requests. A site-group provider reference owns its material source;
    the complete crystal, including elastic-only atoms, owns the elastic potential.
 3. `scattering`, `elastic_providers` and `projected_potential` prepare the IAM.
@@ -74,7 +83,7 @@ sites=...)`. The caller supplies structure and geometry; a missing material
 configuration or missing local assignment is an error. The explicit
 `NiForwardSettings` preset and `study_presets.NickelStudyGeometry` remain outside
 the engine. Source-backed configurations are built by `mdff_providers`;
-`gui.material_inputs` retains only the saved record definitions and their
+`material_inputs` retains only the saved record definitions and their
 existing historical field identities. The provider services no longer reside
 in `gui.provider_preparation` or `gui.provider_direction`. See the
 [Phase 3B report](PHASE3B_HEADLESS_PROVIDER_SIMPLIFICATION.md) for the ownership

@@ -14,7 +14,7 @@ from PySide6 import QtCore,QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg,NavigationToolbar2QT
 from emcd_sim.structure_geometry import Structure
-from .forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
+from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
 from emcd_sim.xmcd_source import inspect_xmcd_source
 from .result_export import export_result
 from ..historical_ni import NiLocalConfig
@@ -309,7 +309,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=False,
             window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()),magnetization=self.material_magnetization)
         cfg=replace(cfg,**shared)
-        from .material_inputs import ImportedSettings, ProviderSettings
+        from emcd_sim.material_inputs import ImportedSettings, ProviderSettings
         if isinstance(cfg,ProviderSettings) and cfg.model=='xmcd':
             declaration=dict(cfg.provider_declaration,magnetization_crystal=list(self.material_magnetization))
             cfg=replace(cfg,provider_declaration=declaration,pair_reversed=False)
@@ -493,7 +493,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             planning_cfg=cfg if sites is not None else replace(cfg,energy_points=len(actual_energy))
             assessment=numerical_info(self.structure,s,planning_cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             self.compute_resources.show_estimate(cfg,assessment)
-            from .parallel_resources import require_supported
+            from emcd_sim.parallel_resources import require_supported
             from emcd_sim.provenance import build_info
             logger=logging.getLogger('emcd_sim.gui')
             logger.info('Run preflight build=%s cutoff=%s beams=%s solver=%s channeling=%s energy=%s grid=%s budget=%s execution=%s memory=%s',
@@ -502,7 +502,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 {k:v for k,v in assessment.items() if k not in ('execution',)})
             for handler in logger.handlers:handler.flush()
             require_supported(assessment['execution'])
-            from .parallel_resources import bind_allocation
+            from emcd_sim.parallel_resources import bind_allocation
             cfg=bind_allocation(cfg,assessment)
             structure=Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings)
             if sites is not None:sites.validate_structure(structure)

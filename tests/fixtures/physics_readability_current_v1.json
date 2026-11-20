@@ -66,7 +66,7 @@
     },
     "packaging/native_acceptance.py": {
       "mode": "canonical",
-      "sha256": "77ee4de3c12b157a447c05b2b0b9e532b74fe52dc4039f922ccda084e33d4fb0"
+      "sha256": "23e0692ca72963060f24033fe6fbd9f5b1de1db3d4edd3eeb8d2bb5dffeaffd6"
     },
     "packaging/windows_version_info.txt": {
       "mode": "canonical",
@@ -82,7 +82,7 @@
     },
     "scripts/benchmark_energy_angular_sampling.py": {
       "mode": "canonical",
-      "sha256": "1ab0fe84e6b609327eb2d9a61f54538cbf050a42124f50f7ed2e3c9cf4ca1bea"
+      "sha256": "f41364b6812fdfa2006ffd295efdff4621fee6af9b5936c729920441b923d733"
     },
     "scripts/benchmark_ms_double_buffers.py": {
       "mode": "canonical",
@@ -90,11 +90,11 @@
     },
     "scripts/diagnose_bw_cutoff_crash.py": {
       "mode": "canonical",
-      "sha256": "11b87460c9bab9f56d526ba1a66a205a64def0544d24e0aa032a8b32fd898592"
+      "sha256": "c0b7ba377e90e234c7de0518a20413ad03b389f269d9907ac9755df170fd042b"
     },
     "scripts/gui_stage_b_validation.py": {
       "mode": "canonical",
-      "sha256": "f1fa2bebca655cbada73b1c16035f407078f829b0c43a38c6fff8b57c759b485"
+      "sha256": "2739607e81c4ce25c21bd89be87246952ad8cdd504ca2bd20602c7e9244b1537"
     },
     "scripts/gui_stage_d_validation.py": {
       "mode": "canonical",
@@ -110,7 +110,7 @@
     },
     "scripts/ni_117_emcd_validation.py": {
       "mode": "canonical",
-      "sha256": "9a4b3ffe1b770508c531e68e18f5ca01cccc11a632a254579973792210770f64"
+      "sha256": "c49ac05507702be328b8d505834aa8e8d02673cb4878742575f4d409fdaa4c00"
     },
     "scripts/ni_117_final_symmetry.py": {
       "mode": "canonical",
@@ -118,19 +118,19 @@
     },
     "scripts/ni_117_historical_double.py": {
       "mode": "canonical",
-      "sha256": "aa0ab48f8b42e47a2a078bee8f37298b2d0b47ed57e85c7937251cc726f21663"
+      "sha256": "473bed0413ae4fc7d265ddb0b2cc74fe5c5e8a270304605224cc3b93bfd2577f"
     },
     "scripts/ni_117_magnetization.py": {
       "mode": "canonical",
-      "sha256": "da1debf7dd798a86ab094616b90cea5cba7b089eb1fd53bf61d7f1d7a4eba3b1"
+      "sha256": "4e51c5a367dcecd644aba716734e95779fe25af9ae1cf2a142bb86a8c287764b"
     },
     "scripts/ni_117_root_cause.py": {
       "mode": "canonical",
-      "sha256": "a56cc57bd3a8303c1337aaffd35d5ff5481a6a1da0bdd8e459bebc1af9c786e0"
+      "sha256": "b88191dab3c7cb553337f9573f0525295ae51e648524560af8f0843d76584263"
     },
     "scripts/profile_ms_double.py": {
       "mode": "canonical",
-      "sha256": "b156a5aad16b64313a47a260916758b3c7e905bc9577dedc6be4710c055eb72c"
+      "sha256": "03f1286474d025c2b75fd748312f9ab0ec5d675ae03fac011e1384c6c73cdeb8"
     },
     "scripts/research/validate_single_element_emcd.py": {
       "mode": "canonical",
@@ -142,7 +142,7 @@
     },
     "scripts/validate_general_zolz.py": {
       "mode": "canonical",
-      "sha256": "2b082a97e44fd534342b22dab18294eca7931cc91228acd777340370b71bafa6"
+      "sha256": "7ce842c7197a8d3bdd20b46b18ef10c6b4b1b78a392f75b70592dbeb5fa3c28c"
     },
     "scripts/validate_generalized_emcd.py": {
       "mode": "canonical",
@@ -150,7 +150,7 @@
     },
     "scripts/validate_generalized_outgoing.py": {
       "mode": "canonical",
-      "sha256": "c67a70a8dbcbcfb6d8ae66f29c81da11d44c0bc3e5fe0e2e7bf8bd53ce038554"
+      "sha256": "90b63b2c3d9330ec35aaa51749b42a86c40ba6121b779bd7364566ece34c530a"
     },
     "scripts/validate_physics_correction_ni017.py": {
       "mode": "canonical",
@@ -158,7 +158,7 @@
     },
     "scripts/xmcd_native_walkthrough.py": {
       "mode": "canonical",
-      "sha256": "586484a0bd6b8d9b0835537ae88ebc62131b17d313c23a15b2ff2ffa8bf2842a"
+      "sha256": "d4033afff253b39660cb15751c8cf8ac59a38191da5b1ae354f0c33a8748bdf8"
     },
     "src/emcd_sim/__init__.py": {
       "mode": "canonical",
@@ -174,7 +174,7 @@
     },
     "src/emcd_sim/gui/app.py": {
       "mode": "canonical",
-      "sha256": "54588c475337882b07d6567cacd2a8234a42f389eb4f39c3bad9f83c0783f8f8"
+      "sha256": "6656d4dfd9d0010a9b6fab985116dfbc30c654e2d1f85c9c4b83f33fe06d9816"
     },
     "src/emcd_sim/gui/atomic_editor.py": {
       "mode": "canonical",
@@ -182,19 +182,19 @@
     },
     "src/emcd_sim/gui/calculation_controls.py": {
       "mode": "canonical",
-      "sha256": "d03e5e2d12d354a7b236dff686f19993935c3d6399c14f7f14d275457773b67e"
+      "sha256": "9a9b5459ef8a3dd1d0bee54fead2563e6d4ddefb6c60046d751678d25dce735a"
     },
     "src/emcd_sim/gui/calculation_worker.py": {
       "mode": "canonical",
-      "sha256": "99cd19a2b766f8062c38fdb2ca609f735503e5f1d4c916613130d17141eefafd"
+      "sha256": "0b3507d1fa7cdc54c36fbe7fd24309bcdde67b10ac74ea14495170bb45d09a54"
     },
     "src/emcd_sim/gui/cancellation_acceptance.py": {
       "mode": "canonical",
-      "sha256": "f9f5d4523c97ff53ac7b74ee43e6d9740e4cd2d0afa3a9143146ab11e877e1e5"
+      "sha256": "80d61ce3aa4c2c62117e327b2c62f76e59c9c97094c57836171687ac8a9fbdfd"
     },
     "src/emcd_sim/gui/channeling.py": {
       "mode": "canonical",
-      "sha256": "34ec2f30457fb9821c48e6fbd0ef720880b55ff7fed3de8124c8529e1786b4bf"
+      "sha256": "1691585a6379968fa3518a01a5f35eb6c00d66c3227ce9da85d35420caec3b0b"
     },
     "src/emcd_sim/gui/compare_results.py": {
       "mode": "canonical",
@@ -202,15 +202,11 @@
     },
     "src/emcd_sim/gui/desktop_acceptance.py": {
       "mode": "canonical",
-      "sha256": "4faf296ce9ff48d8005dc751a59edb842d54abe900b018cbe473576482445a75"
+      "sha256": "e52318148cfe64be56f925e4f6163f368bf417530bdfadeac65b7a83e7bd2939"
     },
     "src/emcd_sim/gui/forward_pipeline.py": {
       "mode": "canonical",
-      "sha256": "272059cb98010e722d69317249a96500179e8b1d8a1047f9243f90f279857f8c"
-    },
-    "src/emcd_sim/gui/forward_settings.py": {
-      "mode": "canonical",
-      "sha256": "d44ca2ea40da193db3c409c4a40943f489fad50b26efcbea87585d90d1ae19b1"
+      "sha256": "3d5eac200125c265601aa2f808ca3e975ad9217d7b142a472dd4f483256055fd"
     },
     "src/emcd_sim/gui/geometry.py": {
       "mode": "canonical",
@@ -224,17 +220,13 @@
       "mode": "canonical",
       "sha256": "3a22cd5abc87fbf8337dec6cddf1ad207d0c2b3ce686a72a5178700bad5a1c2a"
     },
-    "src/emcd_sim/gui/material_inputs.py": {
-      "mode": "canonical",
-      "sha256": "f3cfa3a9801e86438c7611e64f939c2e6a8f8f4e08cfa701023c166a5f600776"
-    },
     "src/emcd_sim/gui/mdff_usability.py": {
       "mode": "canonical",
       "sha256": "885294240d854647fc3c59fc21da669af4404afc180273130bb113749a52d1f2"
     },
     "src/emcd_sim/gui/memory_budget.py": {
       "mode": "canonical",
-      "sha256": "b354d2b535f6d6c24a1d8c38cecb1c8efb249393c791d0d7d6d75f97aba275d5"
+      "sha256": "0b6bb16ce5d1490ed7f9ac0cbdd7ac42c30bce885724fd74b0aaa57ebfa35395"
     },
     "src/emcd_sim/gui/multisite_integration.py": {
       "mode": "canonical",
@@ -246,23 +238,19 @@
     },
     "src/emcd_sim/gui/parallel_acceptance.py": {
       "mode": "canonical",
-      "sha256": "d43eb3f442e7acd86eb3909fad50db411806ef3002ce76d1b239c04516ee6e41"
-    },
-    "src/emcd_sim/gui/parallel_resources.py": {
-      "mode": "canonical",
-      "sha256": "9756844636cd21e8551194aa12abb128376364b6acd10309a20adf5e15e86c50"
+      "sha256": "3c653d997d04b03454f2db13790ea1bfe1f8c91981464f137b1c113611d9e835"
     },
     "src/emcd_sim/gui/project_io.py": {
       "mode": "canonical",
-      "sha256": "c417a6bd9b9a9568bd17fd5d244637f848b5f59698bd5ab350bbd0f245122632"
+      "sha256": "56456f1dcf0a7d60d4423ef04a8f33b17d851cc7694c4ca9778992a0b064fc7c"
     },
     "src/emcd_sim/gui/propagation.py": {
       "mode": "canonical",
-      "sha256": "faaa789feba7064a613607b913ce4c0378f57fb5a9091caf929601234d9e7baa"
+      "sha256": "a5c359512462bf66b21dc2b733c9af56896e6591f9b318b75d271fb951b37f0b"
     },
     "src/emcd_sim/gui/provider_ui.py": {
       "mode": "canonical",
-      "sha256": "77e29c30214b9f2d829608e0607e388d00a3f3086bcd154f7320d0d9240fa919"
+      "sha256": "945783f5ca8fc6c63afa3a5b848cce89344d33c719a1193b5fb24f4ce1294263"
     },
     "src/emcd_sim/gui/responsive.py": {
       "mode": "canonical",
@@ -274,7 +262,7 @@
     },
     "src/emcd_sim/gui/results_browser.py": {
       "mode": "canonical",
-      "sha256": "aedf41203016f1c3277af64f7a0a66dea5bfddf6c3ff91f528a2afc8e3bfc038"
+      "sha256": "59c586d42a2477f7ac0942e0b789a51c325c4f07a53195f349665dfbe3cf621a"
     },
     "src/emcd_sim/gui/runtime.py": {
       "mode": "canonical",
@@ -286,7 +274,7 @@
     },
     "src/emcd_sim/gui/scientific_acceptance.py": {
       "mode": "canonical",
-      "sha256": "01d003bce3b20ab9537126eaecd221828529d1fd295f8d1fddd26133d1c875dd"
+      "sha256": "482418db59d49c23fb474ce3f8c2db48c56c02f3dc8ec7f4811aeb489441b48c"
     },
     "src/emcd_sim/gui/tensor_spectrum_preview.py": {
       "mode": "canonical",
@@ -298,11 +286,11 @@
     },
     "src/emcd_sim/gui/xmcd_preview.py": {
       "mode": "canonical",
-      "sha256": "83f53215a5d521addb1680c2ee5e201f7fefaebdec33f9f79af47fa57c16d29d"
+      "sha256": "3a96ec80eced49d12bdbc9d85922e4325e1316227b852eec3fdd4c32ad870211"
     },
     "src/emcd_sim/mdff_providers.py": {
       "mode": "canonical",
-      "sha256": "78dc5309d535d93b0abce488247f4844fc1763d3392f367738a4c49fdb0bda45"
+      "sha256": "a1a9b6a5c1e209bad67c8fde7fc1466a59863ac62fdb260d24de9c1c87917a70"
     },
     "src/emcd_sim/multislice_double_channeling.py": {
       "mode": "canonical",
@@ -314,7 +302,7 @@
     },
     "tests/conftest.py": {
       "mode": "canonical",
-      "sha256": "714b444d00b1b60efac4a83220917a043cbb2df962d74365108073e364935545"
+      "sha256": "c4db33ff4a16e45c7af01d4857ecaaf9102e7f4e723b1a5af25ef6203fae6370"
     },
     "tests/mdff_workflow_registration.py": {
       "mode": "canonical",
@@ -330,7 +318,7 @@
     },
     "tests/reference_imports.py": {
       "mode": "canonical",
-      "sha256": "349709019c7254fe29cb5d1d17c590fbb42f861f424306ca61b16713fc87d24b"
+      "sha256": "c46285d61895cbdb813007f84723494f57929ddc2ea905fa460ec81a898df890"
     },
     "tests/runtime_fixtures.py": {
       "mode": "canonical",
@@ -342,7 +330,7 @@
     },
     "tests/test_angular_resolution.py": {
       "mode": "canonical",
-      "sha256": "6f0c8157cdf15115c39135a74c0fcf19150e5f2993e862db7794b05aa254afd7"
+      "sha256": "c57abe7d99cc262593fdfcce4a208f9a20db46306bcd97ba7ca5c612e3e38768"
     },
     "tests/test_atomic_ionization.py": {
       "mode": "canonical",
@@ -354,7 +342,7 @@
     },
     "tests/test_automatic_numerical_settings.py": {
       "mode": "canonical",
-      "sha256": "b35ccb6ab87e946c29e3c22767758f142dfdd8f2c2eb60244670f2477300dd86"
+      "sha256": "95baf55c4c379451ee3f7a5b6eb3ebdfa85fcd6d1999671d20feb777e202f84b"
     },
     "tests/test_bcc_fe_cif_gui.py": {
       "mode": "canonical",
@@ -362,11 +350,11 @@
     },
     "tests/test_bw_native_guard.py": {
       "mode": "canonical",
-      "sha256": "60e77a454e156b7140a2f2f83736f7ec9bbbd2afaaa3c35c4abbc666f58c4ccb"
+      "sha256": "b7011819923997c47f5746613090b67ae0f140a25d6002c54b427bc94affdffe"
     },
     "tests/test_calculation_api.py": {
       "mode": "canonical",
-      "sha256": "c74c0fe03780bc0b090c05aca1d22f2a546f2cb0f8f790a2d53161099ecd0b52"
+      "sha256": "cd33c081b29fb2ffd6d22c66598a0cd85e8cf44795b12b33143d70dae9d99bab"
     },
     "tests/test_detector_signals.py": {
       "mode": "canonical",
@@ -378,35 +366,35 @@
     },
     "tests/test_double_cancellation.py": {
       "mode": "canonical",
-      "sha256": "bad0339b1faa77aa3b700cfa282b8d3c3815279a467274bd1d56cfb6fdca3bdd"
+      "sha256": "ee721971dd6a565440d936b0a23f6d9276f1b46857bf3af6c527e64385d69972"
     },
     "tests/test_energy_angular_schedule.py": {
       "mode": "canonical",
-      "sha256": "82aea236be4df8dfe10f85eb00cd9f913ae736f6e7f1b99b3187ef464286f567"
+      "sha256": "2dd58507096b1c5d35321d572f5935eab5c121819fef43fc73b9201286dc258f"
     },
     "tests/test_energy_resolved_double_channeling.py": {
       "mode": "canonical",
-      "sha256": "8995edaba48805e744996a276a3c802b12864e8abd033072c527f994d81ad9d1"
+      "sha256": "5db55a8635199dee4fd1c077bf971ec9bdf4a165fc012a3566b27f8e615d3b0e"
     },
     "tests/test_generalized_emcd_gui.py": {
       "mode": "canonical",
-      "sha256": "a90bda832c7f9bf92b1fbc6d9ad2c13ed6300ce00278c374a2572812da719989"
+      "sha256": "066979c052fdf19c6e87f57935443b1a681416c94c9a1df09b6c068e3093e174"
     },
     "tests/test_generalized_emcd_integration.py": {
       "mode": "canonical",
-      "sha256": "8d7470b73f795588f440417a1a68f38b3957448ddc5a93b9f692e4c0042d1ca0"
+      "sha256": "ed55a6457e124044b6ae7fddf117473b27cd9e4e09f6e4843e8c06a92ac85dc4"
     },
     "tests/test_generalized_merge_review.py": {
       "mode": "canonical",
-      "sha256": "e2dc9a60bff27bb5c41a85b1080f24ad637c231c0ce220f4000a41642de077a5"
+      "sha256": "2a016efe54e75986ecf2f23fe29f44d0b729307f5f729050c73e9ef1adcdd3fa"
     },
     "tests/test_gui_component_display.py": {
       "mode": "canonical",
-      "sha256": "41f251fac1ad7dfe8d024496473403b65cc341d553e36f4ef3d605f5bc183a21"
+      "sha256": "68974288c34b7cf4b439771938a41640f8c5ef8da24e3ddb50cfea546648a5ae"
     },
     "tests/test_gui_double_channeling.py": {
       "mode": "canonical",
-      "sha256": "9b52fb01a41556ac1073e611ad1b8b5726d4676479babd4d298f633761b72cd0"
+      "sha256": "e28f9f0adb46148836ea7c8a5dcdf037c6941dd259cbc455c8b9eab906b99ef2"
     },
     "tests/test_gui_responsive.py": {
       "mode": "canonical",
@@ -414,15 +402,15 @@
     },
     "tests/test_gui_stage_b.py": {
       "mode": "canonical",
-      "sha256": "2fb199fc0d0c7d870aa1b9ef7e5e856c9334534fa4b4be8bce40617bfd0a6ab3"
+      "sha256": "5013736e104897103e1d75e445a71617e47519be40bd654607d721c64a833945"
     },
     "tests/test_gui_stage_c.py": {
       "mode": "canonical",
-      "sha256": "4ec12299c0f6bbe5aa5a037ed5fe9cf0199c506bcdce1b1555130d0d0f137a5a"
+      "sha256": "bb36b5d51c8071fa6919edc0dd508d45b91b51a780b73e56be50052ae5b15fb2"
     },
     "tests/test_gui_stage_d.py": {
       "mode": "canonical",
-      "sha256": "5d7d5263badbed627e679a72e2ac63dbf7e31738f7f5806e2700b773f3571919"
+      "sha256": "8a466eb9513347357338ba824f84338dccab372fc07668a34a03eb94d5aace4c"
     },
     "tests/test_gui_stage_f.py": {
       "mode": "canonical",
@@ -450,35 +438,35 @@
     },
     "tests/test_mdff_usability_source_scope.py": {
       "mode": "canonical",
-      "sha256": "d601a10568a8635485126f55d45574272b8c37b90784f1c42371ff0c6c365b2c"
+      "sha256": "b67808f8ec32ccbb30fd0922c84c0450528609f502199eaf2a0467f98df6d76e"
     },
     "tests/test_memory_budget.py": {
       "mode": "canonical",
-      "sha256": "28ab24982345807f10aacb3e8e81b35a163a617a85b87144fc2364c04ca72294"
+      "sha256": "6aa48f14aa728bc826d0a691d9cfe0642dd2ec47de42a4b8fb73814743898b9c"
     },
     "tests/test_multislice_slice_step_range.py": {
       "mode": "canonical",
-      "sha256": "7ff7e9b6c81184158a9702688df20d797639e0b4f99006ed341e293c44eb294d"
+      "sha256": "bcf8a8393867192ae5dde3ab1ca79ed72fae3a64221aa5ee1d2c685cf8c37db6"
     },
     "tests/test_ni_117.py": {
       "mode": "canonical",
-      "sha256": "acf6c961c4661f2c606ca56033d276dfc205d50f7140f6bb5edc31d2029daddb"
+      "sha256": "5d37d7ef4a841ebd827a4005c21b3fc78ea5a66aae1c4739c5295d7c6bae739b"
     },
     "tests/test_ni_117_final_symmetry.py": {
       "mode": "canonical",
-      "sha256": "58ac470bbaf2197f699b97ae16707284d76c1fb5fe107bd5ce9b09f367147e92"
+      "sha256": "39fe9076a57f44fda05d4ca3e22c0c57354e905bce8354168e26941fbe3b2a8c"
     },
     "tests/test_ni_117_magnetization.py": {
       "mode": "canonical",
-      "sha256": "181b38353ff55d1034a447c80c00e1d18245b73e175e0adea88ec130e64bccd5"
+      "sha256": "8ef9d514f4b00faa3f835baf45637424d7af8397c43992ab8c6e17a75e540135"
     },
     "tests/test_parallel_resources.py": {
       "mode": "canonical",
-      "sha256": "ff2b140f49d1cb9ae43140e844f5ad24d678be82701520f11d53a8e1b4be2bda"
+      "sha256": "08d2a79b9214dd6dfbaf60965e6d3851be70a050c593f46a41de488cde910b3b"
     },
     "tests/test_part1c_provider_interface.py": {
       "mode": "canonical",
-      "sha256": "a17bea97c4c3e2fc6ff1ed8f0cef832e1c77950fceced9e9825b23a7a4437586"
+      "sha256": "b83fab62dc2324428cfe2820fb7c67c4674f61cbc28c41298cf93bc03e7a5d0d"
     },
     "tests/test_part1c_refactor.py": {
       "mode": "canonical",
@@ -502,7 +490,7 @@
     },
     "tests/test_single_element_gui.py": {
       "mode": "canonical",
-      "sha256": "dcd0f96702d5d6e0e7fc5dce59d85b6dd647a2daa9ede83015ce7dee6f3d66ca"
+      "sha256": "5b46122e896c4d48c2a0010a6453b21925d223914649dd04d5233b314920523c"
     },
     "tests/test_single_element_invariance.py": {
       "mode": "canonical",
@@ -510,35 +498,35 @@
     },
     "tests/test_single_element_ni_compatibility.py": {
       "mode": "canonical",
-      "sha256": "6245071f5e727d1a4f3d90ccc98171e77e64d0e101e469c55e2860535b02bae4"
+      "sha256": "4eebf7cdc5d94f64bfe909344580a63b3d012f7ed0e5e3238b7a9861e9bc78bc"
     },
     "tests/test_solver_settings_ui.py": {
       "mode": "canonical",
-      "sha256": "e548fd84ff66a3b90278c5f0ab17b92737b2e6b231dd12dbb3e0ce87d9406fc1"
+      "sha256": "860e92fbb6f295a16a093593eed4f1cc248cd01f6b65ec5a6379c8bc20b01f89"
     },
     "tests/test_unified_elastic_acceptance.py": {
       "mode": "canonical",
-      "sha256": "b30db19eaef570a1a89420888a04c633728d989d21538c42771d6fe5f2c61f16"
+      "sha256": "30a769f92cbbba531610d02f4a13075c5d9fdbbba703764debd28c675ff7f948"
     },
     "tests/test_unified_mdff_providers.py": {
       "mode": "canonical",
-      "sha256": "e2667d423b4b97708a0cd777d53f922632acc585fc9193336f990bd483fe802f"
+      "sha256": "07a2cd83d4086c3df54bd4a1e5201e3e3a30a86ab809c164b42e21df4bbe41df"
     },
     "tests/test_unified_provider_gui.py": {
       "mode": "canonical",
-      "sha256": "1d8d3111432f058b7c14872bf058fd38316da60e6c5b8c752e4184becc0cfa56"
+      "sha256": "b63e185a2807fb39d751178fe519fe77f3fd3e9e55d94aa0436ac574a32bab82"
     },
     "tests/test_unit_labels.py": {
       "mode": "canonical",
-      "sha256": "267d4f3cf10e37aedbf50edade3fc3358c594fec15a7f304d9cd6ee4ef9afc11"
+      "sha256": "ba439e0da246fe0cf32dda945ea1a2ac8e06486b99cd5abbd51e6ecddbf74b0b"
     },
     "tests/test_v060_presentation.py": {
       "mode": "canonical",
-      "sha256": "02549a96d5ce9a9003412f071217b43bb5b61e4bce5ab2de44579f9f5b9bde17"
+      "sha256": "041ae0928814a78b6b4057b8ecc8223f1c04724d899d4a2c65eaab99205ccab5"
     },
     "tests/test_v070_metadata.py": {
       "mode": "canonical",
-      "sha256": "5e7b1356f88068b01d03cdbd1d6150ed50920f49fc3ff81e921d94548c3a8b11"
+      "sha256": "4f1d602b12676b4196f4c048a077dfe345a46f8164e4e843768e7fedd221142a"
     },
     "tests/test_xmcd_usability_preview.py": {
       "mode": "canonical",
@@ -658,7 +646,7 @@
     },
     "tests/test_multislice_double_channeling.py": {
       "mode": "canonical",
-      "sha256": "1bbdc36076d5bd79bfc76e37950ca09bcf4021ecb87f957c636e3304c41be7f3"
+      "sha256": "a45467efb516c7734031ba0b3f74d77d5a2f5ce6cc9cda68f790308e15963378"
     },
     "tests/test_prb_benchmark.py": {
       "mode": "canonical",
@@ -671,6 +659,26 @@
     "tests/test_bcc_fe_gui_source_scope.py": {
       "mode": "canonical",
       "sha256": "acc33438e069d345cce14a09e525a8fae8c7f3a302cb26df7fd6a9c02c2d14bc"
+    },
+    "src/emcd_sim/hardware_resources.py": {
+      "mode": "canonical",
+      "sha256": "0874ee35a229854954ae3a133aa4eed5df5fca27d4c4035f48fd6084e5d57ed5"
+    },
+    "src/emcd_sim/memory_budget.py": {
+      "mode": "canonical",
+      "sha256": "b354d2b535f6d6c24a1d8c38cecb1c8efb249393c791d0d7d6d75f97aba275d5"
+    },
+    "src/emcd_sim/parallel_resources.py": {
+      "mode": "canonical",
+      "sha256": "4bcda35e1460794c5bc11cc99cb4602410c6c76d8c4e0fac74d24f5321240fc9"
+    },
+    "src/emcd_sim/forward_settings.py": {
+      "mode": "canonical",
+      "sha256": "52f1cd986d5a5a255fa4389b6b3a608010477c12d7503928093a6ac610cdee31"
+    },
+    "src/emcd_sim/material_inputs.py": {
+      "mode": "canonical",
+      "sha256": "f3cfa3a9801e86438c7611e64f939c2e6a8f8f4e08cfa701023c166a5f600776"
     }
   },
   "historical_registration": "effb755b7ed907cb2b8d386c1b7b67d9c8c53ffc",
@@ -841,9 +849,10 @@
   },
   "production_source": "c2790aa0820581775c84f28b7033bcc376b9a44f",
   "renamed": {
+    "src/emcd_sim/gui/parallel_resources.py": "src/emcd_sim/parallel_resources.py",
     "src/emcd_sim/gui/stage_b.py": "src/emcd_sim/gui/calculation_controls.py",
     "src/emcd_sim/gui/emcd_forward.py": "src/emcd_sim/forward_results.py",
-    "src/emcd_sim/gui/generalized_forward.py": "src/emcd_sim/gui/material_inputs.py",
+    "src/emcd_sim/gui/generalized_forward.py": "src/emcd_sim/material_inputs.py",
     "src/emcd_sim/gui/provider_preparation.py": "src/emcd_sim/mdff_providers.py",
     "src/emcd_sim/study_geometry.py": "src/emcd_sim/study_presets.py"
   },

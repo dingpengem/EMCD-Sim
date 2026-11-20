@@ -77,7 +77,7 @@ def test_worker_logs_inputs_and_last_stage_without_changing_results(monkeypatch,
     from dataclasses import replace
     from emcd_sim.gui.calculation_worker import EMCDWorker
     from emcd_sim.structure_geometry import Structure, Settings
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     expected=dict(metadata={},methods={})
     def calculate(structure,settings,cfg,progress,cancelled):
         progress('outgoing eigenproblem diagnostic');return expected

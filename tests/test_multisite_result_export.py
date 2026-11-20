@@ -10,7 +10,7 @@ import pytest
 from PySide6 import QtCore, QtWidgets, QtTest
 
 from emcd_sim.crystal import Crystal
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.gui.result_export import export_multisite_spectra
 from emcd_sim.gui.multisite_results import SPECTRAL_KEYS
 from test_multisite_result_selection import app, view, select, stored_result

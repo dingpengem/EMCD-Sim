@@ -16,7 +16,7 @@ from emcd_sim.mdff_providers import load_provider
 from emcd_sim.gui import project_io as io
 from emcd_sim import structure_geometry as structure_data
 from emcd_sim.structure_geometry import Structure
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.gui.multisite_results import SPECTRAL_KEYS, spectral_series, covered_segments
 from emcd_sim.gui.result_presentation import draw_multisite_panel
 from emcd_sim.provenance import PHYSICS_CONVENTION
@@ -229,7 +229,7 @@ def test_energy_exclusions_and_portable_manual_sources(tmp_path,monkeypatch):
 def test_embedded_atomic_evidence_uses_existing_portable_source_fallback(tmp_path,monkeypatch):
     from PySide6 import QtWidgets
     from emcd_sim.gui.atomic_editor import AtomicParameterEditor
-    from emcd_sim.gui.material_inputs import ProviderSettings
+    from emcd_sim.material_inputs import ProviderSettings
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     editor=AtomicParameterEditor(lambda:tmp_path)
     try:

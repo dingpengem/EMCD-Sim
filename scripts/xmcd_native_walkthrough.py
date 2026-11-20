@@ -8,7 +8,7 @@ import traceback
 from unittest.mock import patch
 from PySide6 import QtCore, QtTest, QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
+from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
 from emcd_sim.gui.project_io import save_project
 
 ROOT=Path(__file__).resolve().parents[1]

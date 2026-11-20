@@ -54,8 +54,8 @@ def test_snapshot_guard_rejects_unreviewed_fixture_changes(component):
 
 @pytest.mark.parametrize('name,before,after',[
     ('structure_geometry.py','.5*lam*','.6*lam*'),
-    ('gui/forward_settings.py','slice_step: float=2.','slice_step: float=3.'),
-    ('gui/forward_settings.py',"worker_mode: str='automatic'","worker_mode: str='manual'"),
+    ('forward_settings.py','slice_step: float=2.','slice_step: float=3.'),
+    ('forward_settings.py',"worker_mode: str='automatic'","worker_mode: str='manual'"),
     ('structure_geometry.py','np.asarray(tilt)*.001/','np.asarray(tilt)*.002/'),
     ('gui/project_io.py',"manifest.get('schema_version')","manifest.get('renamed_schema')"),
     ('gui/app.py','self.show_laue.setChecked(True)','self.show_laue.setChecked(False)'),
@@ -100,7 +100,7 @@ def test_unit_changes_give_identical_bw_ms_single_double_numerical_arrays():
 def test_current_reciprocal_display_strings_and_legacy_project_keys():
     from mdff_usability_source_scope import READABILITY_RENAMES
     paths={READABILITY_RENAMES.get('src/emcd_sim/'+name,'src/emcd_sim/'+name) for name in FILES}
-    paths.add('src/emcd_sim/gui/forward_settings.py')
+    paths.add('src/emcd_sim/forward_settings.py')
     for name in sorted(paths):
         tree=ast.parse((ROOT/name).read_text(encoding='utf-8'))
         documentation={item.body[0].value for item in ast.walk(tree)
@@ -112,7 +112,7 @@ def test_current_reciprocal_display_strings_and_legacy_project_keys():
     from emcd_sim.structure_geometry import Settings
     import emcd_sim
     assert Path(emcd_sim.__file__).resolve().is_relative_to(ROOT/'src')
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.gui.project_io import settings_from_dict,config_from_dict
     s=Settings();cfg=NiForwardSettings()
     assert settings_from_dict(json.loads(json.dumps(asdict(s))))==s

@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 
 from emcd_sim.cancellation import Cancelled,check_cancelled
-from emcd_sim.gui import memory_budget
+from emcd_sim import memory_budget as memory_budget
 from emcd_sim.gui.channeling import map_detector_batches
-from emcd_sim.gui.parallel_resources import calculation_blas_guard,_blas_runtimes
+from emcd_sim.parallel_resources import calculation_blas_guard, _blas_runtimes
 from emcd_sim.gui.forward_pipeline import calculate
 from test_multisite_forward import system,configuration
 from test_multisite_parallel import compare
@@ -68,7 +68,7 @@ def test_resident_reserved_arrays_are_not_added_to_rss_twice(monkeypatch):
 
 @pytest.mark.parametrize('sampling,requested,actual',[('edges',241,2),('uniform',9,11)])
 def test_saved_energy_diagnostics_distinguish_request_from_evaluated_grid(tmp_path,sampling,requested,actual):
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.structure_geometry import Structure, Settings
     from emcd_sim.gui.project_io import save_project,load_project

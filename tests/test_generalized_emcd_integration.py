@@ -65,7 +65,7 @@ def test_generalized_117_saved_gui_export_retains_raw_relative_data(tmp_path):
 @pytest.mark.parametrize('channel',['single','double'])
 def test_general_ms_only_never_uses_bw_wavefields(zone,target,cutoff,channel):
     from unittest.mock import patch
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.gui.forward_pipeline import calculate
     geo=ProjectedGeometry.from_crystal(fcc_nickel(),zone,target);g=geo.crystal.g_vector(target)[0]
     s=Settings(zone=zone,target=target,voltage=200,thickness=.5,tilt=(geo.bragg_tilt(),0),beam_cutoff=cutoff,potential_cutoff=3.8)
@@ -80,7 +80,7 @@ def test_general_ms_only_never_uses_bw_wavefields(zone,target,cutoff,channel):
 
 def test_validation_driver_resumes_json_checkpoint_without_solver(tmp_path,monkeypatch):
     import importlib.util
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     path=Path(__file__).parents[1]/'scripts/validate_generalized_emcd.py'
     spec=importlib.util.spec_from_file_location('generalized_resume_test',path)
     m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)

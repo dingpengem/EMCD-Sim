@@ -10,7 +10,7 @@ from test_mdff_workspace_participation import configure_fe
 from test_group_mdff import source
 from emcd_sim.gui import app as gui
 from emcd_sim.structure_geometry import Settings, Structure, geometry
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.numerical_settings import resolve_parameters
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration

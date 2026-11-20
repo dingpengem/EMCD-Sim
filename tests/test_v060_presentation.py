@@ -19,7 +19,7 @@ def result():
     saved=Path('outputs/windows_beta_acceptance/source_native/double_both_project')
     if (saved/'project.json').exists():return load_project(saved)
     from emcd_sim.gui.forward_pipeline import calculate
-    from emcd_sim.gui.forward_settings import NiForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.structure_geometry import Structure, Settings
     return calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),
         NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',energy_points=9,grid=9,depth=9,subpixels=16,fft_grid=24,angular_maps=True))

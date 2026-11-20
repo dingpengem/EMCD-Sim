@@ -66,7 +66,7 @@ def run(output, historical_project=None):
             w.validate_xmcd(show_error=False);w.reference_ni.setChecked(True)
         elif model=='ni-atomic':
             from emcd_sim.gui.saved_atomic_ui import restore
-            from emcd_sim.gui.forward_settings import NiForwardSettings
+            from emcd_sim.forward_settings import NiForwardSettings
             restore(w.atomic_editor,NiForwardSettings(model='atomic',l3=852.7,l2=870.0),w.structure)
         elif model=='imported':
             w.manual_model.setCurrentIndex(0);w.constant_input_mode.setCurrentIndex(1)

@@ -33,7 +33,7 @@ class EMCDWorker(QtCore.QThread):
         if requested:self.cancellation_times.setdefault('acknowledged',time.perf_counter())
         return requested
     def run(self):
-        from .parallel_resources import calculation_blas_guard,native_backend_info
+        from emcd_sim.parallel_resources import calculation_blas_guard, native_backend_info
         logger=logging.getLogger('emcd_sim.gui')
         try:
             with calculation_blas_guard(self.cancelled) as native:

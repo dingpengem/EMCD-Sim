@@ -19,9 +19,9 @@ from emcd_sim.mdff_providers import load_provider
 from emcd_sim.gui import project_io as io
 from emcd_sim import structure_geometry as structure_data
 from emcd_sim.structure_geometry import Structure, Settings
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
+from emcd_sim.forward_settings import MultiSiteForwardSettings
 from emcd_sim.mdff_providers import settings_for_source, settings_for_provider
 from single_element_helpers import document
 

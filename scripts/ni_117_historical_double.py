@@ -8,7 +8,7 @@ from dataclasses import replace
 import argparse
 import numpy as np
 from emcd_sim.structure_geometry import Structure, Settings, orientation, elastic_model
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.historical_ni import tensors
 from emcd_sim.double_channeling import double_channeling_response,intensities_from_response,prepare_incoming_bloch
 from emcd_sim.geometry import electron_wavelength_angstrom

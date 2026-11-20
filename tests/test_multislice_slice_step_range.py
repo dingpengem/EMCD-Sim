@@ -8,7 +8,7 @@ import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.result_export import export_result
 from emcd_sim.gui.propagation import numerical_info

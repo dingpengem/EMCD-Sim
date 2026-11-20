@@ -13,7 +13,7 @@ import hashlib,json,os,shutil,uuid,zipfile,time
 import numpy as np
 from emcd_sim.structure_geometry import Settings, excitation
 from emcd_sim import structure_geometry as structure_data
-from .forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from ..cancellation import Cancelled
 from ..historical_ni import NiLocalConfig
 from ..geometry import VirtualDetector
@@ -88,11 +88,11 @@ def config_from_dict(value):
     for k in ('magnetization','centers','window','fft_generators'):
         if k in d and d[k] is not None:d[k]=tuple(tuple(v) if isinstance(v,list) else v for v in d[k])
     if d.get('model')=='multisite':
-        from .forward_settings import MultiSiteForwardSettings
+        from emcd_sim.forward_settings import MultiSiteForwardSettings
         d['selected_edges']=tuple(tuple(v) for v in d.get('selected_edges',()))
         return MultiSiteForwardSettings(**d)
     if d.get('model')=='imported' or 'provider_schema' in d:
-        from .material_inputs import ImportedSettings, ProviderSettings
+        from emcd_sim.material_inputs import ImportedSettings, ProviderSettings
         if d.get('site_indices') is not None:d['site_indices']=tuple(d['site_indices'])
         if d.get('selected_edges') is not None:d['selected_edges']=tuple(tuple(v) for v in d.get('selected_edges',()))
         if 'provider_schema' in d:

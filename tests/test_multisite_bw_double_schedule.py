@@ -1,5 +1,5 @@
 """Shared BW/MS DC query scheduling; the response solver is not executed."""
-from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
+from emcd_sim.forward_settings import MultiSiteForwardSettings
 from types import SimpleNamespace
 import weakref
 import numpy as np

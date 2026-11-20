@@ -19,7 +19,7 @@ def run(output, orientation='017'):
     from .project_io import fingerprints, load_project, save_project
     from .result_export import export_result
     from .normalization_export import save_figure
-    from .parallel_resources import native_backend_info
+    from emcd_sim.parallel_resources import native_backend_info
 
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)

@@ -86,9 +86,9 @@ from pathlib import Path
 from types import SimpleNamespace
 original_import = builtins.__import__
 def headless_import(name, *args, **kwargs):
-    if name == 'PySide6' or name.startswith('PySide6.'):
+    if name.split('.')[0] in ('PySide6','PySide2','PyQt6','PyQt5'):
         raise AssertionError('Provider workflow imported Qt')
-    if name in ('emcd_sim.gui.geometry', 'emcd_sim.gui.project_io'):
+    if name=='emcd_sim.gui' or name.startswith('emcd_sim.gui.'):
         raise AssertionError('Provider workflow imported GUI execution/persistence')
     return original_import(name, *args, **kwargs)
 builtins.__import__ = headless_import
@@ -137,8 +137,7 @@ except ValueError:
 else:
     raise AssertionError('Provider accepted an invalid source')
 assert not any(n == 'PySide6' or n.startswith('PySide6.') for n in sys.modules)
-assert 'emcd_sim.gui.geometry' not in sys.modules
-assert 'emcd_sim.gui.project_io' not in sys.modules
+assert not any(n=='emcd_sim.gui' or n.startswith('emcd_sim.gui.') for n in sys.modules)
 '''
     completed=subprocess.run([sys.executable,'-B','-c',program,json.dumps((kind,str(path),declaration))],
         capture_output=True,text=True,timeout=60)

@@ -10,8 +10,8 @@ import ast
 
 def relocate_reference_imports(source):
     routes={
-        'ForwardSettings':('emcd_sim.gui.forward_settings','NiForwardSettings'),
-        'DEFAULT_SOURCE':('emcd_sim.gui.forward_settings','DEFAULT_NI_SOURCE'),
+        'ForwardSettings':('emcd_sim.forward_settings','NiForwardSettings'),
+        'DEFAULT_SOURCE':('emcd_sim.forward_settings','DEFAULT_NI_SOURCE'),
         'inspect_source':('emcd_sim.xmcd_source','inspect_xmcd_source'),
         'calculate':('emcd_sim.gui.forward_pipeline','calculate'),
         'metrics':('emcd_sim.forward_results','selected_edge_metrics'),
@@ -35,7 +35,7 @@ def relocate_reference_imports(source):
                 target,name=routes[item.name];changed=True
             elif node.module in ('generalized_forward','emcd_sim.gui.generalized_forward',
                                  'material_inputs','emcd_sim.gui.material_inputs'):
-                target=('emcd_sim.gui.material_inputs' if item.name in ('ImportedSettings','ProviderSettings')
+                target=('emcd_sim.material_inputs' if item.name in ('ImportedSettings','ProviderSettings')
                         else 'emcd_sim.mdff_providers');changed=True
             elif node.module in ('provider_preparation','emcd_sim.gui.provider_preparation',
                                  'provider_direction','emcd_sim.gui.provider_direction'):
@@ -70,6 +70,14 @@ def relocate_reference_imports(source):
                 target='emcd_sim.detector_signals';changed=True
             elif node.module in ('signal_normalization','emcd_sim.gui.signal_normalization') and item.name in ('POLICY','EELS_FLOOR','scale95','divide_percent'):
                 target='emcd_sim.detector_signals';changed=True
+            elif node.module in ('forward_settings','emcd_sim.gui.forward_settings'):
+                target='emcd_sim.forward_settings';changed=True
+            elif node.module in ('parallel_resources','emcd_sim.gui.parallel_resources') and item.name!='preview_text':
+                target='emcd_sim.parallel_resources';changed=True
+            elif node.module in ('hardware_resources','emcd_sim.gui.hardware_resources'):
+                target='emcd_sim.hardware_resources';changed=True
+            elif node.module in ('memory_budget','emcd_sim.gui.memory_budget','gui.memory_budget'):
+                target='emcd_sim.memory_budget';changed=True
             elif node.module=='forward_pipeline' and item.name=='calculate_prepared':
                 target,name='emcd_sim.gui.forward_pipeline','_calculate_uniform_prepared';changed=True
             elif node.module=='channeling' and item.name=='contract':

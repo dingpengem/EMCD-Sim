@@ -118,7 +118,7 @@ def capture_report(item,call):
     if call.when!='call':return
     sys.setprofile(None)
     threading.setprofile(None)
-    from emcd_sim.gui.parallel_resources import native_backend_info
+    from emcd_sim.parallel_resources import native_backend_info
     metadata=dict(node=item.nodeid,head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),python=sys.version,numpy=np.__version__,
         scipy=__import__('scipy').__version__,platform=platform.platform(),backend=native_backend_info(),

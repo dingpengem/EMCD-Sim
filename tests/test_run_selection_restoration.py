@@ -13,7 +13,7 @@ from emcd_sim import structure_geometry as structure_data
 from emcd_sim.structure_geometry import Structure, orientation
 from emcd_sim.mdff_providers import settings_for_provider
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from test_project_workflow import app, window, result_fixture, retain, wait
 from test_multisite_configuration import tensor_source
 import pytest
@@ -286,8 +286,8 @@ def test_worker_completion_retains_inputs_captured_at_start(window,tmp_path,monk
     w=window;r=result_fixture(tmp_path)
     restore_configuration(w,r['configuration'])
     monkeypatch.setattr('emcd_sim.gui.propagation.numerical_info',lambda *a,**k:dict(bw_beams=2,execution={}))
-    monkeypatch.setattr('emcd_sim.gui.parallel_resources.require_supported',lambda *a:None)
-    monkeypatch.setattr('emcd_sim.gui.parallel_resources.bind_allocation',lambda cfg,*a:cfg)
+    monkeypatch.setattr('emcd_sim.parallel_resources.require_supported',lambda *a:None)
+    monkeypatch.setattr('emcd_sim.parallel_resources.bind_allocation',lambda cfg,*a:cfg)
     monkeypatch.setattr(w.compute_resources,'show_estimate',lambda *a:None)
     started=[]
     monkeypatch.setattr('emcd_sim.gui.calculation_worker.EMCDWorker.start',lambda worker:started.append(worker))

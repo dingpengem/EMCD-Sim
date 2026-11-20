@@ -1,6 +1,6 @@
 """Immutable-source compatibility: unchanged arrays exact, optimized BW rounded."""
 from reference_imports import relocate_reference_imports
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 import subprocess,sys,types,os,hashlib
 from pathlib import Path
 from dataclasses import replace

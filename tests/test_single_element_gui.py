@@ -38,7 +38,7 @@ def test_imported_gui_worker_restore_and_missing_source(tmp_path,monkeypatch):
         assert not w.emcd_button.isEnabled() and w.imported_info is None
         assert w.emcd_result['spectra']['I_A_plus'].size==2
         # Selecting a Ni provider must reapply its original conservative eligibility gate.
-        from emcd_sim.gui.forward_settings import DEFAULT_NI_SOURCE
+        from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
         w.model_box.setCurrentIndex(0);w.source_path.setText(str(DEFAULT_NI_SOURCE));w.validate_xmcd(show_error=False)
         w.declaration.setChecked(True)
         w.emcd_stale();assert not w.emcd_button.isEnabled()

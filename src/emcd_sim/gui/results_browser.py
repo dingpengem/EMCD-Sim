@@ -288,14 +288,14 @@ class ProjectWorkspace(ProjectSession):
         with QtCore.QSignalBlocker(self.elastic_provider_box):self.elastic_provider_box.setCurrentIndex(0)
         self.set_values(dict(kv=300,beam=2.5,potential=2.0))
         self.retire_post_edge();self._post_edge_disabled_on_restore=False;self.correction_notice.hide()
-        from .forward_settings import NiForwardSettings
+        from emcd_sim.forward_settings import NiForwardSettings
         self.compute_resources.restore(NiForwardSettings(memory_mode='automatic'))
         self._manual_numerics=None;self._numerical_cache=None;self._restore_auto_once=False
         self._slice_step_override=None;self.set_values(dict(slice_step=2.))
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(1)
         self.apply_numerical_visibility()
         self.clear_selected();self.input_source_requirements=[];self.default_structure()
-        from .memory_budget import DEFAULT_BUDGET_MIB
+        from emcd_sim.memory_budget import DEFAULT_BUDGET_MIB
         self.memory_budget.setValue(DEFAULT_BUDGET_MIB)
         self.spin['grid'].setValue(97)
         self.sync_angular_resolution()

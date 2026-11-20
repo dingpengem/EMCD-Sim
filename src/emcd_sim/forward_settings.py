@@ -6,7 +6,7 @@ generic material fallback. Source-backed and multisite settings override its
 material declaration, retaining historical serialized fields for project IO.
 """
 from dataclasses import dataclass, field
-from ..historical_ni import NiLocalConfig
+from .historical_ni import NiLocalConfig
 from emcd_sim.provenance import reference_source
 
 DEFAULT_NI_SOURCE = reference_source()
@@ -20,7 +20,7 @@ class NiForwardSettings:
     and channeling_model select existing elastic/inelastic approximations.
     centers/radius/halfwidth are cycles/Angstrom, energy values are eV,
     slice_step is nm and memory_budget_mib is MiB. Geometry/beam energy/depth
-    belong to gui.geometry.Settings. Defaults and serialized field names are
+    belong to structure_geometry.Settings. Defaults and serialized field names are
     retained, including historical Ni compatibility inputs.
     """
     model: str='xmcd'
@@ -63,7 +63,7 @@ class NiForwardSettings:
 
     @property
     def calculation_memory_budget_mib(self):
-        from .memory_budget import resource_budget
+        from emcd_sim.memory_budget import resource_budget
         return resource_budget(self)
 
 

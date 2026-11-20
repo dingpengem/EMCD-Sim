@@ -14,7 +14,7 @@ from PySide6 import QtCore, QtWidgets
 from ..imported_mdff import CONVENTION
 from ..mdff_providers import bind_group_direction, validate_group_reference
 from ..multisite_spectrum import ModeledEdgeWindow
-from .material_inputs import ImportedSettings
+from emcd_sim.material_inputs import ImportedSettings
 from ..mdff_providers import settings_for_provider, settings_for_source
 from .provider_ui import ProviderUI
 from .group_mdff_controls import EdgeSelections, EnergySelection, energy_box
@@ -371,7 +371,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         if self.model.currentIndex() in (0,1) and self.row[3] is None:
             raise ValueError(f'Group {self.row[0]}: set its Material direction in Site groups and choose Update direction before configuring a magnetic model')
         if self.model.currentIndex() == 0:
-            from .forward_settings import NiForwardSettings
+            from emcd_sim.forward_settings import NiForwardSettings
             self.validate_xmcd_source()
             if self.source_info is None:raise ValueError(self.status.text())
             path=self.source_path.text().strip()

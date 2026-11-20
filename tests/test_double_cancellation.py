@@ -8,7 +8,7 @@ from emcd_sim.cancellation import Cancelled
 from legacy_geometry import Ni017Geometry
 from emcd_sim import double_channeling as bw, multislice_double_channeling as ms
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model
-from emcd_sim.gui.forward_settings import NiForwardSettings
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.gui.forward_pipeline import calculate
 from numerical_roundoff import assert_bloch_observables, assert_roundoff, bloch_roundoff
 
