@@ -1,5 +1,11 @@
 # Current calculation API and refactor decisions
 
+Phase 3B places source declaration, validation and preparation in
+`mdff_providers`. `gui.material_inputs` retains the original saved records;
+`gui.provider_preparation` and `gui.provider_direction` are consolidated into
+the service. The [Phase 3B report](PHASE3B_HEADLESS_PROVIDER_SIMPLIFICATION.md)
+records the current owner mapping, consumers and compatibility decisions.
+
 The local refactor starts from `cdb8836388c5ccc5ae7a614b47894c0ab158a824` in
 `C:/Users/peng863/EMCD-Sim/.worktrees/windows-adaptive-compute`, on
 `refactor/physics-readability`. That development worktree was clean. The shell

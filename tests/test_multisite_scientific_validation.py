@@ -19,7 +19,7 @@ from emcd_sim.gui import channeling
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.historical_ni import tensors
-from emcd_sim.gui.material_inputs import settings_for_source
+from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model, geometry
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from historical_xmcd_test_support import historical_xmcd_source, HISTORICAL_XMCD_SHA256

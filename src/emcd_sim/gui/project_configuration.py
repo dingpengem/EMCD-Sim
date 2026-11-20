@@ -249,7 +249,7 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
             if mode=='global' and key=='config' and not status['verified']:
                 state['issues'].append('Global source '+status['state']);active_valid = False
             elif mode=='global' and key=='config' and isinstance(cfg,ImportedSettings):
-                from .material_inputs import source_for
+                from ..mdff_providers import source_for
                 try:source_for(effective_cfg)
                 except (ValueError,OSError) as exc:
                     status['validation_error'] = str(exc);state['issues'].append('Global configuration: '+str(exc));active_valid = False

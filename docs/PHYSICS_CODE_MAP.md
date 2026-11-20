@@ -19,8 +19,10 @@ in the elementwise contraction. See also [the refactor name map](REFACTOR_NAME_M
 3. `scattering`, `elastic_providers` and `projected_potential` prepare the IAM.
    `physical_elastic`, `multislice_reference` and `multislice_double_channeling`
    propagate the incident wave and, for Double Channeling, reciprocal exit waves.
-4. `mdff_providers.prepare_provider` and `load_site_group_provider` prepare the
-   material response, independently of the elastic wave. `atomic_ionization`,
+4. `mdff_providers` owns source declaration, identity/material validation and
+   provider preparation, independently of widgets and the elastic wave.
+   `prepare_provider` and `load_site_group_provider` retain distinct declared
+   interpolation and historical direct-evaluation models. `atomic_ionization`,
    `generalized_xmcd`, `manual_l23` and `imported_mdff` implement distinct sources.
 5. `gui.forward_pipeline.calculate` is the canonical entry point for explicit
    structure, geometry, source/model and optional site-group inputs; it orchestrates
@@ -38,7 +40,7 @@ in the elementwise contraction. See also [the refactor name map](REFACTOR_NAME_M
 
 Paths above are relative to `src/emcd_sim/`. There are no retired production
 import aliases. GUI package placement is historical:
-`forward_pipeline`, `propagation` and provider preparation are application
+`forward_pipeline` and `propagation` are application
 services, not alternate scientific engines. No backend framework is implied.
 
 ## Inputs and their authoritative owners
@@ -47,7 +49,12 @@ The execution API is `gui.forward_pipeline.calculate(structure, settings, cfg,
 sites=...)`. The caller supplies structure and geometry; a missing material
 configuration or missing local assignment is an error. The explicit
 `NiForwardSettings` preset and `study_presets.NickelStudyGeometry` remain outside
-the engine. Source-backed configurations are built by `gui.material_inputs`.
+the engine. Source-backed configurations are built by `mdff_providers`;
+`gui.material_inputs` retains only the saved record definitions and their
+existing historical field identities. The provider services no longer reside
+in `gui.provider_preparation` or `gui.provider_direction`. See the
+[Phase 3B report](PHASE3B_HEADLESS_PROVIDER_SIMPLIFICATION.md) for the ownership
+mapping and remaining settings-schema limitation.
 
 | Input | Origin and calculation entry |
 | --- | --- |

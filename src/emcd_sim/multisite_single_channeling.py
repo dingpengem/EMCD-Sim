@@ -111,7 +111,7 @@ def run_multisite_with_coherence(model, sites, coherence, energy_ev, qx, qy, *,
             normalization=group.normalization)
 
     # Preserve existing source identity safeguards through calculation completion.
-    from .gui.material_inputs import source_for
+    from .mdff_providers import source_for
     for group in sites.groups:
         check_cancelled(cancelled)
         source_for(group.mdff_reference)

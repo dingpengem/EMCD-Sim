@@ -11,7 +11,7 @@ from PySide6 import QtCore,QtWidgets,QtTest
 
 from emcd_sim.gui.group_mdff import GroupMDFFDialog
 from emcd_sim.mdff_providers import validate_group_reference
-from emcd_sim.gui.material_inputs import settings_for_source
+from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.structure_viewer import CrystalStructureDialog
 from emcd_sim.mdff_providers import load_provider
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow,prepare_multisite_spectrum

@@ -11,7 +11,7 @@ from emcd_sim.cancellation import Cancelled
 from emcd_sim.gui import forward_pipeline, propagation
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
-from emcd_sim.gui.material_inputs import settings_for_source
+from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.multisite_single_channeling import run_multisite_with_coherence

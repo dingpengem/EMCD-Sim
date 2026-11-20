@@ -162,7 +162,7 @@ def restore_configuration(w,state):
         editor.restore_rows(rows)
         editor.energy_windows=dict(state.get('energy_windows') or {})
         editor.omitted_site_groups=({r[0] for r in rows}-set(editor.energy_windows)) if state.get('energy_windows') is not None else set()
-        from .provider_preparation import sampling_mode
+        from ..mdff_providers import sampling_mode
         editor.requested_energy_ev=state.get('energy_ev');editor._restored_energy_scope=c.energy_scope
         editor._restored_energy_sampling=sampling_mode(c);editor._restored_uniform_points=c.energy_points
         editor._sampling_user_override=False

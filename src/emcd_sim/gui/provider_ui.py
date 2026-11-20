@@ -3,7 +3,8 @@ from dataclasses import asdict,replace
 from pathlib import Path
 import json
 from PySide6 import QtCore,QtWidgets
-from .material_inputs import ProviderSettings, settings_for_provider, source_for
+from .material_inputs import ProviderSettings
+from ..mdff_providers import settings_for_provider, source_for
 from .forward_settings import DEFAULT_NI_SOURCE
 from ..imported_mdff import CONVENTION
 

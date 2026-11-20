@@ -10,7 +10,7 @@ from PySide6 import QtCore, QtWidgets, QtTest
 
 from emcd_sim.gui import project_io as io
 from emcd_sim.gui.geometry import Structure, orientation
-from emcd_sim.gui.material_inputs import settings_for_provider
+from emcd_sim.mdff_providers import settings_for_provider
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from test_project_workflow import app, window, result_fixture, retain, wait

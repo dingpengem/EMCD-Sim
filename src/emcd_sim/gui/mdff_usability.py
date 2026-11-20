@@ -284,7 +284,7 @@ class GlobalMDFFDialog(MDFFWorkspace):
         try:
             if self.window.model_box.currentIndex()==0:self.window.validate_xmcd(show_error=False)
             cfg=self.window.global_mdff_draft_settings()
-            from .material_inputs import material_reason
+            from ..mdff_providers import material_reason
             reason=material_reason(self.window.structure,cfg)
             if reason:raise ValueError(reason)
         except Exception as exc:

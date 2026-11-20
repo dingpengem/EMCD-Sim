@@ -12,7 +12,7 @@ from PySide6 import QtCore, QtWidgets, QtTest
 
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.gui.structure_viewer import CrystalStructureDialog
-from emcd_sim.gui.material_inputs import settings_for_source, source_for
+from emcd_sim.mdff_providers import settings_for_source, source_for
 from single_element_helpers import document
 
 

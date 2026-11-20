@@ -55,7 +55,7 @@ class TensorSpectrumPreview(QtWidgets.QDialog):
 
     def __init__(self,source,parent=None):
         super().__init__(parent)
-        from .provider_direction import ReversedProviderPair
+        from ..mdff_providers import ReversedProviderPair
         original=source.source if isinstance(source,ReversedProviderPair) else source
         if not isinstance(original,ImportedMDFF) or source.metadata.get('convention')!=CONVENTION:
             raise ValueError('Preview requires a validated source and the accepted tensor convention')

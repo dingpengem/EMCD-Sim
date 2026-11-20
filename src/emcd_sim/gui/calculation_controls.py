@@ -23,7 +23,7 @@ from .responsive import CollapsibleSection
 from .results import ResultsView
 from .numerical_settings import NumericalSettingsUI
 from .imported_tensor_ui import ImportedTensorUI
-from .material_inputs import material_reason, energy_grid, tensors
+from ..mdff_providers import material_reason, energy_grid, tensors
 from .calculation_worker import EMCDWorker
 from .provider_ui import ProviderUI
 
@@ -281,7 +281,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         self.sync_sampling_controls();self.emcd_stale()
 
     def restore_sampling_controls(self,cfg):
-        from .provider_preparation import sampling_mode
+        from ..mdff_providers import sampling_mode
         for widget,value in ((self.energy_scope,self.energy_scope.findData(sampling_mode(cfg))),):
             with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(value)
         for widget,value in ((self.angular_maps,cfg.angular_maps),(self.full_angular_field,cfg.angular_evaluation=='all')):
@@ -439,7 +439,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             cfg=self.global_mdff_draft_settings();e=energy_grid(cfg)
             if cfg.model=="imported":self.draw_manual_preview(cfg)
             if cfg.model=='imported' and self.manual_model.currentIndex()==1:return
-            from .material_inputs import is_declared, source_for
+            from ..mdff_providers import is_declared, source_for
             if cfg.model=='atomic' and not is_declared(cfg):
                 e=np.unique(np.r_[np.linspace(max(.001,cfg.atomic.l3_ev-10),cfg.atomic.l2_ev+10,201),cfg.l3,cfg.l2])
                 plus,minus=tensors(cfg,e,np.eye(3))

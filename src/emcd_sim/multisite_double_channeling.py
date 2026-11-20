@@ -163,7 +163,7 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
                     groups[group.group_id][label].reshape(len(energy),-1)[ie,sl]=value
                     weighted.reshape(2,len(energy),-1)[state,ie,sl]+=group.multiplicity*value
         diagnostics.append(diagnostic)
-    from .gui.material_inputs import source_for
+    from .mdff_providers import source_for
     for group in sites.groups:
         check_cancelled(cancelled)
         source_for(group.mdff_reference)

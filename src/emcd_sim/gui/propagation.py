@@ -137,7 +137,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             'See docs/GENERALIZED_MULTISLICE_MERGE_READINESS.md.')
     if cfg.propagation!='bloch':
         if ionization_sites is None:
-            from .material_inputs import material_reason
+            from ..mdff_providers import material_reason
             reason=material_reason(structure,cfg)
         else:
             # The multi-site entry point validates every MDFF before preflight.

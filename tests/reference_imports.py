@@ -33,8 +33,13 @@ def relocate_reference_imports(source):
             target=None;name=item.name
             if node.module in ('emcd_forward','emcd_sim.gui.emcd_forward'):
                 target,name=routes[item.name];changed=True
-            elif node.module in ('generalized_forward','emcd_sim.gui.generalized_forward'):
-                target='emcd_sim.gui.material_inputs';changed=True
+            elif node.module in ('generalized_forward','emcd_sim.gui.generalized_forward',
+                                 'material_inputs','emcd_sim.gui.material_inputs'):
+                target=('emcd_sim.gui.material_inputs' if item.name in ('ImportedSettings','ProviderSettings')
+                        else 'emcd_sim.mdff_providers');changed=True
+            elif node.module in ('provider_preparation','emcd_sim.gui.provider_preparation',
+                                 'provider_direction','emcd_sim.gui.provider_direction'):
+                target='emcd_sim.mdff_providers';changed=True
             elif node.module=='forward_pipeline' and item.name=='calculate_prepared':
                 target,name='emcd_sim.gui.forward_pipeline','_calculate_uniform_prepared';changed=True
             elif node.module=='channeling' and item.name=='contract':

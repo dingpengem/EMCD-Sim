@@ -189,7 +189,7 @@ def frozen_cr(rev):
     old_mdc.__package__='emcd_sim';sys.modules[old_mdc.__name__]=old_mdc
     mdc_source=git_source(rev, 'src/emcd_sim/multisite_double_channeling.py')
     mdc_source=mdc_source.replace('from .gui.generalized_forward import',
-                                  'from emcd_sim.gui.material_inputs import')
+                                  'from emcd_sim.mdff_providers import')
     exec(compile(mdc_source, old_mdc.__name__, 'exec'), old_mdc.__dict__)
     old_mdc.double_channeling_group_responses = old_bw.double_channeling_group_responses
     folder=OUT/(rev+'-inputs');folder.mkdir()

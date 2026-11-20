@@ -135,7 +135,7 @@ def run(output, historical_project=None):
                         assert w.atomic_provider_info is None and not w.atomic_declaration.isChecked()
                         assert not w.emcd_button.isEnabled()
                         record('Failed generation invalidates stale GUI state')
-                        from emcd_sim.gui.material_inputs import source_for
+                        from emcd_sim.mdff_providers import source_for
                         assert Path(original.source).resolve().is_relative_to(out)
                         raw=Path(original.source).read_bytes();Path(original.source).write_bytes(raw+b' ')
                         try:source_for(original)
@@ -463,7 +463,7 @@ def run_grouping(output, historical_project=None):
     from PySide6 import QtCore
     from emcd_sim.gui.app import MainWindow
     from emcd_sim.gui.runtime import build_info, resource_root
-    from emcd_sim.gui.material_inputs import source_for
+    from emcd_sim.mdff_providers import source_for
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     app.setQuitOnLastWindowClosed(False)

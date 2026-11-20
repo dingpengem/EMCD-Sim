@@ -57,7 +57,7 @@ def test_old_explicit_native_and_broad_field_choices_are_preserved():
     assert absent.energy_sampling=='uniform' and absent.angular_evaluation=='selected'
     legacy=config_from_dict(dict(model='xmcd',energy_scope='full',angular_maps=True))
     assert legacy.energy_sampling=='uniform' and legacy.angular_evaluation=='selected'
-    from emcd_sim.gui.material_inputs import energy_grid
+    from emcd_sim.mdff_providers import energy_grid
     from emcd_sim.gui.forward_settings import NiForwardSettings
     assert len(energy_grid(NiForwardSettings(energy_sampling='native')))==4329
     assert len(energy_grid(NiForwardSettings()))==243

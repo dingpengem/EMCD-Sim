@@ -138,7 +138,7 @@ def test_atomic_input_route_and_failed_generation_clears_stale_state(tmp_path,mo
 
 
 def test_imported_reopen_and_revalidation_clear_acknowledgement(tmp_path,monkeypatch):
-    from emcd_sim.gui.material_inputs import settings_for_source
+    from emcd_sim.mdff_providers import settings_for_source
     from single_element_helpers import write_source
     monkeypatch.setenv('EMCD_GUI_WORKSPACE',str(tmp_path/'workspace'))
     application=app();w=MainWindow()

@@ -6,7 +6,7 @@ import hashlib,json,subprocess,sys,types
 import numpy as np
 import pytest
 from ase import Atoms
-from emcd_sim.gui import material_inputs as forward
+from emcd_sim import mdff_providers as forward
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.gui.project_io import config_from_dict,save_project,load_project,rerun_reason
 from emcd_sim.imported_mdff import ImportedMDFF,CONVENTION
@@ -72,6 +72,100 @@ def xmcd_source(tmp_path,element='O',edge='K'):
         source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),reference_tensor_scale_angstrom2_per_ev=1.,
         magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
     return path,declaration
+
+
+@pytest.mark.parametrize('kind',['manual','atomic','xmcd'])
+def test_provider_declaration_validation_and_preparation_without_qt(tmp_path,kind):
+    if kind=='manual':path=write_source(tmp_path/'manual.json');declaration=None
+    elif kind=='atomic':path=parameter_file(tmp_path/'atomic.json');declaration=None
+    else:path,declaration=xmcd_source(tmp_path)
+    program=r'''
+import builtins, json, sys
+from dataclasses import replace
+from pathlib import Path
+from types import SimpleNamespace
+original_import = builtins.__import__
+def headless_import(name, *args, **kwargs):
+    if name == 'PySide6' or name.startswith('PySide6.'):
+        raise AssertionError('Provider workflow imported Qt')
+    if name in ('emcd_sim.gui.geometry', 'emcd_sim.gui.project_io'):
+        raise AssertionError('Provider workflow imported GUI execution/persistence')
+    return original_import(name, *args, **kwargs)
+builtins.__import__ = headless_import
+import numpy as np
+from ase import Atoms
+from emcd_sim.mdff_providers import (settings_for_source, settings_for_provider,
+    source_for, prepare_provider, bind_group_direction)
+kind, path, declaration = json.loads(sys.argv[1])
+controls = dict(energy_scope='edges', grid=9, depth=3, subpixels=4)
+cfg = (settings_for_source(path, **controls) if kind == 'manual' else
+       settings_for_provider(path, kind, declaration, **controls))
+source = source_for(cfg)
+provider = prepare_provider(cfg)
+structure = SimpleNamespace(atoms=Atoms(cfg.ionizing_element, cell=[3]*3, pbc=True), elastic_reason='')
+assert provider.declared and not provider.material_reason(structure)
+assert tuple(provider.sites(structure).indices) == (0,)
+energy = provider.energy_grid()
+actual = provider.tensors(energy, np.eye(3))
+expected = source.tensors(energy, np.eye(3), cfg.magnetization)
+for a, b in zip(actual, expected):
+    np.testing.assert_array_equal(a.tensor_angstrom2_per_ev, b.tensor_angstrom2_per_ev)
+provider.revalidate_source()
+if kind == 'manual':
+    opposite = tuple(-np.asarray(cfg.magnetization))
+    bound = bind_group_direction(('site', cfg.ionizing_element, (0,), opposite, cfg))
+    reversed_pair = prepare_provider(bound).tensors(energy, np.eye(3))
+    np.testing.assert_array_equal(actual[0].tensor_angstrom2_per_ev, reversed_pair[1].tensor_angstrom2_per_ev)
+try:
+    source_for(replace(cfg, ionizing_element='Ni'))
+except ValueError:
+    pass
+else:
+    raise AssertionError('Provider accepted another material declaration')
+Path(path).write_bytes(Path(path).read_bytes()+b'\n')
+try:
+    source_for(cfg)
+except ValueError:
+    pass
+else:
+    raise AssertionError('Provider accepted changed source identity')
+bad = Path(path).with_name('invalid.json');bad.write_text('{}')
+try:
+    settings_for_source(bad)
+except ValueError:
+    pass
+else:
+    raise AssertionError('Provider accepted an invalid source')
+assert not any(n == 'PySide6' or n.startswith('PySide6.') for n in sys.modules)
+assert 'emcd_sim.gui.geometry' not in sys.modules
+assert 'emcd_sim.gui.project_io' not in sys.modules
+'''
+    completed=subprocess.run([sys.executable,'-B','-c',program,json.dumps((kind,str(path),declaration))],
+        capture_output=True,text=True,timeout=60)
+    assert completed.returncode==0,completed.stdout+completed.stderr
+
+
+def test_historical_ni_eligibility_without_gui_geometry():
+    program='''
+import builtins
+from types import SimpleNamespace
+original_import = builtins.__import__
+def headless_import(name, *args, **kwargs):
+    if name == 'PySide6' or name.startswith('PySide6.') or name == 'gui.geometry' or name == 'emcd_sim.gui.geometry':
+        raise AssertionError('Ni eligibility imported GUI geometry')
+    return original_import(name, *args, **kwargs)
+builtins.__import__ = headless_import
+from ase.build import bulk
+from emcd_sim.historical_ni import material_reason
+atoms = bulk('Ni','fcc',a=3.524,cubic=True)
+assert not material_reason(SimpleNamespace(atoms=atoms,elastic_reason=''))
+atoms[0].symbol='Cr'
+assert 'requires Ni' in material_reason(SimpleNamespace(atoms=atoms,elastic_reason=''))
+atoms[0].symbol='Ni';atoms.positions[0,0]+=.01
+assert 'verified conventional FCC Ni cell' in material_reason(SimpleNamespace(atoms=atoms,elastic_reason=''))
+'''
+    completed=subprocess.run([sys.executable,'-B','-c',program],capture_output=True,text=True,timeout=60)
+    assert completed.returncode==0,completed.stdout+completed.stderr
 
 
 def test_xmcd_native_input_no_separate_tensor_and_no_global_l23_gate(tmp_path):

@@ -31,7 +31,7 @@ from emcd_sim.crystal import Crystal
 from emcd_sim.geometry import electron_wavelength_angstrom
 from emcd_sim.gui import forward_pipeline
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.material_inputs import settings_for_source
+from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model, geometry, excitation
 from emcd_sim.gui.multisite_results import spectral_series, covered_segments
 from emcd_sim.mdff_providers import load_site_group_provider

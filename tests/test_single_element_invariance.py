@@ -5,7 +5,7 @@ from scipy.linalg import expm
 from ase.build import bulk
 from emcd_sim.gui.geometry import Structure,Settings,elastic_model
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.material_inputs import settings_for_source
+from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.double_channeling import BlochStates,depth_response,equivalent_site_phases,double_channeling_response,intensities_from_response
 from emcd_sim.single_channeling_tensor import _tensor_angular_maps
 from emcd_sim.ionization_sites import IonizationSites

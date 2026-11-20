@@ -21,7 +21,7 @@ from ase.spacegroup import crystal
 
 from emcd_sim.crystal import Crystal
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.material_inputs import settings_for_source
+from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model, geometry
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.scattering import IndependentAtomPotential

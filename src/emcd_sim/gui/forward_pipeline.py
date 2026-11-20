@@ -53,7 +53,7 @@ def _calculate_uniform(structure,settings,cfg,progress=lambda s:None,cancelled=l
     cfg=resolve_fft_configuration(structure,settings,cfg)
     from .memory_budget import reserve_memory
     from ..mdff_providers import prepare_provider
-    from .provider_preparation import provider_energy_grid
+    from ..mdff_providers import provider_energy_grid
     actual_energy=provider_energy_grid(prepare_provider(cfg),cfg,energy_ev)
     info=numerical_info(structure,settings,replace(cfg,energy_points=len(actual_energy)))
     if execution_policy is not None and execution_policy['effective_workers']!=info['execution']['effective_workers']:
@@ -92,7 +92,7 @@ def _calculate_uniform_prepared(structure,settings,cfg,progress,cancelled,*,ener
     provider=prepare_provider(cfg)
     reason=provider.material_reason(structure)
     if reason:raise ValueError(reason)
-    from .provider_preparation import provider_energy_grid
+    from ..mdff_providers import provider_energy_grid
     energy=provider_energy_grid(provider,cfg,energy_ev);elastic=elastic_model(structure,settings,systematic_row=cfg.systematic_row);_,R,hkl,g,_=geometry(structure,settings,systematic_row=cfg.systematic_row)
     if settings.target not in hkl or settings.target==(0,0,0):raise ValueError('Select a nonzero target in the finite diffraction basis')
     memory=64*cfg.grid**2*len(hkl)**2/2**20
@@ -346,7 +346,7 @@ def _calculate_multisite(structure,settings,sites,cfg,progress=lambda s:None,
             methods[method]=result
             del raw
         # Revalidate every source after both methods and all postprocessing.
-        from .material_inputs import source_for
+        from ..mdff_providers import source_for
         for group in sites.groups:
             stage('Revalidating '+group.group_id+' MDFF source')
             source_for(group.mdff_reference)

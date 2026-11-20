@@ -86,7 +86,7 @@ def applied_inputs(window, cfg):
     from ..mdff_providers import load_site_group_provider
     windows = {};selections = []
     requested=getattr(editor,'requested_energy_ev',None)
-    from .provider_preparation import sampling_mode
+    from ..mdff_providers import sampling_mode
     mode=sampling_mode(cfg)
     if requested is not None and (getattr(editor,'_restored_energy_sampling',mode)!=mode or
             mode=='uniform' and getattr(editor,'_restored_uniform_points',cfg.energy_points)!=cfg.energy_points):requested=None

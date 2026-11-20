@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from test_atomic_parameter_editor import window, iron
-from emcd_sim.gui.material_inputs import source_for, energy_grid, tensors
+from emcd_sim.mdff_providers import source_for, energy_grid, tensors
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.geometry import Settings
 from emcd_sim.gui.project_io import save_project, load_project

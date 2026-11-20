@@ -11,7 +11,7 @@ from test_group_mdff import source
 from emcd_sim.gui import app as gui
 from emcd_sim.gui.geometry import Settings, Structure, geometry
 from emcd_sim.gui.forward_settings import NiForwardSettings
-from emcd_sim.gui.material_inputs import settings_for_source
+from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.numerical_settings import resolve_parameters
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
 from emcd_sim.gui.project_configuration import save_configuration, load_configuration

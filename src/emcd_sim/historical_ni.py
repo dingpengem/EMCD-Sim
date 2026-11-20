@@ -163,9 +163,9 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def material_reason(structure):
-    from .gui.geometry import Structure
+    from ase.build import bulk
     # Conservative Stage B gate: arbitrary CIF inspection is not MDFF validation.
-    ref=Structure.nickel().atoms;a=structure.atoms
+    ref=bulk('Ni','fcc',a=3.524,cubic=True);a=structure.atoms
     # Keep the original Ni-only material restriction independent of the wider
     # elastic capability. Matching coordinates/cell alone do not identify Ni.
     if set(a.get_chemical_symbols())!={'Ni'}:

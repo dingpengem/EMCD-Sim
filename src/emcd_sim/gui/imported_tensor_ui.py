@@ -171,7 +171,7 @@ class ImportedTensorUI:
             self.manual_tensor.error.setText(str(exc));raise
 
     def draw_manual_preview(self,cfg=None):
-        from .material_inputs import source_for
+        from ..mdff_providers import source_for
         if cfg is None:cfg=self.forward_settings()
         source=source_for(cfg)
         if self.manual_model.currentIndex()==1:
@@ -260,21 +260,18 @@ class ImportedTensorUI:
                 (float(self.manual_l3.text()),float(self.manual_l2.text())),tuple(float(v) for v in self.axis.text().split()))
             raise ValueError('Manual draft ready for explicit preview or calculation')
         self.prepare_manual_tensor()
-        from .material_inputs import ImportedSettings
-        from ..mdff_edges import validate_selected
+        from ..mdff_providers import settings_from_source
         source=self.imported_info
         if source is None or source.path!=str(Path(self.imported_path.text()).resolve()):raise ValueError('Validate the current imported MDFF source first')
         if self.manual_source_kind(source)!=self._manual_key:raise ValueError('Selected manual model differs from its authenticated provider; restore or validate its own source')
         indices=self.ionization_selection.text().strip()
         selected=None if indices=='all' else tuple(int(v) for v in indices.replace(',',' ').split())
         fields=asdict(base);fields['atomic']=base.atomic
-        selections=validate_selected(source.metadata['element'],source.metadata['edge'],source.metadata['selected_ev'],source.energy_ev[[0,-1]])
-        fields.update(source=self.imported_path.text(),source_sha256=source.sha256,
+        fields.update(source=self.imported_path.text(),
             ionizing_element=source.metadata['element'] if self.manual_model.currentIndex()==1 else self.ionizing_element.text().strip(),core_edge=source.metadata['edge'] if self.manual_model.currentIndex()==1 else self.imported_edge.text().strip(),
-            magnetic_state=source.metadata['magnetic_state'] if self.manual_model.currentIndex()==1 else self.imported_state.currentText(),site_indices=selected,axis_declared=self.imported_declaration.isChecked(),
-            selected_edges=() if source.metadata['edge']=='L2,3' else selections,
-            l3=selections[0][1],l2=selections[-1][1])
-        return self.bind_material_reference(ImportedSettings(**fields))
+            magnetic_state=source.metadata['magnetic_state'] if self.manual_model.currentIndex()==1 else self.imported_state.currentText(),site_indices=selected,axis_declared=self.imported_declaration.isChecked())
+        for key in ('source_sha256','selected_edges','l3','l2'):fields.pop(key,None)
+        return self.bind_material_reference(settings_from_source(source,**fields))
 
     def restore_imported_settings(self,cfg,path=None):
         with QtCore.QSignalBlocker(self.imported_path):self.imported_path.setText(path or cfg.source)

@@ -550,7 +550,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
             if self.external_source_pending:raise InputProblem('source','Import or validate the newly selected external JSON first; no old editor tensor will be substituted')
             doc = self.document(); path, digest = persist_document(self.workspace(), doc)
             # Existing provider performs transition generation, Hermiticity, PSD and provenance verification.
-            from .material_inputs import settings_for_provider
+            from ..mdff_providers import settings_for_provider
             cfg=settings_for_provider(path, 'atomic')
             if hasattr(self.owner,'bind_material_reference'):self.owner.bind_material_reference(cfg)
             self.validated_path = str(path); self.validated_sha256 = digest; self.source_location.setText(str(path))
@@ -568,7 +568,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
                 if not self.validated_path:return
             _, digest = read_document(self.validated_path)
             if digest != self.validated_sha256: raise ValueError('Atomic source checksum changed')
-            from .material_inputs import settings_for_provider, source_for
+            from ..mdff_providers import settings_for_provider, source_for
             from .tensor_spectrum_preview import TensorSpectrumPreview
             cfg=settings_for_provider(self.validated_path,'atomic')
             if hasattr(self.owner,'bind_material_reference'):cfg=self.owner.bind_material_reference(cfg)

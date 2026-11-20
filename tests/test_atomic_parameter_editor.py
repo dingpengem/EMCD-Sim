@@ -218,7 +218,7 @@ def test_interactive_tensor_modes_show_actual_components(window, mode):
 def test_preview_rejects_bad_units_and_non_psd_physical_tensor(window):
     from emcd_sim.gui.tensor_spectrum_preview import TensorSpectrumPreview
     from emcd_sim.mdff_providers import load_provider
-    from emcd_sim.gui.material_inputs import settings_for_provider
+    from emcd_sim.mdff_providers import settings_for_provider
     w, _ = window; e = demo(w); e.generate()
     source=load_provider(settings_for_provider(e.validated_path,'atomic'))
     bad=replace(source,metadata=dict(source.metadata,units='unknown'))
@@ -492,7 +492,7 @@ def test_packaged_installation_is_never_a_managed_workspace(tmp_path, monkeypatc
 @pytest.mark.parametrize('channel', ['single','double'])
 def test_editor_bw_ms_equivalence_and_portable_project(window, tmp_path, channel):
     from emcd_sim.gui.forward_pipeline import calculate
-    from emcd_sim.gui.material_inputs import settings_for_provider
+    from emcd_sim.mdff_providers import settings_for_provider
     from emcd_sim.gui.geometry import Settings
     from emcd_sim.gui.project_io import save_project, load_project, source_status
     w, _ = window; e = demo(w); e.generate()

@@ -14,7 +14,8 @@ from PySide6 import QtCore, QtWidgets
 from ..imported_mdff import CONVENTION
 from ..mdff_providers import bind_group_direction, validate_group_reference
 from ..multisite_spectrum import ModeledEdgeWindow
-from .material_inputs import ImportedSettings, settings_for_provider, settings_for_source
+from .material_inputs import ImportedSettings
+from ..mdff_providers import settings_for_provider, settings_for_source
 from .provider_ui import ProviderUI
 from .group_mdff_controls import EdgeSelections, EnergySelection, energy_box
 from .mdff_workspace import MDFFWorkspace
@@ -507,7 +508,7 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
             self.model.setCurrentIndex(2);self.manual_mode.setCurrentIndex(3)
             self.import_path.setText(cfg.source);self.manual_edge.setText(cfg.core_edge)
             try:
-                from .material_inputs import source_for
+                from ..mdff_providers import source_for
                 source = source_for(cfg);d = source.metadata
                 if 'manual_l23_model' in d and not cfg.pair_reversed:
                     self.manual_spectral.load_source(source);self.manual_spectral.frame_mode.setCurrentIndex(1)

@@ -10,7 +10,7 @@ from test_multisite_gui_run import app, window, controls
 from test_group_mdff import source, imported
 from single_element_helpers import document
 from emcd_sim.gui.geometry import Structure
-from emcd_sim.gui.material_inputs import settings_for_source
+from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.multisite_run import applied_inputs
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
 from emcd_sim.gui.project_configuration import save_configuration, load_configuration
