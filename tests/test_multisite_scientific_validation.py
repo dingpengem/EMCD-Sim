@@ -25,6 +25,7 @@ from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from historical_xmcd_test_support import historical_xmcd_source, HISTORICAL_XMCD_SHA256
 from single_element_helpers import document
 from test_multisite_forward import configuration, system, RAW_KEYS, PARITY_KEYS
+from numerical_roundoff import assert_roundoff, gamma, linear_signal_scale
 from test_multisite_double_channeling import direct_site_intensity as bw_site_event
 from test_multisite_ms_double_channeling import direct_site_intensity as ms_site_event
 from test_single_element_ni_compatibility import old_contract  # existing archived reference fixture
@@ -236,10 +237,19 @@ def test_bcc_cr_independent_events_and_symmetry(tmp_path, method, channel, unequ
                     np.testing.assert_allclose(actual, expected, rtol=3e-12, atol=1e-17)
                     worst = max(worst, abs(actual-expected)/max(abs(expected), 1e-30))
     assert result['metadata']['multisite']['selected_atom_count'] == 2
-    for key in RAW_KEYS+PARITY_KEYS:
-        expected = sum(g.multiplicity*result['groups'][g.group_id]['spectra'][key]
-                       for g in sites.groups)/2
-        np.testing.assert_allclose(result['spectra'][key], expected, rtol=3e-13, atol=1e-18)
+    expected_spectra = {key: sum(g.multiplicity*result['groups'][g.group_id]['spectra'][key]
+                       for g in sites.groups)/2 for key in RAW_KEYS+PARITY_KEYS}
+    for key, expected in expected_spectra.items():
+        if method=='bloch' and channel=='double' and unequal and key in ('M_A','M_B','D_mag'):
+            # The two positive pixel/group reductions commute only in exact
+            # arithmetic. Zero-weight terms are exact, so count their nonzero
+            # support, and scale by parent intensities rather than weak M.
+            budget=gamma(2*int(support.sum())+2*len(sites.groups)+10)
+            allowance=np.maximum(1e-18,budget*linear_signal_scale(expected_spectra,key))
+            assert_roundoff(result['spectra'][key],expected,
+                allowance+3e-13*abs(expected),label='Cr group reduction '+key)
+        else:
+            np.testing.assert_allclose(result['spectra'][key], expected, rtol=3e-13, atol=1e-18)
     for name in (None, 'up', 'down'):
         forward = result if name is None else result['groups'][name]
         backward = reverse if name is None else reverse['groups'][name]

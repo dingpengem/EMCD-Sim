@@ -1,4 +1,4 @@
-"""Numerical arrays versus immutable pre-feature source, not regenerated fixtures."""
+"""Immutable-source compatibility: unchanged arrays exact, optimized BW rounded."""
 from reference_imports import relocate_reference_imports
 from emcd_sim.gui.forward_settings import NiForwardSettings
 import subprocess,sys,types,os,hashlib
@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 from emcd_sim.gui import forward_pipeline as ni, channeling
 from emcd_sim.gui.geometry import Structure,Settings
+from numerical_roundoff import assert_bloch_observables
 
 BASE='2f9c130099dce5df4e4609b521c42f53c5385518'
 
@@ -54,6 +55,9 @@ def test_original_ni_all_numeric_arrays_exact(old_contract,model,channel):
         x,y=a['methods'][method],b['methods'][method]
         for key in ('amplitudes','coherence','depth_nm','qx','qy'):
             np.testing.assert_array_equal(x[key],y[key]);count+=1
+        if channel=='double' and method=='bloch':
+            count+=assert_bloch_observables(x,y,cfg)
+            continue
         for key in x['spectra']:
             np.testing.assert_array_equal(x['spectra'][key],y['spectra'][key]);count+=1
         for edge in x['maps']:
