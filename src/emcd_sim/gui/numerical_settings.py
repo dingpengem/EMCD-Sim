@@ -5,7 +5,6 @@ import numpy as np
 from PySide6 import QtCore, QtWidgets
 from .geometry import geometry, excitation
 from ..historical_ni import material_reason
-from .forward_settings import NiForwardSettings
 
 
 POLICY = 'automatic-starting-v5'
@@ -67,6 +66,22 @@ REFERENCE_SOURCE_SHA256 = 'a0e28ea6423b6c7832bb3cce6d69d71aa59336a221baeee3d2556
 
 
 class NumericalSettingsUI:
+    def forward_control_fields(self):
+        """Snapshot shared run controls, without reading Material/MDFF drafts.
+
+        Global, Local and configuration-only save use the same controls.
+        Resource requests come from Compute Resources; this never resolves an
+        allocation or changes automatic numerical settings.
+        """
+        fields = dict(propagation=('bloch','fft-multislice','both')[self.propagation_box.currentIndex()],
+            channeling_model=('single','double')[self.channeling_box.currentIndex()],
+            **self.sampling_fields(), centers=tuple(tuple(p) for p in self.detectors),
+            systematic_row=self.row_projection.isChecked(), correction=False,
+            **self.compute_resources.settings(), fft_generators=self.saved_fft_generators())
+        for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step'):
+            fields[key] = self.spin[key].value()
+        return fields
+
     def setup_numerical_mode(self, form):
         self.numerical_mode=QtWidgets.QComboBox();self.numerical_mode.addItems(['Saved automatic settings','General settings (editable)'])
         self.numerical_mode.setCurrentIndex(1)

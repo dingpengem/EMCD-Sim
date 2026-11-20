@@ -82,7 +82,7 @@ def restore_entry(record,angular,spectra,energy=None):
 
 
 def restore_groups(result,descriptor,angular,spectra):
-    from .site_group_editor import validate_site_rows
+    from ..multisite import validate_site_rows
     from .project_io import restore_structure
     energy=result['spectra']['energy_ev'];n=result['metadata']['multisite']['selected_atom_count']
     groups={};rows=[]

@@ -27,11 +27,7 @@ def capture_configuration(w):
         raise ValueError('Apply or Cancel pending Site Group direction/provider edits before saving or recalculating; accepted settings are unchanged')
     from .forward_settings import NiForwardSettings
     from .forward_settings import MultiSiteForwardSettings
-    common=dict(propagation=('bloch','fft-multislice','both')[w.propagation_box.currentIndex()],
-        channeling_model=('single','double')[w.channeling_box.currentIndex()],**w.sampling_fields(),
-        centers=tuple(tuple(p) for p in w.detectors),systematic_row=w.row_projection.isChecked(),
-        correction=False,**w.compute_resources.settings(),fft_generators=w.saved_fft_generators())
-    for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step'):common[key]=w.spin[key].value()
+    common=w.forward_control_fields()
     if w.magnetization_mode=='local':cfg=MultiSiteForwardSettings(**common)
     else:
         try:cfg=w.forward_settings(prepare=False)
@@ -87,7 +83,6 @@ def capture_configuration(w):
 def restore_configuration(w,state):
     """Restore editable inputs, never results, and never infer a tensor frame."""
     from .geometry import orientation
-    from .site_group_editor import validate_site_rows
     w._run_restore_error=''
     for widget,hidden in getattr(w,'_unavailable_input_widgets',[]):widget.setVisible(not hidden)
     w._unavailable_input_widgets=[]

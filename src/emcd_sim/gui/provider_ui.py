@@ -16,7 +16,7 @@ class ProviderUI:
 
     def bind_material_reference(self,cfg):
         """Reuse the existing physical-pair validator for the Material target."""
-        from .group_mdff import bind_group_direction
+        from ..mdff_providers import bind_group_direction
         if hasattr(self,'row'):row=self.row[:4]+(cfg,)
         else:
             indices=tuple(i for i,atom in enumerate(self.structure.atoms) if atom.symbol==cfg.ionizing_element)

@@ -6,40 +6,10 @@ The applied form snapshot also retains incomplete rows for the later MDFF UI.
 import numpy as np
 from PySide6 import QtCore, QtWidgets
 
-from ..multisite import IonizationSiteGroup, MultiSiteIonization, _ordered_atoms
+from ..multisite import validate_site_rows
 
 
 ROLE = QtCore.Qt.ItemDataRole.UserRole
-
-
-def validate_site_rows(atoms, rows):
-    """Shared validation of editor drafts; only complete rows form a Stage 1 model."""
-    if not rows:return None
-    _ordered_atoms(atoms)
-    names = set();assigned = set();complete = []
-    for name,element,indices,direction,reference in rows:
-        if not name.strip() or name in names:raise ValueError('Group IDs must be nonempty and unique')
-        names.add(name)
-        if not indices:raise ValueError('Groups need at least one atom; delete an empty group instead')
-        if len(set(indices))!=len(indices) or assigned.intersection(indices):
-            raise ValueError('Duplicate assignments: remove atoms from their current group first')
-        if any(isinstance(i,bool) or not isinstance(i,(int,np.integer)) or i<0 or i>=len(atoms) or atoms[i].symbol!=element for i in indices):
-            raise ValueError('Each group must contain valid original indices of one element')
-        assigned.update(indices)
-        if direction is None and getattr(reference,'magnetic_state',None)=='nonmagnetic':
-            # This is the source's declared compatibility/reference axis, not
-            # an inferred Material magnetization. The structural row stays None.
-            direction=reference.magnetization
-        if direction is None:
-            if reference is not None:raise ValueError('Declare a magnetic direction before binding an MDFF provider')
-            continue  # Structural draft only: no magnetic direction is inferred.
-        vector = np.asarray(direction)
-        if vector.shape!=(3,) or not np.isfinite(vector).all() or not np.any(vector):
-            raise ValueError('A finite nonzero magnetization direction is required')
-        if reference is not None:
-            complete.append(IonizationSiteGroup(name,element,indices,reference,direction,len(indices)))
-    model = MultiSiteIonization(atoms,complete) if complete else None
-    return model if len(complete)==len(rows) else None
 
 
 class SiteGroupEditor(QtWidgets.QScrollArea):
@@ -422,7 +392,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         return ('Incomplete' if actual=='Incomplete' else 'Incomplete — '+actual.lower()),detail
 
     def recheck_mdff_sources(self):
-        from .group_mdff import validate_group_reference
+        from ..mdff_providers import validate_group_reference
         for row in self.rows():
             if row[4] is None:continue
             try:
@@ -458,7 +428,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
         return self.configure_mdff()
 
     def accept_mdff(self, dialog, cfg, window):
-        from .group_mdff import validate_group_reference
+        from ..mdff_providers import validate_group_reference
         row = next((r for r in self.rows() if r[0] == dialog.row[0]),None)
         if row is None:raise ValueError('The site group was removed')
         validate_group_reference(row,cfg,window)
@@ -471,7 +441,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
     @property
     def validated_site_groups(self):
         from .material_inputs import ImportedSettings
-        from .group_mdff import validate_group_reference
+        from ..mdff_providers import validate_group_reference
         rows = tuple(self.effective_row(row) for row in self.participating_rows())
         if not rows:raise ValueError('Select at least one participating ionization group')
         for row in rows:
@@ -509,7 +479,7 @@ class SiteGroupEditor(QtWidgets.QScrollArea):
 
     def apply(self):
         from .material_inputs import ImportedSettings
-        from .group_mdff import bind_group_direction
+        from ..mdff_providers import bind_group_direction
         for name,dialog in self.mdff_dialogs.items():
             if name in {row[0] for row in self.participating_rows()} and dialog.has_unapplied_edits():
                 raise ValueError('Apply or Cancel pending MDFF edits for '+name+' before applying site groups')

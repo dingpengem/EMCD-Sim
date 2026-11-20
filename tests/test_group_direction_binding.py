@@ -6,10 +6,10 @@ import numpy as np
 import pytest
 
 from emcd_sim.gui.material_inputs import source_for, settings_for_source, settings_for_provider
-from emcd_sim.gui.group_mdff import bind_group_direction
+from emcd_sim.mdff_providers import bind_group_direction
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
 from emcd_sim.gui.project_io import save_configuration, load_configuration
-from emcd_sim.gui.site_group_editor import validate_site_rows
+from emcd_sim.multisite import validate_site_rows
 from test_multisite_gui_run import app, window, controls, sites_for, bind, finish, RAW
 from test_group_mdff import source
 

@@ -332,11 +332,10 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if not self.source_info:raise ValueError('Five-column XMCD: select a readable valid source file. '+self.source_status.text())
         if mode=='xmcd' and not self.declaration.isChecked():
             raise ValueError('Source conventions: confirm RP−LP about Material +M and the displayed L3/L2 assignments beside the source controls; parsing cannot establish these choices')
-        cfg=NiForwardSettings(**self.sampling_fields(),fft_generators=self.saved_fft_generators(),**self.compute_resources.settings(),channeling_model=('single','double')[self.channeling_box.currentIndex()],systematic_row=self.row_projection.isChecked(),propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),slice_step=self.spin['slice_step'].value(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
+        cfg=NiForwardSettings(**self.forward_control_fields(),model=mode,source=self.source_path.text(),source_sha256=self.source_info['sha256'] if self.source_info else '',axis_declared=self.declaration.isChecked(),magnetization=axis,
             eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value() if mode=='xmcd' else atomic.l3_ev,l2=self.spin['xl2'].value() if mode=='xmcd' else atomic.l2_ev,
             atomic=atomic,sigma=self.spin['sigma'].value(),radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
-            grid=self.spin['grid'].value(),depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
-            centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=False,window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
+            window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()))
         if mode=='atomic' and self.atomic_editor.historical_config is not None:
             saved=self.atomic_editor.historical_config
             if not np.allclose(np.asarray(axis)/np.linalg.norm(axis),np.asarray(saved.magnetization)/np.linalg.norm(saved.magnetization)):

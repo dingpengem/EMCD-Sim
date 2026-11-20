@@ -3,6 +3,8 @@ import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import json
 import shutil
+import subprocess
+import sys
 from dataclasses import asdict, replace
 from pathlib import Path
 
@@ -83,6 +85,35 @@ def test_afm_cr_indices_structure_arrays_modes_and_numerics_roundtrip(tmp_path):
     assert [g.indices for g in loaded['site_groups'].groups]==[(0,),(1,)]
     np.testing.assert_array_equal([g.magnetization for g in loaded['site_groups'].groups],[[0,0,1],[0,0,-1]])
     assert not any(root.glob('*.npz'))
+
+
+def test_local_configuration_roundtrip_without_widget_dependencies(tmp_path):
+    """Persistence must validate groups/providers without loading Qt editors."""
+    atoms = bulk('Cr','bcc',a=2.88,cubic=True)
+    reference = tensor_source(tmp_path,'Cr','Cr')
+    group = IonizationSiteGroup('Cr-up','Cr',(0,),reference,(0,0,1),1)
+    root = io.save_configuration(configuration(atoms,[group]),tmp_path/'headless')
+    program = '''
+import builtins
+import sys
+original_import = builtins.__import__
+def without_widgets(name, *args, **kwargs):
+    if name == 'PySide6' or name.startswith('PySide6.'):
+        raise AssertionError('Configuration persistence imported a Qt editor')
+    return original_import(name, *args, **kwargs)
+builtins.__import__ = without_widgets
+from emcd_sim.gui.project_io import load_configuration, save_configuration
+state = load_configuration(sys.argv[1])
+assert state['ready_for_calculation']
+assert state['site_groups'].groups[0].indices == (0,)
+again = load_configuration(save_configuration(state, sys.argv[2]))
+assert again['ready_for_calculation']
+assert again['config'].centers == state['config'].centers
+assert not any(n == 'PySide6' or n.startswith('PySide6.') for n in sys.modules)
+'''
+    completed = subprocess.run([sys.executable,'-B','-c',program,str(root),str(tmp_path/'again')],
+        capture_output=True,text=True,timeout=60)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_fe3o4_manual_pair_portable_relocation_and_exact_amplitudes(tmp_path):

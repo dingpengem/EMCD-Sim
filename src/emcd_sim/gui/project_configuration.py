@@ -25,7 +25,7 @@ from ..multisite_spectrum import ModeledEdgeWindow, _samples
 from . import project_io as io
 from ..cancellation import Cancelled
 from .material_inputs import ImportedSettings
-from .site_group_editor import validate_site_rows
+from ..multisite import validate_site_rows
 
 
 def _encode_config(cfg):
@@ -214,7 +214,7 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
         if effective_path!=cfg.source:state['source_overrides'][key] = effective_path
         return replace(cfg,source=effective_path),status
     effective = [];invalid_groups = []
-    from .group_mdff import validate_group_reference
+    from ..mdff_providers import validate_group_reference
     for r in records:
         check('Validating '+r['group_id']);key = 'group:'+r['group_id'];reference = r['mdff_reference']
         if not r.get('enabled',True):

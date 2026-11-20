@@ -63,15 +63,7 @@ def saved_inputs_match(result,signature):
 def forward_settings(window):
     """Read shared numerical/detector controls, never the legacy MDFF or M."""
     if window.spin['grid'].value()%2 == 0:raise ValueError('Choose an odd angular / detector grid size')
-    cfg = MultiSiteForwardSettings(
-        fft_generators=window.saved_fft_generators(),**window.compute_resources.settings(),channeling_model=('single','double')[window.channeling_box.currentIndex()],
-        **window.sampling_fields(),
-        systematic_row=window.row_projection.isChecked(),
-        propagation=('bloch','fft-multislice','both')[window.propagation_box.currentIndex()],
-        fft_grid=window.spin['fft_grid'].value(),slice_step=window.spin['slice_step'].value(),
-        grid=window.spin['grid'].value(),depth=window.spin['depth'].value(),subpixels=window.spin['subpixels'].value(),
-        halfwidth=window.spin['halfwidth'].value(),centers=tuple(tuple(p) for p in window.detectors),
-        radius=window.spin['radius'].value(),correction=False)
+    cfg = MultiSiteForwardSettings(**window.forward_control_fields())
     if cfg.channeling_model == 'double' and cfg.propagation == 'both':
         raise ValueError('Multi-site Double Channeling requires a separate BW or FFT Multislice run; select one solver')
     return cfg

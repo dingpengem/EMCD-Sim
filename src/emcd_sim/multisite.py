@@ -141,3 +141,33 @@ class MultiSiteIonization:
         delta -= np.rint(delta)
         if not np.allclose(delta, 0, rtol=0, atol=1e-9):
             raise ValueError('Site groups do not match the ordered crystal positions')
+
+
+def validate_site_rows(atoms, rows):
+    """Shared validation of editor drafts; only complete rows form a Stage 1 model."""
+    if not rows:return None
+    _ordered_atoms(atoms)
+    names = set();assigned = set();complete = []
+    for name,element,indices,direction,reference in rows:
+        if not name.strip() or name in names:raise ValueError('Group IDs must be nonempty and unique')
+        names.add(name)
+        if not indices:raise ValueError('Groups need at least one atom; delete an empty group instead')
+        if len(set(indices))!=len(indices) or assigned.intersection(indices):
+            raise ValueError('Duplicate assignments: remove atoms from their current group first')
+        if any(isinstance(i,bool) or not isinstance(i,(int,np.integer)) or i<0 or i>=len(atoms) or atoms[i].symbol!=element for i in indices):
+            raise ValueError('Each group must contain valid original indices of one element')
+        assigned.update(indices)
+        if direction is None and getattr(reference,'magnetic_state',None)=='nonmagnetic':
+            # This is the source's declared compatibility/reference axis, not
+            # an inferred Material magnetization. The structural row stays None.
+            direction=reference.magnetization
+        if direction is None:
+            if reference is not None:raise ValueError('Declare a magnetic direction before binding an MDFF provider')
+            continue  # Structural draft only: no magnetic direction is inferred.
+        vector = np.asarray(direction)
+        if vector.shape!=(3,) or not np.isfinite(vector).all() or not np.any(vector):
+            raise ValueError('A finite nonzero magnetization direction is required')
+        if reference is not None:
+            complete.append(IonizationSiteGroup(name,element,indices,reference,direction,len(indices)))
+    model = MultiSiteIonization(atoms,complete) if complete else None
+    return model if len(complete)==len(rows) else None

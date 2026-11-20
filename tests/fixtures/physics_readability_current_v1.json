@@ -182,7 +182,7 @@
     },
     "src/emcd_sim/gui/calculation_controls.py": {
       "mode": "canonical",
-      "sha256": "9ca39427cdae24b89b4933863b53c6161784b89c99b968285d0f87a2970528c1"
+      "sha256": "fb743c04d65ab934cdfb1e0d7bbcd0e3cefd95ca47c4d8bae60083023949afb7"
     },
     "src/emcd_sim/gui/calculation_worker.py": {
       "mode": "canonical",
@@ -246,7 +246,7 @@
     },
     "src/emcd_sim/gui/numerical_settings.py": {
       "mode": "canonical",
-      "sha256": "885d93ebc81c1ab64656905b46037cbe45ebf53c45480748ee675141cbdcb4c9"
+      "sha256": "9b0f5dbcf1999c5d545334cd83bc155cd0049ed66512c5b91d6c7a1b89a534a7"
     },
     "src/emcd_sim/gui/parallel_acceptance.py": {
       "mode": "canonical",
@@ -270,7 +270,7 @@
     },
     "src/emcd_sim/gui/provider_ui.py": {
       "mode": "canonical",
-      "sha256": "1887a3c39786a02f66ce13c446ce1d795586786c0f6e205a3c9d144532a82d74"
+      "sha256": "6778251d06d4152a341dff84a8c5b69f86d6d7317c957c9ed9d92fd1eaaae251"
     },
     "src/emcd_sim/gui/responsive.py": {
       "mode": "canonical",
@@ -314,7 +314,7 @@
     },
     "src/emcd_sim/mdff_providers.py": {
       "mode": "canonical",
-      "sha256": "1a1a785746dd2d7e46aaae3de8e751bbd1eeee8a46a2fb99a6bb2ce7f829e488"
+      "sha256": "e56eea03abd1662e875af774d4bf342ff93cad0232c8cf370161b260ef65238f"
     },
     "src/emcd_sim/multislice_double_channeling.py": {
       "mode": "canonical",

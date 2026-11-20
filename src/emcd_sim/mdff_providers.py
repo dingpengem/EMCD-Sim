@@ -10,6 +10,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import hashlib
 import json
+import numpy as np
 from .imported_mdff import ImportedMDFF
 
 
@@ -103,3 +104,45 @@ def prepare_site_group_providers(sites, energy_ev, crystal_to_microscope):
         tensors = source.tensors(energy_ev, rotation, group.magnetization)
         prepared.append((group, tensors, source.provenance()))
     return tuple(prepared)
+
+
+def validate_group_reference(row, reference=None, window=None):
+    name, element, indices, direction, current = row
+    cfg = current if reference is None else reference
+    if getattr(cfg,'magnetic_state',None)=='nonmagnetic':direction=cfg.magnetization
+    from .multisite import IonizationSiteGroup
+    group = IonizationSiteGroup(name,element,indices,cfg,direction,len(indices))
+    source = load_site_group_provider(group)
+    bounds = source.energy_ev[[0,-1]] if window is None else np.asarray(window.bounds_ev)
+    if bounds[0] < source.energy_ev[0] or bounds[-1] > source.energy_ev[-1]:
+        raise ValueError('Missing MDFF coverage within required modeled window')
+    energy = np.unique(bounds if window is None or window.energy_ev is None else
+                       np.r_[bounds,window.energy_ev])
+    source.tensors(energy,np.eye(3),group.magnetization)
+    return source
+
+
+def bind_group_direction(row, window=None):
+    """Prepare an acknowledged provider binding without changing any live row."""
+    from .gui.material_inputs import ImportedSettings
+    name,element,indices,direction,current = row
+    if current is None:return current
+    if not isinstance(current,ImportedSettings):
+        raise ValueError(f'Group {name}: configure an acknowledged MDFF provider first')
+    if current.magnetic_state=='nonmagnetic':
+        validate_group_reference(row,current,window);return current
+    if direction is None:raise ValueError(f'Group {name}: declare Material magnetization for this magnetic provider')
+    for reversed_pair in (False,True):
+        candidate=replace(current,magnetization=direction,pair_reversed=reversed_pair)
+        try:
+            validate_group_reference(row,candidate,window)
+            return current if candidate==current else candidate
+        except (ValueError,OSError) as exc:
+            if not reversed_pair:first_error=exc
+    try:
+        d=load_provider(current).metadata
+        detail=f"source axis {d['magnetization_crystal']}, frame_to_crystal={d['frame_to_crystal']}"
+    except (ValueError,OSError):detail='source axis/frame unavailable because source validation failed'
+    raise ValueError(f'Group {name}: requested crystal Cartesian direction {direction} is incompatible with '
+        f'{detail} or its physical reversal pair. {first_error}. '
+        'Open this group\'s MDFF Editor or supply a compatible validated source; accepted settings are unchanged.')
