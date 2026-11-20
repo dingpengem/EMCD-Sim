@@ -15,9 +15,9 @@ import numpy as np
 import pytest
 
 from emcd_sim.geometry import VirtualDetector, characteristic_qz_angstrom_inv
-from emcd_sim.gui import channeling
+from emcd_sim import channeling as channeling
 from emcd_sim.forward_settings import NiForwardSettings
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.historical_ni import tensors
 from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model, geometry

@@ -36,6 +36,8 @@ def classification(record):
     if module.endswith(('/benchmark.py','/study_presets.py','/multislice_reference.py')):
         return 'E','Independent scientific benchmark/reference; retained'
     if module.endswith('/gui/forward_pipeline.py'):
+        return 'general','Supported public calculate re-export; no calculation body'
+    if module.endswith('/forward_pipeline.py'):
         return 'general','Canonical explicit-input calculation API; shared kernels, no material fallback'
     if module.endswith(('/single_channeling_tensor.py','/double_channeling.py')):
         return 'B,D','Kernel unchanged; explicit generalized sites bypass historical Ni-only default domain'

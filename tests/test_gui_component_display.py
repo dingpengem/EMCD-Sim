@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from matplotlib.figure import Figure
 from emcd_sim.gui.component_display import components,mirrored_angular_components
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.gui.result_export import export_result
 from emcd_sim.structure_geometry import Structure, Settings
@@ -65,7 +65,7 @@ def result():
 
 def test_primary_two_panels_preserve_raw_eels_and_component_signs(result):
     s=result['spectra'];before={k:v.copy() for k,v in s.items()}
-    with patch('emcd_sim.gui.forward_pipeline.calculate',side_effect=AssertionError('Display must not calculate')):
+    with patch('emcd_sim.forward_pipeline.calculate',side_effect=AssertionError('Display must not calculate')):
         fig=Figure();draw_eels(fig,result)
         assert len(fig.axes)==2
         np.testing.assert_array_equal(next(l for l in fig.axes[0].lines if l.get_label()=='Detector A').get_ydata(),s['I_A_plus'])
@@ -170,7 +170,7 @@ def test_project_restores_display_and_locked_energy_without_changing_arrays(resu
         assert not w.busy and w.run_outcome=='completed'
         loaded=load_collection(root/'project')['runs'][0][1];assert 'display_state.json' in loaded['project_manifest']['files']
         view.component_mode.setCurrentIndex(0);p.fixed.setChecked(False)
-        with patch('emcd_sim.gui.forward_pipeline.calculate',side_effect=AssertionError('Display must not calculate')):w.display_saved_result(loaded)
+        with patch('emcd_sim.forward_pipeline.calculate',side_effect=AssertionError('Display must not calculate')):w.display_saved_result(loaded)
         assert view.component_mode.currentData()=='asymmetry' and view.choice.currentText()=='L2 zoom'
         assert p.fixed.isChecked() and p.energy.value()==result['config'].l2
         for k,v in before.items():np.testing.assert_array_equal(v,loaded['spectra'][k])

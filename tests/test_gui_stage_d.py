@@ -11,7 +11,7 @@ from contextlib import ExitStack
 import numpy as np
 from PySide6 import QtWidgets,QtCore
 from matplotlib.figure import Figure
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
 from emcd_sim.structure_geometry import Structure, Settings, restore_structure
 from emcd_sim.gui.project_io import *
@@ -26,7 +26,7 @@ ROOT=Path('outputs/gui_stage_d')/('tests_'+uuid.uuid4().hex)
 
 def no_solvers():
     stack=ExitStack()
-    for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni','emcd_sim.historical_ni.tensors','emcd_sim.gui.forward_pipeline.calculate'):
+    for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni','emcd_sim.historical_ni.tensors','emcd_sim.forward_pipeline.calculate'):
         stack.enter_context(patch(name,side_effect=AssertionError('Forward solver called during read/compare')))
     return stack
 

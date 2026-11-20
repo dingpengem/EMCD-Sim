@@ -138,7 +138,7 @@ class ResultsView(QtWidgets.QWidget):
                     unique=sum(s['edge_label']==sample['edge_label'] for s in energies)==1
                     self.choice.addItem((sample['edge_label'] if unique else sample['label'])+' zoom',sample['energy_ev'])
         if not multisite:self.normalization.set_result(result)
-        from .propagation import METHOD_NAMES
+        from emcd_sim.propagation import METHOD_NAMES
         options=list(result.get('methods',{result.get('method','bloch'):result}))
         if len(options)==2 and not multisite:options.append('difference' if self.kind in ('maps','diffraction') else 'overlay')
         self.method.blockSignals(True);self.method.clear()

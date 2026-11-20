@@ -84,7 +84,7 @@ def main():
                 exported_png_svg=True,screenshot=str(target),source_free_numeric_data=True)
             (args.output/'acceptance.json').write_text(json.dumps(report,indent=2)+'\n');w.close();app.quit()
         with ExitStack() as guards:
-            for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni','emcd_sim.gui.forward_pipeline.calculate','emcd_sim.historical_ni.tensors'):
+            for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni','emcd_sim.forward_pipeline.calculate','emcd_sim.historical_ni.tensors'):
                 guards.enter_context(patch(name,side_effect=AssertionError('Solver executed during reopen/compare')))
             w.project_ready.connect(opened);QtCore.QTimer.singleShot(300,open_next);code=app.exec()
         if code or failed:raise RuntimeError(f'Reopen acceptance failed: {failed}')

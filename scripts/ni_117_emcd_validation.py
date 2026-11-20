@@ -12,13 +12,13 @@ from emcd_sim.study_presets import NickelStudyGeometry
 Ni117Geometry=lambda a_angstrom=3.524: NickelStudyGeometry((1,1,7),(2,-2,0),a_angstrom)
 from emcd_sim.structure_geometry import Structure, Settings, geometry, excitation
 from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.mirror_parity import row_mirror_diagnostics
 
 ROOT=Path(__file__).resolve().parents[1]
 PHYSICS_FILES=['projected_geometry.py','crystallography.py','projected_potential.py','multislice_double_channeling.py','double_channeling.py',
     'single_channeling_tensor.py','physical_elastic.py','mdff_tensor.py','scattering.py',
-    'gui/geometry.py','structure_geometry.py','gui/propagation.py','gui/channeling.py','gui/forward_pipeline.py','forward_results.py']
+    'gui/geometry.py','structure_geometry.py','propagation.py','channeling.py','forward_pipeline.py','forward_results.py']
 
 
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()

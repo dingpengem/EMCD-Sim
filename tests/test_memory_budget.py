@@ -11,7 +11,7 @@ import pytest
 from emcd_sim import memory_budget as memory
 from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.structure_geometry import Settings, Structure
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.propagation import numerical_info
 from emcd_sim.gui.project_io import config_from_dict
 
 SNAPSHOT = dict(available_ram_mib=32768., process_rss_mib=64.)
@@ -105,7 +105,7 @@ def test_gui_budget_selector_and_start_admission(tmp_path, monkeypatch):
     monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.forward_pipeline import calculate
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         w = MainWindow(workspace=tmp_path/'workspace')
@@ -117,7 +117,7 @@ def test_gui_budget_selector_and_start_admission(tmp_path, monkeypatch):
         w.close()
     # A RAM change after UI preview is checked again at calculation entry.
     with patch.object(memory, 'memory_snapshot', return_value=dict(available_ram_mib=100, process_rss_mib=64)):
-        with patch('emcd_sim.gui.forward_pipeline._calculate_uniform_prepared') as engine:
+        with patch('emcd_sim.forward_pipeline._calculate_uniform_prepared') as engine:
             with pytest.raises(ValueError, match='currently available RAM'):
                 calculate(Structure.nickel(), Settings(), NiForwardSettings())
             engine.assert_not_called()

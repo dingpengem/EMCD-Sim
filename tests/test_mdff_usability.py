@@ -10,7 +10,7 @@ from emcd_sim.mdff_orientation import axis_rotation
 from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.gui.mdff_usability import complex_cell
 from emcd_sim.mdff_providers import source_for
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.gui.project_io import save_project, load_project, source_status
 
 ROOT=Path(__file__).resolve().parents[1]

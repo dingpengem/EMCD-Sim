@@ -8,7 +8,7 @@ from dataclasses import replace
 from unittest.mock import patch
 import numpy as np
 import pytest
-from emcd_sim.gui import forward_pipeline as f
+from emcd_sim import forward_pipeline as f
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.double_channeling import prepare_incoming_bloch,double_channeling_response,outgoing_elastic
 
@@ -56,7 +56,7 @@ def test_energy_checkpoint_reuses_only_completed_points(small):
         if data is None:return cache.get((method,e))
         cache[method,e]=data;writes.append(e)
     first=f.calculate(a,s,c,energy_ev=np.array([c.l3,c.l2]),energy_checkpoint=checkpoint)
-    with patch('emcd_sim.gui.channeling.double_channeling_response',side_effect=AssertionError('Completed point restarted')):
+    with patch('emcd_sim.channeling.double_channeling_response',side_effect=AssertionError('Completed point restarted')):
         again=f.calculate(a,s,c,energy_ev=np.array([c.l3,c.l2]),energy_checkpoint=checkpoint)
     assert len(writes)==2
     for k in first['spectra']:np.testing.assert_array_equal(first['spectra'][k],again['spectra'][k])
@@ -86,13 +86,13 @@ def test_reversal_and_single_unchanged(small):
     p=f.calculate(a,s,c);m=f.calculate(a,s,replace(c,eta=-1))
     np.testing.assert_allclose(p['spectra']['D_mag'],-m['spectra']['D_mag'],atol=1e-14)
     np.testing.assert_allclose(p['spectra']['D_nonmag'],m['spectra']['D_nonmag'],atol=1e-14)
-    with patch('emcd_sim.gui.channeling.prepare_incoming_bloch',side_effect=AssertionError('Single uses legacy propagation')):
+    with patch('emcd_sim.channeling.prepare_incoming_bloch',side_effect=AssertionError('Single uses legacy propagation')):
         r=f.calculate(a,s,replace(c,channeling_model='single'))
     assert r['config'].channeling_model=='single'
 
 
 def test_cancelled_spectrum_resumes_without_repeating_completed_energy(small):
-    from emcd_sim.gui import channeling
+    from emcd_sim import channeling as channeling
     from emcd_sim import memory_budget as memory_budget
     a,s,c=small;energy=np.array([c.l3,c.l2]);cache={};stop=[False]
     def checkpoint(method,e,data):

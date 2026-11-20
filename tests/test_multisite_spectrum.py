@@ -6,8 +6,10 @@ import numpy as np
 import pytest
 from ase import Atoms
 
-from emcd_sim.gui import forward_pipeline, propagation, channeling
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim import forward_pipeline as forward_pipeline
+from emcd_sim import channeling as channeling
+from emcd_sim import propagation as propagation
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
@@ -125,7 +127,7 @@ def test_window_selection_keeps_denominator_and_provider_amplitude(tmp_path):
 
 @pytest.mark.parametrize('partial_overlap',[False,True])
 def test_same_element_overlapping_grids_and_common_grid_compatibility(tmp_path,monkeypatch,partial_overlap):
-    import emcd_sim.gui.forward_pipeline as forward
+    import emcd_sim.forward_pipeline as forward
 
     structure,settings,sites=system(tmp_path,same_element=True)
     windows=dict(A=ModeledEdgeWindow((704.,720.) if partial_overlap else (704.,730.),(710.,716.)),
@@ -175,7 +177,7 @@ def test_explicit_exclusions_are_not_physical_zeros_and_reversal_is_global(tmp_p
 
 def test_single_element_window_matches_existing_forward(tmp_path):
     from test_multisite_forward import system as ni_system
-    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.forward_pipeline import calculate
 
     structure,settings,sites,refs=ni_system(tmp_path)
     cfg=configuration(angular_maps=False)

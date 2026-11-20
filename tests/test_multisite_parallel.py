@@ -15,11 +15,11 @@ import pytest
 from emcd_sim import multislice_double_channeling as ms
 from emcd_sim import multisite_double_channeling as multi
 from emcd_sim.cancellation import Cancelled, check_cancelled
-from emcd_sim.gui import channeling
+from emcd_sim import channeling as channeling
 from emcd_sim import memory_budget as memory_budget
 from emcd_sim import parallel_resources as parallel_resources
-from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.propagation import numerical_info
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from test_multisite_forward import configuration, system as ni_system, RAW_KEYS, PARITY_KEYS
 from test_multisite_spectrum import system, disjoint_windows

@@ -7,7 +7,7 @@ from legacy_geometry import Ni017Geometry
 from emcd_sim.structure_geometry import Structure, Settings, geometry, orientation, excitation, align_bragg, elastic_model
 from emcd_sim.gui.geometry import indices
 from emcd_sim.forward_settings import NiForwardSettings
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.historical_ni import tensors
 from emcd_sim.gui.project_io import save_project, load_project, fingerprints, settings_from_dict
 from emcd_sim.multislice_double_channeling import ProjectedFFT, incident_fields
@@ -86,7 +86,7 @@ def test_missing_or_invalid_saved_117_frame_blocks_input_reuse(frame):
 
 @pytest.mark.parametrize('solver',['bloch','fft-multislice','both'])
 def test_117_cutoff_and_sampling_warnings_apply_to_all_solvers(solver):
-    from emcd_sim.gui.propagation import numerical_info
+    from emcd_sim.propagation import numerical_info
     structure=Structure.nickel();s=settings(potential_cutoff=2.5)
     cfg=config(propagation=solver,grid=33)
     info=numerical_info(structure,s,cfg,check_memory=False)
@@ -99,7 +99,7 @@ def test_117_cutoff_and_sampling_warnings_apply_to_all_solvers(solver):
 def test_automatic_unsupported_orientation_fails_without_mesh_retries():
     from unittest.mock import patch
     from emcd_sim.gui.numerical_settings import resolve_parameters
-    with patch('emcd_sim.gui.propagation.numerical_info',side_effect=ValueError('Unsupported FFT zone; no automatic fallback.')) as check:
+    with patch('emcd_sim.propagation.numerical_info',side_effect=ValueError('Unsupported FFT zone; no automatic fallback.')) as check:
         with pytest.raises(ValueError,match='no automatic fallback'):
             resolve_parameters(Structure.nickel(),settings(zone=(1,1,1)),config())
     assert check.call_count==1

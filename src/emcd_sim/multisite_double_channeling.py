@@ -73,7 +73,7 @@ def _contract_multisite_double(model, sites, plan, qx, qy, *, crystal_to_microsc
         batch_size=32
     groups,weighted=_empty_group_intensities(sites,plan,qx.shape)
     queries=np.column_stack((qx.ravel(),qy.ravel()))
-    from .gui.channeling import worker_count,map_detector_batches
+    from emcd_sim.channeling import worker_count, map_detector_batches
     workers=worker_count(len(model.elastic.beams.hkl),propagation) if execution_workers is None else execution_workers
     diagnostics=[]
     for ie,loss in enumerate(energy):

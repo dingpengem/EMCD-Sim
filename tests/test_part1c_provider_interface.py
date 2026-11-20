@@ -1,10 +1,10 @@
 """Provider contract and exact historical evaluation through common preparation."""
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.forward_settings import NiForwardSettings
 from dataclasses import replace
 import numpy as np
 import pytest
-from emcd_sim.gui import forward_pipeline
+from emcd_sim import forward_pipeline as forward_pipeline
 from emcd_sim import mdff_providers as material_inputs
 from emcd_sim.structure_geometry import Structure
 from emcd_sim.mdff_providers import prepare_provider

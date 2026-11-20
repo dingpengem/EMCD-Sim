@@ -3,7 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 import threading,time
 import pytest
-from emcd_sim.gui import channeling
+from PySide6 import QtCore,QtWidgets
+from emcd_sim import channeling as channeling
 from emcd_sim.cancellation import Cancelled
 
 
@@ -49,9 +50,8 @@ def test_guard_releases_on_error_and_early_cancel(monkeypatch):
 
 def test_gui_resource_rejection_remains_responsive(tmp_path,monkeypatch):
     from unittest.mock import Mock
-    from PySide6 import QtCore,QtWidgets
     from emcd_sim.gui.app import MainWindow
-    import emcd_sim.gui.propagation as propagation
+    import emcd_sim.propagation as propagation
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window=MainWindow(workspace=tmp_path/'workspace')
     try:

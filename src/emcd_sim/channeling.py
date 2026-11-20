@@ -4,10 +4,10 @@ from contextlib import contextmanager
 import sys,threading,os
 from time import perf_counter,thread_time
 import numpy as np
-from ..double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch,prepare_outgoing_bloch
-from ..multislice_double_channeling import ProjectedFFT, incident_fields, multislice_double_channeling_response
-from ..single_channeling_tensor import _tensor_angular_maps, historical_ni_site_phase_matrix
-from ..mdff_edges import selected_samples
+from .double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch,prepare_outgoing_bloch
+from .multislice_double_channeling import ProjectedFFT, incident_fields, multislice_double_channeling_response
+from .single_channeling_tensor import _tensor_angular_maps, historical_ni_site_phase_matrix
+from .mdff_edges import selected_samples
 
 
 def fft_geometry(elastic,settings,cfg,*,cancelled=None):
@@ -52,7 +52,7 @@ def bw_executor_guard(method,cancelled):
     """
     if method!='bloch' or sys.platform!='win32':
         yield;return
-    from ..cancellation import check_cancelled
+    from .cancellation import check_cancelled
     while not _windows_bw_lock.acquire(timeout=.05):check_cancelled(cancelled)
     try:
         check_cancelled(cancelled)
@@ -73,7 +73,7 @@ def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics
     running work on the first failure, join this executor, and preserve the
     originating exception even if an earlier batch subsequently cancels.
     """
-    from ..cancellation import check_cancelled
+    from .cancellation import check_cancelled
     from emcd_sim.parallel_resources import MAX_WORKERS, calculation_blas_guard
     if type(workers) is not int or not 1<=workers<=MAX_WORKERS:
         raise ValueError('Unsupported detector worker count')
@@ -156,9 +156,9 @@ def calculate_detector_signals(model,settings,cfg,method,C,energy,tensors,stage,
     outputs are raw detector spectra (energy,) and selected maps (qy,qx).
     No material model or GUI state is constructed here.
     """
-    from ..cancellation import Cancelled
+    from .cancellation import Cancelled
     from emcd_sim.structure_geometry import projected_geometry_from_oriented_crystal
-    from .propagation import SINGLE_CHANNELING_PIXEL_BATCH
+    from emcd_sim.propagation import SINGLE_CHANNELING_PIXEL_BATCH
     qx,qy,weights,detector_support,selected=angular_schedule(model,cfg,energy)
     dq2=(qx[0,1]-qx[0,0])**2
     full_weights=np.stack([weights[k].ravel() for k in ('A','B')])

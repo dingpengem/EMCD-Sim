@@ -8,7 +8,7 @@ from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.structure_geometry import Settings, Structure
 from emcd_sim.memory_budget import assess_memory, selected_memory_budget
 from emcd_sim.parallel_resources import worker_plan, bind_allocation
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.propagation import numerical_info
 from emcd_sim.hardware_resources import summarize_cpu_sets
 
 

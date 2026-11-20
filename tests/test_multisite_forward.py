@@ -8,8 +8,10 @@ import pytest
 from ase.build import bulk
 
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.gui import forward_pipeline, propagation, channeling
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim import forward_pipeline as forward_pipeline
+from emcd_sim import channeling as channeling
+from emcd_sim import propagation as propagation
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.forward_settings import MultiSiteForwardSettings
 from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.structure_geometry import Structure, Settings

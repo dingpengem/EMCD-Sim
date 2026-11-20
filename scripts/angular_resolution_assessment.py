@@ -7,9 +7,9 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from emcd_sim.gui.project_io import load_project
 from emcd_sim.structure_geometry import restore_structure
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.gui.result_export import export_result
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.propagation import numerical_info
 from emcd_sim.gui.result_presentation import draw_maps
 
 ROOT=Path('outputs/angular_resolution_assessment')

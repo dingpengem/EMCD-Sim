@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
 from emcd_sim.xmcd_source import inspect_xmcd_source
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.gui.result_export import export_result
 from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.study_presets import NickelStudyGeometry,xmcd_tensor_in_frame

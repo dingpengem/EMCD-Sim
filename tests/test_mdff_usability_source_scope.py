@@ -64,8 +64,10 @@ def test_positive_and_independent_historical_queries():
     tuple(scope.READABILITY_RENAMES[p] for p in (
         'src/emcd_sim/gui/emcd_forward.py',
         'src/emcd_sim/gui/generalized_forward.py',
-        'src/emcd_sim/gui/parallel_resources.py'))+
-    ('src/emcd_sim/gui/memory_budget.py',))
+        'src/emcd_sim/gui/parallel_resources.py',
+        'src/emcd_sim/gui/propagation.py',
+        'src/emcd_sim/gui/channeling.py'))+
+    ('src/emcd_sim/gui/memory_budget.py','src/emcd_sim/gui/forward_pipeline.py',))
 def test_each_candidate_mutation(path):
     rejected({path:(scope.ROOT/path).read_bytes()+b'\nunauthorized bytes\n'},path)
 

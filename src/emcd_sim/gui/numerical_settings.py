@@ -37,7 +37,7 @@ def resolve_parameters(structure, settings, cfg):
     resolved=replace(settings,beam_cutoff=values['beam'],potential_cutoff=values['potential'])
     hkl=geometry(structure,resolved,systematic_row=cfg.systematic_row)[2]
     if cfg.propagation!='bloch':
-        from .propagation import numerical_info
+        from emcd_sim.propagation import numerical_info
         # Start with the released/reference mesh; never shrink it. A two-index
         # guard band below adds a margin to exact geometry-specific support.
         last=''

@@ -9,7 +9,7 @@ from emcd_sim.gui.atomic_editor import FIELDS
 from emcd_sim.gui.atomic_editor_model import edge_references
 from emcd_sim.gui.project_io import config_from_dict,save_project,load_project
 from emcd_sim.structure_geometry import Structure, Settings
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.mdff_providers import source_for
 from emcd_sim.mdff_providers import load_provider,prepare_provider
 from emcd_sim.mdff_orientation import axis_rotation

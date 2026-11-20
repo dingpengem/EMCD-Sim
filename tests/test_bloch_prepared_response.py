@@ -7,7 +7,7 @@ from emcd_sim import double_channeling as bw
 from emcd_sim.benchmark import nickel_physical_benchmark
 from emcd_sim.elastic import BeamSet
 from emcd_sim.cancellation import Cancelled
-from emcd_sim.gui.channeling import map_detector_batches
+from emcd_sim.channeling import map_detector_batches
 
 
 @pytest.fixture

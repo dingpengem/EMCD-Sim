@@ -6,7 +6,9 @@ import numpy as np
 import pytest
 from ase.build import bulk
 
-from emcd_sim.gui import forward_pipeline as forward, propagation, multisite_integration
+from emcd_sim import forward_pipeline as forward
+from emcd_sim import multisite_integration as multisite_integration
+from emcd_sim import propagation as propagation
 from emcd_sim import memory_budget as memory_budget
 from emcd_sim.detector_signals import integrate_detector_block
 from emcd_sim.structure_geometry import Settings, Structure

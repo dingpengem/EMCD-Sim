@@ -8,7 +8,7 @@ from PySide6 import QtWidgets
 from emcd_sim.structure_geometry import Settings, Structure, align_bragg
 from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.parallel_resources import worker_plan, IMPLICATED_DLL_SHA256, native_backend_info
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.propagation import numerical_info
 from emcd_sim.gui.project_io import config_from_dict
 
 
@@ -109,7 +109,7 @@ def test_automatic_ms_reduces_only_workers_to_fit_ram(monkeypatch):
 
 
 def test_execution_plan_change_rejected_before_solver(monkeypatch):
-    from emcd_sim.gui import forward_pipeline
+    from emcd_sim import forward_pipeline as forward_pipeline
     monkeypatch.setattr('emcd_sim.parallel_resources.native_backend_info',lambda:native(1))
     solve=Mock();monkeypatch.setattr(forward_pipeline,'_calculate_uniform_prepared',solve)
     cfg=replace(NiForwardSettings(),model='atomic',channeling_model='double',l3=852.7,l2=870.)

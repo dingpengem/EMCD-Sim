@@ -18,7 +18,7 @@ def result():
     from emcd_sim.gui.project_io import load_project
     saved=Path('outputs/windows_beta_acceptance/source_native/double_both_project')
     if (saved/'project.json').exists():return load_project(saved)
-    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.forward_pipeline import calculate
     from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.structure_geometry import Structure, Settings
     return calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),

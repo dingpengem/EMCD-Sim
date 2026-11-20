@@ -10,7 +10,7 @@ import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.project_io import config_from_dict,load_project
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.propagation import numerical_info
 from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.forward_settings import NiForwardSettings
 from historical_xmcd_test_support import historical_xmcd_source,relocate_historical_xmcd_config
@@ -25,7 +25,7 @@ def app():
 @pytest.fixture
 def window(app,tmp_path):
     with ExitStack() as guards:
-        for name in ('emcd_sim.gui.forward_pipeline.calculate','emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.gui.channeling.double_channeling_response','emcd_sim.gui.channeling.multislice_double_channeling_response'):
+        for name in ('emcd_sim.forward_pipeline.calculate','emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.channeling.double_channeling_response','emcd_sim.channeling.multislice_double_channeling_response'):
             guards.enter_context(patch(name,side_effect=AssertionError('No propagation allowed in presentation tests')))
         w=MainWindow(workspace=tmp_path/'workspace');w.numerical_mode.setCurrentIndex(1);w.model_box.setCurrentIndex(1)
         from emcd_sim.gui.saved_atomic_ui import restore
@@ -109,7 +109,7 @@ def test_solver_visibility_and_classification(window,selection):
 
 
 def test_switching_updates_real_memory_estimates_without_mutating_settings(window,monkeypatch):
-    import emcd_sim.gui.propagation as propagation
+    import emcd_sim.propagation as propagation
     original=propagation.numerical_info;calls=[]
     def capture(*args,**kwargs):
         cfg=args[2];value=original(*args,**kwargs);calls.append((cfg,value))
@@ -198,7 +198,7 @@ def test_solver_configuration_and_physics_unchanged():
     # bit-for-bit with archived code in test_ms_double_buffers for [001]/[017].
     assert ast.dump(find(ms_current,'indices'))==ast.dump(find(ms_old,'indices'))
     path='src/emcd_sim/gui/propagation.py'
-    now=ast.parse(Path(path).read_text(encoding='utf-8-sig'));before=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
+    now=ast.parse(Path('src/emcd_sim/propagation.py').read_text(encoding='utf-8-sig'));before=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for node in before.body:
         if isinstance(node,ast.FunctionDef) and node.name not in ('numerical_info','propagate','projected_geometry_for','export_comparison','compare_methods'):assert ast.dump(find(now,node.name))==ast.dump(node)
     # Comparison now uses the validated selected-edge labels. Its formulas and

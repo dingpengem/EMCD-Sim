@@ -10,9 +10,9 @@ from emcd_sim import multislice_double_channeling as ms
 from emcd_sim.cancellation import Cancelled
 from emcd_sim.double_channeling import intensities_from_response
 from emcd_sim.geometry import characteristic_qz_angstrom_inv
-from emcd_sim.gui import channeling
-from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim import channeling as channeling
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.multisite import MultiSiteIonization
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from test_multisite_forward import configuration, system as simple_system, source, RAW_KEYS, PARITY_KEYS

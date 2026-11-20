@@ -7,7 +7,7 @@ from emcd_sim.crystal import fcc_nickel
 from emcd_sim.projected_geometry import ProjectedGeometry
 from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.detector_signals import benchmark_spectra
 
 ROOT=Path(__file__).resolve().parents[1]

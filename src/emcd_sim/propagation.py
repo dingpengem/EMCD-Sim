@@ -3,8 +3,8 @@
 import numpy as np
 from emcd_sim.structure_geometry import geometry, projected_geometry_from_oriented_crystal
 
-from ..crystallography import primitive_direction
-from ..multislice_reference import complex_wave_diagnostics
+from .crystallography import primitive_direction
+from .multislice_reference import complex_wave_diagnostics
 
 METHOD_NAMES={'bloch':'Bloch-wave','fft-multislice':'FFT Multislice','difference':'BW-MS numerical difference'}
 
@@ -70,7 +70,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     if not np.isfinite(additional_retained_working_mib) or additional_retained_working_mib<0:
         raise ValueError('Finite nonnegative additional retained memory required')
     if ionization_sites is not None:
-        from ..multisite import MultiSiteIonization
+        from .multisite import MultiSiteIonization
         if not isinstance(ionization_sites,MultiSiteIonization):raise ValueError('Explicit multi-site assignments required')
         ionization_sites.validate_structure(structure)
     if cfg.propagation not in ('bloch','fft-multislice','both'):raise ValueError('Unknown propagation method')
@@ -81,7 +81,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
     n=len(hkl);pixels=cfg.grid**2;mesh=cfg.fft_grid**2
     from emcd_sim.parallel_resources import worker_plan, require_supported
     if detector_support_pixels is None:
-        from ..geometry import VirtualDetector
+        from .geometry import VirtualDetector
         q=np.linspace(-cfg.halfwidth,cfg.halfwidth,cfg.grid);qx,qy=np.meshgrid(q,q,indexing='xy')
         support=np.zeros(qx.shape,bool)
         for center in cfg.centers:
@@ -125,7 +125,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             'See docs/GENERALIZED_MULTISLICE_MERGE_READINESS.md.')
     if cfg.propagation!='bloch':
         if ionization_sites is None:
-            from ..mdff_providers import material_reason
+            from .mdff_providers import material_reason
             reason=material_reason(structure,cfg)
         else:
             # The multi-site entry point validates every MDFF before preflight.
@@ -178,7 +178,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
             bw_work+=bw_group;ms_work+=ms_group
             info['multisite_group_response_working_mib']=dict(bloch=bw_group,fft_multislice=ms_group)
         if cfg.propagation in ('bloch','both'):
-            from ..double_channeling import bloch_response_memory_terms
+            from .double_channeling import bloch_response_memory_terms
             counts=(tuple(len(g.indices) for g in ionization_sites.groups) if ionization_sites is not None
                     else (len(structure.atoms),))
             # Multi-site tasks cap pixels at 64. The legacy Global scheduler
@@ -195,7 +195,7 @@ def numerical_info(structure,settings,cfg,*,hkl=None,check_memory=True,enforce_e
                 if ionization_sites is not None:
                     result_terms=multisite_bw_double_memory_terms(cfg,len(counts),detector_support_pixels)
                 else:
-                    from ..mdff_edges import selected_samples
+                    from .mdff_edges import selected_samples
                     result_terms=dict(provider_tensors=576*cfg.energy_points/2**20,
                         selected_group_maps=128*len(selected_samples(cfg))*pixels/2**20 if cfg.angular_maps else 0.,
                         group_detector_spectra=256*cfg.energy_points/2**20,

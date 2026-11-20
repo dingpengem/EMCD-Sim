@@ -11,7 +11,7 @@ from PySide6 import QtWidgets
 from emcd_sim.forward_settings import DEFAULT_NI_SOURCE, NiForwardSettings
 from emcd_sim.historical_ni import NiLocalConfig, energy_grid, material_reason, tensors
 from emcd_sim.structure_geometry import Settings, Structure
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.gui.result_export import export_result
 from emcd_sim.xmcd_source import inspect_xmcd_source
 from emcd_sim.wien2k_xmcd import load_wien2k_xmcd

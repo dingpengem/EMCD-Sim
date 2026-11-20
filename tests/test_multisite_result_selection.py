@@ -115,7 +115,7 @@ def app():return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 def view(app,monkeypatch):
     def forbidden(*args,**kwargs):pytest.fail('Result selection invoked a numerical calculation')
     for name in ('calculate',):
-        monkeypatch.setattr('emcd_sim.gui.forward_pipeline.'+name,forbidden)
+        monkeypatch.setattr('emcd_sim.forward_pipeline.'+name,forbidden)
         monkeypatch.setattr('emcd_sim.gui.calculation_worker.'+name,forbidden)
     owner = QtWidgets.QMainWindow();owner.resize(1100,900);owner.dialogs=[]
     owner.comparison = QtWidgets.QPlainTextEdit();owner.error=forbidden

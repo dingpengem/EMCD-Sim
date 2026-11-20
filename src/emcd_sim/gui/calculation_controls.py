@@ -314,7 +314,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             declaration=dict(cfg.provider_declaration,magnetization_crystal=list(self.material_magnetization))
             cfg=replace(cfg,provider_declaration=declaration,pair_reversed=False)
         if isinstance(cfg,ImportedSettings):cfg=self.bind_material_reference(cfg)
-        from .propagation import resolve_fft_configuration
+        from emcd_sim.propagation import resolve_fft_configuration
         return resolve_fft_configuration(self.structure,self.settings(),cfg)
 
     def global_mdff_draft_settings(self,prepare=True,*,resolve=False):
@@ -344,7 +344,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 axis_declared=saved.axis_declared)
         if mode=='imported':cfg=self.imported_forward_settings(cfg,prepare=prepare)
         else:cfg=self.declared_provider_settings(cfg,prepare=prepare)
-        from .propagation import resolve_fft_configuration
+        from emcd_sim.propagation import resolve_fft_configuration
         return resolve_fft_configuration(self.structure,self.settings(),cfg) if resolve else cfg
 
     def emcd_stale(self,*_):
@@ -387,7 +387,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 if mode=='uniform' else f'Actual calculation energies: {count} ({"source samples" if mode=="native" else "selected energies only"}).'))
             if cfg.model=='xmcd' and not cfg.axis_declared:raise ValueError('Declare XMCD conventions before Run EMCD')
             if cfg.model=='atomic' and not hasattr(cfg,'provider_schema') and not np.allclose(cfg.magnetization,(0,0,1)):raise ValueError('Atomic model supports crystal [001] M only')
-            from .propagation import numerical_info
+            from emcd_sim.propagation import numerical_info
             info=numerical_info(self.structure,s,replace(cfg,energy_points=count),enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             self.compute_resources.show_estimate(cfg,info)
             if info.get('numerical_warnings'):self.compute_resources.estimate.setToolTip('\n'.join(info['numerical_warnings']))
@@ -489,7 +489,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
                 actual_energy=energy_grid(cfg);reason=material_reason(self.structure,cfg)
                 reason=reason or self.input_source_reason()
             if reason:raise ValueError(reason)
-            from .propagation import numerical_info
+            from emcd_sim.propagation import numerical_info
             planning_cfg=cfg if sites is not None else replace(cfg,energy_points=len(actual_energy))
             assessment=numerical_info(self.structure,s,planning_cfg,enforce_execution=False,**({'ionization_sites':sites} if sites is not None else {}))
             self.compute_resources.show_estimate(cfg,assessment)

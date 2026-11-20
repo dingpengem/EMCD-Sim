@@ -5,7 +5,8 @@ import weakref
 import numpy as np
 import pytest
 
-from emcd_sim.gui import forward_pipeline as forward, multisite_integration
+from emcd_sim import forward_pipeline as forward
+from emcd_sim import multisite_integration as multisite_integration
 from emcd_sim.detector_signals import integrate_detector_block
 from emcd_sim.multisite_spectrum import _empty_group_intensities,_spectrum_result
 

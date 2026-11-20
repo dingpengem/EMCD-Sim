@@ -12,7 +12,7 @@ import threading
 import time
 from PySide6 import QtCore
 from ..cancellation import Cancelled
-from .forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 
 
 class EMCDWorker(QtCore.QThread):

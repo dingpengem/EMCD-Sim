@@ -13,7 +13,7 @@ def relocate_reference_imports(source):
         'ForwardSettings':('emcd_sim.forward_settings','NiForwardSettings'),
         'DEFAULT_SOURCE':('emcd_sim.forward_settings','DEFAULT_NI_SOURCE'),
         'inspect_source':('emcd_sim.xmcd_source','inspect_xmcd_source'),
-        'calculate':('emcd_sim.gui.forward_pipeline','calculate'),
+        'calculate':('emcd_sim.forward_pipeline','calculate'),
         'metrics':('emcd_sim.forward_results','selected_edge_metrics'),
         'export_result':('emcd_sim.gui.result_export','export_result'),
         'Cancelled':('emcd_sim.cancellation','Cancelled'),
@@ -31,7 +31,13 @@ def relocate_reference_imports(source):
         groups={};changed=False
         for item in node.names:
             target=None;name=item.name
-            if node.module in ('emcd_forward','emcd_sim.gui.emcd_forward'):
+            if node.module in ('multislice_double_channeling','emcd_sim.multislice_double_channeling') and item.name=='ProjectedNiFFT':
+                target,name='emcd_sim.multislice_double_channeling','ProjectedFFT';changed=True
+            elif node.module in ('single_channeling_tensor','emcd_sim.single_channeling_tensor') and item.name=='fcc_site_phase_matrix':
+                target,name='emcd_sim.single_channeling_tensor','historical_ni_site_phase_matrix';changed=True
+            elif node.module in ('ni_017_geometry','emcd_sim.ni_017_geometry') and item.name=='Ni017Geometry':
+                target='legacy_geometry';changed=True
+            elif node.module in ('emcd_forward','emcd_sim.gui.emcd_forward'):
                 target,name=routes[item.name];changed=True
             elif node.module in ('generalized_forward','emcd_sim.gui.generalized_forward',
                                  'material_inputs','emcd_sim.gui.material_inputs'):
@@ -79,15 +85,25 @@ def relocate_reference_imports(source):
             elif node.module in ('memory_budget','emcd_sim.gui.memory_budget','gui.memory_budget'):
                 target='emcd_sim.memory_budget';changed=True
             elif node.module=='forward_pipeline' and item.name=='calculate_prepared':
-                target,name='emcd_sim.gui.forward_pipeline','_calculate_uniform_prepared';changed=True
+                target,name='emcd_sim.forward_pipeline','_calculate_uniform_prepared';changed=True
             elif node.module=='channeling' and item.name=='contract':
-                target,name='emcd_sim.gui.channeling','calculate_detector_signals';changed=True
+                target,name='emcd_sim.channeling','calculate_detector_signals';changed=True
             elif node.module in ('geometry','emcd_sim.gui.geometry') and item.name in ('Structure','Settings','orientation','geometry','elastic_model','excitation','za_from_tilt','tilt_from_za','align_bragg','structure_snapshot','restore_structure','structures_match','projected_geometry_from_oriented_crystal'):
                 target='emcd_sim.structure_geometry';changed=True
             elif node.module in ('propagation','emcd_sim.gui.propagation') and item.name in ('projected_geometry_for','projected_geometry_from_oriented_crystal'):
                 target,name='emcd_sim.structure_geometry','projected_geometry_from_oriented_crystal';changed=True
             elif node.module in ('propagation','emcd_sim.gui.propagation') and item.name=='propagate':
-                target='emcd_sim.gui.channeling';changed=True
+                target='emcd_sim.channeling';changed=True
+            elif node.module in ('propagation','emcd_sim.gui.propagation'):
+                target='emcd_sim.propagation';changed=True
+            elif node.module in ('channeling','emcd_sim.gui.channeling'):
+                target='emcd_sim.channeling';changed=True
+            elif node.module in ('multisite_integration','emcd_sim.gui.multisite_integration'):
+                target='emcd_sim.multisite_integration';changed=True
+            elif node.module in ('forward_pipeline','emcd_sim.gui.forward_pipeline'):
+                target='emcd_sim.forward_pipeline';changed=True
+            elif (node.module in ('emcd_sim.gui','gui') or (node.module is None and node.level==1)) and item.name in ('propagation','channeling','multisite_integration','forward_pipeline'):
+                target='emcd_sim';changed=True
             if target is None:target='.'*node.level+(node.module or '')
             binding=item.asname or item.name
             groups.setdefault(target,[]).append(name+(' as '+binding if name!=binding else ''))

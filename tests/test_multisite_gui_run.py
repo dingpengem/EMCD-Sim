@@ -14,7 +14,7 @@ from PySide6 import QtCore,QtWidgets,QtTest
 
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.structure_geometry import Structure
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.multisite_run import applied_inputs
 from emcd_sim.gui.multisite_results import comparison_text,covered_segments

@@ -10,13 +10,13 @@ This is application orchestration, with no widgets or alternate physics.
 from dataclasses import replace
 from time import perf_counter
 import numpy as np
-from ..detector_signals import integrate_detector_block
+from .detector_signals import integrate_detector_block
 
 
 def contract_single_channeling_block(model,sites,coherence,plan,selection,points,prepared,rotation,thickness_nm,reverse,cancelled):
     """One bounded support/energy cohort using already validated group inputs."""
-    from ..multisite_spectrum import _empty_group_intensities,_spectrum_result
-    from ..multisite_single_channeling import _group_intensity_pair
+    from .multisite_spectrum import _empty_group_intensities,_spectrum_result
+    from .multisite_single_channeling import _group_intensity_pair
     energy=plan['energy_ev'][selection]
     block_plan=dict(plan,energy_ev=energy)
     groups,weighted=_empty_group_intensities(sites,block_plan,points[0].shape)
@@ -46,12 +46,12 @@ def integrate_single_channeling_spectrum(model,structure,sites,coherence,plan,cf
     energy/pixel. Full energy-by-pixel group/cohort/parity arrays are temporary,
     not final results, and must not survive into the next block.
     """
-    from .propagation import MULTISITE_ENERGY_BATCH
-    from ..mdff_providers import prepare_site_group_providers
-    from ..multisite import MultiSiteIonization
-    from ..ionization_sites import single_site_phase_matrix
+    from emcd_sim.propagation import MULTISITE_ENERGY_BATCH
+    from .mdff_providers import prepare_site_group_providers
+    from .multisite import MultiSiteIonization
+    from .ionization_sites import single_site_phase_matrix
     energy=plan['energy_ev']
-    from ..multisite_single_channeling import _validate_multisite_inputs
+    from .multisite_single_channeling import _validate_multisite_inputs
     rotation,positions,_,_,_,coherence=_validate_multisite_inputs(model,sites,coherence,energy,qx,qy,
         rotation,thickness_nm,reverse_magnetization,cancelled)
     # The kernel only reads these elastic inputs. Freeze this request's basis
@@ -129,8 +129,8 @@ def integrate_double_channeling_spectrum(model,sites,plan,cfg,qx,qy,weights,dete
     Each energy is evaluated once; complete-crystal incoming fields are shared
     across blocks. Reduction retains original fractional weights and group means.
     """
-    from ..multisite_double_channeling import contract_multisite_bloch_double,contract_multisite_ms_double
-    from .propagation import MULTISITE_ENERGY_BATCH
+    from .multisite_double_channeling import contract_multisite_bloch_double,contract_multisite_ms_double
+    from emcd_sim.propagation import MULTISITE_ENERGY_BATCH
     energy=plan['energy_ev'];full=np.zeros(len(energy),bool)
     if cfg.angular_maps:
         for _,loss in cfg.selected_edges:full|=np.isclose(energy,loss,rtol=0,atol=1e-9)

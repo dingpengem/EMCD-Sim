@@ -6,7 +6,7 @@ import numpy as np
 from ase.build import bulk
 from ase.io import write
 from emcd_sim.structure_geometry import Structure, Settings
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.result_export import export_result
 from emcd_sim.provenance import build_info

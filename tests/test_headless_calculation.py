@@ -37,6 +37,12 @@ def forbidden(name):
                    for module in PRESENTATION))
 
 
+def engine_forbidden(name):
+    allowed = {'emcd_sim.gui', 'emcd_sim.gui.memory_budget'}
+    return forbidden(name) or ((name == 'emcd_sim.gui' or name.startswith('emcd_sim.gui.'))
+                               and name not in allowed)
+
+
 @pytest.mark.parametrize('material', ['Ni', 'Cr'])
 @pytest.mark.parametrize('method', ['bloch', 'fft-multislice'])
 @pytest.mark.parametrize('channel', ['single', 'double'])
@@ -100,8 +106,9 @@ def _verify_result(result, method, channel, source_paths):
     serialized = json.dumps(meta, default=str)
     for path in source_paths:
         assert hashlib.sha256(Path(path).read_bytes()).hexdigest() in serialized
-    owner = ROOT / 'src/emcd_sim/gui/channeling.py'
-    assert meta['implementation_sha256']['channeling.py'] == hashlib.sha256(owner.read_bytes()).hexdigest()
+    for name in ('propagation', 'channeling', 'multisite_integration', 'forward_pipeline'):
+        owner = ROOT / 'src/emcd_sim' / (name+'.py')
+        assert meta['implementation_sha256'][name+'.py'] == hashlib.sha256(owner.read_bytes()).hexdigest()
 
 
 def _child(material, method, channel, directory):
@@ -109,17 +116,19 @@ def _child(material, method, channel, directory):
 
     class RejectPresentation(importlib.abc.MetaPathFinder):
         def find_spec(self, fullname, path=None, target=None):
-            if forbidden(fullname):
+            if engine_forbidden(fullname):
                 attempts.append(fullname)
                 raise AssertionError('Presentation import during calculation: ' + fullname)
 
     assert 'QT_QPA_PLATFORM' not in os.environ
-    assert not any(forbidden(name) for name in sys.modules)
+    assert not any(engine_forbidden(name) for name in sys.modules)
     sys.meta_path.insert(0, RejectPresentation())
     import multiprocessing
     import numpy as np
     from unittest.mock import patch
-    from emcd_sim.gui import channeling, forward_pipeline
+    from emcd_sim.cancellation import Cancelled
+    from emcd_sim import channeling as channeling
+    from emcd_sim import forward_pipeline as forward_pipeline
     from emcd_sim import memory_budget as memory_budget
 
     before_threads = set(threading.enumerate())
@@ -136,6 +145,9 @@ def _child(material, method, channel, directory):
             grid=9, depth=9, subpixels=8, fft_grid=16, slice_step=.01, halfwidth=.7,
             centers=((.2, .2), (.2, -.2)), radius=.12, correction=False,
             worker_mode='manual', parallel_workers=1)
+        with pytest.raises(Cancelled):
+            forward_pipeline.calculate(Structure.nickel(), settings, cfg, cancelled=lambda: True)
+        assert not memory_budget._reservations
         result = forward_pipeline.calculate(Structure.nickel(), settings, cfg)
         _verify_result(result, method, channel, [cfg.source])
         # Existing authenticated historical source and established roundoff
@@ -159,6 +171,10 @@ def _child(material, method, channel, directory):
         completed = []
 
         def checked(*args, **kwargs):
+            if not completed:
+                with pytest.raises(Cancelled):
+                    calculate(*args, **dict(kwargs, cancelled=lambda: True))
+                assert not memory_budget._reservations
             result = calculate(*args, **kwargs)
             sites = kwargs['sites']
             assert [g.indices for g in sites.groups] == [(0,), (1,)]
@@ -177,12 +193,24 @@ def _child(material, method, channel, directory):
                 Path(directory), method, channel, True)
         assert len(completed) == 2
     assert not attempts
-    assert not any(forbidden(name) for name in sys.modules)
+    assert not any(engine_forbidden(name) for name in sys.modules)
     assert not memory_budget._reservations
     assert not multiprocessing.active_children()
     assert set(threading.enumerate()) == before_threads
     assert channeling._windows_bw_lock.acquire(blocking=False)
     channeling._windows_bw_lock.release()
+    # Test BLAS ownership from another thread, so a leaked reentrant lock held
+    # by this thread cannot appear available through a reentrant acquisition.
+    from emcd_sim import parallel_resources
+    released = []
+    def check_blas_lock():
+        acquired = parallel_resources._blas_control_lock.acquire(blocking=False)
+        released.append(acquired)
+        if acquired:parallel_resources._blas_control_lock.release()
+    probe = threading.Thread(target=check_blas_lock)
+    probe.start();probe.join(timeout=10)
+    assert not probe.is_alive() and released == [True]
+    assert set(threading.enumerate()) == before_threads
     print('HEADLESS CALCULATION PASSED', material, method, channel)
 
 

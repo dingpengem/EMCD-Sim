@@ -9,9 +9,9 @@ import pytest
 from emcd_sim import double_channeling as bw
 from emcd_sim.cancellation import Cancelled
 from emcd_sim.geometry import characteristic_qz_angstrom_inv
-from emcd_sim.gui import channeling
-from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim import channeling as channeling
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.mdff_providers import load_site_group_provider
 from emcd_sim.multisite import MultiSiteIonization
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow

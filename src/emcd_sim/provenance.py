@@ -1,7 +1,7 @@
 """Source/frozen asset locations and recorded scientific build provenance.
 
 Frozen metadata is returned unchanged. Source mode retains existing inventory
-keys and adds the moved scientific geometry owner to preserve traced coverage.
+keys, follows current scientific owners, and adds grouped integration coverage.
 """
 from pathlib import Path
 import hashlib,json,subprocess,sys
@@ -47,5 +47,5 @@ def build_info():
         commit, dirty = 'unknown', None
     return dict(label=LABEL, application_version=__version__, display_version=__display_version__, commit=commit, dirty=dirty, build_utc=None,
                 physics_convention=PHYSICS_CONVENTION,
-                implementation_sha256={p: hashlib.sha256((Path(__file__).with_name(p) if p=='structure_geometry.py' else Path(__file__).parent/'gui'/p).read_bytes()).hexdigest()
-                                       for p in ('forward_pipeline.py', 'geometry.py', 'propagation.py', 'channeling.py', 'result_export.py', 'structure_geometry.py')})
+                implementation_sha256={p: hashlib.sha256((Path(__file__).with_name(p) if p in ('structure_geometry.py','propagation.py','channeling.py','multisite_integration.py','forward_pipeline.py') else Path(__file__).parent/'gui'/p).read_bytes()).hexdigest()
+                                       for p in ('forward_pipeline.py', 'geometry.py', 'propagation.py', 'channeling.py', 'result_export.py', 'structure_geometry.py', 'multisite_integration.py')})

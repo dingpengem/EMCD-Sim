@@ -13,7 +13,9 @@ from dataclasses import asdict,replace
 from pathlib import Path
 from unittest.mock import patch
 import numpy as np
-from emcd_sim.gui import forward_pipeline as f, channeling, propagation
+from emcd_sim import forward_pipeline as f
+from emcd_sim import channeling as channeling
+from emcd_sim import propagation as propagation
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model, geometry
 from emcd_sim.memory_budget import memory_snapshot
 from emcd_sim.gui.project_io import save_project,load_project
@@ -104,7 +106,7 @@ def run_case(a,s,c,e,method,policy):
     old,old_channel=baseline();forward,adapter=(old,old_channel) if policy=='original' else (f,channeling)
     path=ROOT/(method+'_'+policy)
     signature=dict(settings=asdict(s),config=asdict(c),energy=e.tolist(),baseline=BASE,
-        adapter_hashes={p:hashlib.sha256((Path('src/emcd_sim')/('gui/'+p if p in ('channeling.py','forward_pipeline.py') else p)).read_bytes()).hexdigest() for p in ('channeling.py','forward_pipeline.py','forward_settings.py','forward_results.py')})
+        adapter_hashes={p:hashlib.sha256((Path('src/emcd_sim')/p).read_bytes()).hexdigest() for p in ('channeling.py','forward_pipeline.py','forward_settings.py','forward_results.py')})
     signature=json.loads(json.dumps(signature))
     if (path/'benchmark.json').exists():
         meta=json.loads((path/'benchmark.json').read_text());assert meta['signature']==signature

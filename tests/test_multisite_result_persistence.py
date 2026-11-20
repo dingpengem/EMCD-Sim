@@ -94,7 +94,7 @@ def stored_project(tmp_path,kind='Fe3O4',channeling='single',both=False,manual=F
 def no_simulation(monkeypatch):
     def forbidden(*a,**k):pytest.fail('Project IO invoked a simulation')
     monkeypatch.setattr('emcd_sim.structure_geometry.elastic_model',forbidden)
-    monkeypatch.setattr('emcd_sim.gui.forward_pipeline.calculate',forbidden)
+    monkeypatch.setattr('emcd_sim.forward_pipeline.calculate',forbidden)
 
 
 def load_without_mdff(root,monkeypatch):
@@ -117,7 +117,9 @@ block_gui=True
 attempts=[]
 forbidden={'results','result_presentation','result_export','forward_pipeline',
            'emcd_sim.gui.results','emcd_sim.gui.result_presentation',
-           'emcd_sim.gui.result_export','emcd_sim.gui.forward_pipeline'}
+           'emcd_sim.gui.result_export','emcd_sim.gui.forward_pipeline',
+           'emcd_sim.forward_pipeline','emcd_sim.propagation',
+           'emcd_sim.channeling','emcd_sim.multisite_integration'}
 class HeadlessImports(importlib.abc.MetaPathFinder):
     def find_spec(self,name,path=None,target=None):
         if presentation_import(name) or name in forbidden or (block_gui and (name=='emcd_sim.gui' or name.startswith('emcd_sim.gui.'))):

@@ -17,7 +17,7 @@ def test_registered_scientific_sources_keep_approved_identity_checks():
 def test_canonical_result_metadata_and_detector_flux(tmp_path):
     import numpy as np
     from dataclasses import asdict
-    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.forward_pipeline import calculate
     from test_multisite_forward import system, configuration, ENERGY
     structure,settings,sites,_=system(tmp_path,'Cr')
     result=calculate(structure,settings,configuration(),sites=sites,energy_ev=ENERGY)
@@ -91,7 +91,7 @@ def test_new_calculation_records_convention_and_roundtrips_without_relabeling(tm
     import numpy as np
     from emcd_sim.structure_geometry import Structure, Settings
     from emcd_sim.forward_settings import NiForwardSettings
-    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.forward_pipeline import calculate
     from emcd_sim.gui.project_io import load_project, save_project, fingerprints
     settings=Settings(zone=(0,0,1),thickness=.5,beam_cutoff=.9,potential_cutoff=1.8)
     config=NiForwardSettings(axis_declared=True,grid=9,depth=5,subpixels=4,halfwidth=.5,

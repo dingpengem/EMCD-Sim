@@ -54,7 +54,7 @@ def wait_gui(w, app):
 
 @pytest.mark.parametrize('browser_mapping', ['empty', 'missing', 'different_bytes'])
 def test_gui_reopens_relocated_editor_source_without_original(window, tmp_path, browser_mapping):
-    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.forward_pipeline import calculate
     from emcd_sim.structure_geometry import Settings
     from emcd_sim.gui.project_io import save_project, source_status
     w, app = window; e = demo(w); e.generate()
@@ -491,7 +491,7 @@ def test_packaged_installation_is_never_a_managed_workspace(tmp_path, monkeypatc
 
 @pytest.mark.parametrize('channel', ['single','double'])
 def test_editor_bw_ms_equivalence_and_portable_project(window, tmp_path, channel):
-    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.forward_pipeline import calculate
     from emcd_sim.mdff_providers import settings_for_provider
     from emcd_sim.structure_geometry import Settings
     from emcd_sim.gui.project_io import save_project, load_project, source_status

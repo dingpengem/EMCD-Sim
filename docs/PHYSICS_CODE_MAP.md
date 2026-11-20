@@ -11,8 +11,8 @@ owners: `structure_geometry` and `forward_results`. `provenance` owns recorded
 build/source information and resource locations; `xmcd_source` owns source
 inspection. Existing denominator masks and signed percentage calculations live
 with `detector_signals`. GUI parsing/preview remain in `gui.geometry`; display
-settings/readouts, logging, persistence and forward orchestration retain their
-current responsibilities. See the
+settings/readouts, logging and persistence retain their GUI responsibilities.
+See the
 [Phase 3D-2A report](PHASE3D2A_SCIENTIFIC_DATA_GEOMETRY_EXTRACTION.md).
 
 Phase 3D-2B-1 gives settings records, hardware measurements, worker/BLAS policy
@@ -23,6 +23,13 @@ The four authenticated numerical consumers still import `reserve_memory` through
 All other current callers use the real owner. The Ni-derived record hierarchy,
 parameters, schema interpretation and public calculation API are unchanged.
 See the [settings/resource report](PHASE3D2B1_SETTINGS_RESOURCE_OWNERSHIP.md).
+
+Phase 3D-2B-2 gives numerical planning, channeling execution, grouped integration
+and forward orchestration non-GUI owners: `propagation`, `channeling`,
+`multisite_integration`, `forward_pipeline`. The supported
+`gui.forward_pipeline.calculate` directly re-exports the identical scientific
+callable. No private engine implementation remains at the old GUI owners.
+See the [forward-engine report](PHASE3D2B2_FORWARD_ENGINE_EXTRACTION.md).
 
 ## Reading the calculation
 
@@ -46,14 +53,15 @@ See the [settings/resource report](PHASE3D2B1_SETTINGS_RESOURCE_OWNERSHIP.md).
    `prepare_provider` and `load_site_group_provider` retain distinct declared
    interpolation and historical direct-evaluation models. `atomic_ionization`,
    `generalized_xmcd`, `manual_l23` and `imported_mdff` implement distinct sources.
-5. `gui.forward_pipeline.calculate` is the canonical entry point for explicit
+5. `forward_pipeline.calculate` is the authoritative implementation for explicit
    structure, geometry, source/model and optional site-group inputs; it orchestrates
    resource admission, propagation and result assembly.
-   `gui.propagation` owns numerical preflight, allocation estimates and method
-   diagnostics; `gui.channeling.propagate` owns incoming BW/FFT execution.
-   `gui.channeling.calculate_detector_signals`
-   schedules single-provider energies; `gui.multisite_integration` schedules and
-   reduces bounded multisite blocks. These application services do not use widgets.
+   `propagation` owns numerical preflight, allocation estimates and method
+   diagnostics; `channeling.propagate` owns incoming BW/FFT execution.
+   `channeling.calculate_detector_signals`
+   schedules single-provider energies; `multisite_integration` schedules and
+   reduces bounded multisite blocks. The supported public GUI import is a direct
+   re-export; these scientific services import no GUI application services.
 6. The Single/Double kernels below form intensities; `detector_signals` integrates
    fractional apertures and constructs reversal components. `forward_results`
    assembles result metadata, selected-edge metrics and completed-method views.

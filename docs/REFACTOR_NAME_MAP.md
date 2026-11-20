@@ -1,5 +1,12 @@
 # Current calculation API and refactor decisions
 
+Phase 3D-2B-2 moves the four actual execution implementations to root
+`propagation`, `channeling`, `multisite_integration` and `forward_pipeline`.
+Only `gui.forward_pipeline.calculate` remains as the supported public re-export
+of the same callable. The old private planning/execution modules are removed.
+The [forward-engine report](PHASE3D2B2_FORWARD_ENGINE_EXTRACTION.md) records the
+dependency, provenance, headless and numerical verification.
+
 Phase 3D-2B-1 moves the existing settings hierarchy and memory/hardware/worker
 services to the scientific package. The only retained resource import adapter is
 `gui.memory_budget.reserve_memory`, required by four authenticated kernel source
@@ -44,6 +51,10 @@ installed-release replacement is part of this work.
 
 ## Canonical production API
 
+The scientific implementation is `emcd_sim.forward_pipeline.calculate`.
+The documented GUI import below exposes the identical function and signature;
+maintained internal scientific clients import the actual owner directly.
+
 ```python
 from emcd_sim.gui.forward_pipeline import calculate
 
@@ -55,8 +66,8 @@ local = calculate(structure, geometry_settings, numerical_settings,
                   sites=site_groups, energy_windows=windows)
 ```
 
-`gui.material_inputs.ImportedSettings` and `ProviderSettings` describe explicit
-source-backed materials. `gui.forward_settings.MultiSiteForwardSettings` records
+`material_inputs.ImportedSettings` and `ProviderSettings` describe explicit
+source-backed materials. `forward_settings.MultiSiteForwardSettings` records
 grouped numerical/detector requests. The explicitly named `NiForwardSettings`
 is the retained Ni parameter preset, outside the engine. Settings and sources
 must be supplied; missing groups, unknown provider objects or invalid sources
@@ -74,6 +85,10 @@ Paths below are relative to `src/emcd_sim/`.
 
 | Previous name | Current owner/name | Reason and disposition |
 | --- | --- | --- |
+| `gui.propagation` | `propagation` | Scientific planning, coverage, estimates and diagnostics. Current clients migrate; no old-owner facade. |
+| `gui.channeling` | `channeling` | Incoming propagation and detector scheduling, including the single Windows BW executor guard. No duplicate lock or execution implementation. |
+| `gui.multisite_integration` | `multisite_integration` | Grouped block scheduling and accumulation remain distinct from uniform scheduling. Old owner removed. |
+| `gui.forward_pipeline` implementation | `forward_pipeline` | One scientific orchestration. The public GUI `calculate` import remains a direct re-export for its documented consumers; private aliases are removed. |
 | `gui.memory_budget` implementation/state | `memory_budget` | One authoritative registry/lock and unchanged admission/reservation code. The old GUI path exports only the identical reserve function for four concrete authenticated kernel consumers; no wrapper, counter or policy copy exists. |
 | `gui.hardware_resources` | `hardware_resources` | Shared measurements/topology serve scientific and GUI resource requests without importing GUI. Old module removed. |
 | `gui.parallel_resources` | `parallel_resources` | One BLAS control lock and unchanged worker/allocation policy. Old module removed; unused `preview_text` has no maintained consumer and is deleted. |
@@ -91,7 +106,7 @@ Paths below are relative to `src/emcd_sim/`.
 | `gui.forward_pipeline.MultiSiteForwardSettings` | `forward_settings.MultiSiteForwardSettings` | Input records belong to the settings owner, not calculation orchestration. Maintained imports use that owner. |
 | `gui.generalized_forward` | `material_inputs` / `mdff_providers` | Saved input records belong to `material_inputs`; source preparation, eligibility, frames and coverage belong to `mdff_providers`. The old module and calculation re-export are removed. Existing clear class/factory names are retained. |
 | `gui.emcd_forward.inspect_source` / `DEFAULT_SOURCE` | `xmcd_source.inspect_xmcd_source` / `forward_settings.DEFAULT_NI_SOURCE` | Distinguish five-column XMCD inspection from a general material provider and identify the bundled Ni preset explicitly. Old names are removed. |
-| `gui.emcd_forward._calculate` / `calculate_prepared` | Internal `_calculate_uniform` / `_calculate_uniform_prepared` in `gui.forward_pipeline` | Remove an unnecessary delegation wrapper. Admission and prepared execution remain explicit stages of the canonical engine. |
+| `gui.emcd_forward._calculate` / `calculate_prepared` | Internal `_calculate_uniform` / `_calculate_uniform_prepared` in `forward_pipeline` | Remove an unnecessary delegation wrapper. Admission and prepared execution remain explicit stages of the canonical engine. |
 | `gui.emcd_forward._contract` | `forward_results.assemble_forward_result` | Receives already calculated signals and assembles parity, diagnostics and metadata; it does not contract tensors. The old wrapper and its unused compatibility arguments are removed. |
 | `gui.emcd_forward.metrics` | `forward_results.selected_edge_metrics` | Identifies selected-energy observables and dimensionless ratios. Current consumers use the new owner/name; no alias remains. |
 | `gui.emcd_forward._export_single` | `gui.result_export.export_method_result` | Exports one completed propagation-method result; "single" was ambiguous with Single Channeling. The old alias is removed. |

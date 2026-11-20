@@ -29,8 +29,8 @@ def main():
     import emcd_sim.double_channeling as kernel
     from emcd_sim.structure_geometry import Structure, geometry, align_bragg
     from emcd_sim.gui.project_io import settings_from_dict,config_from_dict
-    from emcd_sim.gui.forward_pipeline import calculate
-    from emcd_sim.gui.propagation import numerical_info
+    from emcd_sim.forward_pipeline import calculate
+    from emcd_sim.propagation import numerical_info
     assert Path(kernel.__file__).resolve().is_relative_to(root)
     def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
     def savejson(p,value):

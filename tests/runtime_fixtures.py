@@ -74,7 +74,7 @@ def release_controls(window, app):
         cancellation_control_present=True)
 
 FORWARD_PATHS=('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni',
-    'emcd_sim.gui.forward_pipeline.calculate','emcd_sim.historical_ni.tensors','emcd_sim.gui.channeling.propagate',
+    'emcd_sim.forward_pipeline.calculate','emcd_sim.historical_ni.tensors','emcd_sim.channeling.propagate',
     'emcd_sim.single_channeling_tensor.run_tensor_with_coherence',
     'emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.gui.app.PreviewWorker.run')
 

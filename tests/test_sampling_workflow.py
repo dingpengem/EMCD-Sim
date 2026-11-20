@@ -8,7 +8,7 @@ from emcd_sim.gui.multisite_run import applied_inputs
 from emcd_sim.gui.project_session import capture_configuration,restore_configuration
 from emcd_sim.gui.project_configuration import save_configuration,load_configuration
 from emcd_sim.gui.project_io import config_from_dict
-from emcd_sim.gui import forward_pipeline as forward
+from emcd_sim import forward_pipeline as forward
 from test_multisite_gui_run import app,window
 from test_local_mdff_workflow import local_draft
 from test_multisite_forward import system,configuration,RAW_KEYS,PARITY_KEYS

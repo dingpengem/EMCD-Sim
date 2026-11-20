@@ -7,7 +7,8 @@ from dataclasses import replace
 from unittest.mock import patch
 import numpy as np
 import pytest
-from emcd_sim.gui import forward_pipeline as ni, channeling
+from emcd_sim import forward_pipeline as ni
+from emcd_sim import channeling as channeling
 from emcd_sim.structure_geometry import Structure, Settings
 from numerical_roundoff import assert_bloch_observables
 
@@ -28,7 +29,7 @@ def archived(path,name,package):
 def old_contract():
     bw=archived('src/emcd_sim/double_channeling.py','emcd_sim._single_element_bw_reference','emcd_sim')
     ms=archived('src/emcd_sim/multislice_double_channeling.py','emcd_sim._single_element_ms_reference','emcd_sim')
-    ch=archived('src/emcd_sim/gui/channeling.py','emcd_sim.gui._single_element_channel_reference','emcd_sim.gui')
+    ch=archived('src/emcd_sim/gui/channeling.py','emcd_sim._single_element_channel_reference','emcd_sim.gui')
     ch.double_channeling_response=bw.double_channeling_response;ch.prepare_incoming_bloch=bw.prepare_incoming_bloch
     ch.multislice_double_channeling_response=ms.multislice_double_channeling_response
     def contract(model,*args,**kwargs):

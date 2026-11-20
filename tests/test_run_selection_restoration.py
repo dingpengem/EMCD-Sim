@@ -285,7 +285,7 @@ def test_retired_setting_is_identified_without_reinterpreting_saved_arrays(windo
 def test_worker_completion_retains_inputs_captured_at_start(window,tmp_path,monkeypatch):
     w=window;r=result_fixture(tmp_path)
     restore_configuration(w,r['configuration'])
-    monkeypatch.setattr('emcd_sim.gui.propagation.numerical_info',lambda *a,**k:dict(bw_beams=2,execution={}))
+    monkeypatch.setattr('emcd_sim.propagation.numerical_info',lambda *a,**k:dict(bw_beams=2,execution={}))
     monkeypatch.setattr('emcd_sim.parallel_resources.require_supported',lambda *a:None)
     monkeypatch.setattr('emcd_sim.parallel_resources.bind_allocation',lambda cfg,*a:cfg)
     monkeypatch.setattr(w.compute_resources,'show_estimate',lambda *a:None)

@@ -6,7 +6,7 @@ import numpy as np
 from ..multisite import MultiSiteIonization
 from ..multisite_spectrum import ModeledEdgeWindow, prepare_multisite_spectrum
 from emcd_sim.forward_settings import MultiSiteForwardSettings
-from .propagation import resolve_fft_configuration
+from emcd_sim.propagation import resolve_fft_configuration
 
 
 def configuration_equal(left,right,*,portable_source=False):

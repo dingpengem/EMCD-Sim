@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from PySide6 import QtWidgets
 from emcd_sim.structure_geometry import Settings, Structure
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.gui.project_io import save_project, load_project
 from emcd_sim.mdff_providers import prepare_provider
 from test_mdff_usability import window

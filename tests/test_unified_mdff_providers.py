@@ -1,5 +1,5 @@
 """Independent Part 1B compatibility and element-independent source contracts."""
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from dataclasses import asdict,replace
 from pathlib import Path
 import hashlib,json,subprocess,sys,types

@@ -7,10 +7,10 @@ from dataclasses import replace,asdict
 from unittest.mock import patch
 import numpy as np
 import pytest
-from emcd_sim.gui import forward_pipeline as forward
+from emcd_sim import forward_pipeline as forward
 from emcd_sim.structure_geometry import Structure, Settings, geometry
 from emcd_sim.gui.project_io import config_from_dict,save_project,load_project
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.propagation import numerical_info
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def small():
 @pytest.mark.parametrize('channel',['single','double'])
 def test_six_routes_use_actual_kernels(small,propagation,channel):
     s,settings,cfg=small
-    from emcd_sim.gui import channeling
+    from emcd_sim import channeling as channeling
     with patch.object(channeling,'double_channeling_response',wraps=channeling.double_channeling_response) as bw,patch.object(channeling,'multislice_double_channeling_response',wraps=channeling.multislice_double_channeling_response) as ms:
         r=forward.calculate(s,settings,replace(cfg,propagation=propagation,channeling_model=channel))
     assert set(r['methods'])==({'bloch','fft-multislice'} if propagation=='both' else {propagation})

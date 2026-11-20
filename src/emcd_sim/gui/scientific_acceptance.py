@@ -11,7 +11,7 @@ import numpy as np
 def run(output):
     from emcd_sim.structure_geometry import Structure, Settings, geometry, align_bragg, excitation
     from emcd_sim.forward_settings import NiForwardSettings
-    from .forward_pipeline import calculate
+    from emcd_sim.forward_pipeline import calculate
     from .project_io import save_project
     from emcd_sim.provenance import build_info
 

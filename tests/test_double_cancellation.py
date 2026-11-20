@@ -9,7 +9,7 @@ from legacy_geometry import Ni017Geometry
 from emcd_sim import double_channeling as bw, multislice_double_channeling as ms
 from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.forward_settings import NiForwardSettings
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.forward_pipeline import calculate
 from numerical_roundoff import assert_bloch_observables, assert_roundoff, bloch_roundoff
 
 
@@ -78,7 +78,7 @@ def test_incoming_slice_cancel(elastic):
 
 
 def test_both_cancellation_prevents_incoming_ms():
-    from emcd_sim.gui import channeling
+    from emcd_sim import channeling as channeling
     event=threading.Event();original=channeling.calculate_detector_signals
     def signals(*a,**kw):
         value=original(*a,**kw);event.set();return value
@@ -94,7 +94,7 @@ def test_full_spectrum_unchanged(solver):
     oldbw=reference_module('src/emcd_sim/double_channeling.py','emcd_sim._baseline_bw')
     oldms=reference_module('src/emcd_sim/multislice_double_channeling.py','emcd_sim._baseline_ms')
     oldbw.PreparedBlochIncoming=bw.PreparedBlochIncoming
-    from emcd_sim.gui import channeling
+    from emcd_sim import channeling as channeling
     cfg=NiForwardSettings(axis_declared=True,channeling_model='double',propagation=solver,
         energy_points=9,angular_maps=True,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
     structure=Structure.nickel();settings=Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)

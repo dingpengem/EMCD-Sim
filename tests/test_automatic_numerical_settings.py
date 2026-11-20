@@ -12,7 +12,7 @@ from emcd_sim.structure_geometry import Settings, Structure
 from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.gui.numerical_settings import resolve_parameters,REFERENCE_SOURCE_SHA256
 from emcd_sim.gui.project_io import load_project,save_project
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.propagation import numerical_info
 from historical_xmcd_test_support import (HISTORICAL_XMCD_SHA256, historical_xmcd_source,
     relocate_historical_xmcd_config)
 
@@ -22,10 +22,10 @@ def window(tmp_path):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with ExitStack() as stack:
         solvers=[]
-        for name in ('emcd_sim.gui.forward_pipeline.calculate','emcd_sim.gui.calculation_worker.calculate',
+        for name in ('emcd_sim.forward_pipeline.calculate','emcd_sim.gui.calculation_worker.calculate',
                      'emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run',
-                     'emcd_sim.gui.channeling.propagate','emcd_sim.gui.channeling.double_channeling_response',
-                     'emcd_sim.gui.channeling.multislice_double_channeling_response'):
+                     'emcd_sim.channeling.propagate','emcd_sim.channeling.double_channeling_response',
+                     'emcd_sim.channeling.multislice_double_channeling_response'):
             solvers.append(stack.enter_context(patch(name,side_effect=AssertionError('Unexpected scientific solve'))))
         # Automatic starting presets apply to the built-in Ni workflow, not
         # the redesigned parameter-backed Atomic provider (Manual required).
@@ -57,7 +57,7 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
         calls.append((settings,cfg));assert kwargs['check_memory'] is False
         if cfg.fft_grid<minimum:raise ValueError('Unsafe FFT Nyquist boundary')
         return {}
-    monkeypatch.setattr('emcd_sim.gui.propagation.numerical_info',support)
+    monkeypatch.setattr('emcd_sim.propagation.numerical_info',support)
     cfg=replace(NiForwardSettings(),propagation='both')
     if minimum>128:
         with pytest.raises(ValueError,match='Automatic FFT setup unavailable'):
@@ -71,9 +71,9 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
 
 def test_pure_resolution_never_calls_scientific_solvers():
     with ExitStack() as stack:
-        for name in ('emcd_sim.gui.channeling.propagate','emcd_sim.gui.forward_pipeline.calculate',
-                     'emcd_sim.gui.channeling.double_channeling_response',
-                     'emcd_sim.gui.channeling.multislice_double_channeling_response',
+        for name in ('emcd_sim.channeling.propagate','emcd_sim.forward_pipeline.calculate',
+                     'emcd_sim.channeling.double_channeling_response',
+                     'emcd_sim.channeling.multislice_double_channeling_response',
                      'numpy.linalg.eigh'):
             stack.enter_context(patch(name,side_effect=AssertionError('Unexpected scientific solve')))
         for method in ('bloch','fft-multislice','both'):
@@ -225,7 +225,7 @@ def test_historical_source_relocation_rejects_unverified_identity(tmp_path,failu
 
 
 def test_memory_rejection_does_not_lower_settings(window,monkeypatch):
-    import emcd_sim.gui.propagation as prop
+    import emcd_sim.propagation as prop
     before=window.numerical_snapshot()
     monkeypatch.setattr(prop,'numerical_info',Mock(side_effect=ValueError('Estimated process peak exceeds 2048 MiB budget')))
     window.emcd_stale()

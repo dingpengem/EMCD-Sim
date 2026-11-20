@@ -215,7 +215,7 @@ def test_packaged_resources_and_no_upstream_runtime_dependencies(tmp_path):
 
 def test_emcd_project_explicit_new_and_unversioned_lobato_compatibility(tmp_path):
     import copy
-    from emcd_sim.gui.forward_pipeline import calculate
+    from emcd_sim.forward_pipeline import calculate
     from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.gui.project_io import save_project,load_project,rerun_reason,fingerprints,elastic_provider_reason
     cfg=NiForwardSettings(energy_scope='edges',grid=9,depth=9,subpixels=16,axis_declared=True,angular_maps=False,channeling_model='single',correction=False)
