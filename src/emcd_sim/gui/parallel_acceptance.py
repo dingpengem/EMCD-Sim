@@ -8,7 +8,7 @@ from .runtime import build_info
 from .project_io import load_project,save_project
 from .project_io import fingerprints
 from .parallel_resources import native_backend_info
-from .forward_results import export_result
+from .result_export import export_result
 
 
 def run(output,project=None,workers=None):

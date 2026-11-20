@@ -9,6 +9,7 @@ from ase import Atoms
 from PySide6 import QtCore, QtWidgets, QtTest
 
 from emcd_sim.gui import project_io as io
+from emcd_sim.gui import geometry as structure_data
 from emcd_sim.gui.geometry import Structure, orientation
 from emcd_sim.mdff_providers import settings_for_provider
 from emcd_sim.gui.project_session import capture_configuration, restore_configuration
@@ -37,7 +38,7 @@ def global_atomic(tmp_path):
         beam_cutoff=1.2,potential_cutoff=8.)
     structure=Structure(Atoms('Fe2',scaled_positions=[[0,0,0],[.5,.5,.5]],cell=[2.884]*3,pbc=True),
         source=str(tmp_path/'missing-original.cif'),sha256='recorded-cif-identity')
-    r['structure_snapshot']=io.structure_snapshot(structure)
+    r['structure_snapshot']=structure_data.structure_snapshot(structure)
     frame=orientation(structure.atoms.cell.array,r['settings'].zone,r['settings'].target)
     r['metadata'].update(settings=asdict(r['settings']),mdff=asdict(cfg),frame=frame.tolist(),
         beam_hkl=[[0,0,0],[1,1,0]],g=[[0,0],[np.sqrt(2)/2.884,0]],magnetization_crystal=list(cfg.magnetization))
@@ -182,7 +183,7 @@ def test_xmcd_and_explicit_imported_pair_restore_independently(window,tmp_path):
     x['spectra']['energy_ev']=np.linspace(cfg.l3,cfg.l2,len(x['spectra']['energy_ev']))
     x['metadata']['energy_ev']=x['spectra']['energy_ev'].tolist()
     structure=Structure(Atoms('Ni4',scaled_positions=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]],cell=[3.524]*3,pbc=True))
-    x['structure_snapshot']=io.structure_snapshot(structure)
+    x['structure_snapshot']=structure_data.structure_snapshot(structure)
     x['settings']=replace(x['settings'],zone=(0,1,7),target=(2,0,0),voltage=250.,thickness=8.,tilt=(-7.25,1.13))
     x['metadata'].update(settings=asdict(x['settings']),frame=orientation(structure.atoms.cell.array,(0,1,7),(2,0,0)).tolist(),
         beam_hkl=[[0,0,0],[2,0,0]],g=[[0,0],[2/3.524,0]])
@@ -252,7 +253,7 @@ def test_legacy_atomic_model_is_not_replaced_by_a_generalized_provider(window,tm
     cfg=replace(cfg,atomic=replace(cfg.atomic,l3_ev=710.,l2_ev=723.))
     r['config']=cfg;r['metadata']['mdff']=asdict(cfg)
     crystal=Structure(Atoms('Ni4',scaled_positions=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]],cell=[3.524]*3,pbc=True))
-    r['structure_snapshot']=io.structure_snapshot(crystal)
+    r['structure_snapshot']=structure_data.structure_snapshot(crystal)
     r['methods']={'bloch':dict(r)};r['methods']['bloch'].pop('methods',None)
     add(w,r)
     assert not w._run_restore_error,w.run_settings_notice.text()

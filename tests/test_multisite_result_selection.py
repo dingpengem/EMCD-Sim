@@ -14,7 +14,8 @@ from PySide6 import QtCore,QtWidgets,QtTest
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.forward_settings import MultiSiteForwardSettings
 from emcd_sim.gui.geometry import Settings
-from emcd_sim.gui.multisite_results import SPECTRAL_KEYS,spectral_series,covered_segments,draw_totals
+from emcd_sim.gui.multisite_results import SPECTRAL_KEYS, spectral_series, covered_segments
+from emcd_sim.gui.result_presentation import draw_multisite_panel
 from emcd_sim.gui.results import ResultsView
 
 
@@ -94,13 +95,13 @@ def test_disjoint_windows_exclusions_and_actual_plot_samples():
     result = stored_result('FeNi');energy = result['spectra']['energy_ev']
     assert len(covered_segments(result,energy)) == 2
     figure = Figure()
-    draw_totals(figure,result,'bloch','eels','',selection=('group','Fe'),quantity=1)
+    draw_multisite_panel(figure,result,'bloch','eels','',selection=('group','Fe'),quantity=1)
     for line in figure.axes[0].lines:np.testing.assert_array_equal(line.get_xdata(),energy[:3])
-    draw_totals(figure,result,'bloch','eels','',selection=('total',None),quantity=1)
+    draw_multisite_panel(figure,result,'bloch','eels','',selection=('total',None),quantity=1)
     assert len(figure.axes[0].lines) == 4  # Two A/B curves, each broken into two native windows.
     assert all(np.max(line.get_xdata())<800 or np.min(line.get_xdata())>800 for line in figure.axes[0].lines)
     omitted = stored_result('FeNi',omit=True)
-    draw_totals(figure,omitted,'bloch','eels','',selection=('group','Ni'),quantity=4)
+    draw_multisite_panel(figure,omitted,'bloch','eels','',selection=('group','Ni'),quantity=4)
     assert not figure.axes[0].lines
     assert 'not physical zero' in figure.axes[0].texts[0].get_text()
     assert spectral_series(omitted,('group','Fe'))[0]['scale'] == .5
@@ -284,7 +285,7 @@ def test_angular_group_energy_binding_matches_image_arrays(view,monkeypatch,norm
     result['config']=replace(result['config'],angular_maps=True,selected_edges=((keys[0],710.),(keys[1],723.)))
     qx,qy=np.meshgrid([-1.,0.,1.],[-1.,0.,1.]);result.update(qx=qx,qy=qy)
     result['model'].elastic.crystal.g_vector=lambda hkl:np.array([1.,0.,0.])
-    monkeypatch.setattr('emcd_sim.gui.results.decorate_reciprocal_map',lambda *a,**k:None)
+    monkeypatch.setattr('emcd_sim.gui.result_presentation.decorate_reciprocal_map',lambda *a,**k:None)
     for index,(gid,group) in enumerate(result['groups'].items()):
         group['metadata']['source']['selected_ev']={'L3':710.,'L2':723.};group['maps']={}
         for e,key in enumerate(keys):

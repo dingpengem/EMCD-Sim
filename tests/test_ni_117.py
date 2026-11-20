@@ -61,7 +61,8 @@ def test_existing_frames_and_old_project_default_are_preserved():
 
 
 def test_old_117_frame_cannot_silently_reinterpret_saved_tilts():
-    from emcd_sim.gui.project_io import structure_snapshot,frame_rerun_reason
+    from emcd_sim.gui.geometry import structure_snapshot
+    from emcd_sim.gui.project_io import frame_rerun_reason
     structure=Structure.nickel();cell=structure.atoms.cell.array
     z=np.array([1.,1.,7.]);z/=np.linalg.norm(z)
     x=cell[0]-cell[0].dot(z)*z;x/=np.linalg.norm(x)
@@ -74,7 +75,8 @@ def test_old_117_frame_cannot_silently_reinterpret_saved_tilts():
 
 @pytest.mark.parametrize('frame',[None,[[1,0]],[[float('nan')]*3]*3,'invalid'])
 def test_missing_or_invalid_saved_117_frame_blocks_input_reuse(frame):
-    from emcd_sim.gui.project_io import structure_snapshot,frame_rerun_reason
+    from emcd_sim.gui.geometry import structure_snapshot
+    from emcd_sim.gui.project_io import frame_rerun_reason
     result=dict(settings=settings(),metadata=dict(frame=frame),structure_snapshot=structure_snapshot(Structure.nickel()))
     assert frame_rerun_reason(result)
     result['settings']=replace(result['settings'],zone=(0,1,7))

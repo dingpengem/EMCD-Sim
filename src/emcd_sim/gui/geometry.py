@@ -1,4 +1,4 @@
-"""Desktop adapters for ASE structures and the unchanged elastic BW solver."""
+"""ASE structure data, neutral snapshots and unchanged elastic geometry adapters."""
 from dataclasses import dataclass,asdict
 from math import gcd
 from functools import reduce
@@ -6,6 +6,7 @@ from itertools import product
 from pathlib import Path
 import hashlib,warnings
 import numpy as np
+from ase import Atoms
 from ase.build import bulk
 from ase.io import read
 from emcd_sim.crystal import Crystal
@@ -156,7 +157,6 @@ def align_bragg(g,tilt,voltage,lock='None'):
 
 
 def preview(structure,settings,*,systematic_row=False):
-    from .project_io import structure_snapshot
     model=elastic_model(structure,settings,systematic_row=systematic_row);z=np.array([0.,settings.thickness]);psi=model.amplitudes(z)
     provider=provider_provenance(model.crystal.species,settings.elastic_provider)
     return dict(settings=asdict(settings),beam_hkl=np.array(model.beams.hkl),g=model.reciprocal_vectors_xy,
@@ -164,3 +164,37 @@ def preview(structure,settings,*,systematic_row=False):
         frame=orientation(structure.atoms.cell.array,settings.zone,settings.target),source=structure.source,systematic_row=systematic_row,
         source_sha256=structure.sha256,structure_description=structure.description(),structure_snapshot=structure_snapshot(structure),elastic_provider=provider,
         model='Neutral-atom IAM, finite oriented ZOLZ BW; elastic only, no absorption/TDS or physical CBED disks')
+
+
+def structure_snapshot(structure):
+    """Capture existing snapshot fields without changing original atom order."""
+    a=structure.atoms
+    snapshot = dict(species=a.get_chemical_symbols(),lattice_angstrom=a.cell.array.tolist(),fractional_positions=a.get_scaled_positions().tolist(),
+        pbc=a.pbc.tolist(),occupancies=a.info.get('occupancy',{}),source=structure.source,sha256=structure.sha256,import_warnings=structure.import_warnings,
+        description=structure.description())
+    if 'crystallographic_sites' in a.info:snapshot['crystallographic_sites'] = a.info['crystallographic_sites']
+    if 'spacegroup_kinds' in a.arrays:
+        kinds=a.arrays['spacegroup_kinds']
+        snapshot['atom_arrays']={'spacegroup_kinds':dict(dtype=str(kinds.dtype),values=kinds.tolist())}
+    return snapshot
+
+
+def restore_structure(snapshot):
+    """Restore stored geometry, including any saved original-index ASE arrays."""
+    if not snapshot:raise ValueError('Legacy export has no complete numeric crystal snapshot; inspect results read-only, or prepare a verified structure explicitly.')
+    atoms=Atoms(snapshot['species'],cell=snapshot['lattice_angstrom'],scaled_positions=snapshot['fractional_positions'],pbc=snapshot['pbc'])
+    atoms.info['occupancy']=snapshot.get('occupancies',{})
+    if 'crystallographic_sites' in snapshot:atoms.info['crystallographic_sites'] = snapshot['crystallographic_sites']
+    if 'cartesian_positions' in snapshot:atoms.set_positions(snapshot['cartesian_positions'])
+    for name,array in snapshot.get('atom_arrays',{}).items():
+        if name in ('numbers','positions'):raise ValueError('Reserved ASE array in structure snapshot')
+        atoms.new_array(name,np.asarray(array['values'],dtype=array['dtype']))
+    return Structure(atoms,snapshot['source'],snapshot.get('sha256',''),snapshot.get('import_warnings',''))
+
+
+def structures_match(snapshot,structure):
+    """Compare stored identity and coordinates using the existing tolerances."""
+    current=structure_snapshot(structure)
+    return (snapshot['species']==current['species'] and snapshot.get('sha256','')==current.get('sha256','')
+        and snapshot.get('occupancies',{})==current.get('occupancies',{})
+        and all(np.allclose(snapshot[k],current[k],rtol=0,atol=1e-12) for k in ('lattice_angstrom','fractional_positions','pbc')))

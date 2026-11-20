@@ -10,7 +10,7 @@ from emcd_sim.elastic import BeamSet
 from emcd_sim.gui.geometry import Structure,Settings,orientation,elastic_model
 from emcd_sim.crystal import Crystal
 from emcd_sim.physical_elastic import excitation_errors_angstrom_inv
-from emcd_sim.gui.results import geometry_description
+from emcd_sim.gui.result_presentation import geometry_description
 
 
 @pytest.mark.parametrize('zone',[(0,0,1),(0,1,7)])

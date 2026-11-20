@@ -23,6 +23,7 @@ import numpy as np
 from .. import __version__
 from ..multisite_spectrum import ModeledEdgeWindow, _samples
 from . import project_io as io
+from . import geometry as structure_data
 from ..cancellation import Cancelled
 from .material_inputs import ImportedSettings
 from ..multisite import validate_site_rows
@@ -80,7 +81,7 @@ def save_configuration(state,path,*,cancelled=lambda:False,progress=lambda s:Non
     if mode not in ('global','local'):raise ValueError('Explicit Global/Local magnetization mode is required')
     if not isinstance(state.get('reverse_magnetization',False),bool):raise ValueError('Global reversal must be a boolean')
     records = _records(state)
-    snapshot = io.structure_snapshot(state['structure'])
+    snapshot = structure_data.structure_snapshot(state['structure'])
     atoms = state['structure'].atoms
     snapshot.update(cartesian_positions=atoms.positions.tolist(),atom_arrays={name:dict(dtype=str(value.dtype),values=value.tolist())
         for name,value in atoms.arrays.items() if name not in ('numbers','positions')})
@@ -167,7 +168,7 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
         if io.sha256(file)!=manifest['files']['metadata.json']:raise ValueError('Corrupted legacy metadata')
         legacy_metadata = json.loads(file.read_text(encoding='utf-8'))
     saved_metadata = parameters.get('configuration_metadata',legacy_metadata)
-    structure = io.restore_structure(snapshot)
+    structure = structure_data.restore_structure(snapshot)
     extension = parameters.get('multisite_configuration')
     if extension is not None and extension.get('version')!=1:raise ValueError('Unsupported multi-site configuration version')
     if configuration and extension is None:raise ValueError('Configuration extension is missing')

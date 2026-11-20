@@ -7,7 +7,7 @@ import numpy as np
 from emcd_sim.gui.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
 from emcd_sim.gui.xmcd_source import inspect_xmcd_source
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.forward_results import export_result
+from emcd_sim.gui.result_export import export_result
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.study_presets import NickelStudyGeometry,xmcd_tensor_in_frame
 Ni017Geometry=lambda a_angstrom=3.524: NickelStudyGeometry((0,1,7),(2,0,0),a_angstrom)

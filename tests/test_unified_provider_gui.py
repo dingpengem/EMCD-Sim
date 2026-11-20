@@ -9,7 +9,7 @@ from PySide6 import QtWidgets,QtCore
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.geometry import Structure
 from emcd_sim.gui.project_io import save_project,load_project
-from emcd_sim.gui.forward_results import export_result
+from emcd_sim.gui.result_export import export_result
 from test_unified_mdff_providers import oxygen_source,xmcd_source
 from test_atomic_ionization import parameter_file
 from runtime_fixtures import apply_global_mdff

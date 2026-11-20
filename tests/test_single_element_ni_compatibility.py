@@ -67,7 +67,8 @@ def test_original_ni_all_numeric_arrays_exact(old_contract,model,channel):
 
 
 def test_genuine_historical_ni_project_remains_read_only_lobato():
-    from emcd_sim.gui.project_io import load_project,restore_structure
+    from emcd_sim.gui.project_io import load_project
+    from emcd_sim.gui.geometry import restore_structure
     from emcd_sim.gui.geometry import elastic_model
     path=Path(os.environ.get('EMCD_HISTORICAL_NI_PROJECT','__missing_optional_historical_project__'))
     if not (path/'project.json').is_file():pytest.skip('Optional genuine historical Ni project unavailable')

@@ -11,7 +11,7 @@ from PySide6 import QtCore, QtWidgets, QtTest
 
 from emcd_sim.crystal import Crystal
 from emcd_sim.gui.forward_settings import NiForwardSettings
-from emcd_sim.gui.multisite_export import export_multisite_spectra
+from emcd_sim.gui.result_export import export_multisite_spectra
 from emcd_sim.gui.multisite_results import SPECTRAL_KEYS
 from test_multisite_result_selection import app, view, select, stored_result
 
@@ -141,7 +141,7 @@ def test_legacy_ni_gui_export_still_routes_to_existing_exporter(view,monkeypatch
     view.owner.maps_view = type('MapView',(),{'component_mode':view.component_mode})()
     view.set_result(result);calls = []
     monkeypatch.setattr(QtWidgets.QFileDialog,'getExistingDirectory',lambda *a,**k:str(tmp_path))
-    monkeypatch.setattr('emcd_sim.gui.forward_results.export_result',lambda *args,**kwargs:calls.append((args,kwargs)))
+    monkeypatch.setattr('emcd_sim.gui.result_export.export_result',lambda *args,**kwargs:calls.append((args,kwargs)))
     view.export_button.click()
     assert len(calls)==1 and calls[0][0][0] is result
     assert calls[0][1]['component_mode']==view.component_mode.currentData()

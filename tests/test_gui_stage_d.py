@@ -13,13 +13,13 @@ from PySide6 import QtWidgets,QtCore
 from matplotlib.figure import Figure
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
-from emcd_sim.gui.geometry import Structure,Settings
+from emcd_sim.gui.geometry import Structure,Settings,restore_structure
 from emcd_sim.gui.project_io import *
 from emcd_sim.gui.project_collection import load_collection
 from emcd_sim.gui.results_browser import ResultRegistry
 from emcd_sim.gui.compare_results import map_compatibility,draw_saved_comparison,scalar_rows,export_comparison_data
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.results import draw_maps,draw_eels
+from emcd_sim.gui.result_presentation import draw_maps, draw_eels
 
 ROOT=Path('outputs/gui_stage_d')/('tests_'+uuid.uuid4().hex)
 

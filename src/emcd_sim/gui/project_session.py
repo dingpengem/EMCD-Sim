@@ -8,6 +8,7 @@ import numpy as np
 from PySide6 import QtCore, QtWidgets
 
 from . import project_io as io
+from . import geometry as structure_data
 from .project_collection import save_collection, load_collection
 
 
@@ -107,7 +108,7 @@ def restore_configuration(w,state):
             previous=w.emcd_result;busy=w.busy
             try:
                 w.busy=False;w.set_magnetization_mode('global')
-                snapshot=io.structure_snapshot(state['structure'])
+                snapshot=structure_data.structure_snapshot(state['structure'])
                 meta=dict(state.get('metadata',{}),frame=orientation(state['structure'].atoms.cell.array,s.zone,s.target).tolist())
                 override=state.get('source_overrides',{}).get('config')
                 w.emcd_result=dict(settings=s,config=c,structure_snapshot=snapshot,metadata=meta,
@@ -247,7 +248,7 @@ class ProjectSession:
             saved=result.get('input_configuration') or result.get('configuration')
             if saved is not None:state=deepcopy(saved)
             elif result['config'].model!='multisite':
-                state=dict(structure=io.restore_structure(result.get('structure_snapshot')),
+                state=dict(structure=structure_data.restore_structure(result.get('structure_snapshot')),
                     settings=result['settings'],config=result['config'],magnetization_mode='global',
                     metadata=deepcopy(result.get('metadata',{})),group_records=[])
             else:
@@ -258,7 +259,7 @@ class ProjectSession:
                     m=entry['metadata']
                     records.append(dict(group_id=gid,element=m['element'],indices=tuple(m['indices']),
                         magnetization=m['magnetization_crystal'],mdff_reference=None,enabled=True))
-                state=dict(structure=io.restore_structure(result.get('structure_snapshot')),
+                state=dict(structure=structure_data.restore_structure(result.get('structure_snapshot')),
                     settings=result['settings'],config=result['config'],magnetization_mode='local',group_records=records,
                     reverse_magnetization=result.get('metadata',{}).get('multisite',{}).get('global_reversal',False),
                     issues=['This older Local run has no complete provider parameter snapshot; site MDFF settings are unavailable.'])

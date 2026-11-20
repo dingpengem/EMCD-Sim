@@ -18,7 +18,8 @@ def run(output,historical_project=None):
     from .app import MainWindow
     from .geometry import Structure,elastic_model,indices
     from ..historical_ni import material_reason
-    from .project_io import load_project,save_project,fingerprints,restore_structure,load_elastic_project
+    from .project_io import load_project, save_project, fingerprints, load_elastic_project
+    from .geometry import restore_structure
     from .runtime import build_info
     from ..adaptive_scattering import adaptive_factor,data_resource,COEFFICIENT_SHA256
     from ..elastic_providers import ADAPTIVE,LOBATO,LEGACY

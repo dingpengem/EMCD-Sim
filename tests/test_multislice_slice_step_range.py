@@ -10,7 +10,7 @@ from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.geometry import Structure, Settings, elastic_model
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.forward_results import export_result
+from emcd_sim.gui.result_export import export_result
 from emcd_sim.gui.propagation import numerical_info
 from emcd_sim.gui.project_io import save_project, load_project, fingerprints
 from emcd_sim.multislice_double_channeling import ProjectedFFT, incident_fields

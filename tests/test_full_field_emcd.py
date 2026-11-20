@@ -43,7 +43,7 @@ def test_moving_actual_plot_overlays_preserves_pixel_values(result):
     import copy
     from matplotlib.figure import Figure
     from emcd_sim.geometry import VirtualDetector
-    from emcd_sim.gui.results import draw_maps
+    from emcd_sim.gui.result_presentation import draw_maps
     r=result['methods']['bloch'];model=copy.copy(r['model'])
     centers=((.12,.2),(-.25,.1));model.detectors={k:VirtualDetector(c,.02) for k,c in zip(('A','B'),centers)}
     changed=dict(r,model=model,config=replace(r['config'],centers=centers,radius=.02))
@@ -74,7 +74,7 @@ def test_uncomputed_or_one_sided_data_rejected(result):
 def test_all_saved_models_solvers_and_overlays_preserve_science():
     if not Path('outputs/v060_release/source_native/double_both_project').is_dir():pytest.skip('Optional saved angular references unavailable')
     from matplotlib.figure import Figure
-    from emcd_sim.gui.results import draw_maps
+    from emcd_sim.gui.result_presentation import draw_maps
     for model in ('single','double'):
         for method in ('bloch','fft-multislice','both'):
             r=load_project(Path('outputs/v060_release/source_native')/(model+'_'+method+'_project'));before=fingerprints(r)

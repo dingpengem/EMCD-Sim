@@ -13,10 +13,10 @@ from emcd_sim.cancellation import Cancelled
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.geometry import Settings, Structure
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.forward_results import export_result
+from emcd_sim.gui.result_export import export_result
 from emcd_sim.historical_ni import tensors
 from emcd_sim.gui.propagation import numerical_info,error_pair
-from emcd_sim.gui.results import draw_maps,draw_eels,draw_diffraction
+from emcd_sim.gui.result_presentation import draw_maps, draw_eels, draw_diffraction
 from emcd_sim.gui.app import MainWindow
 from legacy_geometry import Ni017Geometry
 from emcd_sim.multislice_reference import fft_multislice_ni,_projected_ni_potential

@@ -17,6 +17,7 @@ from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from emcd_sim.mdff_providers import load_provider
 from emcd_sim.gui import project_io as io
+from emcd_sim.gui import geometry as structure_data
 from emcd_sim.gui.geometry import Structure, Settings
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.cancellation import Cancelled
@@ -85,6 +86,63 @@ def test_afm_cr_indices_structure_arrays_modes_and_numerics_roundtrip(tmp_path):
     assert [g.indices for g in loaded['site_groups'].groups]==[(0,),(1,)]
     np.testing.assert_array_equal([g.magnetization for g in loaded['site_groups'].groups],[[0,0,1],[0,0,-1]])
     assert not any(root.glob('*.npz'))
+
+
+@pytest.mark.parametrize('kind',['Ni','Fe','Fe3O4'])
+def test_structure_snapshot_restore_without_qt_or_project_io(tmp_path,kind):
+    fixtures=Path(__file__).parent/'fixtures'
+    cif=None if kind=='Ni' else fixtures/('alpha_Fe_bcc_Im-3m.cif' if kind=='Fe' else 'Fe3O4_inverse_spinel.cif')
+    structure=Structure.nickel() if cif is None else Structure.from_cif(cif)
+    atoms=structure.atoms;atoms.set_tags(3*np.arange(len(atoms))+1)
+    atoms.positions[1]+=atoms.cell[0]  # Configuration snapshots retain original unwrapped sites.
+    element='Ni' if kind=='Ni' else 'Fe'
+    indices=[i for i,a in enumerate(atoms) if a.symbol==element][:2]
+    groups=[IonizationSiteGroup('site'+str(i),element,(index,),
+        tensor_source(tmp_path,'site'+str(i),element,axis=axis),axis,1)
+        for i,(index,axis) in enumerate(zip(indices,((0,0,1),(0,0,-1))))]
+    state=configuration(atoms,groups);state['structure']=structure
+    root=io.save_configuration(state,tmp_path/'geometry')
+    program=r'''
+import builtins, json, sys
+from pathlib import Path
+original_import=builtins.__import__
+def headless_import(name,*args,**kwargs):
+    if name=='PySide6' or name.startswith('PySide6.') or name in ('project_io','emcd_sim.gui.project_io'):
+        raise AssertionError('Neutral geometry imported widgets or project I/O')
+    return original_import(name,*args,**kwargs)
+builtins.__import__=headless_import
+import numpy as np
+from emcd_sim.gui.geometry import Structure, structure_snapshot, restore_structure, structures_match, orientation
+original=Structure.nickel() if sys.argv[1]=='Ni' else Structure.from_cif(sys.argv[2])
+snapshot=structure_snapshot(original)
+restored=restore_structure(json.loads(json.dumps(snapshot)))
+assert structures_match(snapshot,restored)
+assert restored.atoms.get_chemical_symbols()==original.atoms.get_chemical_symbols()
+assert restored.source==original.source and restored.sha256==original.sha256
+assert restored.import_warnings==original.import_warnings
+np.testing.assert_array_equal(restored.atoms.cell.array,original.atoms.cell.array)
+np.testing.assert_array_equal(restored.atoms.pbc,original.atoms.pbc)
+np.testing.assert_array_equal(orientation(original.atoms.cell.array,(0,0,1),(1,0,0)),
+                              orientation(restored.atoms.cell.array,(0,0,1),(1,0,0)))
+if 'spacegroup_kinds' in original.atoms.arrays:
+    np.testing.assert_array_equal(restored.atoms.arrays['spacegroup_kinds'],original.atoms.arrays['spacegroup_kinds'])
+full=json.loads(Path(sys.argv[3]).read_text(encoding='utf-8'))
+rich=restore_structure(full)
+assert rich.atoms.get_chemical_symbols()==full['species']
+np.testing.assert_array_equal(rich.atoms.positions,full['cartesian_positions'])
+np.testing.assert_array_equal(rich.atoms.get_tags(),3*np.arange(len(rich.atoms))+1)
+for name,array in full['atom_arrays'].items():
+    np.testing.assert_array_equal(rich.atoms.arrays[name],np.asarray(array['values'],dtype=array['dtype']))
+for invalid in ({},dict(snapshot,atom_arrays={'numbers':dict(dtype='int64',values=[1]*len(original.atoms))})):
+    try:restore_structure(invalid)
+    except ValueError:pass
+    else:raise AssertionError('Invalid snapshot accepted')
+assert 'emcd_sim.gui.project_io' not in sys.modules
+assert not any(n=='PySide6' or n.startswith('PySide6.') for n in sys.modules)
+'''
+    completed=subprocess.run([sys.executable,'-B','-c',program,kind,str(cif or ''),str(root/'structure.json')],
+        capture_output=True,text=True,timeout=60)
+    assert completed.returncode==0,completed.stdout+completed.stderr
 
 
 def test_local_configuration_roundtrip_without_widget_dependencies(tmp_path):
@@ -234,7 +292,7 @@ def test_atomic_editor_source_parameters_are_portable_without_regeneration(tmp_p
 
 def test_legacy_project_configuration_is_global_and_needs_no_result_arrays(tmp_path):
     root = tmp_path/'legacy';root.mkdir();cfg = NiForwardSettings(model='atomic',magnetization=(1.,0.,0.))
-    snapshot = io.structure_snapshot(Structure.nickel())
+    snapshot = structure_data.structure_snapshot(Structure.nickel())
     io._json(root/'structure.json',snapshot)
     settings = asdict(Settings());settings.pop('elastic_provider')
     io._json(root/'input_parameters.json',dict(settings=settings,mdff=asdict(cfg),structure_snapshot=snapshot))
@@ -250,7 +308,7 @@ def test_legacy_xmcd_audit_identity_survives_configuration_save_as(tmp_path):
     source = tmp_path/'legacy.xmcd';energy = np.linspace(830,860,5)
     np.savetxt(source,np.column_stack((energy,np.full(5,1.1),np.full(5,.9),np.full(5,.2),np.full(5,2.))))
     cfg = NiForwardSettings(source=str(source),source_sha256='',axis_declared=True)
-    snapshot = io.structure_snapshot(Structure.nickel())
+    snapshot = structure_data.structure_snapshot(Structure.nickel())
     io._json(root/'structure.json',snapshot)
     io._json(root/'input_parameters.json',dict(settings=asdict(Settings()),mdff=asdict(cfg),structure_snapshot=snapshot))
     io._json(root/'metadata.json',dict(source_audit={'sha256':io.sha256(source)},source_note='Original legacy audit'))

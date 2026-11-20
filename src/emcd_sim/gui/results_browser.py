@@ -5,10 +5,11 @@ from datetime import datetime,timezone
 import json,uuid,logging
 import numpy as np
 from PySide6 import QtCore,QtWidgets,QtGui
-from .project_io import load_project,source_status,sha256,restore_structure,rerun_reason
+from .project_io import load_project, source_status, sha256, rerun_reason
+from .geometry import restore_structure
 from ..cancellation import Cancelled
 from .xmcd_source import inspect_xmcd_source
-from .results import comparison_text
+from .result_presentation import comparison_text
 from .project_session import ProjectSession
 
 

@@ -1,10 +1,9 @@
-"""General projected-ZOLZ adapter, numerical diagnostics and labeled exports."""
-from pathlib import Path
-import json
+"""General projected-ZOLZ adapter and numerical planning/diagnostics."""
+
 import numpy as np
 from .geometry import geometry
 from ..projected_geometry import ProjectedGeometry
-from ..crystal import fcc_nickel
+
 from ..crystallography import primitive_direction
 from ..multislice_reference import complex_wave_diagnostics
 
@@ -334,42 +333,3 @@ def compare_methods(methods,fft):
                 scalars[key]=dict(absolute=abs(x-y),relative=abs(x-y)/max(abs(x),abs(y)) if max(abs(x),abs(y))>floor else None)
         out['edges'][edge]=dict(maps=maps,detector=scalars)
     return out
-
-
-def export_comparison(result,root,export_single):
-    methods=result.get('methods',{result.get('method','bloch'):result});labels=list(methods)
-    # Preserve all historical primary arrays. Additional fields have explicit
-    # method prefixes; no hidden axis changes for Stage B consumers.
-    for filename,kind in (('angular_maps','maps'),('virtual_detector_eels','spectra')):
-        with np.load(root/(filename+'.npz'),allow_pickle=False) as saved:arrays={k:saved[k] for k in saved.files}
-        arrays['method_labels']=np.asarray(labels)
-        for name,r in methods.items():
-            if kind=='spectra':arrays.update({name+'__'+k:v for k,v in r['spectra'].items()})
-            else:
-                arrays.update({name+'__'+edge+'__'+key:v for edge,fields in r['maps'].items() for key,v in fields.items()})
-                arrays[name+'__coherence']=r['coherence']
-        np.savez_compressed(root/(filename+'.npz'),**arrays)
-    arrays=dict(method_labels=np.asarray(labels),beam_hkl=np.asarray(result['metadata']['beam_hkl']),g=np.asarray(result['metadata']['g']),depth_nm=result['depth_nm'])
-    for name,r in methods.items():
-        arrays.update({name+'__amplitudes':r['amplitudes'],name+'__exit_intensity':abs(r['amplitudes'][-1])**2,name+'__depth_average_intensity':np.diag(r['coherence']).real})
-    fft=result.get('fft',{})
-    for key in ('beam_hkl','reciprocal_gxy','exit_intensity','total_norm','excluded_intensity','full_amplitudes','generators'):
-        if key in fft:arrays['fft_full__'+key]=fft[key]
-    if len(methods)==2:
-        diag=complex_wave_diagnostics(methods['bloch']['amplitudes'],methods['fft-multislice']['amplitudes']);arrays.update(diag)
-    np.savez_compressed(root/'diffraction_pattern.npz',**arrays)
-    from .forward_results import selected_edge_metrics
-    meta=dict(method_labels=labels,methods={name:dict(r['metadata'],edge_metrics=selected_edge_metrics(r)) for name,r in methods.items()},
-        diagnostics=result.get('comparison',{}),array_schema='Unprefixed arrays: primary method. method__field and method__edge__field: explicit arrays; maps (qy,qx), spectra (energy), amplitudes (depth,beam). No implicit method dimension.',primary_method=result.get('method','bloch'))
-    (root/'comparison_metadata.json').write_text(json.dumps(meta,indent=2,allow_nan=False)+'\n',encoding='utf-8')
-    if len(methods)>1:
-        from matplotlib.figure import Figure
-        from .results import draw_comparison,draw_eels,draw_maps
-        for name,r in methods.items():
-            export_single(r,root/name)
-            for edge in r['maps']:
-                fig=Figure(figsize=(15,9),layout='constrained');draw_maps(fig,result,edge,method=name);fig.savefig(root/name/(edge+'_angular_maps.png'),dpi=145)
-        fig=Figure(figsize=(15,10),layout='constrained');draw_comparison(fig,result);fig.savefig(root/'bw_ms_comparison.png',dpi=145)
-        fig=Figure(figsize=(12,9),layout='constrained');draw_eels(fig,result,method='overlay');fig.savefig(root/'virtual_detector_eels.png',dpi=145)
-        for edge in result['maps']:
-            fig=Figure(figsize=(15,9),layout='constrained');draw_maps(fig,result,edge,method='difference');fig.savefig(root/(edge+'_bw_minus_ms.png'),dpi=145)

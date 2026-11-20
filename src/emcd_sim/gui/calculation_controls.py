@@ -16,7 +16,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg,NavigationToolba
 from .geometry import Structure
 from .forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
 from .xmcd_source import inspect_xmcd_source
-from .forward_results import export_result
+from .result_export import export_result
 from ..historical_ni import NiLocalConfig
 from ..wien2k_xmcd import load_wien2k_xmcd
 from .responsive import CollapsibleSection
@@ -399,7 +399,7 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
             if s.target not in self.current[2] or s.target==(0,0,0):reason='Select a valid target reflection.'
             structure_matches=self.emcd_result is not None and self.emcd_result['metadata']['structure']==self.structure.description()
             if self.emcd_result and self.emcd_result.get('structure_snapshot'):
-                from .project_io import structures_match
+                from .geometry import structures_match
                 structure_matches=structures_match(self.emcd_result['structure_snapshot'],self.structure)
             from .multisite_run import configuration_equal,saved_inputs_match
             config_matches=self.emcd_result is not None and configuration_equal(self.emcd_result['config'],cfg)

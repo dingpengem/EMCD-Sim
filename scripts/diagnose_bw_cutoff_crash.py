@@ -10,7 +10,8 @@ import numpy as np
 
 
 def run(args):
-    from emcd_sim.gui.project_io import load_project,restore_structure
+    from emcd_sim.gui.project_io import load_project
+    from emcd_sim.gui.geometry import restore_structure
     from emcd_sim.gui.forward_pipeline import calculate
     from emcd_sim.gui.channeling import worker_count
     from emcd_sim.gui.memory_budget import memory_snapshot

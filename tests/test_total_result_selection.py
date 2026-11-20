@@ -70,7 +70,7 @@ def test_alias_restore_switching_context_and_export(view,monkeypatch,tmp_path):
         fields['I_mag']=-fields['I_mag']
     other['metadata']['multisite']['global_reversal']=True
     result=dict(result,methods={'bloch':result,'fft-multislice':other})
-    monkeypatch.setattr('emcd_sim.gui.results.decorate_reciprocal_map',lambda *a,**k:None)
+    monkeypatch.setattr('emcd_sim.gui.result_presentation.decorate_reciprocal_map',lambda *a,**k:None)
     widget=ResultsView(view.owner,'maps');widget.set_result(result)
     assert widget.choice.count()==2
     # An older duplicate key restores the same energy through the canonical alias.
@@ -97,7 +97,7 @@ def test_alias_restore_switching_context_and_export(view,monkeypatch,tmp_path):
 
 def test_global_metadata_and_spectral_zoom_aliases(view,monkeypatch):
     result=stored_maps([('first','Cu',{'K':8980.}),('second','Cu',{'K':8981.})])
-    monkeypatch.setattr('emcd_sim.gui.results.decorate_reciprocal_map',lambda *a,**k:None)
+    monkeypatch.setattr('emcd_sim.gui.result_presentation.decorate_reciprocal_map',lambda *a,**k:None)
     view.set_result(result);assert view.choice.count()==3
     assert not view.restore_zoom('second:K zoom') and view.choice.currentData()==8981.
     view.redraw()

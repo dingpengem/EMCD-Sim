@@ -126,7 +126,7 @@ class SavedVisualizationTests(unittest.TestCase):
         self.assertEqual(w.eels_view.normalization.settings().mode,'peak');w.close()
     def test_png_svg_and_derived_metadata(self):
         from matplotlib.figure import Figure
-        from emcd_sim.gui.results import draw_eels
+        from emcd_sim.gui.result_presentation import draw_eels
         from emcd_sim.gui.normalization_export import export_derived,save_figure
         from PIL import Image
         settings=DisplaySettings(mode='peak');fig=Figure(figsize=(11,9));draw_eels(fig,self.r,method='overlay',display=settings)
@@ -149,7 +149,7 @@ class SavedVisualizationTests(unittest.TestCase):
         self.assertTrue(map_compatibility(self.r,self.second,'L3','D_raw')[0]);self.assertEqual(c.normalization.settings().scope,'shared');c.close();w.close()
     def test_map_byte_preservation_and_masks(self):
         from matplotlib.figure import Figure
-        from emcd_sim.gui.results import draw_maps
+        from emcd_sim.gui.result_presentation import draw_maps
         before={e:{k:v.tobytes() for k,v in fs.items()} for e,fs in self.r['maps'].items()}
         for mode in ('raw','local','paired'):
             fig=Figure(figsize=(12,8));draw_maps(fig,self.r,'L3',display=DisplaySettings(map_mode=mode))

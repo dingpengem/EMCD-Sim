@@ -8,7 +8,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
-from emcd_sim.gui.results import draw_eels,draw_maps
+from emcd_sim.gui.result_presentation import draw_eels, draw_maps
 from emcd_sim.gui.component_display import primary_angular
 from emcd_sim.gui.prb_benchmark import benchmark_spectra
 
@@ -113,7 +113,7 @@ def test_detector_asymmetry_after_integration_not_average_of_percentages():
 
 def test_exports_keep_legacy_arrays_and_explicit_signal_sidecars(result):
     import json,csv
-    from emcd_sim.gui.forward_results import export_result
+    from emcd_sim.gui.result_export import export_result
     from emcd_sim.gui.project_io import load_project
     before={name:{k:v.copy() for k,v in m['spectra'].items()} for name,m in result['methods'].items()}
     root=Path('outputs')/('v060_exports_'+uuid4().hex)

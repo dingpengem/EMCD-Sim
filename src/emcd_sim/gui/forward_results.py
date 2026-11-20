@@ -1,13 +1,12 @@
-"""Completed forward-result assembly, selected-edge metrics and file exports.
+"""Scientific result assembly, completed-method views and selected-edge metrics.
 
 assemble_forward_result receives detector signals already evaluated by the
 channeling kernels. It constructs reversal parity and optional post-edge/paired
 map diagnostics, validates source identity and records existing provenance.
-Export functions serialize results or render them; they never start a solver.
+File exports and rendering belong to result_export and result_presentation.
 """
 from dataclasses import asdict
-from pathlib import Path
-import json
+
 import platform
 import numpy as np
 from ..detector_signals import reversal_components
@@ -99,60 +98,11 @@ def selected_edge_metrics(result):
     return rows
 
 
-def export_method_result(result,path):
-    """Export one completed solver result to a new directory, without rerunning."""
-    from matplotlib.figure import Figure
-    from .results import draw_maps,draw_eels
-    root=Path(path);root.mkdir(parents=True,exist_ok=False)
-    meta=dict(result['metadata'],edge_metrics=selected_edge_metrics(result))
-    for name,value in (('input_parameters',dict(settings=meta['settings'],mdff=meta['mdff'],structure=meta['structure'])),('metadata',meta)):
-        (root/(name+'.json')).write_text(json.dumps(value,indent=2,allow_nan=False)+'\n',encoding='utf-8')
-    np.savez_compressed(root/'virtual_detector_eels.npz',**result['spectra'])
-    arrays=dict(qx=result['qx'],qy=result['qy'],coherence=result['coherence'],depth_nm=result['depth_nm'],amplitudes=result['amplitudes'])
-    for edge,m in result['maps'].items():
-        arrays.update({edge+'_'+k:v for k,v in m.items()})
-        fig=Figure(figsize=(15,9),layout='constrained');draw_maps(fig,result,edge);fig.savefig(root/(edge+'_angular_maps.png'),dpi=145)
-    arrays.update({'weight_'+k:v for k,v in result['weights'].items()});np.savez_compressed(root/'angular_maps.npz',**arrays)
-    fig=Figure(figsize=(11,9),layout='constrained');draw_eels(fig,result);fig.savefig(root/'virtual_detector_eels.png',dpi=150)
-
-
-def export_result(result,path,*,component_mode='raw',advanced=False,map_signal_mode=None):
-    """One numerical bundle; raw and percentage spectra survive every display."""
-    if advanced:
-        export_method_result(result,path)
-        from .propagation import export_comparison
-        export_comparison(result,Path(path),export_method_result)
-        return
-    import csv
-    from matplotlib.figure import Figure
-    from .project_io import save_project
-    from .results import draw_eels,draw_maps
-    from .prb_benchmark import benchmark_spectra
-    from .component_display import MODES,DEFINITIONS,exported_spectra,exported_angular
-    if component_mode not in (*MODES,'relative'):raise ValueError('Unknown EMCD display mode')
-    map_signal_mode=map_signal_mode or (component_mode if component_mode in MODES else 'raw')
-    if map_signal_mode not in MODES:raise ValueError('Unknown angular signal display')
-    root=save_project(result,path)
-    derived={};unavailable={}
+def method_result(result,method):
     methods=result.get('methods',{result.get('method','bloch'):result})
-    for name,r in methods.items():
-        spectra=dict(r['spectra'],**benchmark_spectra(r['spectra'])[0]);keys=list(spectra)
-        with (root/(name+'_spectra.csv')).open('w',newline='',encoding='utf-8') as f:
-            writer=csv.writer(f);writer.writerow(['solver','channeling_model']+keys)
-            writer.writerows((name,r['config'].channeling_model,*values) for values in zip(*(spectra[k] for k in keys)))
-        explicit=exported_spectra(r['spectra']);derived.update({name+'__'+k:v for k,v in explicit.items()})
-        with (root/(name+'_signal_display.csv')).open('w',newline='',encoding='utf-8') as f:
-            writer=csv.writer(f);writer.writerow(list(explicit));writer.writerows(zip(*explicit.values()))
-        prefix='' if name==result.get('method','bloch') else name+'_'
-        fig=Figure(figsize=(10,7),layout='constrained');draw_eels(fig,r,component_mode=component_mode)
-        for ext in ('png','svg'):fig.savefig(root/(prefix+'virtual_detector_eels.'+ext),dpi=170)
-        for edge in r['maps']:
-            fig=Figure(figsize=(11,5),layout='constrained');draw_maps(fig,r,edge,signal_mode=map_signal_mode)
-            try:derived.update({name+'__'+edge+'__'+k:v for k,v in exported_angular(r,edge).items()})
-            except (ValueError,KeyError) as exc:unavailable[name+'__'+edge]=str(exc)
-            for ext in ('png','svg'):fig.savefig(root/(prefix+edge+'_angular_maps.'+ext),dpi=170)
-    derived['definitions_json']=np.array(json.dumps(DEFINITIONS))
-    np.savez_compressed(root/'signal_display.npz',**derived)
-    (root/'figure_display.json').write_text(json.dumps(dict(component_mode=component_mode,map_signal_mode=map_signal_mode,definitions=DEFINITIONS,unavailable_paired_maps=unavailable,
-        note='Display only. CSV/NPZ retain signed raw components, both relative percentages, raw reversal spectra and denominators.',
-        prb='Separate raw +M difference/sum; no factor two or post-edge correction'),indent=2)+'\n',encoding='utf-8')
+    if method!='difference':return methods[method]
+    b,m=[methods[k] for k in ('bloch','fft-multislice')]
+    maps={edge:{k:b['maps'][edge][k]-m['maps'][edge][k] for k in b['maps'][edge] if k in m['maps'][edge]} for edge in b['maps'] if edge in m['maps']}
+    metadata=dict(b['metadata'],pair_reason='BW-MS paired maps require validated physical pairing in both methods.',
+        correction_reason='BW-MS corrected maps require valid correction in both methods. '+b['metadata']['correction_reason']+' / '+m['metadata']['correction_reason'])
+    return dict(b,maps=maps,method='difference',metadata=metadata)

@@ -9,6 +9,7 @@ import shutil
 import uuid
 
 from . import project_io as io
+from . import geometry as structure_data
 from ..cancellation import Cancelled
 
 
@@ -86,7 +87,7 @@ def load_collection(path,*,cancelled=lambda:False,progress=lambda s:None):
             state=result['configuration']
             if 'numerical_selection' in result['metadata']:state.setdefault('metadata',{})['numerical_selection']=result['metadata']['numerical_selection']
         else:
-            state=dict(structure=io.restore_structure(result['structure_snapshot']),settings=result['settings'],config=result['config'],
+            state=dict(structure=structure_data.restore_structure(result['structure_snapshot']),settings=result['settings'],config=result['config'],
                 magnetization_mode='global',metadata=result['metadata'],source_overrides={'config':result.get('source_overrides',{}).get('mdff',result.get('source_overrides',{}).get('xmcd',result['config'].source))})
         return dict(path=root,state=state,runs=[(None,result)])
     state=io.load_configuration(root,cancelled=cancelled,progress=progress);runs=[];ids=set()

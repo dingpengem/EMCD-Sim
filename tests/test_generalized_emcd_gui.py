@@ -86,7 +86,7 @@ def test_normal_gui_end_to_end(case,channel):
 
 def test_ideal_basis_description_is_not_full_multibeam():
     from types import SimpleNamespace
-    from emcd_sim.gui.results import geometry_description
+    from emcd_sim.gui.result_presentation import geometry_description
     from emcd_sim.gui.geometry import Settings
     from emcd_sim.gui.forward_settings import NiForwardSettings
     from dataclasses import replace

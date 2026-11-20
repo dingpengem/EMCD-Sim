@@ -15,6 +15,7 @@ from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.project_session import restore_configuration, capture_configuration
 from emcd_sim.gui.project_collection import load_collection
 from emcd_sim.gui import project_io as io
+from emcd_sim.gui import geometry as structure_data
 from test_multisite_result_persistence import stored_project
 
 
@@ -148,7 +149,7 @@ def test_missing_sources_and_legacy_ni_open_without_recalculation(window,app,tmp
     legacy['config']=NiForwardSettings(model='atomic',magnetization=(1.,0.,0.),l3=710.,l2=723.,grid=9,depth=3,subpixels=4)
     legacy['metadata'].pop('multisite');legacy['metadata'].pop('mdff_provider');legacy['metadata']['mdff']=asdict(legacy['config'])
     atoms=Atoms('Ni4',scaled_positions=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]],cell=[3.52]*3,pbc=True)
-    legacy['structure_snapshot']=io.structure_snapshot(Structure(atoms));m=legacy['maps']['Fe__L3'];legacy['maps']={'L3':m,'L2':m}
+    legacy['structure_snapshot']=structure_data.structure_snapshot(Structure(atoms));m=legacy['maps']['Fe__L3'];legacy['maps']={'L3':m,'L2':m}
     folder=io.save_project(legacy,tmp_path/'Legacy Ni');w.open_project_path(folder);wait(w,app)
     assert not w.errors and w.magnetization_mode=='global' and w.axis.isEnabled()
     np.testing.assert_allclose([float(v) for v in w.axis.text().split()],[1,0,0])

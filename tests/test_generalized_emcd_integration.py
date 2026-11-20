@@ -46,7 +46,7 @@ def test_outgoing_energy_carrier_and_adjoint_without_elastic_eigenmodes():
 
 def test_generalized_117_saved_gui_export_retains_raw_relative_data(tmp_path):
     from emcd_sim.gui.project_io import load_project,fingerprints
-    from emcd_sim.gui.forward_results import export_result
+    from emcd_sim.gui.result_export import export_result
     root=Path('outputs/generalized_multislice_emcd_validation/gui')
     paths=[p for p in root.glob('117_double_*/project') if (p.parent/'acceptance.json').exists()]
     if not paths:pytest.skip('Real GUI acceptance artifact not yet available')

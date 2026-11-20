@@ -2,6 +2,8 @@
 from copy import deepcopy
 from dataclasses import asdict, replace
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -12,9 +14,11 @@ from emcd_sim.multisite import IonizationSiteGroup, MultiSiteIonization
 from emcd_sim.multisite_spectrum import ModeledEdgeWindow
 from emcd_sim.mdff_providers import load_provider
 from emcd_sim.gui import project_io as io
+from emcd_sim.gui import geometry as structure_data
 from emcd_sim.gui.geometry import Structure
 from emcd_sim.gui.forward_settings import NiForwardSettings
-from emcd_sim.gui.multisite_results import SPECTRAL_KEYS, spectral_series, covered_segments, draw_totals
+from emcd_sim.gui.multisite_results import SPECTRAL_KEYS, spectral_series, covered_segments
+from emcd_sim.gui.result_presentation import draw_multisite_panel
 from emcd_sim.gui.runtime import PHYSICS_CONVENTION
 from test_multisite_result_selection import stored_result
 from test_multisite_configuration import tensor_source
@@ -33,7 +37,7 @@ def stored_project(tmp_path,kind='Fe3O4',channeling='single',both=False,manual=F
     species=r['model'].elastic.crystal.species
     atoms=Atoms(species,scaled_positions=np.arange(len(species)*3).reshape(-1,3)/24,cell=[8,8,8],pbc=True)
     structure=Structure(atoms,source='Synthetic stored arrays; not predicted spectra')
-    r['structure_snapshot']=io.structure_snapshot(structure);r['config']=replace(r['config'],channeling_model=channeling,
+    r['structure_snapshot']=structure_data.structure_snapshot(structure);r['config']=replace(r['config'],channeling_model=channeling,
         angular_maps=True,selected_edges=(('Fe__L3',710.),),fft_generators=((2,0,0),(0,2,0)),propagation='both' if both else 'bloch')
     axis=np.array([-.2,0.,.2]);r['qx'],r['qy']=np.meshgrid(axis,axis)
     r['weights']={'A':np.full((3,3),.5),'B':np.full((3,3),.25)}
@@ -102,6 +106,58 @@ def load_without_mdff(root,monkeypatch):
 
 
 @pytest.mark.parametrize('kind,channeling',[('Cr','single'),('Fe3O4','double'),('FeNi','double')])
+def test_result_roundtrip_without_qt_or_presentation(tmp_path,kind,channeling):
+    original=stored_project(tmp_path,kind,channeling,both=True)
+    root=io.save_project(original,tmp_path/'headless')
+    program=r'''
+import builtins, sys
+from collections.abc import Mapping
+original_import=builtins.__import__
+forbidden={'results','result_presentation','result_export','forward_pipeline',
+           'emcd_sim.gui.results','emcd_sim.gui.result_presentation',
+           'emcd_sim.gui.result_export','emcd_sim.gui.forward_pipeline'}
+def headless_import(name,*args,**kwargs):
+    if name=='PySide6' or name.startswith('PySide6.') or name in forbidden:
+        raise AssertionError('Result persistence imported presentation or calculation execution: '+name)
+    return original_import(name,*args,**kwargs)
+builtins.__import__=headless_import
+import numpy as np
+from emcd_sim.gui.project_io import load_project,save_project
+from emcd_sim.gui.forward_results import method_result
+from emcd_sim.gui.multisite_results import spectral_series
+first=load_project(sys.argv[1])
+assert set(first['methods'])=={'bloch','fft-multislice'}
+assert method_result(first,'bloch') is first['methods']['bloch']
+assert method_result(first,'difference')['method']=='difference'
+assert spectral_series(first,('total',None))
+second=load_project(save_project(first,sys.argv[2]))
+assert first['metadata']==second['metadata']
+for method in first['methods']:
+    assert first['methods'][method]['metadata']==second['methods'][method]['metadata']
+    assert first['methods'][method]['settings']==second['methods'][method]['settings']
+    assert first['methods'][method]['config'].channeling_model==second['methods'][method]['config'].channeling_model
+def arrays(value,prefix=''):
+    if isinstance(value,np.ndarray):yield prefix,value
+    elif isinstance(value,Mapping):
+        for name,item in value.items():yield from arrays(item,prefix+'/'+str(name))
+a,b=dict(arrays(first)),dict(arrays(second))
+assert a and a.keys()==b.keys()
+for key,value in a.items():
+    other=b[key]
+    assert value.dtype==other.dtype and value.shape==other.shape,key
+    if value.dtype.kind in 'biufc':
+        np.testing.assert_array_equal(np.isnan(value),np.isnan(other),err_msg=key)
+        np.testing.assert_array_equal(np.isinf(value),np.isinf(other),err_msg=key)
+    np.testing.assert_array_equal(value,other,err_msg=key)
+assert not any(n=='PySide6' or n.startswith('PySide6.') for n in sys.modules)
+assert not forbidden.intersection(sys.modules)
+'''
+    completed=subprocess.run([sys.executable,'-B','-c',program,str(root),str(tmp_path/'again')],
+        capture_output=True,text=True,timeout=60)
+    assert completed.returncode==0,completed.stdout+completed.stderr
+
+
+@pytest.mark.parametrize('kind,channeling',[('Cr','single'),('Fe3O4','double'),('FeNi','double')])
 def test_multisite_lossless_roundtrip_all_signals_maps_and_selections(tmp_path,monkeypatch,kind,channeling):
     original=stored_project(tmp_path,kind,channeling,both=True)
     root=io.save_project(original,tmp_path/'project');loaded=load_without_mdff(root,monkeypatch)
@@ -144,7 +200,7 @@ def test_external_source_unavailable_keeps_views_but_blocks_rerun(tmp_path,monke
     loaded=load_without_mdff(root,monkeypatch)
     assert not io.source_status(loaded)['group:Fe']['verified']
     assert 'group:Fe source unavailable' in io.rerun_reason(loaded)
-    fig=Figure();draw_totals(fig,loaded,'bloch','eels','',selection=('compare',None),compared=('Fe','Ni'),include_total=True,quantity=6)
+    fig=Figure();draw_multisite_panel(fig,loaded,'bloch','eels','',selection=('compare',None),compared=('Fe','Ni'),include_total=True,quantity=6)
     assert len(fig.axes[0].lines)==4  # Fe, Ni, and the two disconnected total windows.
     np.testing.assert_array_equal(loaded['spectra']['I_A_plus'],r['spectra']['I_A_plus'])
 
@@ -193,7 +249,7 @@ def test_legacy_single_element_project_uses_original_layout_and_loader(tmp_path,
     r['metadata'].pop('multisite');r['metadata'].pop('mdff_provider');r['metadata']['mdff']=asdict(r['config'])
     r.pop('groups');r.pop('weighted_sum');r.pop('configuration')
     atoms=Atoms('Ni4',scaled_positions=[[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]],cell=[3.52]*3,pbc=True)
-    r['structure_snapshot']=io.structure_snapshot(Structure(atoms))
+    r['structure_snapshot']=structure_data.structure_snapshot(Structure(atoms))
     r['maps']={'L3':r['maps']['Fe__L3'],'L2':r['maps']['Fe__L3']}
     root=io.save_project(r,tmp_path/'legacy-ni');loaded=load_without_mdff(root,monkeypatch)
     assert loaded['config']==r['config'] and 'groups' not in loaded

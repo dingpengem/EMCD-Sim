@@ -5,11 +5,12 @@ import hashlib,json,time
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-from emcd_sim.gui.project_io import load_project,restore_structure
+from emcd_sim.gui.project_io import load_project
+from emcd_sim.gui.geometry import restore_structure
 from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.forward_results import export_result
+from emcd_sim.gui.result_export import export_result
 from emcd_sim.gui.propagation import numerical_info
-from emcd_sim.gui.results import draw_maps
+from emcd_sim.gui.result_presentation import draw_maps
 
 ROOT=Path('outputs/angular_resolution_assessment')
 

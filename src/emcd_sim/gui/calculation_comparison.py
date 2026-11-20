@@ -132,7 +132,7 @@ class CalculationComparison(QtWidgets.QDialog):
         with Path(path).open('w',encoding='utf-8',newline='') as stream:
             writer=csv.writer(stream);writer.writerow(['run_id','run_name','solver','scope','scope_id','signal','energy_ev','relative_intensity',
                 'segment','coverage_state','normalization','selected_atom_count','plot_style']);writer.writerows(self.rows)
-        from .multisite_export import DEFINITIONS
+        from .multisite_results import DEFINITIONS
         Path(str(path)+'.json').write_text(json.dumps(dict(note=self.note.text(),signal_definitions=DEFINITIONS,
             units={'energy_ev':'eV','relative_intensity':'Original provider scale; no cross-element calibration'},
             coverage='Blank is unmodeled, not physical zero. Do not connect different segment numbers or interpolate between points.'),indent=2)+'\n',encoding='utf-8')

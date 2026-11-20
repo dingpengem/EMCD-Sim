@@ -11,8 +11,8 @@ from types import SimpleNamespace
 from datetime import datetime,timezone
 import hashlib,json,os,shutil,uuid,zipfile,time
 import numpy as np
-from ase import Atoms
-from .geometry import Structure,Settings,excitation
+from .geometry import Settings,excitation
+from . import geometry as structure_data
 from .forward_settings import NiForwardSettings
 from ..cancellation import Cancelled
 from ..historical_ni import NiLocalConfig
@@ -27,37 +27,6 @@ def sha256(path):
     with Path(path).open('rb') as stream:
         for chunk in iter(lambda:stream.read(1024*1024),b''):h.update(chunk)
     return h.hexdigest()
-
-
-def structure_snapshot(structure):
-    a=structure.atoms
-    snapshot = dict(species=a.get_chemical_symbols(),lattice_angstrom=a.cell.array.tolist(),fractional_positions=a.get_scaled_positions().tolist(),
-        pbc=a.pbc.tolist(),occupancies=a.info.get('occupancy',{}),source=structure.source,sha256=structure.sha256,import_warnings=structure.import_warnings,
-        description=structure.description())
-    if 'crystallographic_sites' in a.info:snapshot['crystallographic_sites'] = a.info['crystallographic_sites']
-    if 'spacegroup_kinds' in a.arrays:
-        kinds=a.arrays['spacegroup_kinds']
-        snapshot['atom_arrays']={'spacegroup_kinds':dict(dtype=str(kinds.dtype),values=kinds.tolist())}
-    return snapshot
-
-
-def restore_structure(snapshot):
-    if not snapshot:raise ValueError('Legacy export has no complete numeric crystal snapshot; inspect results read-only, or prepare a verified structure explicitly.')
-    atoms=Atoms(snapshot['species'],cell=snapshot['lattice_angstrom'],scaled_positions=snapshot['fractional_positions'],pbc=snapshot['pbc'])
-    atoms.info['occupancy']=snapshot.get('occupancies',{})
-    if 'crystallographic_sites' in snapshot:atoms.info['crystallographic_sites'] = snapshot['crystallographic_sites']
-    if 'cartesian_positions' in snapshot:atoms.set_positions(snapshot['cartesian_positions'])
-    for name,array in snapshot.get('atom_arrays',{}).items():
-        if name in ('numbers','positions'):raise ValueError('Reserved ASE array in structure snapshot')
-        atoms.new_array(name,np.asarray(array['values'],dtype=array['dtype']))
-    return Structure(atoms,snapshot['source'],snapshot.get('sha256',''),snapshot.get('import_warnings',''))
-
-
-def structures_match(snapshot,structure):
-    current=structure_snapshot(structure)
-    return (snapshot['species']==current['species'] and snapshot.get('sha256','')==current.get('sha256','')
-        and snapshot.get('occupancies',{})==current.get('occupancies',{})
-        and all(np.allclose(snapshot[k],current[k],rtol=0,atol=1e-12) for k in ('lattice_angstrom','fractional_positions','pbc')))
 
 
 def settings_from_dict(value):
@@ -285,7 +254,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             scalar_metric_valid={edge:{key:value is not None for key,value in row.items()} for edge,row in ({} if multisite else selected_edge_metrics(r)).items()}) for name,r in methods.items()})
         if snapshot:
             from ase.io import write
-            write(temp/'structure.cif',restore_structure(snapshot).atoms,format='cif')
+            write(temp/'structure.cif',structure_data.restore_structure(snapshot).atoms,format='cif')
         managed=set(ARRAY_FILES)|{'project.json','metadata.json','comparison_metadata.json','input_parameters.json','structure.json','structure.cif','validity.json','display_state.json'}
         if result.get('input_configuration') is not None:
             # Optional existing configuration project, alongside unchanged NPZ
@@ -401,7 +370,7 @@ def frame_rerun_reason(result):
     if frame.shape!=(3,3) or not np.isfinite(frame).all():
         return 'Saved frame is invalid; re-enter orientation-dependent inputs before rerunning.'
     from .geometry import orientation
-    try:expected=orientation(restore_structure(snapshot).atoms.cell.array,result['settings'].zone,result['settings'].target)
+    try:expected=orientation(structure_data.restore_structure(snapshot).atoms.cell.array,result['settings'].zone,result['settings'].target)
     except (ValueError,TypeError,np.linalg.LinAlgError):
         return 'Saved structural orientation/target is incompatible; saved results remain viewable, but re-enter geometry before rerunning.'
     if not np.allclose(frame,expected,atol=1e-12,rtol=0):

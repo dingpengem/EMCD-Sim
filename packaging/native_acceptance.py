@@ -27,10 +27,11 @@ def run(output, historical_project=None):
     from emcd_sim.gui.app import MainWindow
     from emcd_sim.gui.geometry import Structure, elastic_model
     from emcd_sim.gui.runtime import build_info, resource_root
-    from emcd_sim.gui.project_io import save_project, load_project, source_status, restore_structure, fingerprints
+    from emcd_sim.gui.project_io import save_project, load_project, source_status, fingerprints
+    from emcd_sim.gui.geometry import restore_structure
     from emcd_sim.atomic_ionization import export_atomic_parameters
     from emcd_sim.imported_mdff import ImportedMDFF
-    from emcd_sim.gui.results import mdff_label
+    from emcd_sim.gui.result_presentation import mdff_label
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     if not QtGui.QFontDatabase.families():
@@ -126,7 +127,7 @@ def run(output, historical_project=None):
                     report['cases'].append(dict(name=name,project_roundtrip=True,recalculated=True,methods=list(r['methods']),
                         comparison=r['comparison']['spectra']['I_A_plus']['l2_relative'],label=mdff_label(r)))
                     if model=='atomic' and channel=='double':
-                        from emcd_sim.gui.forward_results import export_result
+                        from emcd_sim.gui.result_export import export_result
                         export_result(opened,out/(name+'_exports'))
                         record('Scientific PNG/SVG/CSV exports from completed generalized result')
                         original=w.forward_settings()
@@ -218,7 +219,7 @@ def _additional_provider_cases(out,app,windows,report,wait,*,coverage='edges',on
     from ase.build import bulk
     from emcd_sim.gui.app import MainWindow
     from emcd_sim.gui.geometry import Structure
-    from emcd_sim.gui.forward_results import export_result
+    from emcd_sim.gui.result_export import export_result
     from emcd_sim.gui.project_io import save_project,load_project
     models=['XMCD-constrained MDFF','Atomic Ionization MDFF','Manual tensor']
     out.mkdir(parents=True,exist_ok=True)

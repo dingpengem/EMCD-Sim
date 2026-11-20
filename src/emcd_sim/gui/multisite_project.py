@@ -10,6 +10,7 @@ import numpy as np
 
 from .project_configuration import _encode_config, _decode_config, _records
 from .multisite_results import SPECTRAL_KEYS
+from . import geometry as structure_data
 
 
 def _entry(prefix,entry,shared=False):
@@ -83,7 +84,7 @@ def restore_entry(record,angular,spectra,energy=None):
 
 def restore_groups(result,descriptor,angular,spectra):
     from ..multisite import validate_site_rows
-    from .project_io import restore_structure
+    from .geometry import restore_structure
     energy=result['spectra']['energy_ev'];n=result['metadata']['multisite']['selected_atom_count']
     groups={};rows=[]
     for record in descriptor['groups']:
@@ -121,7 +122,7 @@ def restore_context(result,descriptor,manifest,root):
     saved=descriptor.get('configuration')
     if saved is not None:
         from ..multisite_spectrum import ModeledEdgeWindow
-        state=dict(structure=io.restore_structure(result['structure_snapshot']),settings=result['settings'],
+        state=dict(structure=structure_data.restore_structure(result['structure_snapshot']),settings=result['settings'],
             config=_decode_config(saved['config']),magnetization_mode=saved['magnetization_mode'],
             reverse_magnetization=saved['reverse_magnetization'],
             group_records=[dict(row,mdff_reference=None if row['mdff_reference'] is None else _decode_config(row['mdff_reference'])) for row in saved['groups']],

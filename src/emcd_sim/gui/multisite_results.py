@@ -196,15 +196,17 @@ def comparison_text(result):
     return '\n'.join(lines)
 
 
-def draw_totals(figure, result, method, kind, choice, *, selection=('total',None),normalization='weighted',compared=(),quantity=0,include_total=False):
-    """Compatibility entry point; presentation belongs to the shared Results view."""
-    from .results import draw_eels,draw_maps,draw_diffraction
-    if kind == 'eels':
-        return draw_eels(figure,result,choice,method,selection=selection,normalization=normalization,
-                         compared=compared,quantity=quantity,include_total=include_total)
-    if kind == 'maps':return draw_maps(figure,result,choice,method)
-    if kind == 'diffraction':return draw_diffraction(figure,result,method,choice=='Depth average')
-    figure.clear();ax=figure.subplots();ax.axis('off')
-    ax.text(.01,.98,comparison_text(result),va='top',fontsize=8,wrap=True)
-    figure._emcd_display_metadata=dict(kind='multisite details',method=method)
-    return []
+DEFINITIONS = {
+    'I_A_plus': 'Raw detector A, active provider state',
+    'I_B_plus': 'Raw detector B, active provider state',
+    'I_A_minus': 'Raw detector A, globally reversed provider state',
+    'I_B_minus': 'Raw detector B, globally reversed provider state',
+    'N_A': '(I_A_plus + I_A_minus)/2; reversal-even at A',
+    'N_B': '(I_B_plus + I_B_minus)/2; reversal-even at B',
+    'M_A': '(I_A_plus - I_A_minus)/2; reversal-odd at A',
+    'M_B': '(I_B_plus - I_B_minus)/2; reversal-odd at B',
+    'D_raw': 'I_A_plus - I_B_plus; conventional detector difference',
+    'D_mag': 'M_A - M_B; magnetic reversal-odd detector difference',
+    'D_nonmag': 'N_A - N_B; nonmagnetic reversal-even detector difference',
+    'Sigma_ref': 'N_A + N_B',
+}

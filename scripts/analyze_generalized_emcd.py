@@ -122,7 +122,7 @@ def main():
             ax.plot(*r['model'].elastic.crystal.g_vector(r['settings'].target)[:2],'s',mfc='none',mec='crimson',ms=7)
     fig.suptitle('[111], 2 nm: raw L3 fields on 97×97 grid; crystal M=[001]')
     fig.savefig(OUT/'bw_ms_maps.png',dpi=150);fig.savefig(OUT/'bw_ms_maps.svg')
-    from emcd_sim.gui.results import draw_eels
+    from emcd_sim.gui.result_presentation import draw_eels
     paths=[p for p in (OUT/'gui').glob('117_double_*/project') if (p.parent/'acceptance.json').exists()]
     if paths:
         demo=load_project(sorted(paths)[-1])

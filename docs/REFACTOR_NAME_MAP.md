@@ -1,5 +1,12 @@
 # Current calculation API and refactor decisions
 
+Phase 3C moves neutral structure helpers to `gui.geometry`, completed-method
+views to `gui.forward_results`, rendering/controls to `gui.result_presentation`
+and file exports to `gui.result_export`. The renamed `draw_multisite_panel`
+describes selected group/element/total panels. See the
+[Phase 3C report](PHASE3C_GEOMETRY_RESULTS_PERSISTENCE_DECOUPLING.md) for the
+consumer mapping, retained contracts and verification.
+
 Phase 3B places source declaration, validation and preparation in
 `mdff_providers`. `gui.material_inputs` retains the original saved records;
 `gui.provider_preparation` and `gui.provider_direction` are consolidated into
@@ -56,8 +63,8 @@ Paths below are relative to `src/emcd_sim/`.
 | `gui.emcd_forward._calculate` / `calculate_prepared` | Internal `_calculate_uniform` / `_calculate_uniform_prepared` in `gui.forward_pipeline` | Remove an unnecessary delegation wrapper. Admission and prepared execution remain explicit stages of the canonical engine. |
 | `gui.emcd_forward._contract` | `gui.forward_results.assemble_forward_result` | Receives already calculated signals and assembles parity, diagnostics and metadata; it does not contract tensors. The old wrapper and its unused compatibility arguments are removed. |
 | `gui.emcd_forward.metrics` | `gui.forward_results.selected_edge_metrics` | Identifies selected-energy observables and dimensionless ratios. Current consumers use the new owner/name; no alias remains. |
-| `gui.emcd_forward._export_single` | `gui.forward_results.export_method_result` | Exports one completed propagation-method result; "single" was ambiguous with Single Channeling. The old alias is removed. |
-| `gui.emcd_forward.export_result` | `gui.forward_results.export_result` | Export belongs to completed result handling. The clear function name remains, with all imports migrated. The old mixed module is deleted. |
+| `gui.emcd_forward._export_single` | `gui.result_export.export_method_result` | Exports one completed propagation-method result; "single" was ambiguous with Single Channeling. The old alias is removed. |
+| `gui.emcd_forward.export_result` | `gui.result_export.export_result` | Export has a nonvisual file/export owner, separate from scientific result assembly. The clear function name and behavior remain, with maintained consumers migrated. |
 | `gui.channeling.contract` | `gui.channeling.calculate_detector_signals` | Schedules energy/pixel supports, invokes kernels and integrates signals. The vague alias is removed; actual tensor contraction remains in the scientific kernels. |
 | `_multisite_detector_data` in `gui.forward_pipeline` | `detector_signals.integrate_detector_block` | Pure NumPy aperture reduction and selected-map retention are independent of resource admission/source preparation. Internal and validation callers are migrated. |
 | Repeated detector even/odd algebra | `detector_signals.reversal_components` | One implementation owns N/M, detector differences and the reference sum. Arithmetic/evaluation order and raw inputs are preserved. |

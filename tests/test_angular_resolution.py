@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.forward_settings import NiForwardSettings
 from emcd_sim.gui.project_io import config_from_dict,load_project
-from emcd_sim.gui.results import draw_maps
+from emcd_sim.gui.result_presentation import draw_maps
 
 
 def test_defaults_and_legacy_memory():

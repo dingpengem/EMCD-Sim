@@ -17,7 +17,7 @@ def run(output, orientation='017'):
     from .app import MainWindow, add_about_menu
     from .runtime import build_info
     from .project_io import fingerprints, load_project, save_project
-    from .forward_results import export_result
+    from .result_export import export_result
     from .normalization_export import save_figure
     from .parallel_resources import native_backend_info
 

@@ -146,7 +146,7 @@ def _calculate_uniform_prepared(structure,settings,cfg,progress,cancelled,*,ener
     # contain the enclosing collection, avoiding recursive/ambiguous dimensions.
     result=dict(primary,methods=methods,comparison=comparison,fft=fft_info)
     result['metadata']=dict(primary['metadata'],method_labels=list(methods),comparison=comparison)
-    from .project_io import structure_snapshot
+    from .geometry import structure_snapshot
     result['structure_snapshot']=structure_snapshot(structure)
     for r in methods.values():r['structure_snapshot']=result['structure_snapshot']
     stage('Preparing result visualizations')
@@ -354,7 +354,7 @@ def _calculate_multisite(structure,settings,sites,cfg,progress=lambda s:None,
         primary=methods.get('bloch',next(iter(methods.values())))
         result=dict(primary,methods=methods,comparison=comparison,fft=fft_info)
         result['metadata']=dict(primary['metadata'],method_labels=list(methods),comparison=comparison)
-        from .project_io import structure_snapshot
+        from .geometry import structure_snapshot
         snapshot=structure_snapshot(structure)
         result['structure_snapshot']=snapshot
         for method_result in methods.values():method_result['structure_snapshot']=snapshot

@@ -658,7 +658,7 @@ def main():
         window.structure_viewer.apply_groups()
         def capture_emcd():
             if window.busy:QtCore.QTimer.singleShot(100,capture_emcd);return
-            from .forward_results import export_result
+            from .result_export import export_result
             import datetime
             from .runtime import workspace
             root=(workspace()/'smoke_exports')/('atomic_' if args.smoke_atomic else 'xmcd_')

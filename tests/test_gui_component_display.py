@@ -12,10 +12,10 @@ from matplotlib.figure import Figure
 from emcd_sim.gui.component_display import components,mirrored_angular_components
 from emcd_sim.gui.forward_pipeline import calculate
 from emcd_sim.gui.forward_settings import NiForwardSettings
-from emcd_sim.gui.forward_results import export_result
+from emcd_sim.gui.result_export import export_result
 from emcd_sim.gui.geometry import Structure,Settings
 from emcd_sim.gui.prb_benchmark import benchmark_readout,benchmark_spectra
-from emcd_sim.gui.results import draw_eels,draw_maps
+from emcd_sim.gui.result_presentation import draw_eels, draw_maps
 
 
 def example_spectra():
@@ -88,7 +88,7 @@ def test_two_samples_are_points_and_uncomputed_energy_is_rejected(result):
 
 
 def test_actual_five_energy_subset_is_not_labelled_full_native_coverage(result):
-    from emcd_sim.gui.results import spectral_coverage_label
+    from emcd_sim.gui.result_presentation import spectral_coverage_label
     cfg=replace(result['config'],propagation='bloch',energy_scope='full',angular_maps=False)
     subset=calculate(Structure.nickel(),result['settings'],cfg,energy_ev=[826,cfg.l3,833,cfg.l2,850])
     assert spectral_coverage_label(subset)=='Calculated energy subset'

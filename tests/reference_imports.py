@@ -15,7 +15,7 @@ def relocate_reference_imports(source):
         'inspect_source':('emcd_sim.gui.xmcd_source','inspect_xmcd_source'),
         'calculate':('emcd_sim.gui.forward_pipeline','calculate'),
         'metrics':('emcd_sim.gui.forward_results','selected_edge_metrics'),
-        'export_result':('emcd_sim.gui.forward_results','export_result'),
+        'export_result':('emcd_sim.gui.result_export','export_result'),
         'Cancelled':('emcd_sim.cancellation','Cancelled'),
         'material_reason':('emcd_sim.historical_ni','material_reason'),
         'tensors':('emcd_sim.historical_ni','tensors'),
@@ -40,6 +40,26 @@ def relocate_reference_imports(source):
             elif node.module in ('provider_preparation','emcd_sim.gui.provider_preparation',
                                  'provider_direction','emcd_sim.gui.provider_direction'):
                 target='emcd_sim.mdff_providers';changed=True
+            elif node.module in ('project_io','emcd_sim.gui.project_io') and item.name in (
+                    'structure_snapshot','restore_structure','structures_match'):
+                target='emcd_sim.gui.geometry';changed=True
+            elif node.module in ('forward_results','emcd_sim.gui.forward_results') and item.name in ('export_result','export_method_result'):
+                target='emcd_sim.gui.result_export';changed=True
+            elif node.module in ('results','emcd_sim.gui.results') and item.name=='method_result':
+                target='emcd_sim.gui.forward_results';changed=True
+            elif node.module in ('results','emcd_sim.gui.results') and item.name in (
+                    'mdff_label','geometry_description','spectral_coverage_label','draw_maps',
+                    '_draw_eels_diagnostics','draw_eels','draw_component_maps','draw_diffraction',
+                    'draw_comparison','_single_comparison_text','comparison_text'):
+                target='emcd_sim.gui.result_presentation';changed=True
+            elif node.module in ('multisite_export','emcd_sim.gui.multisite_export'):
+                target='emcd_sim.gui.multisite_results' if item.name=='DEFINITIONS' else 'emcd_sim.gui.result_export';changed=True
+            elif node.module in ('multisite_results_controls','emcd_sim.gui.multisite_results_controls'):
+                target='emcd_sim.gui.result_presentation';changed=True
+            elif node.module in ('multisite_results','emcd_sim.gui.multisite_results') and item.name=='draw_totals':
+                target,name='emcd_sim.gui.result_presentation','draw_multisite_panel';changed=True
+            elif node.module in ('propagation','emcd_sim.gui.propagation') and item.name=='export_comparison':
+                target='emcd_sim.gui.result_export';changed=True
             elif node.module=='forward_pipeline' and item.name=='calculate_prepared':
                 target,name='emcd_sim.gui.forward_pipeline','_calculate_uniform_prepared';changed=True
             elif node.module=='channeling' and item.name=='contract':

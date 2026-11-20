@@ -12,6 +12,8 @@ in the elementwise contraction. See also [the refactor name map](REFACTOR_NAME_M
    crystal, proper crystal-to-beam rotation, ordered ZOLZ basis and microscope.
    `crystal`, `crystallography`, `crystallographic_sites`, `multisite` and
    `ionization_sites` own lattice, site and assignment rules.
+   Neutral `structure_snapshot`, `restore_structure` and `structures_match`
+   belong to `gui.geometry`; previews do not depend on project-file I/O.
 2. `gui.forward_settings.NiForwardSettings`, `gui.material_inputs` and
    `gui.forward_settings.MultiSiteForwardSettings` record existing model and
    sampling requests. A site-group provider reference owns its material source;
@@ -32,9 +34,13 @@ in the elementwise contraction. See also [the refactor name map](REFACTOR_NAME_M
    reduces bounded multisite blocks. These application services do not use widgets.
 6. The Single/Double kernels below form intensities; `detector_signals` integrates
    fractional apertures and constructs reversal components. `gui.forward_results`
-   assembles result metadata, selected-edge metrics and exports.
+   assembles result metadata, selected-edge metrics and completed-method views.
+   `gui.multisite_results` owns stored group/element data projections and
+   quantity definitions. `gui.result_export` serializes completed results;
+   `gui.result_presentation` owns plotting and spectral controls.
 7. `gui.calculation_controls.CalculationControls` collects widget inputs and
-   controls workers; `gui.results` presents arrays. `gui.project_io`,
+   controls workers; `gui.results.ResultsView` coordinates result widgets.
+   `gui.project_io`,
    `project_configuration`, `project_session` and `project_collection` own saved
    results, editable inputs, per-run restoration and project collections.
 
