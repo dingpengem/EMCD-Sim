@@ -56,10 +56,25 @@ Two different numerical comparisons retain their original provenance:
   [beta.2 development-source evidence](PHASE3F2_WINDOWS_NATIVE_ACCEPTANCE.md),
   not native acceptance of the newly rebuilt beta.3 binary.
 
-The beta.3 EXE must pass its own native packaged profiles, source/package/license
-checks and independent output comparisons, followed by explicit human GUI
-acceptance of its exact ZIP. Those outcomes and the build-source identity are
-recorded after execution in the release report. A later documentation-only
+The rebuilt beta.3 EXE from
+`f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6` passed **all 11 native packaged
+profiles**, package/source/license verification and its own independent
+**19-project / 57-NPZ / 1,763-exact-array** comparison, including 448 NaN-bearing
+arrays. No scientific tolerance or reference changed. The initial candidate
+was superseded after an obsolete beta.2 version assertion in acceptance tooling
+was corrected; every final native profile ran on the replacement binary.
+
+The release preflight passed 27 checks; three affected registration checks
+passed after that QA-only correction. All final src bytes are identical to
+the release source used for the new **22-case / 2,294-exact-array** comparison.
+The complete regression retains its original tested-source identity and was
+not restarted for release bookkeeping.
+
+**Manual GUI approval and publication remain pending.** The exact Windows ZIP
+SHA-256 is `da12fff50ec062f9c1054c40cf34b0435924d3091dfd99f31e44fe6ea4c1089e`.
+See the [measured release report](PHASE3_WINDOWS_PUBLIC_RELEASE.md) for artifact
+identities, native outcomes, retained limitations and the manual checklist.
+A later documentation-only
 commit may contain that report without changing the tagged build source or
 the accepted binary. No full-suite, native or clean-machine claim is inferred
 from a version string.
