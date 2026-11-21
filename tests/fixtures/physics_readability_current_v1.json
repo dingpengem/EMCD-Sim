@@ -454,7 +454,7 @@
     },
     "tests/test_part1c_provider_interface.py": {
       "mode": "canonical",
-      "sha256": "1a5d61ea351b0793051d716df6b53f66251a2a6b31f498636a27c46d4e0ae986"
+      "sha256": "e9d77bfa7815f6f84c7dffd2ffc860019f99f24ccb311137281553c5396e91d2"
     },
     "tests/test_part1c_refactor.py": {
       "mode": "canonical",
@@ -470,7 +470,7 @@
     },
     "tests/test_single_element_contracts.py": {
       "mode": "canonical",
-      "sha256": "41b7ddc9417fdbe2f33bf3bf4bdaf98b356b17d19b083ddae76173911de07258"
+      "sha256": "8ef2c81972b2c0dd926c6f442def686ae99921d50a2504caf0f42daeb6f1fd93"
     },
     "tests/test_single_element_forward.py": {
       "mode": "canonical",

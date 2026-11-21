@@ -115,7 +115,9 @@ def test_reject_invalid_import(tmp_path,mutation):
 
 
 def test_element_edge_checksum_and_no_ni_energy_inheritance(tmp_path):
-    p=write_source(tmp_path/'tensor.json');cfg=settings_for_source(p,grid=9,depth=9,subpixels=8)
+    # Keep the aperture inputs formerly inherited before settings became neutral.
+    p=write_source(tmp_path/'tensor.json');cfg=settings_for_source(p,grid=9,depth=9,subpixels=8,
+        centers=((0.2837684449489217,0.2837684449489217),(0.2837684449489217,-0.2837684449489217)),radius=0.0908059024)
     assert material_reason(fe(),cfg)=='' and material_reason(Structure.nickel(),cfg)
     assert len(energy_grid(cfg))==243
     assert material_reason(fe(),replace(cfg,core_edge='K'))

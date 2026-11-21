@@ -36,7 +36,9 @@ def test_historical_provider_grid_and_direct_tensors_are_exact(model,scope):
 
 def test_declared_xmcd_uses_same_preparation_interface(tmp_path):
     path,declaration=xmcd_source(tmp_path)
-    cfg=material_inputs.settings_for_provider(path,'xmcd',declaration,energy_scope='edges')
+    # Keep the aperture inputs formerly inherited before settings became neutral.
+    cfg=material_inputs.settings_for_provider(path,'xmcd',declaration,energy_scope='edges',
+        centers=((0.2837684449489217,0.2837684449489217),(0.2837684449489217,-0.2837684449489217)),radius=0.0908059024)
     provider=prepare_provider(cfg)
     assert provider.declared and provider.source.sha256==cfg.source_sha256
     np.testing.assert_array_equal(provider.energy_grid(),[710.])
