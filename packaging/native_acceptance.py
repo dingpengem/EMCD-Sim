@@ -353,6 +353,8 @@ def run_multisite(output):
     def retain(dialog):
         if dialog.windowTitle()=='Retain Calculation':dialog.defaultButton().click();return 0
         return execute(dialog)
+    previous_hook=sys.excepthook
+    sys.excepthook=lambda kind,value,tb:report['errors'].append(''.join(traceback.format_exception(kind,value,tb)))
     try:
         assert app.platformName()=='windows','Native Windows platform required'
         assert build_info()['application_version']=='0.9.0b2'
@@ -459,6 +461,7 @@ def run_multisite(output):
         if w.busy:w.cancel();w.worker.wait(15000);app.processEvents()
         for dialog in w.findChildren(QtWidgets.QDialog):dialog.close()
         w.project_dirty=False;w.close();w.deleteLater();app.processEvents();report['closed_cleanly']=not w.busy
+        sys.excepthook=previous_hook
         (out/'acceptance.json').write_text(json.dumps(report,indent=2,default=str),encoding='utf-8')
     return 0 if report['complete'] and not report['errors'] and report['closed_cleanly'] else 1
 

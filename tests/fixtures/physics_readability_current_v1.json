@@ -66,7 +66,7 @@
     },
     "packaging/native_acceptance.py": {
       "mode": "canonical",
-      "sha256": "18a5865187320c7f0dba639383d745651fd52402710f1f8d3f23b75bf5b52368"
+      "sha256": "caaba53b6510c400313d880646566a52a1955465048a8fc36004cb065745057d"
     },
     "packaging/windows_version_info.txt": {
       "mode": "canonical",
@@ -554,7 +554,7 @@
     },
     "src/emcd_sim/gui/result_presentation.py": {
       "mode": "canonical",
-      "sha256": "54b1bd0c8aabe5fc44db3774868609e110081c0280396ef4e0e7087eeebfcacc"
+      "sha256": "2a4dbcac04377b6a9dc9c7c3aca5e2ca069bbe4bd1679731ae8afb94f345d40b"
     },
     "scripts/ni_117_exact_depth_probe.py": {
       "mode": "canonical",

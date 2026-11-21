@@ -50,7 +50,9 @@ class MultisiteSpectraControls(QtWidgets.QWidget):
         self.result = result;previous = None if fresh else self.selection.currentData()
         checked = {self.groups.item(i).data(QtCore.Qt.ItemDataRole.UserRole) for i in range(self.groups.count())
                    if self.groups.item(i).checkState() == QtCore.Qt.CheckState.Checked}
-        with QtCore.QSignalBlocker(self),QtCore.QSignalBlocker(self.selection),QtCore.QSignalBlocker(self.groups):
+        with (QtCore.QSignalBlocker(self),QtCore.QSignalBlocker(self.selection),
+              QtCore.QSignalBlocker(self.groups),QtCore.QSignalBlocker(self.normalization),
+              QtCore.QSignalBlocker(self.include_total)):
             if fresh:
                 self.normalization.setCurrentIndex(0);self.include_total.setChecked(False);checked=set()
             self.selection.clear();self.selection.addItem('Total Results',('total',None))

@@ -133,6 +133,23 @@ def select(view, mode, value=None):
     assert index >= 0;box.setCurrentIndex(index)
 
 
+@pytest.mark.parametrize('include_total',[False,True])
+def test_switching_disjoint_groups_clears_comparison_without_callback_errors(view,monkeypatch,include_total):
+    view.set_result(stored_result('FeNi'));select(view,'compare')
+    controls=view.multisite_controls
+    controls.normalization.setCurrentIndex(1);controls.include_total.setChecked(include_total)
+    errors=[]
+    monkeypatch.setattr(sys,'excepthook',lambda kind,value,tb:errors.append(value))
+    result=stored_result();before=deepcopy(result['spectra'])
+    view.set_result(result)
+    assert not errors,errors
+    assert controls.options()['selection']==('total',None)
+    assert not controls.options()['include_total']
+    assert set(controls.options()['compared'])==set(result['groups'])
+    assert 'Fe(A)' in controls.sources.text() and 'Ni' not in controls.sources.text()
+    for key,value in before.items():np.testing.assert_array_equal(result['spectra'][key],value)
+
+
 @pytest.mark.parametrize('quantity',[0,1])
 def test_legend_click_hides_complete_curve_and_survives_reflow_export(view,tmp_path,quantity):
     result=stored_result('FeNi');before=deepcopy(result['spectra'])
