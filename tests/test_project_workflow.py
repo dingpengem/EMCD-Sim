@@ -209,6 +209,28 @@ def test_failed_collection_stage_keeps_previous_run_files(tmp_path,monkeypatch):
     assert [row['id'] for row,_ in load_collection(root)['runs']]==['a','b','c']
 
 
+def test_collection_resave_replaces_run_inputs_and_preserves_attachments(tmp_path):
+    from emcd_sim.gui.project_collection import save_collection
+    r=result_fixture(tmp_path);r['input_configuration']=deepcopy(r['configuration'])
+    rows=[(dict(id=name,name=name),r) for name in ('keep','remove')]
+    root=save_collection(r['configuration'],rows,tmp_path/'Input History')
+    input_note=root/'calculations/keep/run_inputs/user-notes.txt'
+    input_note.write_text('Keep this input attachment')
+    removed_note=root/'calculations/remove/user-notes.txt'
+    removed_note.write_text('Keep this removed-run attachment')
+    r['input_configuration']['settings']=replace(r['settings'],thickness=3.)
+    save_collection(r['configuration'],rows[:1],root,replace_existing=True)
+    opened=load_collection(root)
+    assert [record['id'] for record,_ in opened['runs']]==['keep']
+    restored=opened['runs'][0][1]
+    assert restored['input_configuration']['settings'].thickness==3.
+    np.testing.assert_array_equal(restored['spectra']['I_A_plus'],r['spectra']['I_A_plus'])
+    assert input_note.read_text()=='Keep this input attachment'
+    assert removed_note.read_text()=='Keep this removed-run attachment'
+    assert not (removed_note.parent/'run_inputs').exists()
+    assert not (removed_note.parent/'virtual_detector_eels.npz').exists()
+
+
 def test_unavailable_global_atomic_provider_is_not_saved_as_legacy_ni(window,app,tmp_path):
     from ase.build import bulk
     from emcd_sim.structure_geometry import Structure, Settings

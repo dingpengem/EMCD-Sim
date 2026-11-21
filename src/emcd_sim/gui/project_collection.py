@@ -64,7 +64,15 @@ def save_collection(state,runs,path,*,replace_existing=False,cancelled=lambda:Fa
                     if folder.parent!=old_calculations.resolve():raise ValueError('Unsafe calculation folder')
                     if (folder/'project.json').is_file():
                         manifest=json.loads((folder/'project.json').read_text(encoding='utf-8'))
-                        _unmanaged(folder,temp/'calculations'/old['id'],set(manifest['files'])|{'project.json'})
+                        target=temp/'calculations'/old['id']
+                        managed=set(manifest['files'])|{'project.json'}
+                        if manifest.get('run_inputs')=='run_inputs':
+                            inputs=folder/'run_inputs'
+                            if inputs.is_symlink():raise ValueError('Run input folder contains a link; use Save As')
+                            inputs_manifest=json.loads((inputs/'project.json').read_text(encoding='utf-8'))
+                            _unmanaged(inputs,target/'run_inputs',set(inputs_manifest['files'])|{'project.json'})
+                            managed.add('run_inputs')
+                        _unmanaged(folder,target,managed)
         manifest=json.loads((temp/'project.json').read_text(encoding='utf-8'))
         manifest['calculations']=records;io._json(temp/'project.json',manifest)
         check()

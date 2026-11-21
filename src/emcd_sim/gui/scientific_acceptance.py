@@ -13,8 +13,11 @@ def run(output):
     from emcd_sim.study_presets import nickel_geometry_settings
     from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.forward_pipeline import calculate
+    from .forward_pipeline import calculate as gui_calculate
     from .project_io import save_project
     from emcd_sim.provenance import build_info
+
+    assert gui_calculate is calculate, 'GUI forward API must use the canonical engine'
 
     output=Path(output).resolve()
     output.mkdir(parents=True,exist_ok=False)

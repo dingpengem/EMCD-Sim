@@ -366,7 +366,8 @@ def run_multisite(output):
             assert w.splitter.count()==3 and w.browser_dock.isVisible()
             assert w.axis.isEnabled() and w.magnetization_mode=='global'
             # Bundled Ni source, the established Global M path, actual workers.
-            w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
+            w.validate_xmcd(show_error=False);w.reference_ni.setChecked(True)
+            w.declaration.setChecked(True);_accept_global_mdff(w)
             for channel in ('single','double'):calculate('Ni','bloch',channel)
             capture('Ni-results');save_as(out/'Ni-project')
             ni_before={key:value.copy() for key,value in w.emcd_result['spectra'].items()}
@@ -385,6 +386,11 @@ def run_multisite(output):
                 w.show_structure_viewer();viewer=w.structure_viewer;editor=viewer.editor
                 viewer.tabs.setCurrentWidget(editor);editor.mode.setCurrentIndex(1)
                 assert not w.axis.isEnabled() and w.magnetization_mode=='local'
+                # Replace automatic crystallographic groups with this fixture's
+                # explicit magnetic sublattices through the ordinary editor.
+                while editor.rows():
+                    editor.groups.setCurrentItem(editor.groups.topLevelItem(0))
+                    editor.delete_group()
                 groups=[('Cr(A)' if material=='Cr' else 'Fe(A)',[0],1.,1.),
                         ('Cr(B)' if material=='Cr' else 'Fe(B)',[1] if material=='Cr' else [1,2],-1.,1. if material=='Cr' else 2.)]
                 for gid,indices,sign,scale in groups:

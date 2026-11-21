@@ -66,7 +66,7 @@
     },
     "packaging/native_acceptance.py": {
       "mode": "canonical",
-      "sha256": "23e0692ca72963060f24033fe6fbd9f5b1de1db3d4edd3eeb8d2bb5dffeaffd6"
+      "sha256": "18a5865187320c7f0dba639383d745651fd52402710f1f8d3f23b75bf5b52368"
     },
     "packaging/windows_version_info.txt": {
       "mode": "canonical",
@@ -262,7 +262,7 @@
     },
     "src/emcd_sim/gui/scientific_acceptance.py": {
       "mode": "canonical",
-      "sha256": "af10e034973689e3e3e8aa76547cb435a24c2197fad016d00fca168ecc181069"
+      "sha256": "0f5b91f58cae2bbff1ab759e012a40a45585224e653a92eb2342d4e3d902ffbe"
     },
     "src/emcd_sim/gui/tensor_spectrum_preview.py": {
       "mode": "canonical",
