@@ -31,7 +31,7 @@ INTEGRATIONS=('tests/unit_source_snapshots.py','tests/single_element_source_guar
 BOOTSTRAP=INTEGRATIONS+('tests/mdff_usability_source_scope.py','tests/mdff_workflow_registration.py','tests/test_mdff_usability_source_scope.py','tests/fixtures/mdff_usability_scope_v1.json','tests/fixtures/mdff_usability_parent_v1.zip','tests/fixtures/mdff_usability_scope_v2.json','tests/fixtures/mdff_usability_parent_v2.zip','tests/fixtures/mdff_usability_scope_v3.json','tests/fixtures/mdff_usability_parent_v3.zip',MANIFEST_PATH,ARCHIVE_PATH,'scripts/verify_mdff_registration.py','docs/MDFF_USABILITY_REGISTRATION.md')
 TRUST_ROOTS=('tests/mdff_usability_source_scope.py',MANIFEST_PATH,ARCHIVE_PATH)
 READABILITY_PATH='tests/fixtures/physics_readability_current_v1.json'
-READABILITY_SHA256='7a0fe5018708433258d9effb3d9833ec2efa4a71390e04953f234057d7938d1c'
+READABILITY_SHA256='8be1fb41d3f8c351c92dc48f25a8332fc6b212395033e07be88321e43b7d6379'
 READABILITY_RENAMES={
  'src/emcd_sim/gui/channeling.py':'src/emcd_sim/channeling.py',
  'src/emcd_sim/gui/propagation.py':'src/emcd_sim/propagation.py',
