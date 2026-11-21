@@ -262,7 +262,7 @@
     },
     "src/emcd_sim/gui/scientific_acceptance.py": {
       "mode": "canonical",
-      "sha256": "80606fec2add92f9c18f1a6d65536f3180aab83649fe368b731f1d47a8e1ce7b"
+      "sha256": "af10e034973689e3e3e8aa76547cb435a24c2197fad016d00fca168ecc181069"
     },
     "src/emcd_sim/gui/tensor_spectrum_preview.py": {
       "mode": "canonical",

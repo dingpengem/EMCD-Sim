@@ -9,7 +9,8 @@ import numpy as np
 
 
 def run(output):
-    from emcd_sim.structure_geometry import Structure, Settings, geometry, align_bragg, excitation
+    from emcd_sim.structure_geometry import Structure, geometry, align_bragg, excitation
+    from emcd_sim.study_presets import nickel_geometry_settings
     from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.forward_pipeline import calculate
     from .project_io import save_project
@@ -18,7 +19,7 @@ def run(output):
     output=Path(output).resolve()
     output.mkdir(parents=True,exist_ok=False)
     structure=Structure.nickel()
-    settings=Settings(thickness=10.,beam_cutoff=3.2,potential_cutoff=3.8)
+    settings=nickel_geometry_settings(thickness=10.,beam_cutoff=3.2,potential_cutoff=3.8)
     _,frame,hkl,g,_=geometry(structure,settings)
     tilt=align_bragg(g[hkl.index(settings.target)],(0.,15.),settings.voltage,lock='Y')
     settings=replace(settings,tilt=tuple(tilt))
