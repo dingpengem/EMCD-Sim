@@ -326,7 +326,7 @@ def numerical_summary(result):
         groups=len(r.get("groups", {})),
         detector_support_pixels=sum(1 for v in
             np.logical_or(r["weights"]["A"] > 0, r["weights"]["B"] > 0).ravel() if v),
-        actual_workers=meta["execution"]["effective_workers"],
+        actual_workers=result["metadata"]["execution"]["effective_workers"],
         estimated_working_mib=info["estimated_working_mib"],
         estimated_process_peak_mib=info.get("estimated_process_peak_mib"),
         dense_working_estimate_mib=info["dense_working_estimate_mib"],
@@ -355,6 +355,14 @@ def worker(case, out, repeats, warmups):
     exact = dict(case=asdict(case), settings=asdict(settings), config=asdict(cfg),
                  energy_ev=energy.tolist(), structure=snapshot, sources=provenance)
     setup = time.perf_counter() - start_setup
+    # Uniform completed-method metadata contains the working-array estimate;
+    # the full process estimate belongs to request-aware resource preflight.
+    from emcd_sim.propagation import numerical_info, resolve_fft_configuration
+    before = time.perf_counter()
+    planned = resolve_fft_configuration(structure, settings, cfg)
+    preflight = numerical_info(structure, settings,
+        replace(planned, energy_points=len(energy)), ionization_sites=kwargs.get("sites"))
+    preflight_seconds = time.perf_counter() - before
     rows, digests = [], []
     result = None
     for index in range(warmups + repeats):
@@ -408,7 +416,8 @@ def worker(case, out, repeats, warmups):
     measured = [r["wall_seconds"] for r in rows if r["kind"] == "measured"]
     report = dict(case=case.name, pid=os.getpid(), source_commit=git("rev-parse", "HEAD"),
         baseline_commit=BASE, status=git("status", "--short"), exact_inputs=exact,
-        setup_seconds=setup, runs=rows, profile=profile, io=io,
+        setup_seconds=setup, preflight_seconds=preflight_seconds, preflight=preflight,
+        runs=rows, profile=profile, io=io,
         headline=dict(repeats=len(measured), mean_seconds=statistics.mean(measured),
                       min_seconds=min(measured), max_seconds=max(measured),
                       lifetime_peak_before_profile_io=measurements_peak),
