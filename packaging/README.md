@@ -1,6 +1,6 @@
 # Windows packaging and build
 
-Current published package: [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), Python package `0.8.1b2`, Windows version `0.8.1.2`. Use the current release-build instructions and [beta.2 dependency distribution](#beta2-dependency-distribution) below. The internal-candidate inventory in the next section is historical; it does not describe the dependencies shipped in beta.2.
+Current published Windows package: [v0.9.0-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.2). This checkout prepares **v0.9.0-beta.3 / 0.9.0b3**, Windows-only. Publication requires new native acceptance and explicit manual GUI approval. The independent macOS ARM64 release is unchanged. Older packaging inventories and redistribution decisions below retain their historical version identities.
 
 ## Historical packaging inventory — internal candidate 3609dfc7
 
@@ -43,38 +43,39 @@ This opt-in mode requires a fresh output directory and a genuine checksummed his
 
 ## Current Windows release build
 
-Current local development candidate (not published): **v0.9.0-beta.1 / 0.9.0b1**, convention
-`forward_born_dagger_g_minus_h_v1`. Use a fresh Python 3.11 Windows build venv
-without `--system-site-packages`. Install the same declared inputs as Actions:
+Current candidate: **v0.9.0-beta.3 / 0.9.0b3**, convention
+`forward_born_dagger_g_minus_h_v1`. Preserve the reviewed Python 3.11 / Qt 6.12.0
+and declared scientific dependencies. Build from a clean committed source
+snapshot with a new output root; never reuse stale PyInstaller intermediates.
 
 ```powershell
-python -m venv build/windows-build-env
-build/windows-build-env/Scripts/python.exe -m pip install -e ".[dev,gui]" -r packaging/requirements-windows.txt
-build/windows-build-env/Scripts/python.exe packaging/check_windows_metadata.py
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python ./build/windows-rc/venv/Scripts/python.exe -BuildRoot build/windows-v0.9.0-beta.3-release -ArchiveName EMCD-Sim-v0.9.0-beta.3-Windows.zip -SourceArchiveName EMCD-Sim-v0.9.0-beta.3-Qt-Sources.zip -CorrespondingSourceRoot C:/path/to/verified-qt-6.12.0-sources
 ```
 
-The spec collects licenses for 19 distributions, including spglib and its
-typing_extensions dependency. spglib's runtime DLLs are collected explicitly;
-the build identity records both versions. `six==1.17.0` is an explicit
-build requirement even when no current transitive dependency installs it.
-The preflight checks those distributions plus PyInstaller, lists every missing
-metadata name with the installation command, and fails before invoking
-PyInstaller. Direct spec builds use the same mandatory check and license list;
-missing metadata is not ignored and license collection is not removed.
-Scientific dependency pins, production numerical defaults and physics conventions are unchanged. Version metadata is updated separately from cleanup.
+The Windows onedir ZIP contains the EXE and adjacent `_internal` tree. The Qt
+kit includes matching reviewed dependency sources and `EMCD-Sim-source.zip`,
+created by `git archive HEAD`. Copy that exact application archive separately
+as `EMCD-Sim-v0.9.0-beta.3-Corresponding-Source.zip` and add it to the existing
+checksums. The kit README and build manifest identify the actual committed
+build source. Windows numeric version: `0.9.0.3`; ProductVersion:
+`v0.9.0-beta.3`. The citation version is updated; its publication date is left
+unset until a release is actually approved/published.
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -Python ./build/windows-build-env/Scripts/python.exe -BuildRoot build/windows-v0.9.0-beta.1-release -CorrespondingSourceRoot C:/path/to/verified-qt-6.12.0-sources
-```
+Mandatory metadata/license checks precede PyInstaller. The spec retains the
+19-distribution runtime-license inventory, explicit spglib DLL collection and
+`six` requirement. No dependency/physics default is changed. The Windows
+workflow now supplies the mandatory corresponding-source root using the
+existing public beta.2 source kit solely for unchanged reviewed Qt inputs;
+its published checksum and existing per-component pins are checked. The build
+always generates this candidate's own application source snapshot.
 
-Default archive: `EMCD-Sim-v0.9.0-beta.1-Windows.zip`. Windows numeric version:
-0.9.0.1; ProductVersion: v0.9.0-beta.1. Use a new output root: previous
-packages must not be overwritten. The candidate build_manifest.json and native acceptance.json record the exact
-source, environment, provenance and observed checks. Historical redistribution
-arrangements are documented in the v0.8.1 acceptance records.
-No push, Actions dispatch, release or tag is performed. Native same-host
-standalone checks are not independent clean-machine installation.
-Older commands below are historical.
+Native packaged calculations, persistence, export, resources, cancellation,
+source/package identity and numerical comparisons must pass for the new EXE.
+Then stop for explicit human acceptance of the exact ZIP checksum. No source
+push, tag or publication is performed before that approval. Same-host native
+QA is not independent clean-machine installation. See
+[beta.3 notes](../docs/RELEASE_NOTES_0_9_0_BETA_3.md) and the release report.
+Historical build commands below remain historical.
 
 Fresh-environment validation may use the official
 [CPython Windows NuGet CI package](https://docs.python.org/3.11/using/windows.html#the-nuget-org-packages)
