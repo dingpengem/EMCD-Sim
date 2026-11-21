@@ -299,16 +299,8 @@ class CalculationControls(NumericalSettingsUI,ImportedTensorUI,ProviderUI):
         if dialog is not None and dialog.has_unapplied_edits():raise ValueError('Apply or Cancel the Global MDFF draft before calculation')
         cfg=getattr(self,'_accepted_global_mdff',None)
         if cfg is None:raise ValueError('Configure and Apply Global MDFF through Material → 3D Structure Viewer → Site Groups')
-        shared=dict(fft_generators=self.saved_fft_generators(),**self.compute_resources.settings(),
-            channeling_model=('single','double')[self.channeling_box.currentIndex()],
-            **self.sampling_fields(),
-            systematic_row=self.row_projection.isChecked(),
-            propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],fft_grid=self.spin['fft_grid'].value(),
-            slice_step=self.spin['slice_step'].value(),grid=self.spin['grid'].value(),
-            depth=self.spin['depth'].value(),subpixels=self.spin['subpixels'].value(),halfwidth=self.spin['halfwidth'].value(),
-            centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value(),correction=False,
+        cfg=replace(cfg,**self.forward_control_fields(),
             window=(self.spin['window_lo'].value(),self.spin['window_hi'].value()),magnetization=self.material_magnetization)
-        cfg=replace(cfg,**shared)
         from emcd_sim.material_inputs import ImportedSettings, ProviderSettings
         if isinstance(cfg,ProviderSettings) and cfg.model=='xmcd':
             declaration=dict(cfg.provider_declaration,magnetization_crystal=list(self.material_magnetization))

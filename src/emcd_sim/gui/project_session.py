@@ -126,11 +126,10 @@ def restore_configuration(w,state):
                 if value<0:raise ValueError('Saved numerical/provider setting is unavailable')
                 with QtCore.QSignalBlocker(widget):widget.setCurrentIndex(value)
             values=dict(kv=s.voltage,thickness=s.thickness,beam=s.beam_cutoff,potential=s.potential_cutoff,b=s.b_factor,tx=s.tilt[0],ty=s.tilt[1])
-            values.update({key:getattr(c,key) for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step')},energy=c.energy_points)
+            values.update(w.forward_control_values(c),energy=c.energy_points)
             w.restore_sampling_controls(c)
             w.set_values(values);w.detectors=np.asarray(c.centers);w.sync_detectors();w.sync_za()
-            for widget,value in ((w.angular_maps,c.angular_maps),(w.row_projection,c.systematic_row)):
-                with QtCore.QSignalBlocker(widget):widget.setChecked(value)
+            with QtCore.QSignalBlocker(w.row_projection):w.row_projection.setChecked(c.systematic_row)
             w.compute_resources.restore(c)
             w._saved_global_config=state.get('global_config')
         drafts=state.get('metadata',{}).get('gui_drafts')

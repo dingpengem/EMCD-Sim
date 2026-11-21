@@ -5,6 +5,7 @@ run-input snapshot uses the existing configuration loader to validate source
 declarations; missing sources remain identifiable without blocking result
 viewing. Neither path starts elastic propagation or a numerical preview.
 """
+from functools import partial
 from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
@@ -20,6 +21,12 @@ from ..geometry import VirtualDetector
 
 SCHEMA=1
 ARRAY_FILES=('angular_maps.npz','virtual_detector_eels.npz','diffraction_pattern.npz')
+
+
+def progress_checkpoint(stage,*,cancelled,progress):
+    """Check project-file cancellation before reporting the next I/O stage."""
+    if cancelled():raise Cancelled()
+    progress(stage)
 
 
 def sha256(path):
@@ -236,9 +243,7 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
     # History records already have long UUID names and sit inside the outer
     # project transaction. Do not repeat that name in each staging path.
     temp=root.parent/('.r_'+uuid.uuid4().hex[:12]);backup=root.parent/('.rb_'+uuid.uuid4().hex[:12]);temp.mkdir()
-    def check(stage):
-        if cancelled():raise Cancelled()
-        progress(stage)
+    check=partial(progress_checkpoint,cancelled=cancelled,progress=progress)
     try:
         check('Saving complete numerical arrays');arrays=pack_arrays(result);shapes={}
         for name,values in arrays.items():
@@ -446,9 +451,7 @@ def saved_fft_generators(arrays,mesh,*,row_complement=None):
 
 def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:None):
     root=Path(path).resolve();manifest_path=root/'project.json';manifest=None
-    def check(stage):
-        if cancelled():raise Cancelled()
-        progress(stage)
+    check=partial(progress_checkpoint,cancelled=cancelled,progress=progress)
     check('Validating project metadata')
     if manifest_path.exists():
         manifest=json.loads(manifest_path.read_text(encoding='utf-8'))

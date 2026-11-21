@@ -65,6 +65,9 @@ def resolve_parameters(structure, settings, cfg):
 REFERENCE_SOURCE_SHA256 = 'a0e28ea6423b6c7832bb3cce6d69d71aa59336a221baeee3d2556b49ba501283'
 
 
+FORWARD_SPIN_KEYS=('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step')
+
+
 class NumericalSettingsUI:
     def forward_control_fields(self):
         """Snapshot shared run controls, without reading Material/MDFF drafts.
@@ -78,9 +81,14 @@ class NumericalSettingsUI:
             **self.sampling_fields(), centers=tuple(tuple(p) for p in self.detectors),
             systematic_row=self.row_projection.isChecked(), correction=False,
             **self.compute_resources.settings(), fft_generators=self.saved_fft_generators())
-        for key in ('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step'):
+        for key in FORWARD_SPIN_KEYS:
             fields[key] = self.spin[key].value()
         return fields
+
+    @staticmethod
+    def forward_control_values(cfg):
+        """Saved request values for the same seven forward-control spin boxes."""
+        return {key:getattr(cfg,key) for key in FORWARD_SPIN_KEYS}
 
     def setup_numerical_mode(self, form):
         self.numerical_mode=QtWidgets.QComboBox();self.numerical_mode.addItems(['Saved automatic settings','General settings (editable)'])

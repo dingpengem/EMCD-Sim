@@ -278,3 +278,31 @@ def test_stale_reversal_configuration_is_not_saved_as_the_calculated_state(tmp_p
     r=stored_project(tmp_path);r['configuration']['reverse_magnetization']=True
     with pytest.raises(ValueError,match='reversal differs'):io.save_project(r,tmp_path/'stale')
     assert not (tmp_path/'stale').exists()
+
+
+@pytest.mark.parametrize('operation',['save_result','load_result','save_configuration','load_configuration'])
+def test_project_cancellation_precedes_next_progress_and_preserves_transaction(tmp_path,operation):
+    from emcd_sim.cancellation import Cancelled
+    result=stored_project(tmp_path,manual=True)
+    root=tmp_path/'cancelled-operation'
+    configuration=operation.endswith('configuration')
+    loading=operation.startswith('load')
+    payload=result['configuration'] if configuration else result
+    save=io.save_configuration if configuration else io.save_project
+    if loading:
+        save(payload,root)
+        before=(root/'project.json').read_bytes()
+    stages=[];cancel_requested=False
+    def progress(stage):
+        nonlocal cancel_requested
+        stages.append(stage);cancel_requested=True
+    options=dict(cancelled=lambda:cancel_requested,progress=progress)
+    with pytest.raises(Cancelled):
+        if loading:
+            load=io.load_configuration if configuration else io.load_project
+            load(root,**options)
+        else:save(payload,root,**options)
+    assert len(stages)==1  # Cancellation must be checked before the next report.
+    if loading:assert (root/'project.json').read_bytes()==before
+    else:assert not root.exists()
+    assert not any(p.is_dir() and p.name.startswith('.') for p in tmp_path.iterdir())

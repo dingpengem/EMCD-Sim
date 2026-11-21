@@ -305,3 +305,20 @@ ionization sites. Protected standalone historical kernels retain their bounded
 Ni conveniences and independent references; they are not an alternate general
 forward engine. See `PHASE3E1_MATERIAL_INDEPENDENT_CORE_CLEANUP.md` for the full
 retained-interface inventory and focused verification limits.
+
+
+## Phase 3E-2: GUI request and restoration clients
+
+The GUI common-control collector is `NumericalSettingsUI.forward_control_fields`;
+accepted Global requests, Local requests and configuration capture reuse it.
+The same owner translates saved values for the seven shared spin controls.
+Sampling restoration has one angular-map assignment. Geometry, source binding,
+accepted/draft transactions and resource request/allocation remain distinct.
+`gui.project_io.progress_checkpoint` shares only project-file cancellation and
+progress reporting; scientific schedules/checkpoints remain untouched.
+
+No non-GUI scientific source, numerical contract, material preset, worker policy
+or public calculation interface changes. The existing packaged launcher and
+native-QA dispatch remain in place. The
+[GUI simplification report](PHASE3E2_GUI_SIMPLIFICATION.md) records actual size,
+dependency and duplication changes and the separate Phase 3F handoff.

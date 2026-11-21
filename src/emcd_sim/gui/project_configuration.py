@@ -11,6 +11,7 @@ effective_config/effective_global_config expose verified rebased paths (or None)
 ready_for_calculation describes the active mode. No result arrays, source
 regeneration or propagation occurs.
 """
+from functools import partial
 from dataclasses import asdict, replace
 from pathlib import Path
 from datetime import datetime, timezone
@@ -24,7 +25,6 @@ from .. import __version__
 from ..multisite_spectrum import ModeledEdgeWindow, _samples
 from . import project_io as io
 from emcd_sim import structure_geometry as structure_data
-from ..cancellation import Cancelled
 from emcd_sim.material_inputs import ImportedSettings
 from ..multisite import validate_site_rows
 
@@ -95,9 +95,7 @@ def save_configuration(state,path,*,cancelled=lambda:False,progress=lambda s:Non
     if root.exists():raise FileExistsError('Configuration Save As requires a new folder')
     root.parent.mkdir(parents=True,exist_ok=True)
     temp = root.parent/('.'+root.name+'.saving_'+uuid.uuid4().hex);temp.mkdir()
-    def check(stage):
-        if cancelled():raise Cancelled()
-        progress(stage)
+    check=partial(io.progress_checkpoint,cancelled=cancelled,progress=progress)
     try:
         sources = {};overrides = state.get('source_overrides',{})
         def source(key,cfg):
@@ -147,9 +145,7 @@ def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
     sources do not alter a legacy Global configuration.
     """
     root = Path(path).resolve()
-    def check(stage):
-        if cancelled():raise Cancelled()
-        progress(stage)
+    check=partial(io.progress_checkpoint,cancelled=cancelled,progress=progress)
     check('Loading saved configuration')
     manifest = json.loads((root/'project.json').read_text(encoding='utf-8'))
     if manifest.get('schema_version')!=io.SCHEMA or manifest.get('complete') is not True:

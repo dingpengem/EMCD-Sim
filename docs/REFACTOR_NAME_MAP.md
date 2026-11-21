@@ -393,3 +393,21 @@ compatibility lives in loading, not obsolete API aliases. The nine top-level
 historical model, `emcd-ni-local-mdff` CLI, retained old projects and independent
 scientific references. Neither the canonical calculation nor its GUI re-export
 has changed location or identity.
+
+
+## Phase 3E-2: common GUI control and project progress ownership
+
+| Previous repeated implementation | Authoritative interface | Actual consumers / reason |
+|---|---|---|
+| Global `CalculationControls.forward_settings` common-field dictionary | Existing `NumericalSettingsUI.forward_control_fields` | Global, Local and configuration capture now share the same request-only collector; Global window/M and accepted-source checks stay explicit. |
+| Repeated seven-key spin lists and saved-value dictionaries | `FORWARD_SPIN_KEYS` and `NumericalSettingsUI.forward_control_values` | Collection and Global/Local restoration share one key set; energy, geometry, source identity and resource restoration keep their original order and owners. |
+| Four nested project Save/Open `check(stage)` bodies | `gui.project_io.progress_checkpoint` with per-operation `partial` bindings | Both result and configuration save/load use the same cancellation-before-progress policy at unchanged call sites. No scientific checkpoint changes. |
+| Redundant second angular-map assignments | Existing `restore_sampling_controls` | Two restoration paths already applied the same signal-blocked value; row projection remains independently restored. |
+
+No clear public interface is renamed and no compatibility facade is added.
+The incidental `project_configuration.Cancelled` import has no maintained
+consumer and is removed; the exception remains owned by root `cancellation`.
+Required Qt hooks, the GUI calculation re-export, project schemas and the
+packaged `app.main`/native-QA entry points remain. See the
+[Phase 3E-2 report](PHASE3E2_GUI_SIMPLIFICATION.md) for the bounded audit and
+retained responsibilities.
