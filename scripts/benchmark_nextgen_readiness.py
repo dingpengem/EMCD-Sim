@@ -242,7 +242,9 @@ def configuration(case, directory):
                   radius=case.radius, correction=False, worker_mode="manual",
                   parallel_workers=case.workers, memory_mode="manual",
                   memory_budget_mib=2048, angular_maps=case.maps,
-                  energy_points=case.energies)
+                  # Legacy Ni validates this GUI control even when the public
+                  # API receives a smaller explicit energy_ev axis.
+                  energy_points=max(9, case.energies))
     provenance = []
     if case.material == "Ni":
         structure = Structure.nickel()
