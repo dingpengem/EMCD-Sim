@@ -308,6 +308,7 @@ def run_multisite(output):
     from emcd_sim.gui.app import MainWindow
     from emcd_sim.provenance import build_info, resource_root
     from emcd_sim.gui.project_collection import load_collection
+    from emcd_sim import __version__
     out=Path(output).resolve();out.mkdir(parents=True,exist_ok=False)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     app.setQuitOnLastWindowClosed(False)
@@ -357,7 +358,7 @@ def run_multisite(output):
     sys.excepthook=lambda kind,value,tb:report['errors'].append(''.join(traceback.format_exception(kind,value,tb)))
     try:
         assert app.platformName()=='windows','Native Windows platform required'
-        assert build_info()['application_version']=='0.9.0b2'
+        assert build_info()['application_version']==__version__
         with (patch.object(QtWidgets.QMessageBox,'exec',retain),
               patch.object(QtWidgets.QMessageBox,'warning',return_value=QtWidgets.QMessageBox.StandardButton.Discard),
               patch.object(QtWidgets.QMessageBox,'question',return_value=QtWidgets.QMessageBox.StandardButton.Yes)):

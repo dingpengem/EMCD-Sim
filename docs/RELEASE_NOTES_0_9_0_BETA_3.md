@@ -31,6 +31,10 @@ and the existing source-registration bookkeeping. The Windows workflow now
 supplies its mandatory reviewed Qt-source inputs; dependency versions are
 unchanged.
 
+The packaged multisite acceptance profile checks its recorded version against
+the authoritative package version, replacing an obsolete beta.2 literal. This
+release-tooling correction changes no scientific assertion or calculation.
+
 ## Verification and provenance
 
 The completed Phase 3 application source

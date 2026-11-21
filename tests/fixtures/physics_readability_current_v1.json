@@ -66,7 +66,7 @@
     },
     "packaging/native_acceptance.py": {
       "mode": "canonical",
-      "sha256": "caaba53b6510c400313d880646566a52a1955465048a8fc36004cb065745057d"
+      "sha256": "de676337c068128ac93a243287432ef899af2c65f5d2a91878932b2c924bee58"
     },
     "packaging/windows_version_info.txt": {
       "mode": "canonical",
