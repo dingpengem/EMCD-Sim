@@ -14,8 +14,10 @@ def set_read_only(editor,enabled):
         for i in range(table.rowCount()):
             for j in range(table.columnCount()):table.cellWidget(i,j).setReadOnly(enabled)
     editor.element.setEnabled(not enabled);editor.frame_mode.setEnabled(not enabled)
-    editor.scientific_status.setEnabled(not enabled);editor.direction.setReadOnly(enabled)
-    editor.apply_direction.setEnabled(not enabled);editor.generate_button.setEnabled(not enabled)
+    editor.scientific_status.setEnabled(not enabled)
+    # Direction is inherited from Material in the current editor; there is no
+    # independent Apply Direction control to restore or enable.
+    editor.direction.setReadOnly(True);editor.generate_button.setEnabled(not enabled)
     editor.saved_model_notice.setVisible(enabled)
 
 

@@ -107,9 +107,9 @@ class SavedVisualizationTests(unittest.TestCase):
         cls.app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         cls.guards=ExitStack()
         for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni',
-                     'emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.emcd_forward.tensors','emcd_sim.gui.propagation.propagate',
+                     'emcd_sim.forward_pipeline.calculate','emcd_sim.historical_ni.tensors','emcd_sim.channeling.propagate',
                      'emcd_sim.single_channeling_tensor.run_tensor_with_coherence','emcd_sim.single_channeling_tensor.run_tensor_with_coherence',
-                     'emcd_sim.gui.stage_b.EMCDWorker.run','emcd_sim.gui.app.PreviewWorker.run'):
+                     'emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.gui.app.PreviewWorker.run'):
             cls.guards.enter_context(patch(name,side_effect=AssertionError('Forward calculation forbidden in Stage F')))
         cls.r=load_project(SAVED/'reference_project');cls.second=load_project(SAVED/'mistilt_project')
         cls.out=Path('outputs/gui_stage_f')/('tests_'+uuid.uuid4().hex);cls.out.mkdir(parents=True)
@@ -126,7 +126,7 @@ class SavedVisualizationTests(unittest.TestCase):
         self.assertEqual(w.eels_view.normalization.settings().mode,'peak');w.close()
     def test_png_svg_and_derived_metadata(self):
         from matplotlib.figure import Figure
-        from emcd_sim.gui.results import draw_eels
+        from emcd_sim.gui.result_presentation import draw_eels
         from emcd_sim.gui.normalization_export import export_derived,save_figure
         from PIL import Image
         settings=DisplaySettings(mode='peak');fig=Figure(figsize=(11,9));draw_eels(fig,self.r,method='overlay',display=settings)
@@ -149,7 +149,7 @@ class SavedVisualizationTests(unittest.TestCase):
         self.assertTrue(map_compatibility(self.r,self.second,'L3','D_raw')[0]);self.assertEqual(c.normalization.settings().scope,'shared');c.close();w.close()
     def test_map_byte_preservation_and_masks(self):
         from matplotlib.figure import Figure
-        from emcd_sim.gui.results import draw_maps
+        from emcd_sim.gui.result_presentation import draw_maps
         before={e:{k:v.tobytes() for k,v in fs.items()} for e,fs in self.r['maps'].items()}
         for mode in ('raw','local','paired'):
             fig=Figure(figsize=(12,8));draw_maps(fig,self.r,'L3',display=DisplaySettings(map_mode=mode))

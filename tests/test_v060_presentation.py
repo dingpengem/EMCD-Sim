@@ -1,4 +1,5 @@
 """Focused plots/widgets, geometry and compatibility; saved references first."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from pathlib import Path
@@ -8,9 +9,9 @@ from dataclasses import replace
 import numpy as np
 import pytest
 from matplotlib.figure import Figure
-from emcd_sim.gui.results import draw_eels,draw_maps
+from emcd_sim.gui.result_presentation import draw_eels, draw_maps
 from emcd_sim.gui.component_display import primary_angular
-from emcd_sim.gui.prb_benchmark import benchmark_spectra
+from emcd_sim.detector_signals import benchmark_spectra
 
 
 @pytest.fixture(scope='module')
@@ -18,10 +19,11 @@ def result():
     from emcd_sim.gui.project_io import load_project
     saved=Path('outputs/windows_beta_acceptance/source_native/double_both_project')
     if (saved/'project.json').exists():return load_project(saved)
-    from emcd_sim.gui.emcd_forward import calculate,ForwardSettings
-    from emcd_sim.gui.geometry import Structure,Settings
-    return calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),
-        ForwardSettings(axis_declared=True,channeling_model='double',propagation='both',energy_points=9,grid=9,depth=9,subpixels=16,fft_grid=24,angular_maps=True))
+    from emcd_sim.forward_pipeline import calculate
+    from emcd_sim.forward_settings import NiForwardSettings
+    from emcd_sim.structure_geometry import Structure, Settings
+    return calculate(Structure.nickel(),nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),
+        NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',energy_points=9,grid=9,depth=9,subpixels=16,fft_grid=24,angular_maps=True))
 
 
 def test_eels_exact_two_panels_and_one_total_curve(result):
@@ -45,7 +47,7 @@ def test_eels_widgets_modes_lock_and_no_calculation(result):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     w=MainWindow(workspace=Path('outputs')/('v060_gui_'+uuid4().hex))
     try:
-        with patch('emcd_sim.gui.stage_b.calculate',side_effect=AssertionError('Display must not calculate')):
+        with patch('emcd_sim.gui.calculation_worker.calculate',side_effect=AssertionError('Display must not calculate')):
             w.display_saved_result(result)
             for view in (w.eels_view,w.maps_view):
                 assert [view.component_mode.itemText(i) for i in range(2)]==['Raw (a.u.)','EMCD Asymmetry (%)']
@@ -60,7 +62,7 @@ def test_eels_widgets_modes_lock_and_no_calculation(result):
             assert 'L3' in view.prb_readout.text() and 'L2' in view.prb_readout.text()
             view.advanced.setChecked(True);view.component_diagnostic.setCurrentIndex(1)
             assert 'Magnetic-only' in view.figure.axes[1].lines[0].get_label()
-            assert len(view.figure.axes)==2
+        assert len(view.figure.axes)==4
     finally:w.close();app.processEvents()
 
 
@@ -102,7 +104,7 @@ def test_angular_raw_total_layout_shared_scale_overlays_and_immutability(result)
 
 
 def test_detector_asymmetry_after_integration_not_average_of_percentages():
-    from emcd_sim.gui.prb_benchmark import relative_dichroism_percent
+    from emcd_sim.detector_signals import relative_dichroism_percent
     a=np.array([.65,.9]);b=np.array([.45,.1]);weights=np.array([1.,.01])
     integrated,_=relative_dichroism_percent(weights@a,weights@b)
     np.testing.assert_allclose(integrated,100*(weights@(a-b))/(weights@(a+b)))
@@ -112,7 +114,7 @@ def test_detector_asymmetry_after_integration_not_average_of_percentages():
 
 def test_exports_keep_legacy_arrays_and_explicit_signal_sidecars(result):
     import json,csv
-    from emcd_sim.gui.emcd_forward import export_result
+    from emcd_sim.gui.result_export import export_result
     from emcd_sim.gui.project_io import load_project
     before={name:{k:v.copy() for k,v in m['spectra'].items()} for name,m in result['methods'].items()}
     root=Path('outputs')/('v060_exports_'+uuid4().hex)
@@ -137,14 +139,14 @@ def test_exports_keep_legacy_arrays_and_explicit_signal_sidecars(result):
 def test_saved_display_migration_and_new_state_roundtrip(result):
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.project_io import load_project
+    from emcd_sim.gui.project_collection import load_collection
     import time
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     root=Path('outputs')/('v060_state_'+uuid4().hex);w=MainWindow(workspace=root/'workspace')
     try:
         legacy=dict(result,display_state=dict(component_mode='relative',advanced=False,locked=True,energy_ev=result['config'].l2,selection='selected'))
-        with patch('emcd_sim.gui.stage_b.calculate',side_effect=AssertionError('Display must not calculate')):
-            w.display_saved_result(legacy)
+        with patch('emcd_sim.gui.calculation_worker.calculate',side_effect=AssertionError('Display must not calculate')):
+            w.register_completed(legacy);w.display_saved_result(legacy,w.selected_record)
             view=w.eels_view
             assert view.component_mode.currentData()=='raw' and view.advanced.isChecked()
             assert view.component_diagnostic.currentData()=='relative' and 'Legacy Relative' in view.display_note.text()
@@ -153,7 +155,7 @@ def test_saved_display_migration_and_new_state_roundtrip(result):
             w.save_to_path(root/'project');deadline=time.monotonic()+20
             while w.busy and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
             assert not w.busy
-            loaded=load_project(root/'project');assert loaded['display_state']['signal_display_schema']==2
+            loaded=load_collection(root/'project')['runs'][0][1];assert loaded['display_state']['signal_display_schema']==2
             view.component_mode.setCurrentIndex(0);w.maps_view.component_mode.setCurrentIndex(0)
             w.display_saved_result(loaded)
             assert view.component_mode.currentData()==w.maps_view.component_mode.currentData()=='asymmetry'

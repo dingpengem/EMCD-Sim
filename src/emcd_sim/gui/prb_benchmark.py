@@ -3,10 +3,11 @@
 Pure NumPy post-processing. No solver, tensor, correction or source-file read.
 """
 import numpy as np
-from .signal_normalization import EELS_FLOOR, divide_percent, default_windows
+from ..detector_signals import DEFINITION,relative_dichroism_percent,benchmark_spectra
+from emcd_sim.detector_signals import EELS_FLOOR, divide_percent
+from .signal_normalization import default_windows
 from ..geometry import electron_wavelength_angstrom
 
-DEFINITION = '100 * (I_A_plus - I_B_plus) / (I_A_plus + I_B_plus); raw +M detectors; no factor 2, peak scaling or post-edge correction'
 LIMITATION = ('PRB-compatible normalization does not imply full physical equivalence to Rusz et al. (2007). '
               'The MDFF remains approximate. Single Channeling omits outgoing propagation; Double includes it within the retained projected-potential model.')
 REFERENCE = ('Rusz, Rubino and Schattschneider, PRB 75, 214425 (2007), Fig. 5(c): fcc Ni, '
@@ -15,31 +16,8 @@ REFERENCE = ('Rusz, Rubino and Schattschneider, PRB 75, 214425 (2007), Fig. 5(c)
              'DOI: 10.1103/PhysRevB.75.214425; arXiv:0704.1407.')
 
 
-def relative_dichroism_percent(detector_a, detector_b):
-    """Signed raw paired percentage; NaN for invalid or near-zero denominators."""
-    a, b = np.broadcast_arrays(np.asarray(detector_a, float), np.asarray(detector_b, float))
-    with np.errstate(over='ignore', invalid='ignore'):
-        value, mask = divide_percent(a-b, a+b, EELS_FLOOR, support=(a >= 0) & (b >= 0))
-    return value, dict(mask, definition=DEFINITION)
 
 
-def benchmark_spectra(spectra):
-    """Primary +M curve and separately labeled reversal diagnostics."""
-    a, b = np.asarray(spectra['I_A_plus'], float), np.asarray(spectra['I_B_plus'], float)
-    primary, mask = relative_dichroism_percent(a, b)
-    curves = dict(prb_relative_dichroism_percent=primary)
-    masks = dict(prb=mask)
-    if all(k in spectra for k in ('I_A_minus', 'I_B_minus')):
-        am, bm = np.asarray(spectra['I_A_minus'], float), np.asarray(spectra['I_B_minus'], float)
-        if am.shape != a.shape or bm.shape != a.shape:
-            raise ValueError('Reversal spectra must share the same saved energy sampling.')
-        with np.errstate(over='ignore', invalid='ignore'):
-            na, nb = (a+am)/2, (b+bm)/2
-            ma, mb = (a-am)/2, (b-bm)/2
-            support = (a >= 0) & (b >= 0) & (am >= 0) & (bm >= 0)
-            curves['magnetic_only_percent'], masks['magnetic'] = divide_percent(ma-mb, na+nb, support=support)
-            curves['nonmagnetic_imbalance_percent'], masks['even'] = divide_percent(na-nb, na+nb, support=support)
-    return curves, masks
 
 
 def data_origin(result):

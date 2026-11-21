@@ -44,9 +44,11 @@ Only the cleared complete distribution and its existing required release invento
 
 ## Validation evidence and scoped exception
 
+**Current beta.2 validation:** 21 focused packaging/safeguard checks and the actual native Windows EXE workflow passed. The earlier XMCD ambiguity issue was fixed and passed four focused regression cases. The final release did not receive a complete full-suite rerun. The table distinguishes historical candidate results from beta.2 verification.
+
 | Evidence | Actual result |
 | --- | --- |
-| Complete Windows suite on `7730e38` | **FAILED**: 1,191 passed, 1 failed, 54 skipped; exit 1; 1:17:53. The failure was ambiguous XMCD accepting populated controls without explicit selections. |
+| Historical full Windows run on `7730e38`, before the XMCD repair | **FAILED**: 1,191 passed, 1 failed, 54 skipped; exit 1; 1:17:53. The failure was ambiguous XMCD accepting populated controls without explicit selections. |
 | Repair `4f15a4d` | Four focused cases passed in 44.78 seconds, preserving the original failed assertion and checking explicit-selection/save-reopen behavior. |
 | Local merge/development EXE `aaa69a1` | Built once, exit 0, clean embedded source, version `0.8.1b1`; required package-content checks passed. |
 | Earlier development EXE `aaa69a1` | Ambiguous and L3-only input rejected; explicit Fe 710/723 eV preview and small calculation passed. The EXE created and saved a project through normal dialogs; after application restart, reopening and recalculation passed without re-entering selections. Existing synthetic fixtures were used, not scientific Fe calibration data. |

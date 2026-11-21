@@ -3,7 +3,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 from legacy_geometry import Ni117Geometry
-from emcd_sim.gui.emcd_forward import ForwardSettings,tensors
+from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.historical_ni import tensors
 from emcd_sim.geometry import characteristic_qz_angstrom_inv
 
 
@@ -17,7 +18,7 @@ def test_wien2k_axis_is_independent_of_gui_default():
 
 
 def test_tensor_sign_rotation_and_actual_beam_control():
-    R=Ni117Geometry().frame;energy=np.array([831.271,848.698]);cfg=ForwardSettings(axis_declared=True)
+    R=Ni117Geometry().frame;energy=np.array([831.271,848.698]);cfg=NiForwardSettings(axis_declared=True)
     crystal=tensors(cfg,energy,np.eye(3))[0].tensor_angstrom2_per_ev
     plus,minus=tensors(cfg,energy,R);T=plus.tensor_angstrom2_per_ev
     np.testing.assert_allclose(T,np.einsum('ia,eab,jb->eij',R,crystal,R),atol=1e-15)

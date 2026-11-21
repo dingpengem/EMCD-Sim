@@ -1,7 +1,9 @@
 """Display-only raw/relative components from immutable reversal intensities."""
 import numpy as np
-from .prb_benchmark import benchmark_spectra,benchmark_readout
-from .signal_normalization import divide_percent,MAP_FLOOR,EELS_FLOOR,validate_pair
+from emcd_sim.detector_signals import benchmark_spectra
+from .prb_benchmark import benchmark_readout
+from emcd_sim.detector_signals import divide_percent, EELS_FLOOR
+from .signal_normalization import MAP_FLOOR, validate_pair
 
 MODES={'raw':'Raw (a.u.)','asymmetry':'EMCD Asymmetry (%)'}
 TOOLTIPS={'raw':'Signed magnetic and nonmagnetic intensity differences.',

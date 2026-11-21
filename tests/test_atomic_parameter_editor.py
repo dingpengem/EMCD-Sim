@@ -11,7 +11,7 @@ from ase import Atoms
 from ase.io import read, write
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Structure
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.gui.atomic_editor import FIELDS
 from emcd_sim.gui.atomic_editor_model import (CAPABILITY, MAX_SAMPLES, capability_reason,
     crystal_elements, edge_references, explicit_grid, persist_document, read_document, validate_document)
@@ -54,8 +54,8 @@ def wait_gui(w, app):
 
 @pytest.mark.parametrize('browser_mapping', ['empty', 'missing', 'different_bytes'])
 def test_gui_reopens_relocated_editor_source_without_original(window, tmp_path, browser_mapping):
-    from emcd_sim.gui.forward_pipeline import calculate
-    from emcd_sim.gui.geometry import Settings
+    from emcd_sim.forward_pipeline import calculate
+    from emcd_sim.structure_geometry import Settings
     from emcd_sim.gui.project_io import save_project, source_status
     w, app = window; e = demo(w); e.generate()
     cfg = replace(w.atomic_provider_info, propagation='both', energy_scope='edges',
@@ -103,7 +103,7 @@ def test_gui_rejects_conflicting_loader_source_identity(window, tmp_path):
         source_sha256=hashlib.sha256(accepted.read_bytes()).hexdigest())
     conflicting = dict(config=cfg,source_overrides=dict(mdff=str(changed)),structure_snapshot=None)
     with patch('emcd_sim.gui.results_browser.load_project',return_value=conflicting):
-        w.open_project_path(tmp_path/'project'); wait_gui(w, app)
+        w.open_project_path(tmp_path/'project',legacy=True); wait_gui(w, app)
     assert w.run_outcome == 'failed' and w.emcd_result is None
     assert any('Conflicting verified project source identity: mdff' in error for error in w.errors)
 
@@ -218,7 +218,7 @@ def test_interactive_tensor_modes_show_actual_components(window, mode):
 def test_preview_rejects_bad_units_and_non_psd_physical_tensor(window):
     from emcd_sim.gui.tensor_spectrum_preview import TensorSpectrumPreview
     from emcd_sim.mdff_providers import load_provider
-    from emcd_sim.gui.generalized_forward import settings_for_provider
+    from emcd_sim.mdff_providers import settings_for_provider
     w, _ = window; e = demo(w); e.generate()
     source=load_provider(settings_for_provider(e.validated_path,'atomic'))
     bad=replace(source,metadata=dict(source.metadata,units='unknown'))
@@ -299,7 +299,11 @@ def test_multielement_cif_checkboxes_never_enable_multiple_groups(window, tmp_pa
     for box in e.element_boxes.values(): box.setChecked(True)
     e.load_document(DEMO); e.generate(); w.atomic_declaration.setChecked(True); w.model_box.setCurrentIndex(1)
     w.emcd_stale(); assert not w.emcd_button.isEnabled()
-    assert 'element' in w.emcd_button.toolTip().lower() or 'sites' in w.emcd_button.toolTip().lower() or 'Manual' in w.emcd_button.toolTip()
+    w.show_structure_viewer(show=False)
+    assert w.mdff_dialog.apply_configuration() is None
+    reason=w.mdff_dialog.status.text().lower()
+    assert 'element' in reason or 'sites' in reason or 'manual' in reason
+    assert w._accepted_global_mdff is None and not w.emcd_button.isEnabled()
 
 
 def test_required_physical_definitions_and_blank_material_inputs(window):
@@ -327,7 +331,7 @@ def test_editor_generation_exact_tensor_equivalence_and_checksum(window, tmp_pat
     for sign in ('plus','minus'):
         np.testing.assert_array_equal(getattr(a,sign).tensor_angstrom2_per_ev, getattr(b,sign).tensor_angstrom2_per_ev)
     assert Path(e.validated_path).parent == w.workspace/'atomic_inputs'
-    w.atomic_declaration.setChecked(True); assert w.forward_settings().ionizing_element == 'Fe'
+    w.atomic_declaration.setChecked(True); assert w.global_mdff_draft_settings().ionizing_element == 'Fe'
     e.preview(); assert e.preview_dialog.isVisible()
 
 
@@ -420,16 +424,20 @@ def test_cif_change_invalidates_source_and_keeps_per_element_drafts(window):
     assert not w.atomic_provider_info and not w.atomic_declaration.isChecked() and e.fields['radial'].text() == '0.04'
 
 
-def test_rotated_frame_derived_axis_and_top_level_consistency(window, tmp_path):
+def test_rotated_frame_requires_matching_material_magnetization(window, tmp_path):
     w, _ = window; e = demo(w); e.frame_mode.setCurrentIndex(2)
     rotation = [[1,0,0],[0,0,-1],[0,1,0]]
     for i in range(3):
         for j in range(3): e.frame.cellWidget(i,j).setText(str(rotation[i][j]))
+    e.generate()
+    assert w.atomic_provider_info is None
+    assert tuple(map(float,w.axis.text().split())) == (0,0,1)
+    w.set_material_magnetization((0,-1,0))
     e.generate(); assert w.atomic_provider_info
-    assert tuple(map(float,w.axis.text().split())) == (0,-1,0)
-    w.atomic_declaration.setChecked(True); assert w.forward_settings().magnetization == (0,-1,0)
-    w.axis.setText('0 0 1')
-    with pytest.raises(ValueError): w.forward_settings()
+    w.atomic_declaration.setChecked(True)
+    assert w.global_mdff_draft_settings().magnetization == (0,-1,0)
+    w.set_material_magnetization((0,0,1))
+    with pytest.raises(ValueError): w.global_mdff_draft_settings()
 
 
 def test_empty_missing_and_unwritable_sources_are_actionable(window, tmp_path):
@@ -483,9 +491,9 @@ def test_packaged_installation_is_never_a_managed_workspace(tmp_path, monkeypatc
 
 @pytest.mark.parametrize('channel', ['single','double'])
 def test_editor_bw_ms_equivalence_and_portable_project(window, tmp_path, channel):
-    from emcd_sim.gui.forward_pipeline import calculate
-    from emcd_sim.gui.generalized_forward import settings_for_provider
-    from emcd_sim.gui.geometry import Settings
+    from emcd_sim.forward_pipeline import calculate
+    from emcd_sim.mdff_providers import settings_for_provider
+    from emcd_sim.structure_geometry import Settings
     from emcd_sim.gui.project_io import save_project, load_project, source_status
     w, _ = window; e = demo(w); e.generate()
     cfg = replace(w.atomic_provider_info, propagation='both', channeling_model=channel, energy_scope='edges',

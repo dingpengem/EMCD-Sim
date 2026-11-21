@@ -2,8 +2,9 @@ from dataclasses import replace
 import numpy as np
 import pytest
 from ase.build import bulk
-from emcd_sim.gui.geometry import Structure,Settings
-from emcd_sim.gui.generalized_forward import calculate,settings_for_source
+from emcd_sim.structure_geometry import Structure, Settings
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.mdff_providers import settings_for_source
 from emcd_sim.gui.project_io import save_project,load_project,source_status,rerun_reason
 from single_element_helpers import write_source
 
@@ -44,7 +45,8 @@ def test_nonmagnetic_and_unsupported_material(tmp_path):
     s=Structure(bulk('Fe','bcc',a=2.866,cubic=True))
     s.atoms.set_initial_magnetic_moments([0,0])
     settings=Settings(zone=(0,0,1),target=(1,1,0),tilt=(0,0),thickness=.1,beam_cutoff=.6,potential_cutoff=1.2)
-    cfg=settings_for_source(write_source(tmp_path/'nonmag.json',nonmagnetic=True),energy_scope='edges',grid=9,depth=9,subpixels=8)
+    cfg=settings_for_source(write_source(tmp_path/'nonmag.json',nonmagnetic=True),energy_scope='edges',grid=9,depth=9,subpixels=8,
+        centers=((.2837684449489217,.2837684449489217),(.2837684449489217,-.2837684449489217)),radius=.0908059024)
     r=calculate(s,settings,cfg)
     np.testing.assert_array_equal(r['spectra']['M_A'],0)
     np.testing.assert_array_equal(r['spectra']['M_B'],0)
@@ -55,7 +57,8 @@ def test_changed_external_source_during_calculation_discards_result(tmp_path):
     s=Structure(bulk('Fe','bcc',a=2.866,cubic=True))
     settings=Settings(zone=(0,0,1),target=(1,1,0),tilt=(0,0),thickness=.1,beam_cutoff=.6,potential_cutoff=1.2)
     p=write_source(tmp_path/'mutable.json');original=p.read_bytes()
-    cfg=settings_for_source(p,energy_scope='edges',grid=9,depth=9,subpixels=8,angular_maps=False)
+    cfg=settings_for_source(p,energy_scope='edges',grid=9,depth=9,subpixels=8,angular_maps=False,
+        centers=((.2837684449489217,.2837684449489217),(.2837684449489217,-.2837684449489217)),radius=.0908059024)
     def replace_source(stage):
         if stage=='Calculating bloch EELS and EMCD':p.write_bytes(original+b' ')
     with pytest.raises(ValueError,match='checksum changed'):calculate(s,settings,cfg,progress=replace_source)
@@ -67,5 +70,6 @@ def test_changed_external_source_during_calculation_discards_result(tmp_path):
 def test_imported_loss_must_be_below_incident_energy(tmp_path,channel,voltage):
     s=Structure(bulk('Fe','bcc',a=2.866,cubic=True))
     settings=Settings(zone=(0,0,1),target=(1,1,0),tilt=(0,0),voltage=voltage,thickness=.1,beam_cutoff=.6,potential_cutoff=1.2)
-    cfg=settings_for_source(write_source(tmp_path/'loss.json'),channeling_model=channel,energy_scope='edges',grid=9,depth=9,subpixels=8)
+    cfg=settings_for_source(write_source(tmp_path/'loss.json'),channeling_model=channel,energy_scope='edges',grid=9,depth=9,subpixels=8,
+        centers=((.2837684449489217,.2837684449489217),(.2837684449489217,-.2837684449489217)),radius=.0908059024)
     with pytest.raises(ValueError,match='below incident'):calculate(s,settings,cfg)

@@ -1,5 +1,46 @@
 # EMCD-Sim architecture and theory development plan
 
+## Current implementation
+
+The [physics/code map](PHYSICS_CODE_MAP.md) is the current equation, parameter,
+axis, unit and function guide. The [responsibility/name review](REFACTOR_NAME_MAP.md)
+records current owners, retained compatibility names, material-default boundaries
+and numerical equivalence evidence. Ni, Cr, Fe3O4 and orientations are explicit
+inputs to the shared production engines; they do not select separate kernels.
+
+`gui.calculation_controls` collects inputs; `gui.calculation_worker` executes
+frozen requests; `gui.forward_pipeline` validates/adopts resources and orchestrates
+existing providers and propagation; `gui.multisite_integration` schedules bounded
+spectral blocks; `detector_signals` reduces apertures and reversal components;
+`gui.forward_results` assembles/persists/exports completed signals. Crystal,
+material transitions/tensors, elastic propagation and detection have distinct
+owners. The old `stage_b`, `emcd_forward` and `generalized_forward` facades are removed.
+The public execution API is `gui.forward_pipeline.calculate`, with explicit
+structure, geometry, material/model and optional site assignments; settings live
+in `forward_settings`/`material_inputs` and Ni studies in `study_presets`. Saved-run restoration
+remains in `project_session`/`results_browser`, sharing the existing configuration
+loader rather than calculating a preview.
+
+The dependency flow is shared by the material cases. Preflight validates source,
+structure and resource requests before propagation.
+
+```mermaid
+flowchart LR
+    A[Explicit structure and experimental geometry] --> E[forward_pipeline.calculate]
+    M[Declared material sources and site groups or Ni preset] --> E
+    E --> P[Crystal-derived IAM potential]
+    P --> W[Bloch or FFT waves]
+    E --> T[Material tensor T at each loss]
+    W --> R[Incoming coherence or depth-integrated Double response]
+    R --> I[Common inelastic coupling and tensor contraction]
+    T --> I
+    I --> D[Fractional detector integration]
+    D --> O[Reversal observables and recorded results]
+```
+
+The remaining sections are dated development notes and proposals. They must not
+be read as the current module inventory or as newly implemented physics.
+
 ## Implemented development note: Ni [117]
 
 The [117] research extension uses `gui.geometry.orientation` and

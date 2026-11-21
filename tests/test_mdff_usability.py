@@ -6,10 +6,11 @@ import numpy as np
 import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Structure, Settings
+from emcd_sim.mdff_orientation import axis_rotation
+from emcd_sim.structure_geometry import Structure, Settings
 from emcd_sim.gui.mdff_usability import complex_cell
-from emcd_sim.gui.generalized_forward import source_for
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.mdff_providers import source_for
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.gui.project_io import save_project, load_project, source_status
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -55,16 +56,16 @@ def test_all_cells_delivery_and_invalid_draft_preserves_source(window):
     a=np.array([[2,.2+.1j,.3-.2j],[.2-.1j,3,.1+.3j],[.3+.2j,.1-.3j,4]])
     for i in range(3):
         for j in range(3):e.cells.item(i,j).setText(str(a[i,j]).strip('()').replace('j','i'))
-    cfg=w.forward_settings();source=source_for(cfg)
+    cfg=w.global_mdff_draft_settings();source=source_for(cfg)
     np.testing.assert_array_equal(source.plus.tensor_angstrom2_per_ev[0],a)
     np.testing.assert_array_equal(source.minus.tensor_angstrom2_per_ev[0],a.conj())
     valid=Path(cfg.source).read_bytes()
     for bad in ('nan','1e999','1+','-100'):
         e.cells.item(0,0).setText(bad)
-        with pytest.raises(ValueError):w.forward_settings()
+        with pytest.raises(ValueError):w.global_mdff_draft_settings()
         assert Path(cfg.source).read_bytes()==valid
     e.cells.item(0,0).setText('2');e.cells.item(0,1).setText('9i')
-    with pytest.raises(ValueError,match='Hermitian'):w.forward_settings()
+    with pytest.raises(ValueError,match='Hermitian'):w.global_mdff_draft_settings()
 
 
 def test_drafts_reset_preview_and_schematics(window):
@@ -76,10 +77,11 @@ def test_drafts_reset_preview_and_schematics(window):
     e.element.setCurrentIndex(e.element.findData('Co'));e.fields['exchange'].setText('.9')
     e.element.setCurrentIndex(e.element.findData('Fe'));assert e.fields['exchange'].text()=='1.25'
     e.reset_defaults();assert e.fields['exchange'].text()=='0.5';e.document()
-    e.direction.setText('1 0 0')
-    for button in e.findChildren(QtWidgets.QPushButton):
-        if button.text()=='Apply direction':button.click()
-    cfg=w.forward_settings();np.testing.assert_allclose(cfg.magnetization,[1,0,0])
+    w.set_material_magnetization((1,0,0));e.frame_mode.setCurrentIndex(2)
+    rotation=axis_rotation((1,0,0))
+    for i in range(3):
+        for j in range(3):e.frame.cellWidget(i,j).setText(str(rotation[i,j]))
+    cfg=w.global_mdff_draft_settings();np.testing.assert_allclose(cfg.magnetization,[1,0,0])
     assert 'M/beam' in e.schematic.figure.axes[1].get_title()
     e.schematic.reversal.setCurrentIndex(1);assert e.schematic.reversal.currentIndex()==1
     e.fields['sigma'].setFocus();app.processEvents();e.schematic.key='sigma';e.schematic.draw()
@@ -97,7 +99,7 @@ def test_missing_reference_is_explicit_complete_synthetic(window,monkeypatch):
 @pytest.mark.parametrize('model',[1,2])
 def test_calculation_save_reopen_portable_source(window,tmp_path,model):
     w,app=window;w.model_box.setCurrentIndex(model)
-    cfg=w.forward_settings()
+    cfg=w.global_mdff_draft_settings()
     cfg=replace(cfg,propagation='both',energy_scope='edges',grid=9,depth=3,subpixels=4,halfwidth=.7,radius=.12,
         centers=((.2,.2),(.2,-.2)),fft_grid=16,slice_step=.01,correction=False,worker_mode='manual',parallel_workers=1)
     settings=Settings(zone=(0,0,1),target=(1,1,0),voltage=200,thickness=.2,tilt=(-5,7),beam_cutoff=.6,potential_cutoff=1.2)
@@ -132,9 +134,9 @@ def test_passive_edits_never_generate_and_external_source_never_substituted(wind
     monkeypatch.setattr(e,'generate',lambda:pytest.fail('Passive edit generated a source'))
     e.fields['sigma'].setText('1.4');w.emcd_stale()
     assert not e.validated_path and 'STALE' in e.preview_state.text()
-    w.model_box.setCurrentIndex(2);cfg=w.forward_settings()
+    w.model_box.setCurrentIndex(2);cfg=w.global_mdff_draft_settings()
     w.imported_path.setText('unvalidated-external-source.json')
-    with pytest.raises(ValueError,match='Validate'):w.forward_settings()
+    with pytest.raises(ValueError,match='Validate'):w.global_mdff_draft_settings()
     assert Path(cfg.source).is_file()
 
 

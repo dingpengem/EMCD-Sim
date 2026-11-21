@@ -4,7 +4,8 @@ from dataclasses import asdict
 import csv,json
 import numpy as np
 from .signal_normalization import DisplaySettings, normalized_spectra, angular_display, percentage_metrics
-from .prb_benchmark import benchmark_readout, benchmark_spectra
+from .prb_benchmark import benchmark_readout
+from emcd_sim.detector_signals import benchmark_spectra
 
 
 def save_figure(figure,path):

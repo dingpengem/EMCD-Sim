@@ -1,0 +1,277 @@
+"""Incoming propagation and detector-support scheduling over existing channeling kernels."""
+from concurrent.futures import ThreadPoolExecutor,wait,FIRST_COMPLETED
+from contextlib import contextmanager
+import sys,threading,os
+from time import perf_counter,thread_time
+import numpy as np
+from .double_channeling import double_channeling_response, intensities_from_response,prepare_incoming_bloch,prepare_outgoing_bloch
+from .multislice_double_channeling import ProjectedFFT, incident_fields, multislice_double_channeling_response
+from .single_channeling_tensor import _tensor_angular_maps
+from .mdff_edges import selected_samples
+
+
+def fft_geometry(elastic,settings,cfg,*,cancelled=None):
+    from emcd_sim.structure_geometry import projected_geometry_from_oriented_crystal
+    return ProjectedFFT.build(elastic,grid_points=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
+        systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
+        projected_geometry=projected_geometry_from_oriented_crystal(settings,elastic.crystal,cfg.fft_generators),
+        systematic_row_hkl=settings.target if cfg.systematic_row else None,
+        retained_hkl=elastic.beams.hkl if settings.basis_mode=='two-beam' else None,
+        memory_budget_mib=cfg.calculation_memory_budget_mib,cancelled=cancelled)
+
+
+def propagate(elastic,settings,cfg,z,stage,*,cancelled=None):
+    waves={};extra={}
+    if cfg.propagation in ('bloch','both'):
+        stage('Running Bloch-wave propagation');waves['bloch']=elastic.amplitudes(z)
+    if cfg.propagation in ('fft-multislice','both'):
+        stage('Running incoming FFT propagation in the matched projected potential')
+        grid=fft_geometry(elastic,settings,cfg,cancelled=cancelled)
+        incoming=incident_fields(grid,settings.thickness,depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,cancelled=cancelled,memory_budget_mib=cfg.memory_budget_mib)
+        psi=incoming[0][:,grid.indices(elastic.beams.hkl)];waves['fft-multislice']=psi
+        total=np.sum(abs(incoming[0])**2,axis=1);outside=total-np.sum(abs(psi)**2,axis=1)
+        extra=dict(beam_hkl=grid.hkl,reciprocal_gxy=grid.g,exit_intensity=abs(incoming[0][-1])**2,
+            generators=grid.geometry.generators,
+            total_norm=total,excluded_intensity=outside,_prepared=(grid,incoming),
+            summary=dict(norm_error=float(abs(total-1).max()),max_excluded_population=float(outside.max()),exit_excluded_population=float(outside[-1]),
+                projected_norm_exit=float(np.sum(abs(psi[-1])**2)),renormalized=False,phase_convention='raw FFT coefficients; no conjugation or fitted factor'))
+        return waves,extra
+    return waves,extra
+
+
+_windows_bw_lock=threading.Lock()
+
+
+@contextmanager
+def bw_executor_guard(method,cancelled):
+    """Serialize Windows BW detector executors, including independent requests.
+
+    The Windows NumPy OpenBLAS runtime can access-violate when concurrent
+    outgoing eigh calls use its native thread pool. Scoped BLAS control is
+    handled separately. Waiting for another request is cancellable.
+    """
+    if method!='bloch' or sys.platform!='win32':
+        yield;return
+    from .cancellation import check_cancelled
+    while not _windows_bw_lock.acquire(timeout=.05):check_cancelled(cancelled)
+    try:
+        check_cancelled(cancelled)
+        yield
+    finally:_windows_bw_lock.release()
+
+
+def worker_count(n,method):
+    # Standalone callers have no complete request for CPU/memory admission.
+    # Production callers supply the shared, admitted execution_workers plan.
+    return 1
+
+
+def map_detector_batches(response,batches,workers,method,cancelled,*,diagnostics=None,progress=None):
+    """Ordered legacy thread execution with cooperative failure/cancellation.
+
+    response(batch, task_cancelled) owns its scratch arrays. Stop queued and
+    running work on the first failure, join this executor, and preserve the
+    originating exception even if an earlier batch subsequently cancels.
+    """
+    from .cancellation import check_cancelled
+    from emcd_sim.parallel_resources import MAX_WORKERS, calculation_blas_guard
+    if type(workers) is not int or not 1<=workers<=MAX_WORKERS:
+        raise ValueError('Unsupported detector worker count')
+    from emcd_sim.hardware_resources import cpu_capacity
+    if workers>cpu_capacity()['logical_processors']:
+        raise ValueError('Detector worker allocation exceeds current process CPU capacity')
+    stop=threading.Event();errors=[];error_lock=threading.Lock()
+    start=perf_counter();active=peak=started=0;busy=cpu=queue_seconds=0.;threads=set()
+    def task_cancelled():return stop.is_set() or (cancelled is not None and cancelled())
+    def execute(batch,submitted):
+        nonlocal active,peak,started,busy,cpu,queue_seconds
+        before=perf_counter();before_cpu=thread_time()
+        if diagnostics is not None:
+            with error_lock:
+                active+=1;started+=1;peak=max(peak,active);threads.add(threading.get_ident())
+                queue_seconds+=before-submitted
+        try:
+            check_cancelled(task_cancelled)
+            return response(batch,task_cancelled)
+        except BaseException as exc:
+            with error_lock:
+                if not errors:errors.append(exc)
+            stop.set()
+            raise
+        finally:
+            if diagnostics is not None:
+                with error_lock:
+                    active-=1;busy+=perf_counter()-before;cpu+=thread_time()-before_cpu
+    try:
+        with calculation_blas_guard(task_cancelled) as native, bw_executor_guard(method,task_cancelled):
+            if diagnostics is not None:diagnostics['native_runtimes']=native
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futures=[]
+                try:
+                    for batch in batches:futures.append(pool.submit(execute,batch,perf_counter()))
+                    pending=set(futures);order={f:i for i,f in enumerate(futures)};results=[None]*len(futures);completed=0
+                    if progress:progress(0,len(futures))
+                    while pending:
+                        check_cancelled(task_cancelled)
+                        done,pending=wait(pending,timeout=.1,return_when=FIRST_COMPLETED)
+                        for future in done:
+                            results[order[future]]=future.result();completed+=1
+                        if done and progress:progress(completed,len(futures))
+                    return results
+                except BaseException as exc:
+                    stop.set()
+                    for future in futures:future.cancel()
+                    if errors and isinstance(exc,Exception):raise errors[0]
+                    raise
+    finally:
+        if diagnostics is not None:
+            diagnostics.update(executor='ThreadPoolExecutor',process_id=os.getpid(),requested_workers=workers,
+                worker_thread_ids=sorted(threads),max_concurrent_tasks=peak,started_tasks=started,
+                wall_seconds=perf_counter()-start,summed_task_seconds=busy,
+                summed_thread_cpu_seconds=cpu,summed_queue_seconds=queue_seconds,active_tasks_after_join=active,
+                data_transfer='Shared in-process arrays; no process spawning or serialization')
+
+
+EVALUATION_POLICY='full_at_selected_edges_detector_only_elsewhere'
+
+
+def angular_schedule(model,cfg,energy):
+    """Two fixed supports on the original q grid; weights are computed once."""
+    q=np.linspace(-cfg.halfwidth,cfg.halfwidth,cfg.grid);qx,qy=np.meshgrid(q,q,indexing='xy')
+    weights={k:d.integration_weights(qx,qy,mode='fractional',subpixels=cfg.subpixels) for k,d in model.detectors.items()}
+    detector_support=np.logical_or.reduce([weights[k].ravel()>0 for k in ('A','B')])
+    if not detector_support.any():raise ValueError('No detector support on the requested reciprocal grid')
+    selected={int(np.argmin(abs(energy-v))):edge for edge,v in selected_samples(cfg)}
+    return qx,qy,weights,detector_support,selected
+
+
+def calculate_detector_signals(model,settings,cfg,method,C,energy,tensors,stage,cancelled,prepared_incoming=None,*,energy_checkpoint=None,execution_workers=None,ionization_sites=None):
+    """Full field at selected map energies, detector-only elsewhere, on one grid.
+
+    Detector-only skips exactly zero-weight pixels. Fractional weights and all
+    physical/numerical parameters are identical; no interpolation or coarsening.
+    Double responses already include depth integration; Single needs thickness.
+    C is (beam,beam) incoming depth-mean coherence; tensors are explicit +/-M
+    energy tensors in beam Cartesian axes. Grid qx/qy is (qy,qx) in cycles/A;
+    outputs are raw detector spectra (energy,) and selected maps (qy,qx).
+    No material model or GUI state is constructed here.
+    """
+    if ionization_sites is None:
+        raise ValueError('Explicit ionization_sites are required for detector signals')
+    from .cancellation import Cancelled
+    from emcd_sim.structure_geometry import projected_geometry_from_oriented_crystal
+    from emcd_sim.propagation import SINGLE_CHANNELING_PIXEL_BATCH
+    qx,qy,weights,detector_support,selected=angular_schedule(model,cfg,energy)
+    dq2=(qx[0,1]-qx[0,0])**2
+    full_weights=np.stack([weights[k].ravel() for k in ('A','B')])
+    spectra={f'I_{d}_{s}':np.empty(len(energy)) for s in ('plus','minus') for d in ('A','B')}
+    maps={};elastic=model.elastic
+    phase=ionization_sites.single_phase(elastic.crystal,elastic.beams.hkl)
+    site_arguments=dict(ionization_sites=ionization_sites)
+    # Directly evaluate both mirror directions for any orientation. A reference
+    # symmetry is a diagnostic, not an input used to manufacture a response.
+    supports={}
+    for full in (False,True) if cfg.angular_maps else (False,):
+        support=np.ones(qx.size,bool) if full else detector_support
+        points=np.column_stack((qx.ravel()[support],qy.ravel()[support]))
+        supports[full]=(support,points,points)
+    n=len(elastic.beams.hkl);workers=worker_count(n,method) if execution_workers is None else execution_workers
+    start_incoming=perf_counter()
+    incoming_bw=prepare_incoming_bloch(elastic,settings.thickness,cfg.depth,cancelled=cancelled) if cfg.channeling_model=='double' and method=='bloch' else None
+    incoming_seconds=perf_counter()-start_incoming
+    diagnostics=[]
+    for ie,e in enumerate(energy):
+        if cancelled():raise Cancelled()
+        full=cfg.angular_maps and (ie in selected or cfg.angular_evaluation=='all')
+        support,points,query=supports[full]
+        diagnostic=dict(energy_ev=float(e),full_field=full,required_pixels=len(points),
+            evaluated_pixels=0,query_pixels=0,response_batches=0,outgoing_directions=0,
+            mirror_reuse=False,checkpoint_reused=False,
+            outgoing_response_seconds=0.,mdff_contraction_seconds=0.)
+        stage(f'{method} {cfg.channeling_model}: energy {ie+1}/{len(energy)} ({e:.4f} eV)')
+        cached=energy_checkpoint(float(e),None) if energy_checkpoint is not None else None
+        if cached is not None:
+            raw=np.asarray(cached['raw'])
+            if raw.shape!=(4,) or raw.dtype!=np.float64 or not np.isfinite(raw).all() or np.any(raw<0):raise ValueError('Invalid energy checkpoint detector intensities')
+            # A legacy raw-only entry is sufficient away from map energies.
+            # At selected edges require complete maps, or recalculate this one
+            # energy. Never treat partial arrays as a completed full-field map.
+            if full and 'maps' in cached:
+                saved_maps=np.asarray(cached['maps'])
+                if saved_maps.shape!=(2,cfg.grid,cfg.grid) or saved_maps.dtype!=np.float64 or not np.isfinite(saved_maps).all():raise ValueError('Invalid energy checkpoint angular maps')
+            if not full or 'maps' in cached:
+                for j,key in enumerate(('I_A_plus','I_B_plus','I_A_minus','I_B_minus')):spectra[key][ie]=raw[j]
+                if full:
+                    plus,minus=saved_maps
+                    maps[selected[ie]]=dict(I_plus=plus,I_minus=minus,I_mag=(plus-minus)/2,I_nonmag=(plus+minus)/2)
+                diagnostic['checkpoint_reused']=True;diagnostics.append(diagnostic)
+                continue
+        if cfg.channeling_model=='single':
+            start_contract=perf_counter()
+            values=np.empty((2,len(points)))
+            for start in range(0,len(points),SINGLE_CHANNELING_PIXEL_BATCH):
+                if cancelled():raise Cancelled()
+                sl=slice(start,start+SINGLE_CHANNELING_PIXEL_BATCH)
+                for si,t in enumerate(tensors):
+                    even,odd=_tensor_angular_maps(model,t.tensor_angstrom2_per_ev[ie],e,C,phase,points[sl,0],points[sl,1])
+                    values[si,sl]=settings.thickness*(even+odd)
+            if values.min() < -1e-8*max(1.,values.max()):raise ValueError('Negative tensor-derived inelastic intensity: check conventions/phase')
+            diagnostic['mdff_contraction_seconds']=perf_counter()-start_contract
+        else:
+            outgoing_bw=prepare_outgoing_bloch(elastic,float(e),prepared_incoming=incoming_bw,cancelled=cancelled) if method=='bloch' else None
+            def response(batch,task_cancelled):
+                if task_cancelled():raise Cancelled()
+                if method=='bloch':
+                    r=double_channeling_response(elastic,float(e),batch,settings.thickness,
+                        method='analytic' if cfg.systematic_row else 'numerical',depth_steps=cfg.depth,
+                        memory_budget_mib=cfg.calculation_memory_budget_mib,prepared_incoming=incoming_bw,
+                        prepared_outgoing=outgoing_bw,cancelled=task_cancelled,**site_arguments)
+                    return r,None
+                grid,incoming=prepared_incoming
+                r,diag=multislice_double_channeling_response(elastic,float(e),batch,settings.thickness,
+                    fft_grid=cfg.fft_grid,potential_cutoff=settings.potential_cutoff,
+                    systematic_row=cfg.systematic_row,row_reduction=cfg.systematic_row,
+                    projected_geometry=projected_geometry_from_oriented_crystal(settings,elastic.crystal,cfg.fft_generators),
+                    depth_steps=cfg.depth,slice_step_nm=cfg.slice_step,memory_budget_mib=cfg.calculation_memory_budget_mib,
+                    prepared_grid=grid,prepared_incoming=incoming,cancelled=task_cancelled,**site_arguments)
+                return r,diag
+            # MS chunks bound cancellation latency without retaining outgoing
+            # depth stacks. BW retains its existing per-call dense admission.
+            batches=([query[i:i+32] for i in range(0,len(query),32)] if method=='fft-multislice'
+                     else [a for a in np.array_split(query,min(workers,len(query))) if len(a)])
+            start_response=perf_counter()
+            execution={}
+            responses=map_detector_batches(response,batches,workers,method,cancelled,diagnostics=execution)
+            diagnostic['executor']=execution
+            r=np.concatenate([item[0] for item in responses])
+            if method=='fft-multislice':
+                for key in ('incoming_norm_error','outgoing_norm_error','incoming_max_excluded_population','outgoing_max_excluded_population'):
+                    diagnostic[key]=max(item[1][key] for item in responses)
+            diagnostic.update(outgoing_response_seconds=perf_counter()-start_response,response_batches=len(batches),outgoing_directions=len(query),workers=workers)
+            start_contract=perf_counter()
+            values=np.stack([intensities_from_response(r,t.tensor_angstrom2_per_ev[ie]) for t in tensors])
+            diagnostic['mdff_contraction_seconds']=perf_counter()-start_contract
+        diagnostic.update(evaluated_pixels=len(points),query_pixels=len(query))
+        diagnostics.append(diagnostic)
+        if cancelled():raise Cancelled()
+        for si,s in enumerate(('plus','minus')):
+            # Preserve the historical full-grid reduction length/order for map
+            # requests. Filling omitted, zero-weight pixels is integration work
+            # only; no non-selected full-field intensity array is exported.
+            if cfg.angular_maps or cfg.channeling_model=='single':
+                plane=np.zeros(qx.size);plane[support]=values[si]
+                integrated=(np.sum(full_weights*plane,axis=1) if cfg.channeling_model=='single' else full_weights@plane)*dq2
+            else:integrated=full_weights[:,support]@values[si]*dq2
+            for di,d in enumerate(('A','B')):spectra[f'I_{d}_{s}'][ie]=integrated[di]
+        if cfg.angular_maps and ie in selected:
+            plus,minus=values.reshape(2,cfg.grid,cfg.grid)
+            maps[selected[ie]]=dict(I_plus=plus,I_minus=minus,I_mag=(plus-minus)/2,I_nonmag=(plus+minus)/2)
+        if cancelled():raise Cancelled()
+        if energy_checkpoint is not None:
+            compact=dict(raw=np.array([spectra[k][ie] for k in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus')]))
+            if cfg.angular_maps and ie in selected:compact['maps']=values.reshape(2,cfg.grid,cfg.grid)
+            energy_checkpoint(float(e),compact)
+    if cancelled():raise Cancelled()
+    return dict(spectra=spectra,maps=maps,qx=qx,qy=qy,weights=weights,diagnostics=diagnostics,
+        angular_evaluation_policy='full_grid_all_energies' if cfg.angular_maps and cfg.angular_evaluation=='all' else EVALUATION_POLICY,
+        incoming_preparation_seconds=incoming_seconds)

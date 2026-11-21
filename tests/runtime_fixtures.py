@@ -7,13 +7,30 @@ from PySide6 import QtWidgets
 from emcd_sim.mdff_tensor import DipoleTensor,TransitionDataset
 from emcd_sim.single_channeling_tensor import run_tensor_single_channeling
 from emcd_sim.xmcd_effective_mdff import effective_tensor_from_xmcd
-from emcd_sim.gui.runtime import LABEL,build_info
+from emcd_sim.provenance import LABEL, build_info
+
+def apply_global_mdff(window):
+    """Accept explicitly configured inputs through the real Material workflow."""
+    window.show_structure_viewer()
+    assert window.mdff_dialog.apply_configuration() is not None,window.mdff_dialog.status.text()
+    window.structure_viewer.apply_groups()
+    assert not window.structure_viewer.isVisible(),window.structure_viewer.editor.status.text()
+    assert not window.mdff_dialog.has_unapplied_edits(),window.mdff_dialog.status.text()
+    return window.forward_settings()
 
 def release_controls(window, app):
     """Exercise the actual release widgets without starting a worker."""
     assert window.cancel_button.text()=='Cancel' and not window.cancel_button.isEnabled()
-    assert window.numerical_mode.currentIndex()==0
-    window.model_box.setCurrentIndex(1)
+    assert window.numerical_mode.currentIndex()==1
+    # Exercise the supported historical Ni automatic preset explicitly;
+    # ordinary source-backed Material inputs start in Manual mode.
+    assert set(window.structure.atoms.get_chemical_symbols())=={'Ni'}
+    window.model_box.setCurrentIndex(0)
+    window.validate_xmcd(show_error=False);window.declaration.setChecked(True)
+    window.show_structure_viewer();window.reference_ni.setChecked(True)
+    assert window.mdff_dialog.apply_configuration() is not None
+    window.structure_viewer.apply_groups()
+    window.numerical_mode.setCurrentIndex(0)
     for index in (0,1,2):
         window.propagation_box.setCurrentIndex(index)
         assert not window._numerical_error
@@ -33,18 +50,19 @@ def release_controls(window, app):
     assert window.basis_view_button.text()=='Restore previous view'
     window.basis_view_button.click()
     assert (window.ax.get_xlim(),window.ax.get_ylim())==limits
-    assert window.spin['grid'].value()==97 and window.memory_budget.currentData()==2048
+    assert window.spin['grid'].value()==97 and window.memory_budget.value()==2048
     independent=tuple(window.spin[k].value() for k in ('fft_grid','subpixels','halfwidth'))
     for i,n in enumerate((33,97,193)):
         window.angular_resolution.setCurrentIndex(i)
         assert window.spin['grid'].value()==n
         assert independent==tuple(window.spin[k].value() for k in ('fft_grid','subpixels','halfwidth'))
     window.spin['grid'].setValue(65)
-    assert window.angular_resolution.currentText()=='Custom'
-    window.memory_budget.setCurrentIndex(window.memory_budget.findData(512))
+    assert window.angular_resolution.currentData() is None
+    assert window.angular_resolution.currentText().startswith('Custom') and '65' in window.angular_resolution.currentText()
+    window.memory_mode.setCurrentIndex(1);window.memory_budget.setValue(512)
     window.new_project()
-    assert window.numerical_mode.currentIndex()==0
-    assert window.spin['grid'].value()==97 and window.memory_budget.currentData()==2048
+    assert window.numerical_mode.currentIndex()==1
+    assert window.spin['grid'].value()==97 and window.memory_budget.value()==2048
     # Show the same provenance text as the application's About action.
     box=QtWidgets.QMessageBox(window);box.setWindowTitle(LABEL)
     box.setText(json.dumps(build_info(),indent=2));box.show();app.processEvents()
@@ -56,9 +74,9 @@ def release_controls(window, app):
         cancellation_control_present=True)
 
 FORWARD_PATHS=('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni',
-    'emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.emcd_forward.tensors','emcd_sim.gui.propagation.propagate',
-    'emcd_sim.single_channeling_tensor.run_tensor_with_coherence','emcd_sim.single_channeling_tensor.run_tensor_with_coherence',
-    'emcd_sim.gui.stage_b.EMCDWorker.run','emcd_sim.gui.app.PreviewWorker.run')
+    'emcd_sim.forward_pipeline.calculate','emcd_sim.historical_ni.tensors','emcd_sim.channeling.propagate',
+    'emcd_sim.single_channeling_tensor.run_tensor_with_coherence',
+    'emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.gui.app.PreviewWorker.run')
 
 def fingerprints(result):
     arrays={}

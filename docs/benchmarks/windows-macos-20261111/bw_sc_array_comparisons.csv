@@ -1,0 +1,44 @@
+archive,array,shape,scale_definition,comparison_scale,max_absolute_difference,max_scale_normalized_difference,rtol,atol,masks_equal,status
+virtual_detector_eels.npz,bloch__I_A_plus,[243],relative_intensity_raw_family_peak,0.0458646479489751,4.85722573273506e-17,1.0590347794970048e-15,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__I_B_plus,[243],relative_intensity_raw_family_peak,0.0458646479489751,3.469446951953614e-17,7.56453413926432e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__I_A_minus,[243],relative_intensity_raw_family_peak,0.0458646479489751,3.469446951953614e-17,7.56453413926432e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__I_B_minus,[243],relative_intensity_raw_family_peak,0.0458646479489751,4.163336342344337e-17,9.077440967117184e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__energy_ev,[243],energy_eV,882.521,0.0,0.0,0.0,1e-10,True,PASS
+virtual_detector_eels.npz,bloch__N_A,[243],relative_intensity_raw_family_peak,0.0458646479489751,3.469446951953614e-17,7.56453413926432e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__N_B,[243],relative_intensity_raw_family_peak,0.0458646479489751,4.163336342344337e-17,9.077440967117184e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__M_A,[243],relative_intensity_raw_family_peak,0.0458646479489751,1.0408340855860843e-17,2.269360241779296e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__M_B,[243],relative_intensity_raw_family_peak,0.0458646479489751,1.214306433183765e-17,2.647586948742512e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__D_mag,[243],relative_intensity_raw_family_peak,0.0458646479489751,2.2551405187698492e-17,4.916947190521808e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__D_nonmag,[243],relative_intensity_raw_family_peak,0.0458646479489751,2.0816681711721685e-17,4.538720483558592e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__D_raw,[243],relative_intensity_raw_family_peak,0.0458646479489751,2.7755575615628914e-17,6.051627311411456e-16,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__Sigma_ref,[243],relative_intensity_raw_family_peak,0.0458646479489751,6.938893903907228e-17,1.512906827852864e-15,1e-09,4.58646479489751e-14,True,PASS
+virtual_detector_eels.npz,bloch__prb_relative_dichroism_percent,[243],percentage_points,100.0,2.5979218776228663e-14,2.597921877622866e-16,1e-09,1e-09,True,PASS
+virtual_detector_eels.npz,bloch__magnetic_only_percent,[243],percentage_points,100.0,2.842170943040401e-14,2.842170943040401e-16,1e-09,1e-09,True,PASS
+virtual_detector_eels.npz,bloch__nonmagnetic_imbalance_percent,[243],percentage_points,100.0,2.795457467761184e-14,2.795457467761184e-16,1e-09,1e-09,True,PASS
+angular_maps.npz,qx,"[97, 97]",coordinate_or_weight,1.0,0.0,0.0,0.0,1e-14,True,PASS
+angular_maps.npz,qy,"[97, 97]",coordinate_or_weight,1.0,0.0,0.0,0.0,1e-14,True,PASS
+angular_maps.npz,bloch__L3__I_plus,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.5987211554602254e-14,8.24731373516294e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__I_minus,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.5987211554602254e-14,8.24731373516294e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__I_mag,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,3.552713678800501e-15,1.8327363855917645e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__I_nonmag,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.7763568394002505e-14,9.163681927958823e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__I_A_plus,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,3.552713678800501e-15,1.8327363855917645e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__I_B_plus_paired,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,3.1086244689504383e-15,1.603644337392794e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__I_A_minus,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,3.1086244689504383e-15,1.603644337392794e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__I_B_minus_paired,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,3.9968028886505635e-15,2.061828433790735e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__D_raw,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.1102230246251565e-15,5.727301204974264e-17,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__D_mag,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,9.992007221626409e-16,5.1545710844768374e-17,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L3__D_nonmag,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,8.881784197001252e-16,4.581840963979411e-17,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__I_plus,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.0658141036401503e-14,5.498209156775293e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__I_minus,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.0658141036401503e-14,5.498209156775293e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__I_mag,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.7763568394002505e-15,9.163681927958822e-17,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__I_nonmag,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.0658141036401503e-14,5.498209156775293e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__I_A_plus,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.9984014443252818e-15,1.0309142168953675e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__I_B_plus_paired,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,2.6645352591003757e-15,1.3745522891938233e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__I_A_minus,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,2.4424906541753444e-15,1.260006265094338e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__I_B_minus_paired,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.9984014443252818e-15,1.0309142168953675e-16,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__D_raw,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,1.3322676295501878e-15,6.872761445969117e-17,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__D_mag,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,8.881784197001252e-16,4.581840963979411e-17,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__L2__D_nonmag,"[97, 97]",relative_intensity_raw_family_peak,19.384750074972622,6.661338147750939e-16,3.436380722984558e-17,1e-09,1.938475007497262e-11,True,PASS
+angular_maps.npz,bloch__coherence,"[21, 21]",coherence,1.0,5.224024053540252e-16,5.224024053540252e-16,1e-10,1e-12,True,PASS
+angular_maps.npz,weight_A,"[97, 97]",coordinate_or_weight,1.0,0.0,0.0,0.0,1e-14,True,PASS
+angular_maps.npz,weight_B,"[97, 97]",coordinate_or_weight,1.0,0.0,0.0,0.0,1e-14,True,PASS

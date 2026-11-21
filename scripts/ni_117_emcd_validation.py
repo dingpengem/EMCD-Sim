@@ -5,18 +5,20 @@ Every finished Both-method case is atomically checkpointed before continuing.
 """
 from dataclasses import asdict, replace
 from pathlib import Path
+from emcd_sim.forward_results import selected_edge_metrics
 import argparse, csv, hashlib, json, time
 import numpy as np
-from emcd_sim.study_geometry import StudyGeometry
-Ni117Geometry=lambda a_angstrom=3.524: StudyGeometry((1,1,7),(2,-2,0),a_angstrom)
-from emcd_sim.gui.geometry import Structure, Settings, geometry, excitation
-from emcd_sim.gui.emcd_forward import ForwardSettings, DEFAULT_SOURCE, calculate, metrics
+from emcd_sim.study_presets import NickelStudyGeometry
+Ni117Geometry=lambda a_angstrom=3.524: NickelStudyGeometry((1,1,7),(2,-2,0),a_angstrom)
+from emcd_sim.structure_geometry import Structure, Settings, geometry, excitation
+from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.mirror_parity import row_mirror_diagnostics
 
 ROOT=Path(__file__).resolve().parents[1]
 PHYSICS_FILES=['projected_geometry.py','crystallography.py','projected_potential.py','multislice_double_channeling.py','double_channeling.py',
     'single_channeling_tensor.py','physical_elastic.py','mdff_tensor.py','scattering.py',
-    'gui/geometry.py','gui/propagation.py','gui/channeling.py','gui/emcd_forward.py']
+    'gui/geometry.py','structure_geometry.py','propagation.py','channeling.py','forward_pipeline.py','forward_results.py']
 
 
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -37,9 +39,9 @@ def configurations():
     geo=Ni117Geometry();g=geo.crystal.g_vector((2,-2,0))[0]
     base=Settings(zone=(1,1,7),target=(2,-2,0),tilt=(geo.bragg_tilt(),0),voltage=200,
                   thickness=8,beam_cutoff=3.8,potential_cutoff=6.2)
-    cfg=ForwardSettings(axis_declared=True,propagation='both',energy_scope='edges',grid=17,depth=65,
+    cfg=NiForwardSettings(axis_declared=True,propagation='both',energy_scope='edges',grid=17,depth=65,
         subpixels=32,fft_grid=32,slice_step=.04,centers=((g/2,g/2),(g/2,-g/2)),radius=.16*g,
-        correction=False,worker_mode='manual',parallel_workers=1,source_sha256=sha(DEFAULT_SOURCE))
+        correction=False,worker_mode='manual',parallel_workers=1,source_sha256=sha(DEFAULT_NI_SOURCE))
     cases=[]
     for basis in ('two-beam','full'):
         for channel in ('single','double'):
@@ -102,7 +104,7 @@ def run_case(root,label,s,cfg,code_hashes):
                 arrays[name+'__'+edge+'__'+key]=values[key]
         arrays.update({name+'__spectrum__'+k:v for k,v in r['spectra'].items()})
         arrays[name+'__amplitudes']=r['amplitudes'];arrays[name+'__coherence']=r['coherence']
-        methods[name]=dict(metrics=metrics(r),parity=fields,detector_areas=r['metadata']['detector_areas'],
+        methods[name]=dict(metrics=selected_edge_metrics(r),parity=fields,detector_areas=r['metadata']['detector_areas'],
             source_audit=r['metadata']['source_audit'],angular_evaluation=r['metadata']['angular_evaluation'],
             exit_populations=abs(r['amplitudes'][-1])**2,settings=asdict(s))
         assert not any(d['mirror_reuse'] for d in r['metadata']['angular_evaluation'])

@@ -1,27 +1,62 @@
 """Exact active replacements: execute old contracts on real parent, new on current."""
 import json
+import ast
 import hashlib
 import os
 from pathlib import Path
 import subprocess
 import sys
 import uuid
-from mdff_usability_source_scope import ROOT,WORKFLOWS,load_scope,read,digest
+from mdff_usability_source_scope import ROOT,WORKFLOWS,load_scope,read,digest,readability_scope,support_paths
 
 
 def parent_snapshot(config,request):
     if hasattr(config,'_mdff_parent_snapshot'):return config._mdff_parent_snapshot
     scope,parents=load_scope()
+    current,previous=readability_scope(historical=scope)
     folder=request.getfixturevalue('tmp_path_factory').mktemp('authenticated-mdff-parent')
     boundary=ROOT.resolve()
     for path,entry in scope['protected'].items():
-        raw=read(ROOT,path,resolved_root=boundary);mode=entry['mode']
+        raw=previous[path] if path in previous else read(ROOT,path,resolved_root=boundary)
+        mode=entry['mode']
         assert digest(raw,mode)==entry[mode+'_sha256'],'Historical workflow source changed: '+path
         target=folder/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw)
     for path,raw in parents.items():
         target=folder/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw)
+    # The retained legacy workflows use current Results and CIF adapters.
+    # Include their ordinary dependencies without replacing any
+    # archived parent source or changing the historical test assertions.
+    support=('src/emcd_sim/gui/multisite_results_controls.py',
+             'src/emcd_sim/gui/multisite_results.py','src/emcd_sim/gui/multisite_export.py',
+             'src/emcd_sim/crystallographic_sites.py','src/emcd_sim/multisite.py')
+    relocated={
+        'src/emcd_sim/gui/multisite_results_controls.py':(
+            'src/emcd_sim/gui/result_presentation.py',('MultisiteSpectraControls',),
+            'from pathlib import Path\nfrom PySide6 import QtCore,QtWidgets\n'
+            'from .multisite_results import QUANTITIES\nfrom .responsive import FlowLayout\n'),
+        'src/emcd_sim/gui/multisite_export.py':(
+            'src/emcd_sim/gui/result_export.py',('_json_value','export_multisite_spectra'),
+            'import csv,json\nfrom dataclasses import asdict,is_dataclass\nfrom pathlib import Path\n'
+            'import numpy as np\nfrom .. import __version__\n'
+            'from .multisite_results import SPECTRAL_KEYS,QUANTITIES,material,spectral_series,selection_description,DEFINITIONS\n')}
+    for path in support:
+        target=folder/path
+        if not target.exists():
+            if path in relocated:
+                # Reference-only namespaces retain the concrete legacy GUI
+                # contracts. Extract the unchanged canonical support bodies;
+                # never rewrite authenticated historical source or assertions.
+                owner,names,imports=relocated[path]
+                raw=read(ROOT,owner,resolved_root=boundary)
+                assert digest(raw)==current['files'][owner]['sha256'],'Unreviewed legacy workflow support: '+owner
+                text=raw.decode('utf-8-sig');lines=text.splitlines(keepends=True)
+                bodies={node.name:''.join(lines[node.lineno-1:node.end_lineno])
+                        for node in ast.parse(text).body if isinstance(node,(ast.FunctionDef,ast.ClassDef))}
+                raw=(imports+'\n\n'+'\n\n'.join(bodies[name] for name in names)+'\n').encode('utf-8')
+            else:raw=(ROOT/path).read_bytes()
+            target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw)
     config._mdff_parent_snapshot=folder
-    config._mdff_parent_paths=sorted(set(scope['protected'])|set(parents))
+    config._mdff_parent_paths=sorted(set(scope['protected'])|set(parents)|set(support))
     return folder
 
 
@@ -65,7 +100,7 @@ def install(config,items):
             folder=_item._request.getfixturevalue('tmp_path')/'registered-workflow'
             parent=parent_snapshot(config,_item._request)
             declaration,_=load_scope()
-            current_paths=sorted(set(declaration['protected'])|set(declaration['candidate'])|set(declaration['bootstrap']))
+            current_paths=sorted(support_paths())
             run_contract(parent,_node,folder/'historical',config._mdff_parent_paths)
             run_contract(ROOT,_target,folder/'current',current_paths)
         # Keep the original collected identity and assertions intact on disk.

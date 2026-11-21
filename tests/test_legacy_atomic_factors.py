@@ -1,4 +1,5 @@
 """Real-table integration tests; external data never enter the source tree."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 from dataclasses import replace
 from pathlib import Path
@@ -7,7 +8,8 @@ import numpy as np
 import pytest
 
 from emcd_sim.legacy_atomic_factors import (LegacyNeutralAtomFactors, atomic_number,
-    SOURCE_POTENTIAL_SCALE, MOTT_MIN_STL, TABLE_ENVIRONMENT, factors_for_elastic_species)
+    SOURCE_POTENTIAL_SCALE, MOTT_MIN_STL, TABLE_ENVIRONMENT)
+from emcd_sim.elastic_providers import factors_for_provider, LOBATO, LEGACY
 from emcd_sim.scattering import IndependentAtomPotential, FourierCutoffPotential, nickel_lobato_factor
 from emcd_sim.crystal import Crystal, fcc_nickel
 from emcd_sim.elastic import BeamSet
@@ -34,20 +36,20 @@ def test_ase_periodic_table_lookup():
 
 def test_unconfigured_non_ni_does_not_change_default_or_enable_materials(monkeypatch):
     monkeypatch.delenv(TABLE_ENVIRONMENT,raising=False)
-    assert factors_for_elastic_species(('Ni',))['Ni'] is nickel_lobato_factor
+    assert factors_for_provider(('Ni',),LOBATO)['Ni'] is nickel_lobato_factor
     with pytest.raises(ValueError,match=TABLE_ENVIRONMENT):
-        factors_for_elastic_species(('Cu',))
+        factors_for_provider(('Cu',),LEGACY)
 
 
 def test_missing_configured_file_is_diagnostic_and_ni_still_runs(tmp_path,monkeypatch):
     path=tmp_path/'absent-scattering.py'
     monkeypatch.setenv(TABLE_ENVIRONMENT,str(path))
     with pytest.raises(ValueError,match='Legacy neutral-atom elastic provider cannot read') as error:
-        factors_for_elastic_species(('Cs','Cl'))
+        factors_for_provider(('Cs','Cl'),LEGACY)
     assert TABLE_ENVIRONMENT in str(error.value)
     assert str(path) in str(error.value) and 'not bundled' in str(error.value)
     crystal=fcc_nickel()
-    factors=factors_for_elastic_species(crystal.species)
+    factors=factors_for_provider(crystal.species,LOBATO)
     assert factors['Ni'] is nickel_lobato_factor
     model=PhysicalElasticModel(crystal,Microscope(200),BeamSet(),
         IndependentAtomPotential(crystal,atomic_factors=factors))
@@ -63,12 +65,12 @@ def test_hash_failure_precedes_execution_without_requiring_table(tmp_path):
 
 def test_gui_missing_provider_keeps_geometry_and_ni_available(tmp_path,monkeypatch):
     pytest.importorskip('ase')
-    from emcd_sim.gui.geometry import Structure,Settings,elastic_model,geometry
+    from emcd_sim.structure_geometry import Structure, Settings, elastic_model, geometry
     path=tmp_path/'absent.py'
     monkeypatch.setenv(TABLE_ENVIRONMENT,str(path))
     cu=Structure.nickel();cu.atoms.set_chemical_symbols(['Cu']*4)
     assert TABLE_ENVIRONMENT in cu.elastic_reason_for('legacy-atomicscatfact-neutral-v1')
-    settings=Settings(beam_cutoff=2.2,elastic_provider='legacy-atomicscatfact-neutral-v1')
+    settings=nickel_geometry_settings(beam_cutoff=2.2,elastic_provider='legacy-atomicscatfact-neutral-v1')
     geometry(cu,settings)  # Geometry-only CIF inspection must remain possible.
     with pytest.raises(ValueError,match=TABLE_ENVIRONMENT):elastic_model(cu,settings)
     ni=Structure.nickel()
@@ -237,8 +239,9 @@ def test_real_table_bloch_multislice_matched_potential(table,symbols,positions,a
 def test_gui_elastic_cif_and_inelastic_restrictions_remain_separate(table,tmp_path,monkeypatch):
     from ase import Atoms
     from ase.io import write
-    from emcd_sim.gui.geometry import Structure,Settings,elastic_model,preview
-    from emcd_sim.gui.emcd_forward import material_reason
+    from emcd_sim.structure_geometry import Structure, Settings, elastic_model
+    from emcd_sim.gui.geometry import preview
+    from emcd_sim.historical_ni import material_reason
     monkeypatch.setenv(TABLE_ENVIRONMENT,table.source_path)
     atoms=Atoms('CsCl',scaled_positions=[[0,0,0],[.5,.5,.5]],cell=np.eye(3)*4.1,pbc=True)
     path=tmp_path/'cscl.cif';write(path,atoms)
@@ -264,8 +267,8 @@ def test_configured_desktop_elastic_button_and_missing_file_gate(table,tmp_path,
     pytest.importorskip('PySide6')
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.geometry import Structure
-    from emcd_sim.gui.emcd_forward import material_reason
+    from emcd_sim.structure_geometry import Structure
+    from emcd_sim.historical_ni import material_reason
     monkeypatch.setenv(TABLE_ENVIRONMENT,table.source_path)
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window=MainWindow(workspace=tmp_path/'desktop')

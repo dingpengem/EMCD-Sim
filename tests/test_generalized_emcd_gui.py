@@ -1,15 +1,18 @@
 """Normal Qt controls/workers, saved geometry and raw/relative result views."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from pathlib import Path
 from time import monotonic,sleep
 import json,uuid
+from dataclasses import replace
 import numpy as np
 import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import excitation
+from emcd_sim.structure_geometry import excitation
 from emcd_sim.gui.project_io import save_project,load_project,fingerprints,frame_rerun_reason
+from runtime_fixtures import apply_global_mdff
 
 CASES=[('001',(0,0,1),(2,0,0),1.8,2.2,True),
     ('017',(0,1,7),(2,0,0),2.2,2.2,False),
@@ -38,8 +41,9 @@ def test_normal_gui_end_to_end(case,channel):
         assert np.allclose(g[1],0,atol=1e-13) and g[0]>0
         np.testing.assert_allclose(w.detectors,[[g[0]/2,g[0]/2],[g[0]/2,-g[0]/2]],atol=1e-12)
         w.set_values(dict(radius=.16*g[0]));w.channeling_box.setCurrentIndex(channel)
-        w.declaration.setChecked(True);w.correction.setChecked(True);w.energy_scope.setCurrentIndex(0)
+        w.declaration.setChecked(True);w.energy_scope.setCurrentIndex(0)
         w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(1)
+        apply_global_mdff(w)
         # Both solver-only selections must remain available to normal users.
         for method in (0,1,2):
             w.propagation_box.setCurrentIndex(method);w.emcd_stale()
@@ -55,7 +59,8 @@ def test_normal_gui_end_to_end(case,channel):
         assert 'no outgoing channeling' not in w.info.toPlainText()
         assert 'verified [017] FFT' not in w.info.toPlainText()
         for r in result['methods'].values():
-            assert len(r['spectra']['energy_ev'])>2 and r['metadata']['alpha'] is not None
+            assert len(r['spectra']['energy_ev'])>2 and r['metadata']['alpha'] is None
+            assert result['config'].correction is False
             assert r['maps']['L3']['I_plus'].shape==(9,9)
             np.testing.assert_allclose(r['spectra']['D_raw'],r['spectra']['D_mag']+r['spectra']['D_nonmag'],atol=1e-13)
             assert np.linalg.det(np.asarray(r['metadata']['frame']))>0
@@ -68,7 +73,8 @@ def test_normal_gui_end_to_end(case,channel):
         project=root/'project';save_project(result,project);saved=load_project(project)
         assert fingerprints(saved)==before and not frame_rerun_reason(saved)
         w.emcd_result=saved;w.use_result_settings()
-        assert w.settings()==s and w.forward_settings()==saved['config']
+        assert saved['config'].resource_allocation is not None
+        assert w.settings()==s and w.forward_settings()==replace(saved['config'],resource_allocation=None)
         assert fingerprints(saved)==before
         w.maps_view.figure.savefig(root/'L3_maps.png',dpi=100)
         w.eels_view.figure.savefig(root/'eels.png',dpi=100)
@@ -81,9 +87,9 @@ def test_normal_gui_end_to_end(case,channel):
 
 def test_ideal_basis_description_is_not_full_multibeam():
     from types import SimpleNamespace
-    from emcd_sim.gui.results import geometry_description
-    from emcd_sim.gui.geometry import Settings
-    from emcd_sim.gui.emcd_forward import ForwardSettings
+    from emcd_sim.gui.result_presentation import geometry_description
+    from emcd_sim.structure_geometry import Settings
+    from emcd_sim.forward_settings import NiForwardSettings
     from dataclasses import replace
-    result=dict(settings=replace(Settings(),basis_mode='two-beam'),config=ForwardSettings())
+    result=dict(settings=replace(nickel_geometry_settings(),basis_mode='two-beam'),config=NiForwardSettings())
     assert 'ideal' in geometry_description(result) and 'full finite' not in geometry_description(result)

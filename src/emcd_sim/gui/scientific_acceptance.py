@@ -9,19 +9,24 @@ import numpy as np
 
 
 def run(output):
-    from .geometry import Structure, Settings, geometry, align_bragg, excitation
-    from .emcd_forward import ForwardSettings, calculate
+    from emcd_sim.structure_geometry import Structure, geometry, align_bragg, excitation
+    from emcd_sim.study_presets import nickel_geometry_settings
+    from emcd_sim.forward_settings import NiForwardSettings
+    from emcd_sim.forward_pipeline import calculate
+    from .forward_pipeline import calculate as gui_calculate
     from .project_io import save_project
-    from .runtime import build_info
+    from emcd_sim.provenance import build_info
+
+    assert gui_calculate is calculate, 'GUI forward API must use the canonical engine'
 
     output=Path(output).resolve()
     output.mkdir(parents=True,exist_ok=False)
     structure=Structure.nickel()
-    settings=Settings(thickness=10.,beam_cutoff=3.2,potential_cutoff=3.8)
+    settings=nickel_geometry_settings(thickness=10.,beam_cutoff=3.2,potential_cutoff=3.8)
     _,frame,hkl,g,_=geometry(structure,settings)
     tilt=align_bragg(g[hkl.index(settings.target)],(0.,15.),settings.voltage,lock='Y')
     settings=replace(settings,tilt=tuple(tilt))
-    config=ForwardSettings(axis_declared=True,propagation='both',grid=17,depth=33,
+    config=NiForwardSettings(axis_declared=True,propagation='both',grid=17,depth=33,
         subpixels=32,fft_grid=32,slice_step=.04,angular_maps=False,
         energy_scope='edges',correction=False,worker_mode='manual',parallel_workers=1)
     energy=np.array([config.l3,config.l2])

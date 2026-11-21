@@ -1,9 +1,11 @@
 """Logical-pixel layout adaptation; never calls scientific update callbacks."""
 from contextlib import contextmanager
 from textwrap import fill
+from math import ceil
 from PySide6 import QtCore, QtWidgets
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.gridspec import GridSpec
+from matplotlib.ticker import ScalarFormatter
 
 
 class ResponsiveCanvas(FigureCanvasQTAgg):
@@ -58,6 +60,37 @@ class FigurePresentation:
         self.specs = [(ax, ax.get_subplotspec()) for ax in fig.axes]
         self.labels = [(ax, ax.get_ylabel()) for ax in fig.axes]
         self.maps = [ax for ax in fig.axes if ax.images] if self.kind == 'maps' else []
+        if self.maps:
+            fig.set_layout_engine(None)
+        self.map_legend = None
+        if self.maps and self.maps[0].get_legend() is not None:
+            handles, labels = self.maps[0].get_legend_handles_labels()
+            for ax in self.maps:
+                legend = ax.get_legend()
+                if legend is not None:legend.remove()
+            self.map_legend = fig.legend(handles, labels, loc='lower center', fontsize=7, frameon=False)
+        self.legends = []
+        if self.kind == 'eels':
+            for ax, _ in self.specs:
+                legend = ax.get_legend()
+                handles, labels = ax.get_legend_handles_labels()
+                if legend is not None:
+                    legend.remove()
+                    space = fig.add_subplot();space.set_axis_off()
+                    space.add_artist(legend)
+                    # Matplotlib filters picks by axes, including the legend's
+                    # child artists. Reparent those too so handles and text
+                    # remain clickable in the reserved row.
+                    for artist in legend.findobj():
+                        if artist.axes is ax:
+                            artist.axes=None;artist.axes=space
+                    # The row itself reserves the measured legend extent.
+                    # Including the artist again in constrained-layout's tight
+                    # bounds feeds its overflow back into the adjacent axes.
+                    legend.set_in_layout(False)
+                    self.legends.append((ax, space, legend, labels))
+        if self.legends:fig.set_layout_engine(None)
+        self.map_titles = [(ax, ax.get_title()) for ax in self.maps]
         self.narrow = None
         self.update()
 
@@ -71,24 +104,139 @@ class FigurePresentation:
             ax.set_ylabel(label)
 
     def update(self):
-        narrow = self.canvas.width() < 650
-        if narrow == self.narrow or self.title is None:
+        width = self.canvas.width()
+        fig = self.canvas.figure
+        # Qt can establish/change device DPI after the first logical resize.
+        # Font metrics and legend wrapping must then be recomputed even when
+        # the widget's logical dimensions did not change.
+        size = (width, self.canvas.height(), fig.dpi, fig.bbox.width, fig.bbox.height)
+        if size == self.narrow or self.title is None:
             return
-        self.narrow = narrow
+        self.narrow = size
+        self.reflow(width)
+
+    def reflow(self, width, exporting=False):
+        narrow = width < 650
         self.original()
-        if not narrow:
-            return
-        first = self.full_title.split('\n')[0]
-        if len(first) > 90:
-            first = ' | '.join(first.split(' | ')[:3])
-        self.title.set_text(first)
-        if len(self.maps) == 2 and all(ax.images[0].colorbar is not None for ax in self.maps):
-            grid = GridSpec(2, 2, figure=self.canvas.figure, width_ratios=[1, .05])
-            for row, ax in enumerate(self.maps):
-                ax.set_subplotspec(grid[row, 0])
-                ax.images[0].colorbar.ax.set_subplotspec(grid[row, 1])
+        # Keep every scope/energy identifier. Full context remains in Details
+        # and figure exports; the canvas shows a wrapped identifying heading.
+        chars = max(28, int(width / 8))
+        heading = self.full_title if exporting else self.full_title.split('\n')[0]
+        self.title.set_text('\n'.join(fill(line, chars, break_on_hyphens=False) for line in heading.split('\n')))
+        self.title.set_fontsize(10)
+        for ax, label in self.map_titles:
+            labels = [text for text in ax.texts if text.get_gid()=='beam-index-label']
+            for text in labels:text.set_visible(not narrow and len(labels)<=12)
+        omitted = any(not text.get_visible() for ax in self.maps for text in ax.texts if text.get_gid()=='beam-index-label')
+        self.caption.setText(self.full_title+('\nBeam-index labels hidden to keep this map readable; beam markers and geometry are retained.' if omitted else ''))
+        if self.map_legend is not None:self.map_legend.set_ncols(1 if narrow else 3)
+        if self.maps:
+            # Equal-aspect images and colorbars need explicit shared slots.
+            # Nested colorbar GridSpecs otherwise squeeze the maps at high DPI.
+            fig = self.canvas.figure
+            cols = 1 if narrow else min(3, len(self.maps))
+            rows = (len(self.maps)+cols-1)//cols
+            w, h = fig.get_size_inches()
+            top = .22*len(self.title.get_text().split('\n'))+.25
+            side = max(.5, min(w/cols-1.6, (h-top-.55)/rows-.85))
+            grid = GridSpec(rows, cols, figure=fig)
+            self.title.set_y(.99)
+            for i, ax in enumerate(self.maps):
+                row, col = divmod(i, cols)
+                ax.set_subplotspec(grid[row, col])
+                x = col*w/cols+.75
+                y = h-top-.45-row*(side+.85)-side
+                ax.set_title(fill(self.map_titles[i][1],max(20,int(side*13))),fontsize=10)
+                ax.set_position([x/w,y/h,side/w,side/h])
+                colorbar = ax.images[0].colorbar
+                if colorbar is not None:
+                    formatter=ScalarFormatter(useMathText=True)
+                    formatter.set_powerlimits((0,0))
+                    colorbar.formatter=formatter;colorbar.update_ticks()
+                    colorbar.ax.set_axes_locator(None)
+                    colorbar.ax.set_box_aspect(None)
+                    colorbar.ax.set_position([(x+side+.12)/w,y/h,.10/w,side/h])
+                    offset=colorbar.ax.yaxis.get_offset_text()
+                    offset.set_horizontalalignment('left');offset.set_x(0)
+        legend_height = 0
+        if self.legends:
+            fig = self.canvas.figure
+            renderer = self.canvas.get_renderer()
+            axes = [ax for ax, _ in self.specs]
+            decorations = {}
+            left, right = .65, .15
+            for ax, label in self.labels:ax.set_ylabel(fill(label,width=18 if narrow else 26))
+            for ax in axes:
+                tight = ax.get_tightbbox(renderer, for_layout_only=True)
+                box = ax.get_window_extent(renderer)
+                if tight is not None:
+                    left=max(left,(box.x0-tight.x0)/fig.dpi+.12)
+                    right=max(right,(tight.x1-box.x1)/fig.dpi+.12)
+                    decorations[ax]=(max(0.,tight.y1-box.y1)/fig.dpi,max(0.,box.y0-tight.y0)/fig.dpi)
+                else:decorations[ax]=(0.,0.)
+            width_inches=fig.get_size_inches()[0]
+            plot_width=max(.2,width_inches-left-right)
+            available=plot_width*fig.dpi
+            heights={}
+            for ax,space,legend,labels in self.legends:
+                # Measure actual font metrics, including explicit/wrapped
+                # lines and the legend's own padding. Keep the same artists
+                # and picker/alpha state across resizing and exporting.
+                columns = max(1, legend._ncols)
+                for text, label in zip(legend.get_texts(), labels):
+                    font = text.get_fontproperties()
+                    limit = max(20., available/columns-45.*fig.dpi/72.)
+                    lines = []
+                    for paragraph in label.split('\n'):
+                        line = ''
+                        for word in paragraph.split():
+                            # Group IDs need not contain spaces. Split a
+                            # long token rather than clip its identity.
+                            while renderer.get_text_width_height_descent(word,font,False)[0]>limit:
+                                if line:lines.append(line);line=''
+                                count=1
+                                while count<len(word) and renderer.get_text_width_height_descent(word[:count+1],font,False)[0]<=limit:count+=1
+                                lines.append(word[:count]);word=word[count:]
+                            candidate = (line+' '+word).strip()
+                            if line and renderer.get_text_width_height_descent(candidate,font,False)[0]>limit:
+                                lines.append(line);line=word
+                            else:line=candidate
+                        lines.append(line)
+                    text.set_text('\n'.join(lines))
+                heights[ax]=legend.get_window_extent(renderer).height/fig.dpi+.18
+            heading=self.title.get_window_extent(renderer).height/fig.dpi
+            top=heading+.28
+            fixed=top+.15+sum(sum(v) for v in decorations.values())+sum(heights.values())+.12*(len(axes)+len(heights))
+            required=2.2*len(axes)+fixed
+            logical_dpi=fig.dpi/self.canvas.device_pixel_ratio
+            if not exporting:
+                legend_height=max(0,ceil(required*logical_dpi)-420)
+                required=(420+legend_height)/logical_dpi
+            if fig.get_size_inches()[1]<required:
+                fig.set_size_inches(width_inches,required,forward=False)
+            height_inches=fig.get_size_inches()[1]
+            plot_height=(height_inches-fixed)/len(axes)
+            cursor=height_inches-top
+            self.title.set_y(1-.06/height_inches);self.title.set_verticalalignment('top')
+            for ax in axes:
+                above,below=decorations[ax]
+                cursor-=above+plot_height
+                ax.set_position([left/width_inches,cursor/height_inches,plot_width/width_inches,plot_height/height_inches])
+                cursor-=below+.12
+                entry = next((v for v in self.legends if v[0] is ax), None)
+                if entry:
+                    _, space, legend, labels = entry
+                    cursor-=heights[ax]
+                    space.set_position([left/width_inches,cursor/height_inches,plot_width/width_inches,heights[ax]/height_inches])
+                    legend.set_bbox_to_anchor((0,0,1,1),transform=space.transAxes)
+                    legend.borderaxespad=0
+                    legend.set_loc('center left');legend.set_frame_on(False)
+                    cursor-=.12
         for ax, label in self.labels:
-            ax.set_ylabel(fill(label, width=12))
+            ax.set_ylabel(fill(label, width=18 if narrow else 26))
+        if not exporting:
+            height = (max(420, len(self.maps)*(width-65)+100) if narrow and self.maps else 420) + legend_height
+            self.canvas.setMinimumHeight(height)
 
     @contextmanager
     def export(self):
@@ -96,8 +244,10 @@ class FigurePresentation:
         # precisely the same on-screen artists, geometry and compact caption.
         fig = self.canvas.figure
         size = fig.get_size_inches().copy()
-        self.original()
         fig.set_size_inches(max(size[0], 10), max(size[1], 8), forward=False)
+        if self.maps:
+            fig.set_size_inches(max(size[0], 10), 5.5, forward=False)
+        if self.title is not None:self.reflow(1100, exporting=True)
         try:
             yield
         finally:

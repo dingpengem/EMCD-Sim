@@ -1,7 +1,8 @@
 param([string]$Python = "$PSScriptRoot/../build/windows-rc/venv/Scripts/python.exe",
-      [string]$BuildRoot = "build/windows-v0.8.1-beta.2",
+      [string]$BuildRoot = "build/windows-v0.9.0-beta.2",
       [string]$BuildLabel = "",
       [string]$ArchiveName = "",
+      [string]$SourceArchiveName = "",
       [Parameter(Mandatory=$true)][string]$CorrespondingSourceRoot)
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path "$PSScriptRoot/..").Path
@@ -18,7 +19,7 @@ try {
     $displayVersion = (& $Python -c "from emcd_sim import __display_version__; print(__display_version__)").Trim()
     if (-not $BuildLabel) { $BuildLabel = (& $Python -c "from emcd_sim.gui.runtime import LABEL; print(LABEL)").Trim() }
     if (-not $ArchiveName) { $ArchiveName = "EMCD-Sim-$displayVersion-Windows.zip" }
-    $sourceArchiveName = "EMCD-Sim-$displayVersion-Qt-sources.zip"
+    if (-not $SourceArchiveName) { $SourceArchiveName = "EMCD-Sim-$displayVersion-Qt-sources.zip" }
     # PyInstaller logs progress to stderr; Windows PowerShell must not treat
     # those informational native records as terminating script errors.
     $nativePreference = $ErrorActionPreference
@@ -50,6 +51,19 @@ try {
         Copy-Item -LiteralPath (Join-Path $CorrespondingSourceRoot $package.filename) -Destination $sourceStage
     }
     Copy-Item -LiteralPath "$root/packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md" -Destination "$sourceStage/README.md"
+    # Keep the reviewed Qt guide intact, but identify this candidate rather
+    # than presenting its historical beta.1 archive/tag names as current.
+    $qtGuide = Get-Content -LiteralPath "$sourceStage/README.md" -Raw
+    $sourceContext = @"
+# Corresponding sources for $displayVersion
+
+Application commit: $($manifest.build.commit)
+Current source package: $SourceArchiveName
+The matching application snapshot is EMCD-Sim-source.zip. This kit identifies committed source independently of publication status; verify a published release tag against the commit above.
+The unchanged Qt 6.12 technical guide below retains its original beta.1 filenames/tag references. Use the current package and commit above. The listed dependency sources and replacement instructions still apply.
+
+"@
+    [IO.File]::WriteAllText((Join-Path $sourceStage 'README.md'), $sourceContext + [Environment]::NewLine + [Environment]::NewLine + $qtGuide, [Text.UTF8Encoding]::new($false))
     Copy-Item -LiteralPath "$root/packaging/assets/qt-licenses/upstream-provenance.json" -Destination $sourceStage
     git archive --format=zip --output="$sourceStage/EMCD-Sim-source.zip" HEAD
     if ($LASTEXITCODE -ne 0) { throw 'Corresponding application source archive failed' }

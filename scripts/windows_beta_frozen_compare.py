@@ -2,7 +2,7 @@
 import argparse,csv,hashlib,json
 from pathlib import Path
 import numpy as np
-from emcd_sim.gui.prb_benchmark import benchmark_spectra
+from emcd_sim.detector_signals import benchmark_spectra
 
 ROOT=Path('outputs/windows_beta_acceptance')
 

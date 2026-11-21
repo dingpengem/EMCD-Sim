@@ -39,10 +39,6 @@ class SimulationResult:
         a, b = self.chiral_spectrum(positive), self.chiral_spectrum(negative)
         return np.divide(a-b, a+b, out=np.zeros_like(a), where=(a+b)!=0)
 
-    def at_edge(self, edge_ev: float = 852.7) -> tuple[float, float, float]:
-        i = int(np.argmin(abs(self.energy_ev-edge_ev)))
-        return float(self.energy_ev[i]), float(self.difference()[i]), float(self.asymmetry()[i])
-
 
 @dataclass(frozen=True)
 class EMCDSimulation:

@@ -2,8 +2,8 @@
 from dataclasses import asdict,replace
 from pathlib import Path
 import argparse,hashlib,json,subprocess,time
-from emcd_sim.gui.emcd_forward import calculate
-from emcd_sim.gui.geometry import Structure
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.gui.project_io import load_project,save_project,fingerprints
 
 ROOT=Path(__file__).resolve().parents[1]

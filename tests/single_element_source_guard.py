@@ -44,29 +44,6 @@ def extension():
 
 
 
-def legacy_kernel_source(path,content):
-    """Remove only the exact opt-in site plumbing; hash the original default kernel.
-
-    Full current-file hashes are checked separately. No formula, phase sign,
-    conjugation, quadrature or accumulation expression is normalized here.
-    """
-    text=canonical(content).decode('utf-8')
-    if path.endswith('/single_channeling_tensor.py'):
-        text=text.replace('historical_ni_site_phase_matrix','fcc_site_phase_matrix')
-        text=text.replace('from .ionization_sites import single_site_phase_matrix\n','')
-        text=text.replace('    return single_site_phase_matrix(hkl, positions)',
-            '    phase = np.exp(2j * np.pi * (hkl[:, None, :] - hkl[None, :, :]) @ positions.T)\n    return phase.mean(axis=-1)')
-    if path.endswith('/double_channeling.py'):
-        text=text.replace('cancelled=None,ionization_sites=None):','cancelled=None):')
-        text=text.replace("if ionization_sites is None and not all(s == 'Ni'", "if not all(s == 'Ni'")
-        text=text.replace('elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)','elastic.crystal.fractional_positions')
-    if path.endswith('/multislice_double_channeling.py'):
-        text=text.replace('else ProjectedFFT.build(', 'else ProjectedNiFFT.build(')
-        text=text.replace('def incident_fields(',
-            '# Historical public name; this is one generic implementation, not a Ni adapter.\nProjectedNiFFT=ProjectedFFT\n\n\ndef incident_fields(')
-        text=text.replace('cancelled=None,ionization_sites=None):','cancelled=None):')
-        text=text.replace('elastic.crystal.fractional_positions if ionization_sites is None else ionization_sites.positions_for(elastic.crystal)','elastic.crystal.fractional_positions')
-    return text.encode('utf-8')
 
 
 def assert_current_extension(overrides=None):

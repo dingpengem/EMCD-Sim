@@ -12,6 +12,7 @@ import mdff_editor_source_scope as editor
 import unit_source_snapshots as units
 import single_element_source_guard as historical
 import physics_source_guard as physics
+import mdff_usability_source_scope as usability
 
 
 def positive():
@@ -33,6 +34,7 @@ def isolation_tree(tmp_path_factory, positive_gate):
     paths = set(historical.extension()) | set(units.reviewed_baseline_sources()) | set(editor.MODIFIED+editor.ADDED+editor.PROTECTED+editor.HISTORY) | {editor.MANIFEST_PATH, editor.ARCHIVE_PATH}
     import mdff_usability_source_scope as usability
     paths |= usability.support_paths()
+    paths={usability.READABILITY_RENAMES.get(path,path) for path in paths}
     for path in paths:
         target = tmp_path/path; target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(editor.ROOT/path, target)
@@ -66,7 +68,7 @@ def test_complete_positive_and_independent_historical_maps():
     assert len(scope['candidate']) == 18 and len(scope['protected_parent']) == 93
 
 
-@pytest.mark.parametrize('path', editor.MODIFIED+editor.ADDED)
+@pytest.mark.parametrize('path', tuple(usability.READABILITY_RENAMES.get(path,path) for path in editor.MODIFIED+editor.ADDED))
 def test_each_reviewed_path_mutation(isolated, path):
     positive(); file=isolated/path; original=file.read_bytes()
     try:

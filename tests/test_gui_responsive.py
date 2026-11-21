@@ -14,6 +14,68 @@ from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.responsive import FlowLayout, ResponsiveCanvas, CollapsibleSection
 
 
+def test_map_reflow_and_export_preserve_saved_samples(app,tmp_path):
+    from matplotlib.figure import Figure
+    from emcd_sim.gui.responsive import FigurePresentation
+    fig=Figure(layout='constrained');canvas=ResponsiveCanvas(fig)
+    values=np.ma.array(np.arange(81).reshape(9,9),mask=False);values.mask[0,0]=True
+    images=[]
+    for ax in fig.subplots(1,2):
+        im=ax.imshow(values,vmin=-80,vmax=80,aspect='equal');images.append(im)
+        fig.colorbar(im,ax=ax).set_label('a.u.')
+        ax.set_title('Magnetic reversal-odd component')
+    heading='Raw | Double Channeling | Total Results | arbitrary edge · 1234.56789 eV'
+    fig.suptitle(heading+'\nComplete saved scientific context')
+    caption=QtWidgets.QLabel();presentation=FigurePresentation(canvas,'maps',caption)
+    canvas.resize(420,800);presentation.capture();canvas.draw()
+    assert '1234.56789' in fig._suptitle.get_text() and 'Total Results' in fig._suptitle.get_text()
+    assert caption.text()==presentation.full_title
+    assert [im.axes.get_subplotspec().rowspan.start for im in images]==[0,1]
+    title=fig._suptitle.get_text();size=fig.get_size_inches().copy()
+    canvas.print_figure(tmp_path/'maps.png')
+    assert fig._suptitle.get_text()==title
+    np.testing.assert_array_equal(fig.get_size_inches(),size)
+    for im in images:
+        np.testing.assert_array_equal(im.get_array().data,values.data)
+        np.testing.assert_array_equal(im.get_array().mask,values.mask)
+        assert im.get_clim()==(-80,80) and im.axes.get_aspect()==1
+    canvas.close()
+
+
+@pytest.mark.parametrize('count',[2,8,14])
+def test_comparison_legends_have_space_without_changing_curves(app,tmp_path,count):
+    from matplotlib.figure import Figure
+    from emcd_sim.gui.responsive import FigurePresentation
+    fig=Figure(layout='constrained');canvas=ResponsiveCanvas(fig)
+    ax,lower=fig.subplots(2,1,sharex=True);x=np.array([1.,2.,4.])
+    lines=[ax.plot(x,x*i,label=f'Long declared site group {i} · arbitrary element / edge | Detector A')[0] for i in range(1,count+1)]
+    for i in range(count):lower.plot(x,-x,label='long_unbroken_group_identifier_'+str(i)*40+' | reversal-odd')
+    ax.set_ylabel('Intensity (a.u.)');lower.set(xlabel='Energy loss (eV)',ylabel='Intensity difference (a.u.)')
+    lower.legend(fontsize=8)
+    legend=ax.legend();proxy=legend.get_lines()[0];proxy.set_picker(5)
+    fig.suptitle('Group Comparison | original intensity scale')
+    presentation=FigurePresentation(canvas,'eels',QtWidgets.QLabel());canvas.resize(430,900);presentation.capture();canvas.show();QtTest.QTest.qWait(180)
+    axes=list(fig.axes)
+    def fits():
+        canvas.draw();renderer=canvas.get_renderer()
+        assert fig.bbox.height==pytest.approx(canvas.height()*canvas.device_pixel_ratio,abs=1)
+        for data,space,item,labels in presentation.legends:
+            box=item.get_window_extent(renderer);slot=space.get_window_extent(renderer)
+            assert slot.padded(1e-6).contains(box.x0,box.y0) and slot.padded(1e-6).contains(box.x1,box.y1),(slot.extents,box.extents)
+            assert all(not box.overlaps(a.get_tightbbox(renderer,for_layout_only=True)) for a in (ax,lower))
+            assert all(''.join(t.get_text().split())==''.join(label.split()) for t,label in zip(item.get_texts(),labels))
+    fits();canvas.print_figure(tmp_path/'comparison.png')
+    canvas.resize(900,canvas.minimumHeight());QtTest.QTest.qWait(180);presentation.update();fits()
+    assert fig.axes==axes and ax.get_legend() is None
+    assert len(presentation.legends)==2
+    assert legend in presentation.legends[0][1].get_children()
+    assert legend.get_lines()[0] is proxy and proxy.get_picker()==5
+    for i,line in enumerate(lines,1):
+        np.testing.assert_array_equal(line.get_xdata(),x)
+        np.testing.assert_array_equal(line.get_ydata(),x*i)
+    canvas.close()
+
+
 @pytest.fixture(scope='module')
 def app():
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -28,7 +90,7 @@ def app():
 def window(app, tmp_path):
     with ExitStack() as guards:
         for target in ('emcd_sim.gui.app.preview', 'emcd_sim.gui.app.PreviewWorker.start',
-                       'emcd_sim.gui.stage_b.calculate', 'emcd_sim.gui.stage_b.EMCDWorker.start'):
+                       'emcd_sim.gui.calculation_worker.calculate', 'emcd_sim.gui.calculation_worker.EMCDWorker.start'):
             guards.enter_context(patch(target, side_effect=AssertionError('Layout must not calculate')))
         w = MainWindow(tmp_path/'workspace')
         w.show()
@@ -83,7 +145,10 @@ def test_logical_screen_sizes(window, physical, scale):
 
 
 def test_collapsing_preserves_state_without_replot(window):
+    from runtime_fixtures import apply_global_mdff
     w = window
+    w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
+    apply_global_mdff(w)
     settings, cfg = asdict(w.settings()), asdict(w.forward_settings())
     detectors = w.detectors.copy()
     w.ax.set(xlim=(-.4,.8), ylim=(-.2,.7))
@@ -134,9 +199,10 @@ def test_compact_maximize_restores_controls(window):
     w.tabs.setTabEnabled(2,True);w.tabs.setCurrentIndex(2);w.responsive.show_panel(2)
     QtTest.QTest.qWait(160)
     view=w.eels_view
-    before=view.canvas.height()
+    before=view.canvas.height();scroll_before=view.scroll.verticalScrollBar().maximum()
     view.maximize();QtTest.QTest.qWait(160)
-    assert view.canvas.height()>before
+    assert view.canvas.height()>=before
+    assert view.scroll.verticalScrollBar().maximum()<scroll_before
     assert view.benchmark_section.isHidden()
     view.maximize();QtTest.QTest.qWait(160)
     assert not view.benchmark_section.isHidden()
@@ -179,10 +245,11 @@ def test_sections_release_space_without_rebuilding(window):
     view=w.eels_view
     view.details_section.setChecked(True)
     QtTest.QTest.qWait(160)
-    before=view.canvas.height()
+    before=view.canvas.height();scroll_before=view.scroll.verticalScrollBar().maximum()
     view.details_section.header.click()
     QtTest.QTest.qWait(160)
-    assert view.canvas.height()>before
+    assert view.canvas.height()>=before
+    assert view.scroll.verticalScrollBar().maximum()<scroll_before
     for section in w.findChildren(CollapsibleSection):
         body=section.body
         state=section.isChecked()

@@ -1,4 +1,5 @@
 """Part 1C equivalence against immutable accepted source, not regenerated fixtures."""
+from reference_imports import relocate_reference_imports
 from dataclasses import asdict
 import subprocess, sys, types
 import numpy as np
@@ -15,7 +16,7 @@ def accepted_module(path, name):
     module.__package__=package;sys.modules[module.__name__]=module
     raw=subprocess.check_output(['git','show','98570c62cc205fa82f855a4033a4d683faf80837:src/emcd_sim/'+path])
     source=raw.decode('utf-8-sig').replace('..ni_local_mdff import','..historical_ni import')
-    exec(compile(source,path,'exec'),module.__dict__)
+    exec(compile(relocate_reference_imports(source),path,'exec'),module.__dict__)
     return module
 
 

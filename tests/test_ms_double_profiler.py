@@ -1,10 +1,11 @@
 """Optional external instrumentation preserves the production result exactly."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import importlib.util
 from pathlib import Path
 import numpy as np
 import pytest
 from emcd_sim import multislice_double_channeling as ms
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from legacy_geometry import Ni017Geometry
 from historical_xmcd_test_support import historical_xmcd_source,relocate_historical_xmcd_config
 
@@ -21,7 +22,7 @@ def test_import_has_no_production_hooks():
 
 
 def test_profile_copy_and_fft_hooks_are_bitwise_identical():
-    p=tool();elastic=elastic_model(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
+    p=tool();elastic=elastic_model(Structure.nickel(),nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
     grid=ms.ProjectedFFT.build(elastic,grid_points=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry())
     incoming=ms.incident_fields(grid,2,depth_steps=5,slice_step_nm=.04)
     kwargs=dict(fft_grid=24,potential_cutoff=1.8,projected_geometry=Ni017Geometry(),depth_steps=5,slice_step_nm=.04,prepared_grid=grid,prepared_incoming=incoming)
@@ -39,8 +40,11 @@ def test_profile_copy_and_fft_hooks_are_bitwise_identical():
     assert counts['outgoing_advance_calls']==4 and counts['outgoing_split_steps']==steps
     assert counts['fftn_batched_calls']==counts['ifftn_batched_calls']==steps
     assert counts['fftn_individual_transforms']==counts['ifftn_individual_transforms']==3*steps
-    assert report['regions']['depth_cartesian_contraction']['calls']==5
-    assert {'dipole_kernel','equivalent_site_phases','depth_cartesian_contraction','norm_leakage_diagnostics'}<={s['category'] for s in sites}
+    # The legacy API is now a wrapper around the shared group response. Its
+    # AST has no event loop; global FFT hooks above still observe the real
+    # outgoing propagation, while the complete result remains bitwise equal.
+    assert report['regions']['response']['calls']==1
+    assert sites==[]
 
 
 def test_hooks_restore_after_exception():

@@ -1,4 +1,5 @@
 """Display-only changes preserve computations and project values."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from pathlib import Path
@@ -53,10 +54,10 @@ def test_snapshot_guard_rejects_unreviewed_fixture_changes(component):
 
 
 @pytest.mark.parametrize('name,before,after',[
-    ('gui/geometry.py','.5*lam*','.6*lam*'),
-    ('gui/emcd_forward.py','slice_step: float=2.','slice_step: float=3.'),
-    ('gui/emcd_forward.py',"worker_mode: str='automatic'","worker_mode: str='manual'"),
-    ('gui/geometry.py','np.asarray(tilt)*.001/','np.asarray(tilt)*.002/'),
+    ('structure_geometry.py','.5*lam*','.6*lam*'),
+    ('forward_settings.py','slice_step: float=2.','slice_step: float=3.'),
+    ('forward_settings.py',"worker_mode: str='automatic'","worker_mode: str='manual'"),
+    ('structure_geometry.py','np.asarray(tilt)*.001/','np.asarray(tilt)*.002/'),
     ('gui/project_io.py',"manifest.get('schema_version')","manifest.get('renamed_schema')"),
     ('gui/app.py','self.show_laue.setChecked(True)','self.show_laue.setChecked(False)'),
 ])
@@ -77,14 +78,17 @@ def test_historical_and_current_guards_work_without_git():
         assert_reviewed_current_sources()
 
 def test_approved_default_physics_kernel_content_unchanged_across_line_endings():
-    from physics_source_guard import canonical_sha256
-    from single_element_source_guard import assert_current_extension,legacy_kernel_source
+    from physics_source_guard import canonical_sha256,recorded_kernel_sources
+    from single_element_source_guard import assert_current_extension,extension
+    from mdff_usability_source_scope import current_sources
     assert_current_extension()
+    current=current_sources(extension());recorded=recorded_kernel_sources()
     for name,sha in KERNELS.items():
-        raw=(ROOT/'src/emcd_sim'/name).read_bytes()
-        lf=raw.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')
-        for checkout in (raw,lf,lf.replace(b'\n',b'\r\n')):
-            assert canonical_sha256(legacy_kernel_source('src/emcd_sim/'+name,checkout))==sha,name
+        path='src/emcd_sim/'+name
+        for raw,expected in (((ROOT/path).read_bytes(),current[path]),(recorded[path],sha)):
+            lf=raw.decode('utf-8-sig').replace('\r\n','\n').encode('utf-8')
+            for checkout in (raw,lf,lf.replace(b'\n',b'\r\n')):
+                assert canonical_sha256(checkout)==expected,name
 
 def test_unit_changes_give_identical_bw_ms_single_double_numerical_arrays():
     d=Path(os.environ.get('EMCD_UNIT_IDENTITY_DIRECTORY',str(ROOT/'outputs/unit_labels')))
@@ -95,17 +99,23 @@ def test_unit_changes_give_identical_bw_ms_single_double_numerical_arrays():
         for key in old.files:np.testing.assert_array_equal(new[key],old[key],err_msg=key)
 
 def test_current_reciprocal_display_strings_and_legacy_project_keys():
-    for name in FILES:
-        tree=ast.parse((ROOT/'src/emcd_sim'/name).read_text(encoding='utf-8'))
+    from mdff_usability_source_scope import READABILITY_RENAMES
+    paths={READABILITY_RENAMES.get('src/emcd_sim/'+name,'src/emcd_sim/'+name) for name in FILES}
+    paths.add('src/emcd_sim/forward_settings.py')
+    for name in sorted(paths):
+        tree=ast.parse((ROOT/name).read_text(encoding='utf-8'))
+        documentation={item.body[0].value for item in ast.walk(tree)
+            if isinstance(item,(ast.Module,ast.ClassDef,ast.FunctionDef,ast.AsyncFunctionDef))
+            and ast.get_docstring(item,clean=False) is not None}
         for node in ast.walk(tree):
-            if isinstance(node,ast.Constant) and isinstance(node.value,str):
+            if isinstance(node,ast.Constant) and isinstance(node.value,str) and node not in documentation:
                 assert not re.search(r'cycles?\s*(?:/|per\s+)(?:angstrom|Å|A)',node.value,re.I),name
-    from emcd_sim.gui.geometry import Settings
+    from emcd_sim.structure_geometry import Settings
     import emcd_sim
     assert Path(emcd_sim.__file__).resolve().is_relative_to(ROOT/'src')
-    from emcd_sim.gui.emcd_forward import ForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     from emcd_sim.gui.project_io import settings_from_dict,config_from_dict
-    s=Settings();cfg=ForwardSettings()
+    s=nickel_geometry_settings();cfg=NiForwardSettings()
     assert settings_from_dict(json.loads(json.dumps(asdict(s))))==s
     assert config_from_dict(json.loads(json.dumps(asdict(cfg))))==cfg
     # Compatibility names are intentionally not renamed or numerically converted.
@@ -114,9 +124,12 @@ def test_current_reciprocal_display_strings_and_legacy_project_keys():
 
 def test_gui_units_do_not_start_workers(tmp_path):
     from emcd_sim.gui.app import MainWindow,PreviewWorker
-    from emcd_sim.gui.stage_b import EMCDWorker
+    from emcd_sim.gui.calculation_worker import EMCDWorker
+    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    with patch.object(PreviewWorker,'start') as elastic,patch.object(EMCDWorker,'start') as inelastic:
+    # This units/worker assertion needs widget state, not queued painting of a
+    # hidden window. Real rendering remains covered by the GUI workflow tests.
+    with patch.object(FigureCanvasQTAgg,'draw_idle'),patch.object(PreviewWorker,'start') as elastic,patch.object(EMCDWorker,'start') as inelastic:
         w=MainWindow(workspace=tmp_path)
         assert [w.table.horizontalHeaderItem(i).text() for i in range(1,4)]==['qx (Å⁻¹)','qy (Å⁻¹)','s_g (Å⁻¹)']
         assert w.spin['kv'].value()==300 and w.spin['slice_step'].value()==2.
@@ -142,7 +155,7 @@ def test_historical_windows_identity_and_original_units_preserved():
 def test_metadata_alias_guard_rejects_computational_or_unapproved_changes(mutation):
     import copy
     from unit_metadata_guard import normalize_unit_metadata,RECIPROCAL
-    original=ast.parse((ROOT/'src/emcd_sim/gui/emcd_forward.py').read_text(encoding='utf-8'))
+    original=ast.parse((ROOT/'src/emcd_sim/forward_results.py').read_text(encoding='utf-8'))
     changed=copy.deepcopy(original)
     if mutation=='number':
         node=next(n for n in ast.walk(changed) if isinstance(n,ast.Constant) and type(n.value) in (int,float))
@@ -152,5 +165,5 @@ def test_metadata_alias_guard_rejects_computational_or_unapproved_changes(mutati
     elif mutation=='branch':
         node=next(n for n in ast.walk(changed) if isinstance(n,ast.If));node.test=ast.Constant(value=False)
     else:
-        node=next(n for n in ast.walk(changed) if isinstance(n,ast.Constant) and n.value==RECIPROCAL[0]);node.value='unapproved unit convention'
+        node=next(n for n in ast.walk(changed) if isinstance(n,ast.Constant) and n.value in RECIPROCAL);node.value='unapproved unit convention'
     assert ast.dump(normalize_unit_metadata(changed))!=ast.dump(normalize_unit_metadata(original))

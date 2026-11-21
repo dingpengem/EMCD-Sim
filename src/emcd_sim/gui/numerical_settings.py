@@ -3,8 +3,8 @@ from dataclasses import replace, asdict
 import json
 import numpy as np
 from PySide6 import QtCore, QtWidgets
-from .geometry import geometry, excitation
-from .emcd_forward import material_reason, ForwardSettings
+from emcd_sim.structure_geometry import geometry, excitation
+from ..historical_ni import material_reason
 
 
 POLICY = 'automatic-starting-v5'
@@ -18,7 +18,7 @@ def resolve_parameters(structure, settings, cfg):
     exact-Bragg [017] representative points. Other cases use released starting
     defaults. Even reference matches are not claims about full-field convergence.
     """
-    values = dict(beam=3.2,potential=2.5,fft_grid=32,depth=64,slice_step=2.,
+    values = dict(beam=2.5,potential=2.0,fft_grid=32,depth=64,slice_step=2.,
                   grid=97,subpixels=64,halfwidth=1.,energy=241,memory_budget_mib=2048)
     centers=((1/3.524,1/3.524),(1/3.524,-1/3.524))
     # Native-source identity is explicit; a filename/material resemblance is insufficient.
@@ -37,7 +37,7 @@ def resolve_parameters(structure, settings, cfg):
     resolved=replace(settings,beam_cutoff=values['beam'],potential_cutoff=values['potential'])
     hkl=geometry(structure,resolved,systematic_row=cfg.systematic_row)[2]
     if cfg.propagation!='bloch':
-        from .propagation import numerical_info
+        from emcd_sim.propagation import numerical_info
         # Start with the released/reference mesh; never shrink it. A two-index
         # guard band below adds a margin to exact geometry-specific support.
         last=''
@@ -45,9 +45,9 @@ def resolve_parameters(structure, settings, cfg):
             candidate=replace(cfg,fft_grid=mesh,depth=values['depth'],slice_step=values['slice_step'])
             try:
                 numerical_info(structure,resolved,candidate,hkl=hkl,check_memory=False)
-                from .propagation import projected_geometry_for
+                from emcd_sim.structure_geometry import projected_geometry_from_oriented_crystal
                 crystal=geometry(structure,resolved,systematic_row=cfg.systematic_row)[0]
-                projected_geometry_for(resolved,crystal,cfg.fft_generators).harmonics(mesh-4,max(resolved.beam_cutoff,resolved.potential_cutoff))
+                projected_geometry_from_oriented_crystal(resolved,crystal,cfg.fft_generators).harmonics(mesh-4,max(resolved.beam_cutoff,resolved.potential_cutoff))
                 values['fft_grid']=mesh;break
             except ValueError as exc:
                 last=str(exc)
@@ -65,9 +65,34 @@ def resolve_parameters(structure, settings, cfg):
 REFERENCE_SOURCE_SHA256 = 'a0e28ea6423b6c7832bb3cce6d69d71aa59336a221baeee3d2556b49ba501283'
 
 
+FORWARD_SPIN_KEYS=('grid','depth','subpixels','halfwidth','radius','fft_grid','slice_step')
+
+
 class NumericalSettingsUI:
+    def forward_control_fields(self):
+        """Snapshot shared run controls, without reading Material/MDFF drafts.
+
+        Global, Local and configuration-only save use the same controls.
+        Resource requests come from Compute Resources; this never resolves an
+        allocation or changes automatic numerical settings.
+        """
+        fields = dict(propagation=('bloch','fft-multislice','both')[self.propagation_box.currentIndex()],
+            channeling_model=('single','double')[self.channeling_box.currentIndex()],
+            **self.sampling_fields(), centers=tuple(tuple(p) for p in self.detectors),
+            systematic_row=self.row_projection.isChecked(), correction=False,
+            **self.compute_resources.settings(), fft_generators=self.saved_fft_generators())
+        for key in FORWARD_SPIN_KEYS:
+            fields[key] = self.spin[key].value()
+        return fields
+
+    @staticmethod
+    def forward_control_values(cfg):
+        """Saved request values for the same seven forward-control spin boxes."""
+        return {key:getattr(cfg,key) for key in FORWARD_SPIN_KEYS}
+
     def setup_numerical_mode(self, form):
-        self.numerical_mode=QtWidgets.QComboBox();self.numerical_mode.addItems(['Automatic','Manual (Advanced)'])
+        self.numerical_mode=QtWidgets.QComboBox();self.numerical_mode.addItems(['Saved automatic settings','General settings (editable)'])
+        self.numerical_mode.setCurrentIndex(1)
         form.insertRow(0,'Numerical Settings',self.numerical_mode)
         self.numerical_status=QtWidgets.QLabel();self.numerical_status.setWordWrap(True);form.insertRow(1,self.numerical_status)
         self.numerical_details=QtWidgets.QGroupBox('View Numerical Parameters');self.numerical_details.setCheckable(True);self.numerical_details.setChecked(False)
@@ -78,21 +103,22 @@ class NumericalSettingsUI:
         self.apply_numerical_visibility()
 
     def numerical_snapshot(self):
-        return dict({key:self.spin[key].value() for key in NUMERICAL_KEYS},memory_budget_mib=self.memory_budget.currentData())
+        return dict({key:self.spin[key].value() for key in NUMERICAL_KEYS},memory_budget_mib=self.memory_budget.value())
 
     def set_numerical_values(self, values):
         self.set_values({k:v for k,v in values.items() if k in NUMERICAL_KEYS})
-        with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setCurrentIndex(self.memory_budget.findData(values['memory_budget_mib']))
+        with QtCore.QSignalBlocker(self.memory_budget):self.memory_budget.setValue(values['memory_budget_mib'])
         with QtCore.QSignalBlocker(self.angular_resolution):self.sync_angular_resolution()
 
     def apply_numerical_visibility(self):
         manual=self.numerical_mode.currentIndex()==1
+        self.numerical_mode.model().item(0).setEnabled(not manual)
         for group in (self.shared_elastic_group,self.shared_sampling_group):
             group.setVisible(manual);group.presentation_section.setVisible(manual)
-        self.shared_resources_group.setVisible(True)
         self.shared_resources_group.presentation_section.setVisible(True)
         for key in NUMERICAL_KEYS:self.spin[key].setEnabled(manual)
-        self.memory_budget.setEnabled(True);self.angular_resolution.setEnabled(manual)
+        self.sync_sampling_controls()
+        self.compute_resources._sync();self.angular_resolution.setEnabled(manual)
         self.numerical_details.setVisible(not manual)
         self.sync_solver_controls()
 
@@ -112,23 +138,26 @@ class NumericalSettingsUI:
         before=self.numerical_snapshot()
         try:
             if self.numerical_mode.currentIndex()==0:
-                if self.model_box.currentIndex()==2:
+                if getattr(self,'magnetization_mode','global') == 'local':
+                    raise ValueError('Local multi-site calculations require explicit Manual numerical settings; Ni presets are not transferred')
+                accepted=getattr(self,'_accepted_global_mdff',None)
+                if accepted is None:raise ValueError('Global MDFF is unconfigured. Elastic preview uses the displayed settings; select Manual to edit them.')
+                if accepted.model=='imported':
                     raise ValueError('Imported MDFF requires explicit Manual numerical settings; Ni presets are not transferred')
                 if (set(self.structure.atoms.get_chemical_symbols())!={'Ni'} or
-                    self.explicit_xmcd.isChecked() or self.atomic_parameter_path.text().strip()):
+                    hasattr(accepted,'provider_schema')):
                     raise ValueError('Declared MDFF providers require explicit Manual numerical settings; Ni presets are not transferred')
                 # Source validation is separate from configuration selection.
-                cfg=ForwardSettings(propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],
+                cfg=replace(accepted,propagation=['bloch','fft-multislice','both'][self.propagation_box.currentIndex()],
                     fft_generators=self.saved_fft_generators(),
                     channeling_model=('single','double')[self.channeling_box.currentIndex()],systematic_row=self.row_projection.isChecked(),
-                    model=('xmcd','atomic')[self.model_box.currentIndex()],source_sha256=(self.source_info or {}).get('sha256','') if self.validated_path==self.source_path.text() else '',
-                    axis_declared=self.declaration.isChecked(),magnetization=tuple(float(x) for x in self.axis.text().replace(',',' ').split()),
-                    eta=self.spin['eta'].value(),beta=self.spin['beta'].value(),l3=self.spin['xl3'].value(),l2=self.spin['xl2'].value(),
-                    radial=self.spin['radial'].value() if self.radial_override.isChecked() else None,
+                    magnetization=self.material_magnetization,
                     centers=tuple(tuple(p) for p in self.detectors),radius=self.spin['radius'].value())
                 s=self.settings()
                 atoms=self.structure.atoms
-                key=json.dumps(dict(settings=asdict(replace(s,beam_cutoff=0,potential_cutoff=0)),cfg=asdict(cfg),
+                physical=asdict(cfg)
+                for name in ('memory_budget_mib','memory_mode','resource_allocation','worker_mode','parallel_workers'):physical.pop(name,None)
+                key=json.dumps(dict(settings=asdict(replace(s,beam_cutoff=0,potential_cutoff=0)),cfg=physical,
                     cell=atoms.cell.array.tolist(),positions=atoms.get_scaled_positions().tolist(),species=atoms.get_chemical_symbols(),
                     occupancy=atoms.info.get('occupancy',{})),sort_keys=True)
                 if getattr(self,'_restore_auto_once',False):
@@ -141,12 +170,12 @@ class NumericalSettingsUI:
                         if provenance['source']=='Matching reference configuration' and self._slice_step_override!=.04:
                             provenance.update(source='Reference configuration with explicit slice-step override',
                                 status='User override — convergence not established')
-                    values['memory_budget_mib']=self.memory_budget.currentData()
+                    values['memory_budget_mib']=self.memory_budget.value()
                     self.set_numerical_values(values);self.numerical_provenance=provenance;self._numerical_cache=key
                 self.numerical_status.setText(self.numerical_provenance['source']+'\n'+self.numerical_provenance['status'])
             else:
                 self.numerical_provenance=dict(source='Manual configuration',policy=None)
-                self.numerical_status.setText('Manual configuration')
+                self.numerical_status.setText('General editable settings — convergence is not established.')
             self._numerical_error=None
             values=self.numerical_snapshot()
             labels=dict(beam='Beam / MDFF cutoff (Å⁻¹)',potential='Potential cutoff (Å⁻¹)',fft_grid='FFT grid',depth='Depth nodes',slice_step='Max slice step (nm)',grid='Angular grid',subpixels='Aperture boundary subpixels',halfwidth='Map halfwidth (Å⁻¹)',energy='Energy sampling points',memory_budget_mib='Memory budget (MiB)')
@@ -164,6 +193,9 @@ class NumericalSettingsUI:
 
     def restore_numerical_selection(self, metadata):
         saved=metadata.get('numerical_selection',{})
+        requested=saved.get('actual',{}).get('energy')
+        if requested is not None and self.energy_scope.currentData()=='uniform':
+            with QtCore.QSignalBlocker(self.spin['energy']):self.spin['energy'].setValue(requested)
         with QtCore.QSignalBlocker(self.numerical_mode):self.numerical_mode.setCurrentIndex(0 if saved.get('mode')=='automatic' else 1)
         self._manual_numerics=saved.get('manual_overrides');self._numerical_cache=None
         # Loaded projects retain their explicit step, including legacy projects.

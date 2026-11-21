@@ -5,10 +5,10 @@ import numpy as np
 import pytest
 from ase import Atoms
 from ase.build import bulk
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.ionization_sites import IonizationSites
 from emcd_sim.imported_mdff import ImportedMDFF
-from emcd_sim.gui.generalized_forward import settings_for_source,energy_grid,material_reason
+from emcd_sim.mdff_providers import settings_for_source, energy_grid, material_reason
 from emcd_sim.single_channeling_tensor import _tensor_angular_maps,historical_ni_site_phase_matrix
 from emcd_sim.geometry import characteristic_qz_angstrom_inv,VirtualDetector
 from emcd_sim.simulation import EMCDSimulation
@@ -20,7 +20,7 @@ def fe():return Structure(bulk('Fe','bcc',a=2.866,cubic=True),'Synthetic BCC Fe 
 
 
 def test_fe_coordinates_bcc_rules_and_independent_reciprocal_frame():
-    from emcd_sim.gui.geometry import geometry
+    from emcd_sim.structure_geometry import geometry
     s=fe();np.testing.assert_array_equal(s.atoms.get_scaled_positions(),[[0,0,0],[.5,.5,.5]])
     settings=Settings(zone=(0,0,1),target=(1,1,0),tilt=(0,0),beam_cutoff=.85,potential_cutoff=1.2)
     crystal,R,h,g,_=geometry(s,settings)
@@ -115,7 +115,9 @@ def test_reject_invalid_import(tmp_path,mutation):
 
 
 def test_element_edge_checksum_and_no_ni_energy_inheritance(tmp_path):
-    p=write_source(tmp_path/'tensor.json');cfg=settings_for_source(p,grid=9,depth=9,subpixels=8)
+    # Keep the aperture inputs formerly inherited before settings became neutral.
+    p=write_source(tmp_path/'tensor.json');cfg=settings_for_source(p,grid=9,depth=9,subpixels=8,
+        centers=((0.2837684449489217,0.2837684449489217),(0.2837684449489217,-0.2837684449489217)),radius=0.0908059024)
     assert material_reason(fe(),cfg)=='' and material_reason(Structure.nickel(),cfg)
     assert len(energy_grid(cfg))==243
     assert material_reason(fe(),replace(cfg,core_edge='K'))

@@ -1,11 +1,16 @@
 """Scheduling equivalence against the exact pre-optimization GUI adapters."""
+from emcd_sim.study_presets import nickel_geometry_settings
+from reference_imports import relocate_reference_imports
+from emcd_sim.cancellation import Cancelled
+from emcd_sim.forward_settings import NiForwardSettings
 import json,subprocess,sys,types
 from dataclasses import replace,asdict
 from unittest.mock import patch
 import numpy as np
 import pytest
-from emcd_sim.gui import emcd_forward as f,channeling
-from emcd_sim.gui.geometry import Structure,Settings
+from emcd_sim import forward_pipeline as f
+from emcd_sim import channeling as channeling
+from emcd_sim.structure_geometry import Structure, Settings
 
 BASE='619a1969055ac6d717c092dcf663c3d58062b7e0'
 
@@ -23,21 +28,33 @@ def reference():
         source=source.replace('..postedge_emcd_maps import paired_geometry, paired_maps','..emcd_angular_plots import paired_geometry, paired_maps')
         if filename=='emcd_forward.py':source=source.replace('from .channeling import contract','from ._sampling_baseline_channeling import contract')
         module=types.ModuleType('emcd_sim.gui.'+name);module.__package__='emcd_sim.gui';sys.modules[module.__name__]=module
-        exec(compile(source,filename,'exec'),module.__dict__)
+        exec(compile(relocate_reference_imports(source),filename,'exec'),module.__dict__)
     return module
 
 
 @pytest.fixture
 def small():
-    s=Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
-    c=f.ForwardSettings(axis_declared=True,grid=9,depth=5,fft_grid=24,subpixels=16,
+    s=nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
+    c=NiForwardSettings(axis_declared=True,grid=9,depth=5,fft_grid=24,subpixels=16,
         correction=False,energy_points=9,l3=831.4778,l2=848.698)
     energy=np.array([826.,c.l3,840.,c.l2,850.])
     return Structure.nickel(),s,c,energy
 
 
 def equivalent(old,new):
-    assert replace(new['config'],fft_generators=None)==replace(old['config'],fft_generators=None) and old['settings']==new['settings']
+    # The archived scheduler predates runtime allocation records. Compare all
+    # requested inputs, then verify the new observed allocation independently.
+    assert replace(new['config'],fft_generators=None,resource_allocation=None)==replace(old['config'],fft_generators=None,resource_allocation=None)
+    assert old['settings']==new['settings']
+    # This helper also compares current checkpoint/reloaded results, for which
+    # both sides carry an observed allocation rather than an archived one.
+    for result in (old,new):
+        allocation=result['config'].resource_allocation
+        if allocation is not None:
+            assert allocation==dict(
+                memory_budget_mib=result['metadata']['memory_admission']['memory_budget_mib'],
+                effective_workers=result['metadata']['execution']['effective_workers'])
+    assert new['config'].resource_allocation is not None
     for method,a in old['methods'].items():
         b=new['methods'][method]
         for name,value in a['spectra'].items():np.testing.assert_allclose(b['spectra'][name],value,rtol=3e-12,atol=2e-14,equal_nan=True,err_msg=method+' '+name)
@@ -140,7 +157,7 @@ def test_cancel_resume_keeps_completed_energies(small,channel):
     def checkpoint(method,energy,data):
         if data is None:return cache.get((method,energy))
         cache[method,energy]=data;stop[0]=len(cache)==2
-    with pytest.raises(f.Cancelled):f.calculate(a,s,c,energy_ev=e,energy_checkpoint=checkpoint,cancelled=lambda:stop[0])
+    with pytest.raises(Cancelled):f.calculate(a,s,c,energy_ev=e,energy_checkpoint=checkpoint,cancelled=lambda:stop[0])
     assert len(cache)==2
     stop[0]=False
     resumed=f.calculate(a,s,c,energy_ev=e,energy_checkpoint=checkpoint)
@@ -198,6 +215,6 @@ def test_cancelled_partial_energy_never_writes_checkpoint(small,channel):
         stop[0]=True;return original(*args,**kwargs)
     def checkpoint(method,energy,data):
         if data is not None:writes.append(energy)
-    with patch.object(channeling,name,side_effect=interrupt),pytest.raises(f.Cancelled):
+    with patch.object(channeling,name,side_effect=interrupt),pytest.raises(Cancelled):
         f.calculate(a,s,c,energy_ev=e,energy_checkpoint=checkpoint,cancelled=lambda:stop[0])
     assert not writes

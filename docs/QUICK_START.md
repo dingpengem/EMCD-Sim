@@ -1,49 +1,74 @@
-# First calculation with the current MDFF interface
+# Quick Start — v0.9.0-beta.2 Windows Research Beta
 
-[Home](../README.md) | [Installation](INSTALL_WINDOWS.md) | [MDFF workflows](MDFF_WORKFLOWS.md) | [Tutorial](TUTORIAL.md)
+[Home](../README.md) · [Install](INSTALL_WINDOWS.md) · [Complete Tutorial](TUTORIAL.md) · [User Guide](USER_GUIDE.md)
 
-This is a small functional demonstration for current main/the local MDFF development build. It is not a convergence result or timing guarantee. The next beta.2 package remains [prerelease](RELEASE_NOTES_0_8_1_BETA_2.md#publication-status); for the older published binary use the [beta.1 Quick Start](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.1/docs/QUICK_START.md).
+This guide describes **beta.2**. The earlier beta.1
+package remains available with its [tagged guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1/docs/QUICK_START.md).
+Use the complete extracted Windows package. Python, Conda and manual BLAS
+environment variables are unnecessary. The representative Global Ni BW Single
+request below completed freshly through the beta.2 RC1 packaged GUI;
+it is a functional example, not a convergence or calibration recipe.
 
-## 1. Start with the existing Ni example
+![Fresh beta.2 RC1 Global Ni detector spectrum and Compute Resources](images/v090b2/global-ni-spectrum.png)
 
-Launch the application and choose **File > New** to restore the Ni structure. No project JSON is needed. Set nominal zone **0 0 1**, target **2 0 0**, then **Apply orientation / target**. Set **200 kV**, **0.2 nm** thickness, and tilt **-5, +7 mrad**. Use **Restore Thales A/B** after setting the geometry. Leave the current elastic provider explicit in your recorded settings; choose Ni Lobato only when reproducing an example that used it.
+1. Launch **EMCD-Sim.exe**; choose **File → New Project**.
+2. In **Material**, click **Open CIF…** and select `_internal/examples/Ni_FCC_a3.52.cif`. **Inspect structure…** should show four Ni sites in a cubic **3.520 Å** cell, not the built-in 3.524 Å default.
+3. Open **3D Structure Viewer… → Site groups**. Select **Global Magnetization Mode** and set **Global Material M (x y z)** to `0 0 1`.
+4. Click **Configure MDFF…**. In **Global Material configuration**, choose **XMCD-constrained MDFF**. Browse `_internal/data/wien2k_ni/Ni_fm.xmcd`; browsing validates it, and **Recheck source (optional)** repeats that check. Use **831.271 / 848.698 eV** as its L3/L2 selections. These are this file's native features, not generic tabulated Ni energies.
+5. Complete the visible convention acknowledgement and source declarations: Ni, L2,3, eta=beta=1, relative reference 1, `physical_source_unvalidated`, truthful source/provenance and effective-XMCD limitations. [Tutorial](TUTORIAL.md#2-set-material-global-m-and-accept-its-mdff) supplies the exact diagnostic declarations. Target M is read-only in MDFF Configuration. Choose **Done**, then the Viewer's **Apply and Close**. Preview alone does not accept the configuration. Inactive local rows may remain unconfigured.
+6. Set the following in the existing Settings panel:
 
-Under **Model**, open **Configure MDFF...** and choose **XMCD-constrained MDFF**. Select and validate the bundled Ni five-column source. In a development binary it is `_internal/data/wien2k_ni/Ni_fm.xmcd`; in source it is `data/wien2k_ni/Ni_fm.xmcd`. Do not retain a different material's file from an earlier session.
+| Section / control | Value |
+| --- | --- |
+| Microscope & Sample | **200 kV**, **10 nm** |
+| Orientation / ZA options | `0 1 7`, target `2 0 0`, **Full finite ZOLZ**, **Apply orientation / target** |
+| Tilt X / Y | **−7.124812628 / 0 mrad**, for this actual 3.520 Å cell |
+| Channeling Model / Propagation Method | **Single Channeling / Bloch-wave** |
+| Numerical settings mode | **General settings (editable)** |
+| Beam / MDFF cutoff; potential cutoff | **2.5 / 2.0 Å⁻¹**; effective **21 beams** |
+| Debye–Waller B (A²); systematic-row approximation | **0; off** |
+| Angular grid; depth nodes; aperture subpixels | **Standard - 97x97; 64; 64** |
+| Map halfwidth | **1 Å⁻¹** |
+| Energy sampling | **Entire energy range — uniform sampling**, **241** requested points |
+| Angular evaluation | **Full angular maps at selected energies** on; advanced all-energy field off |
+| Compute Resources | CPU Workers **Auto (recommended)**; Memory Budget **Auto (recommended)** |
+| Virtual detectors | **Restore Thales A/B**, radius **0.09 Å⁻¹** |
 
-Use the native features actually returned by validation, crystal Cartesian M **0 0 1**, **eta = 1**, and **beta = 1**. Review and acknowledge the documented source magnetic axis, RP/LP convention, and edge assignment. The native calculated energies are not an experimental Ni edge calibration. For ambiguous input, both selections must be explicit; existing numbers are insufficient.
+Thales centers are approximately `(0.2840909091, ±0.2840909091) Å⁻¹`.
+Review the effective request: **21 beams and 243 actual energies** over
+823.625–882.521 eV. The 241 uniform points and two distinct exact selections
+produce 243 samples. The two selected maps each contain **97×97 calculated
+momentum samples**; other energies calculate the detector-support responses.
+No spectral tails or full intermediate maps are invented.
 
-Click **Update preview**. Confirm the current source and provider tensor; this is not detector EELS. **Done** returns to the main calculation controls.
+Use **Shared Calculation Settings → Compute Resources** for independent CPU and
+memory modes. The panel shows detected
+hardware, effective allocation, estimated process peak and admission separately.
+Auto retains your Manual values and never reduces scientific sampling. Older
+projects with a saved fixed memory budget retain Manual memory. Run refreshes
+available resources and submits its displayed allocation; admission may change
+as other applications consume RAM. These controls are part of beta.2; the earlier
+v0.9.0-beta.1 Windows package remains unchanged. The memory budget
+is an admission ceiling; the estimated process peak is not measured consumption.
+SC uses one outer worker. DC includes post-loss outgoing propagation and has a
+different memory/work schedule; more workers are not guaranteed to be faster.
 
-## 2. Choose a small manual calculation
+7. Click **Run EMCD / EELS** after admission is **Ready**. **Preview diffraction** is a separate optional calculation. After completion, inspect **Virtual Detector EELS** across all 243 energies and select L3/L2 in **EMCD Angular Maps**. Raw ±M, reversal-even/odd and conventional A−B have different definitions.
+8. Choose **File → Save As…** to retain a separate project folder. **Close Project → Open Project…** restores saved data without recalculation. Keep new runs rather than replacing an original. Export numerical data from **Results → Export Results…** or the selected-spectra CSV button. Use **Display details / diagnostics / export → toolbar → Export Figure…** for a figure; open the toolbar overflow if needed.
 
-Choose **Single Channeling**, **Bloch-wave**, and **Numerical Settings > Manual (Advanced)** before entering these values. Automatic mode chooses its own numerical starting configuration.
+For **Local Site Magnetization Mode**, configure each participating group explicitly. Use original ASE indices; split crystallographic groups manually if magnetic sublattices differ. Uncheck **Ionize / Group ID** for oxygen or other non-ionizing groups, keeping those atoms elastic. Local mode locks Global M; no implicit Global MDFF or magnetic order is supplied. [Tutorial](TUTORIAL.md#4-local-site-groups-and-non-ionizing-atoms) explains group creation, accepted/draft directions and validated reversal pairs.
 
-| Control | Coarse demonstration value |
-| --- | ---: |
-| Beam / MDFF basis cutoff | 0.6 inverse Angstrom |
-| Potential Fourier cutoff | 1.2 inverse Angstrom |
-| Explicit target systematic-row approximation | Off |
-| Angular / detector grid points (odd) | 9 |
-| Depth integration nodes | 5 |
-| Aperture boundary subpixels | 4 |
-| Map halfwidth | 0.7 inverse Angstrom |
-| Spectral coverage | Selected declared edge samples only |
-| Calculate angular maps | On |
-| Parallel workers | Manual, requested workers 1 |
-| Post-edge A/B correction | Off |
+The full [Tutorial](TUTORIAL.md) includes illustrations, normal Save/Open/export steps, diagnostics and scientific limitations. Historical v0.8 menu instructions belong to their [tagged guide](https://github.com/dingpengem/EMCD-Sim/blob/v0.8.1-beta.2/docs/QUICK_START.md).
 
-Support controls are in **Elastic Potential and Beam Support**; grid/depth controls are in **Inelastic and Angular Sampling**; worker controls are in **Computational Resources**. Read the resource estimate and any admission message. Do not silently coarsen a research calculation to make it run.
+New single-element result metadata distinguishes the
+requested `requested_uniform_energy_points` from `evaluated_energy_samples`.
+`numerics.energy_samples` now reports the evaluated count. For example, 241
+uniform points plus two distinct exact selected energies produce 243 samples.
+The saved sampling controls remain unchanged. Older results may contain only
+the historical `energy_samples` diagnostic; their actual energy array remains
+authoritative, and opening them does not rewrite their metadata.
 
-## 3. Run and inspect
-
-Optionally calculate **Preview diffraction** to inspect elastic intensities. **Run EMCD / EELS** performs the inelastic calculation. Wait for completion; **Cancel** requests cooperative stopping, and the interface must return idle before another calculation.
-
-Inspect **EMCD Angular Maps**, **Virtual Detector EELS**, and calculation information. Selected-edge mode evaluates only the declared samples: two plotted points are **not a resolved white-line spectrum**. Start with raw intensities; normalization percentages have different denominator assumptions and are supplementary. BW/MS comparisons, Double Channeling, full spectra, and refined sampling are separate calculations requiring their own convergence/resource review.
-
-## 4. Create and reopen a project
-
-Use **File > Save Project**, choose a writable parent folder, and provide a new project name. The application creates the JSON/CIF/NPZ project files from the completed result. Do not handcraft a project JSON. Keep the whole folder and original external sources.
-
-Close and relaunch the application, select **File > Open Project...**, and choose that project folder. **Use These Settings** restores its verified model and configuration. Update the MDFF preview and rerun the small case if desired. Reopening saved arrays alone does not recalculate, convert a historical convention, or validate a missing source.
-
-For the new Atomic editor and explicit Fe **710/723 eV** example, follow [Synthetic Fe from existing inputs](MDFF_WORKFLOWS.md#worked-example-synthetic-fe-from-existing-inputs). That example uses the supplied complete parameter input and is a software demonstration, not calibrated Fe spectroscopy. See [the user manual](USER_GUIDE.md) for detector definitions, normalization, and scientific limits.
+The 2.0 Å⁻¹ potential cutoff retains no off-row potential harmonics (first near
+2.029 Å⁻¹). This example does not establish full 2D potential, beam-basis or
+experimental spectral convergence. [Numerical evidence and missing Mac datasets](WINDOWS_MACOS_NUMERICAL_EQUIVALENCE.md)
+separate known agreement from incomplete comparisons.

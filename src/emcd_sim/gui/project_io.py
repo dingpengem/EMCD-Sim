@@ -1,22 +1,32 @@
 """Versioned, checksummed project folders and read-only Stage B/C import.
 
-Loading constructs saved plotting context only. No potential, tensor or
-propagation routines are called, and external sources are never read to plot.
+Saved arrays are reconstructed independently of external sources. An optional
+run-input snapshot uses the existing configuration loader to validate source
+declarations; missing sources remain identifiable without blocking result
+viewing. Neither path starts elastic propagation or a numerical preview.
 """
+from functools import partial
 from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
 from datetime import datetime,timezone
 import hashlib,json,os,shutil,uuid,zipfile,time
 import numpy as np
-from ase import Atoms
-from .geometry import Structure,Settings,excitation
-from .emcd_forward import ForwardSettings,Cancelled
+from emcd_sim.structure_geometry import Settings, excitation
+from emcd_sim import structure_geometry as structure_data
+from emcd_sim.forward_settings import ForwardSettings, NiForwardSettings
+from ..cancellation import Cancelled
 from ..historical_ni import NiLocalConfig
 from ..geometry import VirtualDetector
 
 SCHEMA=1
 ARRAY_FILES=('angular_maps.npz','virtual_detector_eels.npz','diffraction_pattern.npz')
+
+
+def progress_checkpoint(stage,*,cancelled,progress):
+    """Check project-file cancellation before reporting the next I/O stage."""
+    if cancelled():raise Cancelled()
+    progress(stage)
 
 
 def sha256(path):
@@ -26,32 +36,13 @@ def sha256(path):
     return h.hexdigest()
 
 
-def structure_snapshot(structure):
-    a=structure.atoms
-    return dict(species=a.get_chemical_symbols(),lattice_angstrom=a.cell.array.tolist(),fractional_positions=a.get_scaled_positions().tolist(),
-        pbc=a.pbc.tolist(),occupancies=a.info.get('occupancy',{}),source=structure.source,sha256=structure.sha256,import_warnings=structure.import_warnings,
-        description=structure.description())
-
-
-def restore_structure(snapshot):
-    if not snapshot:raise ValueError('Legacy export has no complete numeric crystal snapshot; inspect results read-only, or prepare a verified structure explicitly.')
-    atoms=Atoms(snapshot['species'],cell=snapshot['lattice_angstrom'],scaled_positions=snapshot['fractional_positions'],pbc=snapshot['pbc'])
-    atoms.info['occupancy']=snapshot.get('occupancies',{})
-    return Structure(atoms,snapshot['source'],snapshot.get('sha256',''),snapshot.get('import_warnings',''))
-
-
-def structures_match(snapshot,structure):
-    current=structure_snapshot(structure)
-    return (snapshot['species']==current['species'] and snapshot.get('sha256','')==current.get('sha256','')
-        and snapshot.get('occupancies',{})==current.get('occupancies',{})
-        and all(np.allclose(snapshot[k],current[k],rtol=0,atol=1e-12) for k in ('lattice_angstrom','fractional_positions','pbc')))
-
-
-def settings_from_dict(value):
+def settings_from_dict(value,*,historical_ni=True):
+    """Decode old omitted Ni geometry only in the historical loading context."""
     d={k:tuple(v) if k in ('zone','target','tilt') else v for k,v in value.items()}
-    # Historical projects predate provider selection and used Ni Lobato.
-    # Preserve that identity explicitly even if a future default changes.
-    d.setdefault('elastic_provider','nickel-lobato-2014')
+    if historical_ni:
+        from emcd_sim.study_presets import nickel_geometry_settings
+        d.setdefault('elastic_provider','nickel-lobato-2014')
+        return nickel_geometry_settings(**d)
     return Settings(**d)
 
 
@@ -92,21 +83,41 @@ def load_elastic_project(path):
 
 
 def config_from_dict(value):
-    d=dict(value);d['atomic']=NiLocalConfig(**d.get('atomic',{}))
-    if d.get('model')=='atomic' and 'provider_schema' not in d:
+    d=dict(value)
+    declared=d.get('model') in ('multisite','imported') or 'provider_schema' in d
+    if not declared and any(k in d for k in ('provider_declaration','ionizing_element','site_indices','selected_edges')):
+        raise ValueError('Declared MDFF settings require their provider schema/model')
+    historical=not declared and d.get('model','xmcd') in ('xmcd','atomic') and ('atomic' not in d or d['atomic'] is not None)
+    if isinstance(d.get('atomic'),dict):d['atomic']=NiLocalConfig(**d['atomic'])
+    elif historical:d['atomic']=NiLocalConfig()
+    else:d.setdefault('atomic',None)
+    # Saved Local full spectra used their declared/native grids and full-field
+    # evaluation. Preserve those explicit old choices; absent choices use the
+    # new uniform/selected defaults. Historical Global full means uniform.
+    d.setdefault('energy_sampling','edges' if d.get('energy_scope')=='edges' else
+                 'native' if d.get('model')=='multisite' and d.get('energy_scope')=='full' else 'uniform')
+    d.setdefault('angular_evaluation','all' if d.get('model')=='multisite' and d.get('angular_maps') else 'selected')
+    if historical and d.get('model')=='atomic':
         # Old Atomic schemas may omit redundant selected-energy fields. Only
         # absent keys inherit their saved atomic peaks; explicit values survive.
         d.setdefault('l3',d['atomic'].l3_ev);d.setdefault('l2',d['atomic'].l2_ev)
     for k in ('magnetization','centers','window','fft_generators'):
         if k in d and d[k] is not None:d[k]=tuple(tuple(v) if isinstance(v,list) else v for v in d[k])
+    if d.get('model')=='multisite':
+        from emcd_sim.forward_settings import MultiSiteForwardSettings
+        d['selected_edges']=tuple(tuple(v) for v in d.get('selected_edges',()))
+        return MultiSiteForwardSettings(**d)
     if d.get('model')=='imported' or 'provider_schema' in d:
-        from .generalized_forward import ImportedSettings,ProviderSettings
+        from emcd_sim.material_inputs import ImportedSettings, ProviderSettings
         if d.get('site_indices') is not None:d['site_indices']=tuple(d['site_indices'])
         if d.get('selected_edges') is not None:d['selected_edges']=tuple(tuple(v) for v in d.get('selected_edges',()))
         if 'provider_schema' in d:
             if d['provider_schema']!=1:raise ValueError('Unsupported MDFF provider configuration schema')
             return ProviderSettings(**d)
         return ImportedSettings(**d)
+    if historical:return NiForwardSettings(**d)
+    if d.get('model') not in ('xmcd','atomic'):
+        raise ValueError('Unsupported or missing MDFF configuration model')
     return ForwardSettings(**d)
 
 
@@ -122,8 +133,8 @@ class SavedCrystal:
         except KeyError as exc:raise ValueError('Reflection absent from saved diffraction context') from exc
 
 
-def plotting_model(meta,snapshot):
-    cfg=config_from_dict(meta['mdff']);settings=settings_from_dict(meta['settings'])
+def plotting_model(meta,snapshot,cfg=None):
+    cfg=cfg or config_from_dict(meta['mdff']);settings=settings_from_dict(meta['settings'],historical_ni=type(cfg) is NiForwardSettings)
     elastic=SimpleNamespace(crystal=SavedCrystal(meta,snapshot),beams=SimpleNamespace(hkl=tuple(tuple(h) for h in meta['beam_hkl'])),
         reciprocal_vectors_xy=np.asarray(meta['g']),microscope=SimpleNamespace(incident_k_xy=-np.asarray(meta['za_q']),acceleration_kv=settings.voltage,tilt_mrad_xy=settings.tilt))
     return SimpleNamespace(elastic=elastic,detectors={k:VirtualDetector(tuple(p),cfg.radius) for k,p in zip(('A','B'),cfg.centers)},chiral_groups=None)
@@ -136,9 +147,14 @@ def pack_arrays(result):
     spectra=dict(method_labels=np.asarray(labels),channeling_model=np.array(result['config'].channeling_model));diffraction=dict(method_labels=np.asarray(labels),depth_nm=result['depth_nm'],beam_hkl=np.asarray(meta['beam_hkl']),g=np.asarray(meta['g']),frame=np.asarray(meta['frame']),
         excitation_errors_inv_angstrom=excitation(np.asarray(meta['g']),result['settings'].tilt,result['settings'].voltage),zone_axis_q=np.asarray(meta['za_q']),transmitted_q=np.asarray(meta['transmitted_q']))
     for name,r in methods.items():
+        if r['config'].model=='multisite':
+            from .multisite_project import pack_method
+            pack_method(name,r,angular,spectra)
+            angular[name+'__coherence']=r['coherence'];diffraction[name+'__amplitudes']=r['amplitudes']
+            continue
         angular.update({name+'__'+edge+'__'+k:v for edge,m in r['maps'].items() for k,v in m.items()})
         angular[name+'__coherence']=r['coherence']
-        from .prb_benchmark import benchmark_spectra
+        from emcd_sim.detector_signals import benchmark_spectra
         sp=dict(r['spectra'],**benchmark_spectra(r['spectra'])[0])
         spectra.update({name+'__'+k:v for k,v in sp.items()})
         diffraction[name+'__amplitudes']=r['amplitudes']
@@ -171,6 +187,37 @@ def _read_npz(path):
 def _json(path,value):path.write_text(json.dumps(value,indent=2,allow_nan=False)+'\n',encoding='utf-8')
 
 
+def portable_mdff_bytes(cfg,source_path,embedded=None):
+    """Existing editor-source opt-in; external spectroscopy is not auto-embedded."""
+    if cfg.model=='atomic' and getattr(cfg,'provider_schema',None)==1:
+        try:raw=Path(source_path).read_bytes()
+        except OSError:raw=None
+        if raw is None or hashlib.sha256(raw).hexdigest()!=cfg.source_sha256:
+            raw=embedded.encode('utf-8') if isinstance(embedded,str) else None
+        if raw is not None and hashlib.sha256(raw).hexdigest()==cfg.source_sha256:
+            try:managed='\nEMCD_EDITOR_REFERENCE_V1=' in json.loads(raw)['parameters']['source']
+            except (ValueError,KeyError,TypeError):managed=False
+            if managed:return raw
+    elif cfg.model=='imported':
+        from ..imported_mdff import ImportedMDFF
+        source=ImportedMDFF.load(source_path,cfg.source_sha256)
+        if (source.metadata.get('manual_constant_editor')==1 or source.metadata.get('manual_constant_pair_editor')==1
+                or 'manual_l23_model' in source.metadata):return Path(source_path).read_bytes()
+    return None
+
+
+def save_configuration(configuration,path,*,cancelled=lambda:False,progress=lambda s:None):
+    """Save configuration only; see project_configuration for the state interface."""
+    from .project_configuration import save_configuration as save
+    return save(configuration,path,cancelled=cancelled,progress=progress)
+
+
+def load_configuration(path,*,cancelled=lambda:False,progress=lambda s:None):
+    """Restore configuration without loading result arrays or running propagation."""
+    from .project_configuration import load_configuration as load
+    return load(path,cancelled=cancelled,progress=progress)
+
+
 def _rename_folder(source,target,cancelled=lambda:False):
     # Windows indexers/virus scanners can briefly hold a just-closed NPZ or
     # directory. Retry only sharing/access errors, without bypassing access
@@ -193,10 +240,10 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
     root=Path(path).resolve();root.parent.mkdir(parents=True,exist_ok=True)
     if root.exists() and not replace_existing:raise FileExistsError('Save As requires a new folder or explicit replacement approval')
     if root.exists() and not (root/'project.json').exists():raise ValueError('Only an existing EMCD project can be replaced; choose a new project folder')
-    temp=root.parent/('.'+root.name+'.saving_'+uuid.uuid4().hex);backup=root.parent/('.'+root.name+'.previous_'+uuid.uuid4().hex);temp.mkdir()
-    def check(stage):
-        if cancelled():raise Cancelled()
-        progress(stage)
+    # History records already have long UUID names and sit inside the outer
+    # project transaction. Do not repeat that name in each staging path.
+    temp=root.parent/('.r_'+uuid.uuid4().hex[:12]);backup=root.parent/('.rb_'+uuid.uuid4().hex[:12]);temp.mkdir()
+    check=partial(progress_checkpoint,cancelled=cancelled,progress=progress)
     try:
         check('Saving complete numerical arrays');arrays=pack_arrays(result);shapes={}
         for name,values in arrays.items():
@@ -204,19 +251,37 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             shapes[name]={k:dict(shape=list(v.shape),dtype=str(v.dtype)) for k,v in values.items()}
         methods=result.get('methods',{result.get('method','bloch'):result})
         snapshot=result.get('structure_snapshot');meta=result['metadata']
+        multisite=result['config'].model=='multisite'
+        extra={}
+        if multisite:
+            from .multisite_project import project_metadata,attach_sources
+            extra['multisite_results']=project_metadata(result)
         _json(temp/'metadata.json',meta)
-        _json(temp/'comparison_metadata.json',dict(method_labels=list(methods),primary_method=result.get('method','bloch'),methods={name:r['metadata'] for name,r in methods.items()},diagnostics=result.get('comparison',{})))
-        _json(temp/'input_parameters.json',dict(settings=asdict(result['settings']),mdff=asdict(result['config']),structure_snapshot=snapshot))
+        _json(temp/'comparison_metadata.json',dict(method_labels=list(methods),primary_method=result.get('method','bloch'),methods={name:r['metadata'] for name,r in methods.items()},diagnostics=result.get('comparison',{}),**extra))
+        if multisite:
+            from .project_configuration import _encode_config
+            saved_cfg=_encode_config(result['config'])
+        else:saved_cfg=asdict(result['config'])
+        _json(temp/'input_parameters.json',dict(settings=asdict(result['settings']),mdff=saved_cfg,structure_snapshot=snapshot))
         _json(temp/'structure.json',snapshot)
         if result.get('display_state') is not None:_json(temp/'display_state.json',result['display_state'])
-        from .emcd_forward import metrics
+        from emcd_sim.forward_results import selected_edge_metrics
         _json(temp/'validity.json',{name:dict(postedge_valid=r['metadata']['alpha'] is not None,
             paired_map_valid={edge:'D_raw' in m for edge,m in r['maps'].items()},available_fields={edge:list(m) for edge,m in r['maps'].items()},
-            scalar_metric_valid={edge:{key:value is not None for key,value in row.items()} for edge,row in metrics(r).items()}) for name,r in methods.items()})
+            scalar_metric_valid={edge:{key:value is not None for key,value in row.items()} for edge,row in ({} if multisite else selected_edge_metrics(r)).items()}) for name,r in methods.items()})
         if snapshot:
             from ase.io import write
-            write(temp/'structure.cif',restore_structure(snapshot).atoms,format='cif')
+            write(temp/'structure.cif',structure_data.restore_structure(snapshot).atoms,format='cif')
         managed=set(ARRAY_FILES)|{'project.json','metadata.json','comparison_metadata.json','input_parameters.json','structure.json','structure.cif','validity.json','display_state.json'}
+        if result.get('input_configuration') is not None:
+            # Optional existing configuration project, alongside unchanged NPZ
+            # results. Its own manifest/portable-source rules remain in force.
+            if (root/'run_inputs').exists():
+                old=json.loads((root/'project.json').read_text(encoding='utf-8'))
+                if old.get('run_inputs')!='run_inputs':raise ValueError('Run input attachment conflicts with an existing user folder; use Save As')
+            save_configuration(result['input_configuration'],temp/'run_inputs',cancelled=cancelled,progress=progress)
+            managed.add('run_inputs')
+        multisite_sources=attach_sources(result,temp,managed) if multisite else None
         # Optional portable copy of a verified source-backed atomic input. Old
         # projects remain unchanged/readable; missing sources are never invented.
         atomic_attachment=None;cfg=result['config']
@@ -224,20 +289,11 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             source_path=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
             # Only editor-managed documents opt into portable persistence.
             # Existing external JSON projects retain their original-source rules.
-            try:raw=source_path.read_bytes() if source_path.is_file() else None
-            except OSError:raw=None
             # A completed declared result already embeds its original input
             # bytes. A matching checksum permits preserving that exact evidence,
             # never reconstructing parameters from current editor controls.
-            if raw is None or hashlib.sha256(raw).hexdigest()!=cfg.source_sha256:
-                embedded=meta.get('imported_mdff',{}).get('atomic_parameter_source_utf8')
-                raw=embedded.encode('utf-8') if isinstance(embedded,str) else None
-            editor_managed=False
-            if raw is not None and hashlib.sha256(raw).hexdigest()==cfg.source_sha256:
-                try:
-                    editor_managed='\nEMCD_EDITOR_REFERENCE_V1=' in json.loads(raw)['parameters']['source']
-                except (ValueError,KeyError,TypeError):pass
-            if editor_managed:
+            raw=portable_mdff_bytes(cfg,source_path,meta.get('imported_mdff',{}).get('atomic_parameter_source_utf8'))
+            if raw is not None:
                 # Keep the portable filename short for Windows project paths.
                 # The full identity is pinned in the existing file manifest.
                 filename='atomic_input.json'
@@ -250,15 +306,14 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
         manual_attachment=None
         if cfg.model=='imported':
             source_path=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
-            from ..imported_mdff import ImportedMDFF
-            source=ImportedMDFF.load(source_path,cfg.source_sha256)
-            if source.metadata.get('manual_constant_editor')==1 or 'manual_l23_model' in source.metadata:
+            raw=portable_mdff_bytes(cfg,source_path)
+            if raw is not None:
                 filename='manual_tensor.json'
                 if (root/filename).exists():
                     previous=json.loads((root/'project.json').read_text(encoding='utf-8'))
                     if previous.get('manual_tensor_source',{}).get('path')!=filename:
                         raise ValueError('Project attachment name conflicts with an existing user file; use Save As')
-                (temp/filename).write_bytes(source_path.read_bytes());managed.add(filename)
+                (temp/filename).write_bytes(raw);managed.add(filename)
                 manual_attachment=dict(path=filename,sha256=cfg.source_sha256)
         if root.exists():
             for child in root.iterdir():
@@ -282,6 +337,8 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
             limitations=result.get('project_warnings',[]),array_convention='method__edge__field maps(qy,qx); method__field spectra(energy); method__amplitudes(depth,beam); explicit labels; no pickle')
         if atomic_attachment:manifest['atomic_parameter_source']=atomic_attachment
         if manual_attachment:manifest['manual_tensor_source']=manual_attachment
+        if multisite_sources is not None:manifest['multisite_sources']=multisite_sources
+        if result.get('input_configuration') is not None:manifest['run_inputs']='run_inputs'
         _json(temp/'project.json',manifest);check('Validating saved project');load_project(temp,progress=lambda s:None)
         check('Finalizing complete project')
         if root.exists():_rename_folder(root,backup,cancelled)
@@ -289,10 +346,10 @@ def save_project(result,path,*,replace_existing=False,cancelled=lambda:False,pro
         except BaseException:
             if backup.exists():_rename_folder(backup,root)
             raise
-        if backup.exists() and backup.resolve().parent==root.parent and backup.name.startswith('.'+root.name+'.previous_'):shutil.rmtree(backup)
+        if backup.exists() and backup.resolve().parent==root.parent and backup.name.startswith('.rb_'):shutil.rmtree(backup)
         return root
     finally:
-        if temp.exists() and temp.resolve().parent==root.parent and temp.name.startswith('.'+root.name+'.saving_'):shutil.rmtree(temp)
+        if temp.exists() and temp.resolve().parent==root.parent and temp.name.startswith('.r_'):shutil.rmtree(temp)
 
 
 def source_status(result):
@@ -308,6 +365,11 @@ def source_status(result):
     if cfg.model=='imported' or (cfg.model=='atomic' and getattr(cfg,'provider_schema',None)==1):
         p=Path(result.get('source_overrides',{}).get('mdff',cfg.source))
         status['mdff']=entry(p,cfg.source_sha256,cfg.source)
+    if cfg.model=='multisite':
+        for gid,group in result.get('groups',{}).items():
+            source=group['metadata']['source'];original=source['path']
+            p=Path(result.get('source_overrides',{}).get('group:'+gid,original))
+            status['group:'+gid]=entry(p,source.get('sha256',''),original)
     s=result.get('structure_snapshot')
     if s and s.get('sha256'):
         p=Path(result.get('source_overrides',{}).get('cif',s['source']));status['cif']=entry(p,s['sha256'],s['source'])
@@ -324,8 +386,8 @@ def frame_rerun_reason(result):
     except (TypeError,ValueError):return 'Saved frame is invalid; re-enter orientation-dependent inputs before rerunning.'
     if frame.shape!=(3,3) or not np.isfinite(frame).all():
         return 'Saved frame is invalid; re-enter orientation-dependent inputs before rerunning.'
-    from .geometry import orientation
-    try:expected=orientation(restore_structure(snapshot).atoms.cell.array,result['settings'].zone,result['settings'].target)
+    from emcd_sim.structure_geometry import orientation
+    try:expected=orientation(structure_data.restore_structure(snapshot).atoms.cell.array,result['settings'].zone,result['settings'].target)
     except (ValueError,TypeError,np.linalg.LinAlgError):
         return 'Saved structural orientation/target is incompatible; saved results remain viewable, but re-enter geometry before rerunning.'
     if not np.allclose(frame,expected,atol=1e-12,rtol=0):
@@ -358,6 +420,8 @@ def rerun_reason(result):
     if reason:return reason
     for name,s in source_status(result).items():
         if not s['verified']:return name+' source unavailable or SHA256 mismatch; locate the original source before rerunning.'
+    if result['config'].model=='multisite' and not result.get('configuration'):
+        return 'Complete multi-site provider configuration declarations are unavailable; saved results remain viewable.'
     return ''
 
 
@@ -387,13 +451,12 @@ def saved_fft_generators(arrays,mesh,*,row_complement=None):
 
 def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:None):
     root=Path(path).resolve();manifest_path=root/'project.json';manifest=None
-    def check(stage):
-        if cancelled():raise Cancelled()
-        progress(stage)
+    check=partial(progress_checkpoint,cancelled=cancelled,progress=progress)
     check('Validating project metadata')
     if manifest_path.exists():
         manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
         if manifest.get('schema_version')!=SCHEMA or manifest.get('complete') is not True:raise ValueError('Unsupported or incomplete project manifest')
+        if manifest.get('kind')=='configuration':raise ValueError('Configuration-only project: use load_configuration; calculated results are not saved')
         required=set(ARRAY_FILES)|{'metadata.json','comparison_metadata.json','input_parameters.json','structure.json','validity.json'}
         if not required<=set(manifest.get('files',{})):raise ValueError('Incomplete project required-file manifest')
         for name,digest in manifest['files'].items():
@@ -411,12 +474,20 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
                 if list(a.shape)!=specs[key]['shape'] or str(a.dtype)!=specs[key]['dtype']:raise ValueError('Project array shape/dtype mismatch: '+key)
     meta=json.loads((root/'metadata.json').read_text(encoding='utf-8'))
     cm=json.loads((root/'comparison_metadata.json').read_text(encoding='utf-8')) if (root/'comparison_metadata.json').exists() else {}
+    if meta.get('mdff_provider')=='multisite' and 'multisite_results' not in cm:raise ValueError('Saved multi-site result records are missing')
+    if 'multisite_results' in cm and cm['multisite_results'].get('version')!=1:raise ValueError('Unsupported saved multi-site result extension')
     snapshot=json.loads((root/'structure.json').read_text(encoding='utf-8')) if manifest else meta.get('structure_snapshot')
     labels=cm.get('method_labels',meta.get('method_labels',[meta.get('method','bloch')]))
     methods={};q=angular['qx'];qy=angular['qy'];fft_recipe_error=''
     for name in labels:
         check('Reconstructing saved '+name+' plotting context');mmeta=cm.get('methods',{}).get(name,meta)
-        settings=settings_from_dict(mmeta['settings']);cfg=config_from_dict(mmeta['mdff'])
+        multisite='multisite_results' in cm
+        descriptor=cm.get('multisite_results',{}).get('methods',{}).get(name)
+        if multisite:
+            from .project_configuration import _decode_config
+            cfg=_decode_config(descriptor['config'])
+        else:cfg=config_from_dict(mmeta['mdff'])
+        settings=settings_from_dict(mmeta['settings'],historical_ni=type(cfg) is NiForwardSettings)
         if cfg.propagation!='bloch' and cfg.fft_generators is None:
             from dataclasses import replace
             try:
@@ -436,11 +507,14 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
             raise ValueError('Saved diffraction/frame/target plotting context is inconsistent')
         if not {'alpha','pair_reason','correction_reason','limitations'}<=set(mmeta):raise ValueError('Saved method metadata lacks required interpretation/normalization fields')
         from ..mdff_edges import selected_samples
-        edge_labels=[edge for edge,_ in selected_samples(cfg)]
-        fields={edge:{k.split('__')[2]:v for k,v in angular.items() if k.startswith(name+'__'+edge+'__')} for edge in edge_labels}
+        edge_labels=list(descriptor['total']['maps']) if multisite else [edge for edge,_ in selected_samples(cfg)]
+        if multisite:
+            from .multisite_project import restore_entry
+            fields=restore_entry(descriptor['total'],angular,spectra)['maps']
+        else:fields={edge:{k.split('__')[2]:v for k,v in angular.items() if k.startswith(name+'__'+edge+'__')} for edge in edge_labels}
         if not any(fields.values()):
             fields={edge:{k[len(edge)+1:]:v for k,v in angular.items() if k.startswith(edge+'_')} for edge in edge_labels}
-        sp={k.split('__',1)[1]:v for k,v in spectra.items() if k.startswith(name+'__')}
+        sp=restore_entry(descriptor['total'],angular,spectra)['spectra'] if multisite else {k.split('__',1)[1]:v for k,v in spectra.items() if k.startswith(name+'__')}
         if not sp:sp={k:v for k,v in spectra.items() if k!='method_labels' and '__' not in k}
         C=angular.get(name+'__coherence',angular.get('coherence'))
         amps=diffraction.get(name+'__amplitudes',angular.get('amplitudes'));z=diffraction.get('depth_nm',angular.get('depth_nm'))
@@ -461,20 +535,26 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
         for key in ('I_A_plus','I_B_plus','I_A_minus','I_B_minus','D_raw','D_mag','D_nonmag','Sigma_ref'):
             if sp[key].shape!=e.shape or not np.isfinite(sp[key]).all():raise ValueError('Saved detector spectrum dimensions/values are inconsistent')
         if not np.allclose(C,C.conj().T,rtol=1e-10,atol=1e-12):raise ValueError('Saved coherence is not Hermitian')
-        model=plotting_model(mmeta,snapshot)
+        model=plotting_model(mmeta,snapshot,cfg)
         weights={k:angular['weight_'+k] for k in ('A','B')}
         if any(w.shape!=q.shape or not np.isfinite(w).all() or np.any(w<0) or np.any(w>1) or not w.any() for w in weights.values()):raise ValueError('Saved fractional detector weights are inconsistent')
         methods[name]=dict(method=name,metadata=mmeta,model=model,settings=settings,config=cfg,maps=fields,spectra=sp,qx=q,qy=qy,weights=weights,coherence=C,depth_nm=z,amplitudes=amps,structure_snapshot=snapshot)
+        if multisite:
+            from .multisite_project import restore_groups
+            restore_groups(methods[name],descriptor,angular,spectra)
     primary=cm.get('primary_method','bloch' if 'bloch' in methods else labels[0]);result=dict(methods[primary],methods=methods,comparison=cm.get('diagnostics',meta.get('comparison',{})))
     result['metadata']=meta;result['fft']={k[len('fft_full__'):]:v for k,v in diffraction.items() if k.startswith('fft_full__')}
     if result['fft']:result['fft']['summary']=result['comparison'].get('fft',{})
     warnings=list(manifest.get('limitations',[])) if manifest else ['Legacy read-only import: no integrity manifest; only available metadata retained.']
-    from .runtime import result_convention_status
+    from emcd_sim.provenance import result_convention_status
     convention_status=result_convention_status(meta)
     if convention_status['warning'] and convention_status['warning'] not in warnings:warnings.append(convention_status['warning'])
     if not snapshot:warnings.append('Missing numeric crystal snapshot: full reproducibility and Use These Settings/rerun are unavailable.')
     result.update(project_path=str(root),project_manifest=manifest,project_warnings=warnings,structure_snapshot=snapshot,read_only_legacy=manifest is None,fft_recipe_error=fft_recipe_error)
     result['project_convention_status']=convention_status
+    if 'multisite_results' in cm:
+        from .multisite_project import restore_context
+        restore_context(result,cm['multisite_results'],manifest,root)
     if manifest and 'display_state.json' in manifest['files']:result['display_state']=json.loads((root/'display_state.json').read_text(encoding='utf-8'))
     if manifest and manifest.get('atomic_parameter_source'):
         attachment=manifest['atomic_parameter_source'];source=safe_path(root,attachment['path'])
@@ -493,6 +573,9 @@ def load_project(path,*,legacy=False,cancelled=lambda:False,progress=lambda s:No
         from ..imported_mdff import ImportedMDFF
         ImportedMDFF.load(source,cfg.source_sha256)
         result['source_overrides']=dict(mdff=str(source))
+    if manifest and manifest.get('run_inputs'):
+        if manifest['run_inputs']!='run_inputs':raise ValueError('Invalid saved run input location')
+        result['input_configuration']=load_configuration(safe_path(root,'run_inputs'),cancelled=cancelled,progress=progress)
     check('Saved results ready; no physical recalculation')
     return result
 

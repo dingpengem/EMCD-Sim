@@ -1,25 +1,27 @@
 """Provider contract and exact historical evaluation through common preparation."""
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.forward_settings import NiForwardSettings
 from dataclasses import replace
 import numpy as np
 import pytest
-from emcd_sim.gui import emcd_forward, generalized_forward, forward_pipeline
-from emcd_sim.gui.geometry import Structure
+from emcd_sim import forward_pipeline as forward_pipeline
+from emcd_sim import mdff_providers as material_inputs
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.mdff_providers import prepare_provider
 from test_part1c_refactor import accepted_module
 from test_unified_mdff_providers import xmcd_source
 
 
-def test_forward_entry_points_are_aliases_not_parallel_orchestration():
-    from emcd_sim.gui import stage_b
-    assert stage_b.calculate is forward_pipeline.calculate
-    assert generalized_forward.calculate is forward_pipeline.calculate is emcd_forward.calculate
+def test_worker_uses_canonical_production_entrypoint():
+    from emcd_sim.gui import calculation_worker
+    assert calculation_worker.calculate is forward_pipeline.calculate
 
 
 @pytest.mark.parametrize('model',['xmcd','atomic'])
 @pytest.mark.parametrize('scope',['edges','full'])
 def test_historical_provider_grid_and_direct_tensors_are_exact(model,scope):
     reference=accepted_module('gui/emcd_forward.py','_part1c_forward_reference')
-    cfg=emcd_forward.ForwardSettings(model=model,axis_declared=True,energy_points=13,energy_scope=scope)
+    cfg=NiForwardSettings(model=model,axis_declared=True,energy_points=13,energy_scope=scope)
     if model=='atomic':cfg=replace(cfg,l3=cfg.atomic.l3_ev,l2=cfg.atomic.l2_ev)
     provider=prepare_provider(cfg)
     assert not provider.declared
@@ -34,11 +36,13 @@ def test_historical_provider_grid_and_direct_tensors_are_exact(model,scope):
 
 def test_declared_xmcd_uses_same_preparation_interface(tmp_path):
     path,declaration=xmcd_source(tmp_path)
-    cfg=generalized_forward.settings_for_provider(path,'xmcd',declaration,energy_scope='edges')
+    # Keep the aperture inputs formerly inherited before settings became neutral.
+    cfg=material_inputs.settings_for_provider(path,'xmcd',declaration,energy_scope='edges',
+        centers=((0.2837684449489217,0.2837684449489217),(0.2837684449489217,-0.2837684449489217)),radius=0.0908059024)
     provider=prepare_provider(cfg)
     assert provider.declared and provider.source.sha256==cfg.source_sha256
     np.testing.assert_array_equal(provider.energy_grid(),[710.])
-    for a,b in zip(provider.tensors([710.],np.eye(3)),generalized_forward.tensors(cfg,[710.],np.eye(3))):
+    for a,b in zip(provider.tensors([710.],np.eye(3)),material_inputs.tensors(cfg,[710.],np.eye(3))):
         np.testing.assert_array_equal(a.tensor_angstrom2_per_ev,b.tensor_angstrom2_per_ev)
     path.write_bytes(path.read_bytes()+b' ')
     with pytest.raises(ValueError,match='checksum changed'):provider.revalidate_source()

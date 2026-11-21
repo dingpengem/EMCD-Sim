@@ -3,14 +3,14 @@ from dataclasses import replace
 import numpy as np
 import pytest
 from ase import Atoms
-from emcd_sim.gui.geometry import Structure,Settings,geometry,elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.structure_geometry import Structure, Settings, geometry, elastic_model
+from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.propagation import numerical_info
 from emcd_sim.multislice_double_channeling import ProjectedFFT,incident_fields,multislice_double_channeling_response
 
 @pytest.fixture
 def prepared():
-    settings=Settings(zone=(0,0,1),target=(2,0,0),voltage=200,thickness=.5,beam_cutoff=.9,potential_cutoff=1.8)
+    settings=Settings(zone=(0,0,1),target=(2,0,0),voltage=200,thickness=.5,beam_cutoff=.9,potential_cutoff=1.8,tilt=(-5.5866881404, 0.0))
     model=elastic_model(Structure.nickel(),settings)
     grid=ProjectedFFT.build(model,grid_points=24,potential_cutoff=1.8)
     fields=incident_fields(grid,.5,depth_steps=5,slice_step_nm=.04)
@@ -42,13 +42,13 @@ def test_large_cell_search_rejects_before_integer_overflow():
     # Previously int64 product overflowed negative and bypassed the work cap.
     huge=Structure(Atoms('Ni',cell=np.eye(3)*1e7,scaled_positions=[[0,0,0]],pbc=True))
     with pytest.raises(ValueError,match='search too large'):
-        geometry(huge,Settings(zone=(0,0,1),target=(2,0,0)))
+        geometry(huge,Settings(zone=(0,0,1),target=(2,0,0),tilt=(-5.5866881404, 0.0)))
 
 @pytest.mark.parametrize('solver',['bloch','fft-multislice','both'])
 @pytest.mark.parametrize('zone',[(1,1,1),(2,2,2)])
 def test_111_uncertified_scope_is_visible_for_every_solver(solver,zone):
-    s=Settings(zone=zone,target=(2,-2,0),thickness=2,voltage=200,beam_cutoff=2.6,potential_cutoff=3.0)
-    c=ForwardSettings(propagation=solver,channeling_model='double',grid=97)
+    s=Settings(zone=zone,target=(2,-2,0),thickness=2,voltage=200,beam_cutoff=2.6,potential_cutoff=3.0,tilt=(-5.5866881404, 0.0))
+    c=NiForwardSettings(propagation=solver,channeling_model='double',grid=97)
     info=numerical_info(Structure.nickel(),s,c,check_memory=False)
     assert any('0.1094%' in w and 'not certified' in w and 'Beam/potential support' in w for w in info['numerical_warnings'])
     assert info['bw_beams']==37

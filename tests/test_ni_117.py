@@ -4,8 +4,11 @@ import numpy as np
 import pytest
 from legacy_geometry import Ni117Geometry
 from legacy_geometry import Ni017Geometry
-from emcd_sim.gui.geometry import Structure, Settings, geometry, orientation, indices, excitation, align_bragg, elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings, calculate, tensors
+from emcd_sim.structure_geometry import Structure, Settings, geometry, orientation, excitation, align_bragg, elastic_model
+from emcd_sim.gui.geometry import indices
+from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.historical_ni import tensors
 from emcd_sim.gui.project_io import save_project, load_project, fingerprints, settings_from_dict
 from emcd_sim.multislice_double_channeling import ProjectedFFT, incident_fields
 from emcd_sim.mirror_parity import row_mirror_diagnostics
@@ -18,7 +21,7 @@ def settings(mode='full', **kwargs):
 
 def config(**kwargs):
     g=np.sqrt(8)/3.524
-    return replace(ForwardSettings(axis_declared=True,propagation='both',energy_scope='edges',grid=9,
+    return replace(NiForwardSettings(axis_declared=True,propagation='both',energy_scope='edges',grid=9,
         depth=17,subpixels=8,fft_grid=24,slice_step=.04,centers=((g/2,g/2),(g/2,-g/2)),
         radius=.16*g,correction=False,worker_mode='manual',parallel_workers=1),**kwargs)
 
@@ -59,7 +62,8 @@ def test_existing_frames_and_old_project_default_are_preserved():
 
 
 def test_old_117_frame_cannot_silently_reinterpret_saved_tilts():
-    from emcd_sim.gui.project_io import structure_snapshot,frame_rerun_reason
+    from emcd_sim.structure_geometry import structure_snapshot
+    from emcd_sim.gui.project_io import frame_rerun_reason
     structure=Structure.nickel();cell=structure.atoms.cell.array
     z=np.array([1.,1.,7.]);z/=np.linalg.norm(z)
     x=cell[0]-cell[0].dot(z)*z;x/=np.linalg.norm(x)
@@ -72,7 +76,8 @@ def test_old_117_frame_cannot_silently_reinterpret_saved_tilts():
 
 @pytest.mark.parametrize('frame',[None,[[1,0]],[[float('nan')]*3]*3,'invalid'])
 def test_missing_or_invalid_saved_117_frame_blocks_input_reuse(frame):
-    from emcd_sim.gui.project_io import structure_snapshot,frame_rerun_reason
+    from emcd_sim.structure_geometry import structure_snapshot
+    from emcd_sim.gui.project_io import frame_rerun_reason
     result=dict(settings=settings(),metadata=dict(frame=frame),structure_snapshot=structure_snapshot(Structure.nickel()))
     assert frame_rerun_reason(result)
     result['settings']=replace(result['settings'],zone=(0,1,7))
@@ -81,7 +86,7 @@ def test_missing_or_invalid_saved_117_frame_blocks_input_reuse(frame):
 
 @pytest.mark.parametrize('solver',['bloch','fft-multislice','both'])
 def test_117_cutoff_and_sampling_warnings_apply_to_all_solvers(solver):
-    from emcd_sim.gui.propagation import numerical_info
+    from emcd_sim.propagation import numerical_info
     structure=Structure.nickel();s=settings(potential_cutoff=2.5)
     cfg=config(propagation=solver,grid=33)
     info=numerical_info(structure,s,cfg,check_memory=False)
@@ -94,7 +99,7 @@ def test_117_cutoff_and_sampling_warnings_apply_to_all_solvers(solver):
 def test_automatic_unsupported_orientation_fails_without_mesh_retries():
     from unittest.mock import patch
     from emcd_sim.gui.numerical_settings import resolve_parameters
-    with patch('emcd_sim.gui.propagation.numerical_info',side_effect=ValueError('Unsupported FFT zone; no automatic fallback.')) as check:
+    with patch('emcd_sim.propagation.numerical_info',side_effect=ValueError('Unsupported FFT zone; no automatic fallback.')) as check:
         with pytest.raises(ValueError,match='no automatic fallback'):
             resolve_parameters(Structure.nickel(),settings(zone=(1,1,1)),config())
     assert check.call_count==1
@@ -217,7 +222,7 @@ def test_gui_target_basis_and_crystal_axis_restore_without_solver(tmp_path):
     if not QtGui.QFontDatabase.families():
         font=QtGui.QFontDatabase.addApplicationFont(str(Path(get_data_path())/'fonts/ttf/DejaVuSans.ttf'))
         app.setFont(QtGui.QFont(QtGui.QFontDatabase.applicationFontFamilies(font)[0],9))
-    with patch('emcd_sim.gui.stage_b.EMCDWorker.start',side_effect=AssertionError('GUI must not solve')),patch('emcd_sim.gui.app.PreviewWorker.start',side_effect=AssertionError('GUI must not solve')):
+    with patch('emcd_sim.gui.calculation_worker.EMCDWorker.start',side_effect=AssertionError('GUI must not solve')),patch('emcd_sim.gui.app.PreviewWorker.start',side_effect=AssertionError('GUI must not solve')):
         w=MainWindow(tmp_path/'workspace')
         w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
         try:
@@ -228,7 +233,7 @@ def test_gui_target_basis_and_crystal_axis_restore_without_solver(tmp_path):
             w.restore_detectors();np.testing.assert_allclose(w.detectors[0],[w.detectors[1,0],-w.detectors[1,1]],atol=1e-13)
             w.basis_mode.setCurrentIndex(1)
             assert w.settings().basis_mode=='two-beam' and w.current[2]==((0,0,0),(2,-2,0))
-            np.testing.assert_allclose(w.forward_settings().magnetization,(0,0,1))
+            np.testing.assert_allclose(w.global_mdff_draft_settings().magnetization,(0,0,1))
             w.propagation_box.setCurrentIndex(2)
             assert not w._numerical_error
             w.reset_reference()

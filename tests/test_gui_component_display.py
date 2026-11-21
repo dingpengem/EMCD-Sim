@@ -1,4 +1,5 @@
 """Raw/relative toggles are presentation only; all exports retain both."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import csv
@@ -10,10 +11,13 @@ import numpy as np
 import pytest
 from matplotlib.figure import Figure
 from emcd_sim.gui.component_display import components,mirrored_angular_components
-from emcd_sim.gui.emcd_forward import calculate,ForwardSettings,export_result
-from emcd_sim.gui.geometry import Structure,Settings
-from emcd_sim.gui.prb_benchmark import benchmark_readout,benchmark_spectra
-from emcd_sim.gui.results import draw_eels,draw_maps
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.gui.result_export import export_result
+from emcd_sim.structure_geometry import Structure, Settings
+from emcd_sim.gui.prb_benchmark import benchmark_readout
+from emcd_sim.detector_signals import benchmark_spectra
+from emcd_sim.gui.result_presentation import draw_eels, draw_maps
 
 
 def example_spectra():
@@ -55,14 +59,14 @@ def test_prb_denominator_can_differ_without_reversal_even_contamination():
 
 @pytest.fixture(scope='module')
 def result():
-    return calculate(Structure.nickel(),Settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),
-        ForwardSettings(axis_declared=True,channeling_model='double',propagation='both',energy_scope='edges',
+    return calculate(Structure.nickel(),nickel_geometry_settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),
+        NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',energy_scope='edges',
             angular_maps=True,grid=9,depth=5,fft_grid=24,subpixels=16,correction=False))
 
 
 def test_primary_two_panels_preserve_raw_eels_and_component_signs(result):
     s=result['spectra'];before={k:v.copy() for k,v in s.items()}
-    with patch('emcd_sim.gui.emcd_forward.calculate',side_effect=AssertionError('Display must not calculate')):
+    with patch('emcd_sim.forward_pipeline.calculate',side_effect=AssertionError('Display must not calculate')):
         fig=Figure();draw_eels(fig,result)
         assert len(fig.axes)==2
         np.testing.assert_array_equal(next(l for l in fig.axes[0].lines if l.get_label()=='Detector A').get_ydata(),s['I_A_plus'])
@@ -86,7 +90,7 @@ def test_two_samples_are_points_and_uncomputed_energy_is_rejected(result):
 
 
 def test_actual_five_energy_subset_is_not_labelled_full_native_coverage(result):
-    from emcd_sim.gui.results import spectral_coverage_label
+    from emcd_sim.gui.result_presentation import spectral_coverage_label
     cfg=replace(result['config'],propagation='bloch',energy_scope='full',angular_maps=False)
     subset=calculate(Structure.nickel(),result['settings'],cfg,energy_ev=[826,cfg.l3,833,cfg.l2,850])
     assert spectral_coverage_label(subset)=='Calculated energy subset'
@@ -131,8 +135,9 @@ def test_gui_toggle_keeps_results_and_legacy_diagnostics(result):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     w=MainWindow(workspace=Path('outputs')/('component_ui_'+uuid4().hex))
     try:
-        original_settings=w.settings()
         w.display_saved_result(result)
+        assert w.settings()==result['settings']
+        original_settings=w.settings()
         view=w.eels_view;assert not view.advanced.isChecked() and view.advanced_body.isHidden()
         assert [view.component_mode.itemText(i) for i in range(2)]==['Raw (a.u.)','EMCD Asymmetry (%)']
         source_id=id(result['spectra']['I_A_plus']);before=result['spectra']['I_A_plus'].copy()
@@ -142,8 +147,8 @@ def test_gui_toggle_keeps_results_and_legacy_diagnostics(result):
         assert id(result['spectra']['I_A_plus'])==source_id
         np.testing.assert_array_equal(result['spectra']['I_A_plus'],before)
         assert 'EMCD Asymmetry' in view.prb_readout.text()
-        view.advanced.setChecked(True);app.processEvents();assert len(view.figure.axes)==3
-        np.testing.assert_allclose(view.figure.axes[-1].get_xlim(),result['spectra']['energy_ev'][[0,-1]])
+        view.advanced.setChecked(True);app.processEvents();assert len(view.figure.axes)==6
+        np.testing.assert_allclose(view.figure.axes[2].get_xlim(),result['spectra']['energy_ev'][[0,-1]])
         assert w.settings()==original_settings
         assert 'g=1/d' in w.spin['beam'].toolTip() and 'ionization' in w.spin['potential'].toolTip()
     finally:w.close();app.processEvents()
@@ -153,20 +158,20 @@ def test_project_restores_display_and_locked_energy_without_changing_arrays(resu
     import time,json
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.project_io import load_project
+    from emcd_sim.gui.project_collection import load_collection
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     root=Path('outputs')/('display_state_'+uuid4().hex);w=MainWindow(workspace=root/'workspace')
     before={k:v.copy() for k,v in result['spectra'].items()}
     try:
-        w.display_saved_result(result);view=w.eels_view;p=view.prb_benchmark
+        w.register_completed(result);w.display_saved_result(result,w.selected_record);view=w.eels_view;p=view.prb_benchmark
         view.component_mode.setCurrentIndex(1);view.choice.setCurrentText('L2 zoom')
         p.selection.setCurrentIndex(1);p.energy.setValue(result['config'].l2);p.fixed.setChecked(True)
         w.save_to_path(root/'project');deadline=time.monotonic()+20
         while w.busy and time.monotonic()<deadline:app.processEvents();time.sleep(.01)
         assert not w.busy and w.run_outcome=='completed'
-        loaded=load_project(root/'project');assert 'display_state.json' in loaded['project_manifest']['files']
+        loaded=load_collection(root/'project')['runs'][0][1];assert 'display_state.json' in loaded['project_manifest']['files']
         view.component_mode.setCurrentIndex(0);p.fixed.setChecked(False)
-        with patch('emcd_sim.gui.emcd_forward.calculate',side_effect=AssertionError('Display must not calculate')):w.display_saved_result(loaded)
+        with patch('emcd_sim.forward_pipeline.calculate',side_effect=AssertionError('Display must not calculate')):w.display_saved_result(loaded)
         assert view.component_mode.currentData()=='asymmetry' and view.choice.currentText()=='L2 zoom'
         assert p.fixed.isChecked() and p.energy.value()==result['config'].l2
         for k,v in before.items():np.testing.assert_array_equal(v,loaded['spectra'][k])

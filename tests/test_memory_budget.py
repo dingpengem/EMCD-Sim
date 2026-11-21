@@ -1,4 +1,5 @@
 """Focused memory admission and sequential scan cleanup; no large allocations."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from dataclasses import replace
 from unittest.mock import patch
 import gc
@@ -8,10 +9,10 @@ import weakref
 
 import numpy as np
 import pytest
-from emcd_sim.gui import memory_budget as memory
-from emcd_sim.gui.emcd_forward import ForwardSettings
-from emcd_sim.gui.geometry import Settings, Structure
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim import memory_budget as memory
+from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.structure_geometry import Settings, Structure
+from emcd_sim.propagation import numerical_info
 from emcd_sim.gui.project_io import config_from_dict
 
 SNAPSHOT = dict(available_ram_mib=32768., process_rss_mib=64.)
@@ -25,23 +26,25 @@ def test_supported_budgets_and_512_compatibility(budget):
 
 
 def test_larger_dense_kernel_admitted_only_with_larger_budget():
-    cfg = ForwardSettings(propagation='bloch',grid=33)
+    cfg = NiForwardSettings(propagation='bloch',grid=33)
     # Use a real large basis. Preflight intentionally rejects synthetic hkl
     # counts that disagree with the actual oriented diffraction geometry.
-    settings = Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=3.2)
+    settings = Settings(zone=(0,0,1),target=(2,0,0),beam_cutoff=3.2,tilt=(-5.5866881404, 0.0))
     assert cfg.memory_budget_mib == config_from_dict({}).memory_budget_mib == 2048
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         info = numerical_info(Structure.nickel(), settings, cfg)
-        assert info['dense_working_estimate_mib'] > 512
+        # A large real beam basis still needs a substantial 64-pixel batch;
+        # it does not allocate the former hypothetical full-map P*N*N array.
+        assert info['dense_working_estimate_mib'] > 32
         assert info['estimated_process_peak_mib'] > info['estimated_working_mib']
         assert info['estimated_working_mib'] > info['dense_working_estimate_mib']
-        with pytest.raises(ValueError, match='selected budget 512 MiB'):
-            numerical_info(Structure.nickel(), settings, replace(cfg, memory_budget_mib=512))
+        with pytest.raises(ValueError, match='selected budget 224 MiB'):
+            numerical_info(Structure.nickel(), settings, replace(cfg, memory_budget_mib=224))
 
 
 def test_preflight_rejects_incompatible_hkl_before_admission():
     with pytest.raises(ValueError,match='Beam support changed'):
-        numerical_info(Structure.nickel(),Settings(),ForwardSettings(),hkl=tuple(range(100)))
+        numerical_info(Structure.nickel(),nickel_geometry_settings(),NiForwardSettings(),hkl=tuple(range(100)))
 
 
 def test_available_ram_and_invalid_measurement_fail_closed():
@@ -50,8 +53,9 @@ def test_available_ram_and_invalid_measurement_fail_closed():
     with patch.object(memory, 'memory_snapshot', side_effect=OSError('unavailable')):
         with pytest.raises(ValueError, match='Cannot verify'):
             memory.assess_memory(1)
+    assert memory.assess_memory(1,3072,snapshot=SNAPSHOT)['memory_budget_mib']==3072
     with pytest.raises(ValueError, match='budget must be'):
-        memory.assess_memory(1, 3072, snapshot=SNAPSHOT)
+        memory.assess_memory(1, 0, snapshot=SNAPSHOT)
 
 
 def test_concurrent_reservations_and_cleanup_on_errors():
@@ -74,22 +78,47 @@ def test_real_system_memory_measurement():
     assert state['available_ram_mib'] > 0 and state['process_rss_mib'] > 0
 
 
+def test_test_owned_closed_widget_is_destroyed_but_shared_widget_survives(request,monkeypatch):
+    from PySide6 import QtCore,QtWidgets
+    from shiboken6 import isValid
+    from conftest import release_test_owned_gui_resources
+    app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    shared=QtWidgets.QWidget();shared.show()
+    owned=None
+    try:
+        with monkeypatch.context() as context:
+            context.delenv('EMCD_TEST_LIFECYCLE_LOG',raising=False)
+            cleanup=release_test_owned_gui_resources.__wrapped__(request,context)
+            next(cleanup)
+            owned=QtWidgets.QWidget();owned.show();owned.close()
+            assert isValid(owned)  # close alone retains the native widget.
+            with pytest.raises(StopIteration):next(cleanup)
+            assert not isValid(owned)
+            assert isValid(shared)
+    finally:
+        for widget in (owned,shared):
+            if widget is not None and isValid(widget):widget.close();widget.deleteLater()
+        QtCore.QCoreApplication.sendPostedEvents(None,QtCore.QEvent.Type.DeferredDelete)
+        app.processEvents()
+
+
 def test_gui_budget_selector_and_start_admission(tmp_path, monkeypatch):
     monkeypatch.setenv('QT_QPA_PLATFORM', 'offscreen')
     from PySide6 import QtWidgets
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.emcd_forward import calculate
+    from emcd_sim.forward_pipeline import calculate
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with patch.object(memory, 'memory_snapshot', return_value=SNAPSHOT):
         w = MainWindow(workspace=tmp_path/'workspace')
-        assert w.memory_budget.currentData() == 2048
-        for i, budget in enumerate(memory.BUDGETS_MIB):
-            w.memory_budget.setCurrentIndex(i)
-            assert w.forward_settings().memory_budget_mib == budget
+        assert w.memory_budget.value() == 2048
+        w.memory_mode.setCurrentIndex(1)
+        for budget in (*memory.BUDGETS_MIB,3072):
+            w.memory_budget.setValue(budget)
+            assert w.compute_resources.settings()['memory_budget_mib'] == budget
         w.close()
     # A RAM change after UI preview is checked again at calculation entry.
     with patch.object(memory, 'memory_snapshot', return_value=dict(available_ram_mib=100, process_rss_mib=64)):
-        with patch('emcd_sim.gui.emcd_forward._calculate') as engine:
+        with patch('emcd_sim.forward_pipeline._calculate_uniform_prepared') as engine:
             with pytest.raises(ValueError, match='currently available RAM'):
-                calculate(Structure.nickel(), Settings(), ForwardSettings())
+                calculate(Structure.nickel(), nickel_geometry_settings(), NiForwardSettings())
             engine.assert_not_called()

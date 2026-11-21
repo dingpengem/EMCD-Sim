@@ -12,10 +12,10 @@ from unittest.mock import patch
 import numpy as np
 from PySide6 import QtCore, QtTest, QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Structure, Settings
-from emcd_sim.gui.forward_pipeline import calculate
+from emcd_sim.structure_geometry import Structure, Settings
+from emcd_sim.forward_pipeline import calculate
 from emcd_sim.gui.project_io import save_project, config_from_dict
-from emcd_sim.gui.generalized_forward import source_for
+from emcd_sim.mdff_providers import source_for
 from emcd_sim.mdff_providers import prepare_provider
 from test_mdff_corrective import imported_document
 

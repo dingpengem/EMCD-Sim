@@ -1,5 +1,71 @@
 # Changelog
 
+## Development source — saved-run input restoration
+
+- Selecting or viewing one saved calculation restores its own recorded structure,
+  magnetic configuration, MDFF/editor parameters, detectors and numerical inputs
+  alongside its results. Comparison multi-selection does not restore an arbitrary run.
+- Capture accepted inputs at calculation start and persist them through the existing
+  configuration-project format. Reassess compute requests on the current machine.
+- Preserve saved arrays and ordinary project-close protection; identify incomplete
+  legacy settings and missing/changed sources without substituting another run's inputs.
+- These changes are local development source, not an update to published installers.
+
+## v0.9.0-beta.2 — Windows Research Beta
+
+- Unified Compute Resources replaces Resource Estimate: independent Auto/Manual
+  CPU and memory, hardware-aware admission, remembered Manual values and
+  calculation-scoped BLAS safeguards. Correct SC estimates describe the actual
+  bounded pixel contraction; scientific kernels and reference arrays are unchanged.
+- Distinguish requested uniform points from actual evaluated energies. Verify
+  the fresh packaged 243-energy, two-97×97-map Ni Global workflow, Local BW/MS
+  diagnostics, cancellation/restart, Save/Open and exports.
+- Publish existing measured performance, scientific-method/data bibliography,
+  validated software citation and MIT-consistent source/AI-derivative attribution.
+  Preserve current main's macOS guides, examples and independently released app.
+- Direct BW-SC cross-platform arrays pass; BW-DC/MS-SC/MS-DC direct comparisons
+  remain INCOMPLETE, explicitly accepted as a Research Beta limitation, not PASS.
+  Historical failed/incomplete broad verification remains unchanged.
+- See [release notes](RELEASE_NOTES_0_9_0_BETA_2.md).
+
+## v0.9.0-beta.1 — Windows Research Beta (prerelease)
+
+- Finalize current installation, Quick Start and Tutorial with the verified small 3.520 Å Ni Global workflow, current Viewer/MDFF acceptance controls, Local magnetic-subgroup/exclusion guidance and retained native illustrations. Packaged use needs neither Conda nor manual BLAS variables. Rebuild matching source/packages after this documentation-only change; numerical RC2 evidence remains separate.
+- RC2: reserve measured, wrapping legend rows in shared EELS views, including narrow/DPI-scaled comparisons. Keep full curve identification in figure exports and preserve legend hide/show state, including curves split across modeled energy windows. RC1 and RC2 remain separate local preparation records, not beta-version changes.
+- Consolidate the multi-site BW/MS Single/Double, crystallographic grouping, Material-owned Global/Local M, native per-group MDFF, results, project/history and export workflows. Magnetic grouping, ionization participation and source/frame declarations remain explicit.
+- Include normal-startup verified single-thread control for both OpenBLAS runtimes, bounded four-worker execution, response/depth progress and cooperative cancellation (`62cb49a`). Four workers are not universally faster.
+- Honor selected-energy full maps and detector support elsewhere in Local MS Double; preserve explicit all-energy full-field evaluation and internal FFT support (`daa5089`). The original Fe₃O₄ query count changes from 2,286,387 planned to 57,378 expected, not a measured original-size runtime improvement.
+- Resolve both focused current-source resource/default test failures, without changing memory policy or numerical tolerances. Thirteen distinct directly relevant cases passed; historical failed/incomplete broad regression and source-guard status remains unchanged.
+- Include shared Results layout/selection fixes, effective sampling captions, persistence, and generic saved-input freshness comparisons. Consolidate current user instructions; retain version-specific historical records below. See [release-note draft and scoped evidence](RELEASE_NOTES_0_9_0_BETA_1.md).
+
+
+## Unreleased development source — crystallographic groups and direction workflow
+
+- Restore uniform source-range sampling (241 requested points plus exact selected energies) as the new-project default. Keep native and selected-only sampling explicit and independent of selected-energy angular maps. Single Channeling evaluates only nonzero detector support elsewhere, prepares group tensors/phases and reciprocal vectors once, and retains bounded blocks, source checks and the unchanged tensor kernel. Save/Open preserves explicit old native/full-field choices. These changes are development source, not updates to earlier candidates or published releases.
+
+- Bound multi-site Single Channeling raw storage to 16-energy blocks, reducing each block immediately to the unchanged fractional detector spectra and selected maps. Retain every requested/native energy and angular pixel, provider amplitudes, and existing kernels. Include this storage in GUI/worker admission consistently; retain RAM/budget margins and show dominant contributors without contradictory execution-allowed wording after rejection.
+
+- Correct Local group MDFF setup: reuse source-backed XMCD declarations, check selected files automatically, suggest source-covered edge selections, expose the required RP−LP confirmation, and generate optional source/limitation descriptions. New group eta/beta defaults are visibly 1; saved values remain unchanged. Preview no longer clears unchanged model confirmations. Clarify preview/draft/accepted states, report actual Local energy/pixel workload, and retain named frame/source errors. Missing directions remain unconfigured and safe to cancel. Remove reference-Ni choices from ordinary controls while retaining saved compatibility internally. No solver or scientific-reference changes.
+
+- Simplify new Global XMCD setup: automatic source format/range checks, visible source-convention choice and relative reference default 1, generated provenance/limitations with optional overrides, and the generalized provider as the normal path. MDFF Done returns a validated Material draft; Viewer Apply and Close accepts it. Cancel rolls back pending MDFF/direction edits. New projects start with editable general numerical settings (2.5/2.0 Å⁻¹ cutoffs), explicitly without a convergence claim. Preserve saved historical Ni providers and presets as reference options. Replace empty-reference conversion errors with a named A²/eV input error. These are development-source changes, not changes to previously accepted EXEs.
+
+- Clarify UI status scope: local groups show “Inactive — Global mode” while Global magnetization is active, with inactive local direction details. Local mode retains actual missing/invalid-provider requirements and elastic-only exclusions. The shared MDFF editor identifies Global versus group readiness without copying configurations or changing validation. This is a UI-status clarification, not acceptance of Site M calculations.
+
+- Prepare local dev4: full-basis diffraction preview no longer requires an inherited target to survive systematic-absence filtering (Fe₃O₄ [017], cutoff 2: 59 beams, absent 200 target). Retain valid orientation, two-beam-target and 121-beam safeguards. Set ordinary fresh/reset/Automatic cutoffs to beam 2.5 and potential 2.0 Å⁻¹; retain explicit saved values and the matched historical reference preset.
+- Retire optional post-edge A/B correction from the GUI and force it off in new requests. Convert enabled legacy flags only in working settings with a notice; retain original files until Save and preserve historical results. Keep required MDFF physics and source/frame validation.
+- Prevent wheel edits to focused parameter spin boxes and closed selectors, forwarding page scrolling while preserving explicit edits, dropdown-list scrolling, 3D zoom and plot gestures. Give group MDFFs an explicit numerical-preview action, show validated XMCD input spectra when missing declarations block tensors, and bind reversed group previews through the existing physical-pair validator. No general tensor rotation, scattering-kernel or numerical-reference changes; dev1/dev2/dev3 remain unchanged.
+
+- Prepare local dev3: one Viewer/Site Groups MDFF entry and a shared, explicit-context three-model workspace; remove the main MDFF section while retaining seven peer Settings sections. Accept Global MDFF as configuration data, preserve group draft/outer Cancel transactions and independent contexts, and guard pending context switches. Scroll scientific controls with fixed footer actions for smaller/DPI-scaled desktops.
+- Add explicit ionization participation to existing structural groups and project persistence. Excluded oxygen remains in the full elastic structure but not the selected-Fe denominator; enabled missing sources block by group name. Nonmagnetic sources retain validated reference frames without assigning Material magnetic order. Keep energy-window exclusions separate. Report the actual elastic-preview geometry/beam-limit reason without adding an MDFF requirement. No propagation kernels or historical references changed; dev1/dev2 remain unchanged.
+
+- Make Material authoritative for target M, with transactional Global editing in the existing Viewer/Site Groups workflow and read-only target/context displays in MDFF Configuration. Remove per-model target restoration and source-validation overrides; retain independent full frames, physical-pair validation and compatible preview/submission. Use consistent title-case Settings headings without peer prefixes. This source cleanup is not in the unchanged `windows-crystal-groups-dev1` candidate (`effb755`).
+- Preserve the previous application regression at `f769e05`: **1,300 passed, 40 failed, 126 setup errors, 62 skipped, exit 1**, followed by 22 distinct focused passes at `effb755`. Broad regression/source-guard coverage remains incomplete; this cleanup does not rerun those suites, maintain pins or build another candidate.
+
+- On `feat/v0.9.0-crystal-grouping`, add symmetry-orbit grouping with original ASE indices, Wyckoff/CIF provenance, explicit unconfigured structural drafts and project persistence (`f2a6e93`). Ordinary CIF import does not assign magnetic order or MDFF.
+- Accept compatible group directions and explicitly validated physical reversal pairs through Apply, Save/Open and recalculation (`8b0c8e3`). Preserve source/frame identity and amplitudes; failed Apply retains accepted settings and drafts. Reject unsupported fixed-frame Z→X changes. magCIF and general tensor rotation remain future work.
+- Improve the existing Site Group Editor with a scrollable panel, a readable/resizable group table, count and MDFF status columns, and explicit accepted/draft/input M summaries. Clarify individual atom picking versus whole-group editing and Apply/Cancel status.
+- Document the development workflow and its limits. These additions are not in the accepted v0.9.0-beta.1 candidate at `6b917ed` or a published release. Scientific kernels, references and tensor validation are unchanged. Previous broad source-guard verification remains **incomplete**; this UI/documentation step does not run calculations, full regression, guard suites or builds.
+
 ## v0.8.1-beta.2 - Windows Research Beta (prerelease)
 
 - Add the dedicated MDFF configuration interface and element-aware cubic Sc-Zn Atomic parameter editor, including explicit electronic/radial/frame inputs, reference starts, synthetic defaults, per-element drafts, and numerical previews.
@@ -8,7 +74,7 @@
 - Require both explicit edge selections for ambiguous XMCD. Preserve Fe 710/723 eV selections after save/reopen and prevent stale JSON overriding later visible controls.
 - Preserve historical saved Atomic settings, reject pending/failed external source validation, restore intended model/frame/inputs, and separate valid Fe elastic preview from MDFF eligibility.
 - Update installation, first-calculation, model-construction, and project-creation documentation. No existing project JSON is required.
-- Validation remains accurate: full candidate run **FAILED** (1,191 passed, 1 failed, 54 skipped); repair **4 focused cases passed**; actual development EXE `aaa69a1` passed native save/reopen/recalculation. The user authorized a prerelease-specific exception to another complete regression.
+- Validation: release source `88dc9ec` passed **21 focused packaging/safeguard checks**, and the beta.2 EXE passed native ambiguity handling, explicit Fe 710/723 eV preview/calculation, and normal save/restart/reopen/recalculation. The earlier full-run XMCD ambiguity issue was fixed in `4f15a4d` and passed **four focused regression cases**. No complete full-suite rerun was performed on the final release; historical results and the authorized prerelease-specific exception remain in the [release notes](RELEASE_NOTES_0_8_1_BETA_2.md#validation-evidence-and-scoped-exception).
 - Explicitly exclude unused Qt PDF/Virtual Keyboard and their dependency chain; provide matching Qt/PySide/Shiboken sources and replacement instructions. Omit Microsoft runtime copies and require the official user-installed x64 runtime. Set consistent beta.2 version metadata. See [release notes](RELEASE_NOTES_0_8_1_BETA_2.md).
 
 ## v0.8.1-beta.1 - Windows-only Research Beta
@@ -87,7 +153,7 @@ complete complex DFT-derived MDFF or universal numerical convergence.
 
 ## Historical development entries (preserved)
 
-# Unreleased ? generalized Multislice final scientific review
+# Unreleased → generalized Multislice final scientific review
 
 - Five targeted [111] detector-only controls identify potential/beam support as
   the dominant raw-intensity sensitivity; passing final MS increments do not
@@ -99,7 +165,7 @@ complete complex DFT-derived MDFF or universal numerical convergence.
 - [GO for bounded research merge](GENERALIZED_MULTISLICE_MERGE_READINESS.md),
   not unrestricted convergence. No merge, release, Atomic 3D or Windows rebuild.
 
-# Unreleased ? generalized EMCD end-to-end validation
+# Unreleased → generalized EMCD end-to-end validation
 
 - Normal source-GUI Single/Double BW/MS acceptance across [001], [017], [117],
   [111] and [710], including Bragg alignment, coherent EELS/maps and projects.
@@ -110,7 +176,7 @@ complete complex DFT-derived MDFF or universal numerical convergence.
 - No solver-model/default/version change, Atomic 3D work, merge or Windows rebuild.
   See [validation and review disposition](GENERALIZED_MULTISLICE_EMCD_VALIDATION.md).
 
-# Unreleased ? generalized Projected ZOLZ development
+# Unreleased → generalized Projected ZOLZ development
 
 - Shared crystallographic orientation, exact integer reciprocal basis and
   structure-derived IAM Fourier potential; no production [017]/[117] geometry imports.

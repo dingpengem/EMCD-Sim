@@ -53,12 +53,12 @@ def test_corrupt_metadata_is_not_suppressed(monkeypatch):
         metadata.require_metadata()
 
 
-def test_fix_adds_only_six_pin_and_keeps_scientific_versions():
+def test_build_additions_preserve_existing_scientific_versions():
     def pins(text):
         return dict(line.split('==') for line in text.splitlines() if line and not line.startswith('#'))
     baseline = subprocess.check_output(['git','show','c10190c:packaging/requirements-windows.txt'], cwd=ROOT).decode()
     current = pins((ROOT/'packaging/requirements-windows.txt').read_text())
-    assert current == dict(pins(baseline), six='1.17.0')
+    assert current == dict(pins(baseline), six='1.17.0', spglib='2.7.0')
 
 
 def test_spec_shares_license_inventory_and_preflight_precedes_pyinstaller():
@@ -69,4 +69,5 @@ def test_spec_shares_license_inventory_and_preflight_precedes_pyinstaller():
     script = (ROOT/'packaging/build_windows.ps1').read_text()
     assert script.index('check_windows_metadata.py') < script.index('-m PyInstaller')
     assert 'pyinstaller' in metadata.REQUIRED_DISTRIBUTIONS
-    assert len(metadata.LICENSE_DISTRIBUTIONS) == 17
+    assert len(metadata.LICENSE_DISTRIBUTIONS) == 19
+    assert {'spglib','typing_extensions'} <= set(metadata.LICENSE_DISTRIBUTIONS)

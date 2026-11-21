@@ -10,25 +10,33 @@ import numpy as np
 
 
 def run(args):
-    from emcd_sim.gui.project_io import load_project,restore_structure
-    from emcd_sim.gui.emcd_forward import calculate
-    from emcd_sim.gui.channeling import worker_count
-    from emcd_sim.gui.memory_budget import memory_snapshot
-    from emcd_sim.gui.geometry import geometry
-    from emcd_sim.gui.runtime import build_info
+    from emcd_sim.gui.project_io import load_project
+    from emcd_sim.structure_geometry import restore_structure
+    from emcd_sim.forward_pipeline import calculate
+    from emcd_sim.channeling import worker_count
+    from emcd_sim.memory_budget import memory_snapshot
+    from emcd_sim.structure_geometry import geometry
+    from emcd_sim.provenance import build_info
     baseline_workers=None
     if args.baseline:
         if os.environ.get('OPENBLAS_NUM_THREADS')!='1':
             raise ValueError('Safe baseline comparison requires OPENBLAS_NUM_THREADS=1 before startup')
         import subprocess,types
-        import emcd_sim.gui.channeling as adapter
+        import emcd_sim.channeling as adapter
         old=types.ModuleType('emcd_sim.gui._crash_baseline');old.__package__='emcd_sim.gui'
         source=subprocess.check_output(['git','show','f947889252adc15da0413f7a97d03fb178bc8fa5:src/emcd_sim/gui/channeling.py'])
-        exec(compile(source,'baseline_channeling.py','exec'),old.__dict__)
+        source=source.replace(b'from .emcd_forward import Cancelled',b'from ..cancellation import Cancelled')
+        sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tests'))
+        from reference_imports import relocate_reference_imports
+        exec(compile(relocate_reference_imports(source),'baseline_channeling.py','exec'),old.__dict__)
         def baseline_contract(*args,**kwargs):
             kwargs.pop('execution_workers',None)
+            from emcd_sim.historical_ni import HistoricalNiSites
+            sites=kwargs.pop('ionization_sites',None)
+            if sites is not None and not isinstance(sites,HistoricalNiSites):
+                raise ValueError('The archived diagnostic baseline supports only the explicit historical Ni provider')
             return old.contract(*args,**kwargs)
-        adapter.contract=baseline_contract;baseline_workers=old.worker_count
+        adapter.calculate_detector_signals=baseline_contract;baseline_workers=old.worker_count
     saved=load_project(args.project)
     raw=json.loads((args.project/'input_parameters.json').read_text())
     structure=restore_structure(raw['structure_snapshot'])

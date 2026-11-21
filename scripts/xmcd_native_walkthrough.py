@@ -8,7 +8,7 @@ import traceback
 from unittest.mock import patch
 from PySide6 import QtCore, QtTest, QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.emcd_forward import DEFAULT_SOURCE
+from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
 from emcd_sim.gui.project_io import save_project
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -37,7 +37,7 @@ def walkthrough():
         w.model_box.setCurrentIndex(0)
         # Source is explicitly selected for the Ni material already displayed.
         # Only the native text-file chooser result is supplied by the harness.
-        with patch.object(QtWidgets.QFileDialog,'getOpenFileName',return_value=(str(DEFAULT_SOURCE),'')):
+        with patch.object(QtWidgets.QFileDialog,'getOpenFileName',return_value=(str(DEFAULT_NI_SOURCE),'')):
             w.browse_xmcd()
         w.declaration.setChecked(True);w.preview_mdff();p=w.xmcd_preview
         assert p.snapshot is not None and not p.is_stale,p.status.text()
@@ -66,7 +66,7 @@ def walkthrough():
         p.state.setCurrentIndex(4);p.part.setCurrentText('Imaginary');w.mdff_scroll.verticalScrollBar().setValue(0)
         w.mdff_dialog.raise_();w.mdff_dialog.activateWindow();capture('xmcd-restored-final')
         report=dict(platform=app.platformName(),python=sys.executable,worktree=str(ROOT),pid=os.getpid(),
-            source=str(DEFAULT_SOURCE),element='Ni',source_sha256=p.snapshot['config'].source_sha256,
+            source=str(DEFAULT_NI_SOURCE),element='Ni',source_sha256=p.snapshot['config'].source_sha256,
             source_selection='five-column text file; no MDFF JSON selected',
             source_and_real_provider_tensor=True,even_odd_and_reversal=True,stale_and_missing_source=True,
             all_three_modes_switched=True,native_calculation='completed',project=str(project),project_reopened=True,

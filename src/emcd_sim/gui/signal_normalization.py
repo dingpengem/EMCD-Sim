@@ -1,11 +1,10 @@
 """Derived visualization only. Pure NumPy; no source reads or forward model."""
 from dataclasses import dataclass, field
 import numpy as np
+from ..detector_signals import POLICY,EELS_FLOOR,scale95,divide_percent
 
 MODES = {'raw': 'Raw (a.u.)', 'asymmetry': 'Asymmetry (%)', 'peak': 'EELS Peak (%)'}
 MAP_MODES = {'raw': 'Raw (a.u.)', 'local': 'Local magnetic fraction (%)', 'paired': 'Paired angular asymmetry (%)'}
-POLICY = 'Positive finite denominator > relative floor times its positive finite 95th percentile; undefined values remain NaN.'
-EELS_FLOOR = 1e-8
 MAP_FLOOR = 1e-6
 
 
@@ -20,21 +19,8 @@ class DisplaySettings:
     shared_scale: bool = True
 
 
-def scale95(a):
-    a=np.asarray(a,float);positive=a[np.isfinite(a)&(a>0)]
-    return float(np.percentile(positive,95)) if positive.size else 0.
 
 
-def divide_percent(numerator, denominator, relative_floor=EELS_FLOOR, support=None):
-    a,b=np.broadcast_arrays(np.asarray(numerator,float),np.asarray(denominator,float))
-    floor=relative_floor*scale95(b)
-    valid=np.isfinite(a)&np.isfinite(b)&(b>floor)&(b>0)
-    if support is not None:valid &= np.broadcast_to(support,a.shape)
-    out=np.full(a.shape,np.nan)
-    with np.errstate(divide='ignore',invalid='ignore',over='ignore'):
-        np.divide(a,b,out=out,where=valid);out*=100
-    valid &= np.isfinite(out);out=np.where(valid,out,np.nan)
-    return out,dict(policy=POLICY,relative_floor=relative_floor,absolute_floor=floor,valid_count=int(valid.sum()),undefined_count=int((~valid).sum()))
 
 
 def sigma_even(spectra):

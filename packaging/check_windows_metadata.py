@@ -8,6 +8,7 @@ LICENSE_DISTRIBUTIONS = (
     'numpy', 'scipy', 'matplotlib', 'ase', 'PySide6', 'PySide6_Essentials',
     'PySide6_Addons', 'shiboken6', 'pillow', 'contourpy', 'cycler', 'fonttools',
     'kiwisolver', 'packaging', 'pyparsing', 'python-dateutil', 'six',
+    'spglib', 'typing_extensions',
 )
 REQUIRED_DISTRIBUTIONS = LICENSE_DISTRIBUTIONS + ('pyinstaller',)
 

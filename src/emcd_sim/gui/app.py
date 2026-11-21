@@ -1,4 +1,4 @@
-"""Native Qt diffraction controls and Stage B Bloch-wave EMCD/EELS."""
+"""Native Qt application window: diffraction inputs, calculation control and results."""
 from dataclasses import asdict
 from pathlib import Path
 import argparse,json,sys
@@ -8,8 +8,8 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 from .responsive import ResponsiveCanvas as FigureCanvasQTAgg
 from matplotlib.patches import Circle
-from .geometry import (Structure,Settings,indices,geometry,preview,excitation,
-                       align_bragg,za_from_tilt,tilt_from_za)
+from emcd_sim.structure_geometry import Structure, Settings, geometry, excitation, align_bragg, za_from_tilt, tilt_from_za
+from .geometry import indices, preview
 
 
 class PreviewWorker(QtCore.QThread):
@@ -26,17 +26,19 @@ class PreviewWorker(QtCore.QThread):
 
 
 from .responsive import FlowLayout, ResponsiveLayout, CollapsibleSection
-from .stage_b import StageB
+from .calculation_controls import CalculationControls
 from .results_browser import ProjectWorkspace
 
 
-class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
+class MainWindow(ProjectWorkspace,CalculationControls,QtWidgets.QMainWindow):
     preview_ready=QtCore.Signal()
     def __init__(self,workspace=None):
         super().__init__()
-        from .runtime import LABEL
+        from emcd_sim.provenance import LABEL
         self.setWindowTitle(LABEL)
         self.resize(1550,960);self.structure=Structure.nickel();self.last_result=None;self.worker=None;self.busy=False
+        self.magnetization_mode='global'
+        self.material_site_groups=None
         self.history=[];self.detectors=np.zeros((2,2));self.spin={};self.dialogs=[];self.run_outcome=None
         self.splitter=QtWidgets.QSplitter();self.setCentralWidget(self.splitter)
         self.inputs=QtWidgets.QWidget();self.form_layout=QtWidgets.QVBoxLayout(self.inputs)
@@ -44,12 +46,13 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.section('Material');self.button('Open CIF…',self.load_cif)
         self.structure_label=QtWidgets.QLabel();self.structure_label.setWordWrap(True);self.form.addRow(self.structure_label)
         self.button('Inspect structure…',self.inspect_structure)
+        self.button('3D Structure Viewer…',self.show_structure_viewer)
         from ..elastic_providers import CHOICES
         self.elastic_provider_box=QtWidgets.QComboBox()
         for label,key in CHOICES:self.elastic_provider_box.addItem(label,key)
         self.form.addRow('Elastic scattering provider',self.elastic_provider_box)
         self.elastic_provider_box.currentIndexChanged.connect(self.refresh)
-        self.section('B. Zone Axis & Diffraction')
+        self.section('Zone Axis & Diffraction',key='B. Zone Axis & Diffraction')
         geometry_form=self.form;self.geometry_options=CollapsibleSection('Orientation / ZA options',expanded=False);self.geometry_options.setObjectName('geometry_options');self.geometry_options.header.setToolTip('Crystal orientation, target hkl, projected ZA coordinates and Bragg alignment lock');geometry_form.addRow(self.geometry_options);self.form=QtWidgets.QFormLayout(self.geometry_options.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
         self.zone=QtWidgets.QLineEdit('0 1 7');self.zone.setToolTip('Direct-lattice [u v w]; changes the actual oriented cell.');self.form.addRow('Nominal zone [uvw]',self.zone)
         self.target=QtWidgets.QLineEdit('2 0 0');self.target.setToolTip('Target Miller indices; must belong to the oriented finite basis.');self.form.addRow('Target (hkl)',self.target)
@@ -63,28 +66,31 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.number('qy','ZA qy (Å⁻¹)',0,-20,20,self.za_changed)
         self.lock=QtWidgets.QComboBox();self.lock.addItems(['None','X','Y']);self.form.addRow('Lock for Bragg alignment',self.lock)
         self.form=geometry_form
-        self.number('tx','Tilt X (mrad)',Settings().tilt[0],-100,100,self.tilt_changed)
+        from emcd_sim.study_presets import nickel_geometry_settings
+        self.number('tx','Tilt X (mrad)',nickel_geometry_settings().tilt[0],-100,100,self.tilt_changed)
         self.number('ty','Tilt Y (mrad)',0,-100,100,self.tilt_changed)
         self.step=QtWidgets.QComboBox();self.step.addItems(['0.01','0.1','1']);self.step.setCurrentText('0.1');self.step.currentTextChanged.connect(self.step_changed);self.form.addRow('Tilt step (mrad)',self.step)
         self.align_button=self.button('Align to selected Bragg',self.align)
         self.button('Reset to zone axis',lambda:self.set_tilt((0,0)))
         self.button('Reset to reference geometry',self.reset_reference)
-        self.section('C. Microscope & Sample')
+        self.section('Microscope & Sample',key='C. Microscope & Sample')
         self.number('kv','Voltage (kV)',300,20,1000,self.tilt_changed)
         self.number('thickness','Thickness (nm)',30,.1,1000,self.refresh)
-        self.section('Model',True)
+        settings_form=self.form
+        self.mdff_host=QtWidgets.QWidget(self);self.form=QtWidgets.QFormLayout(self.mdff_host)
         self.mdff_controls()
-        self.section('E. Propagation Method')
+        self.mdff_host.hide();self.form=settings_form
+        self.section('Propagation Method',key='E. Propagation Method')
         self.propagation_controls()
-        self.section('F. Shared Calculation Settings')
+        self.section('Shared Calculation Settings',key='F. Shared Calculation Settings')
         self.numerical_controls()
-        self.section('Virtual detectors')
+        self.section('Virtual Detectors',key='Virtual detectors')
         self.show_detectors=QtWidgets.QCheckBox('Show physical A/B apertures');self.show_detectors.setChecked(True);self.show_detectors.toggled.connect(self.refresh);self.form.addRow(self.show_detectors)
         for key,label,val in [('ax','A qx',0),('ay','A qy',0),('bx','B qx',0),('by','B qy',0)]:self.number(key,label+' (Å⁻¹)',val,-20,20,self.detectors_changed)
         self.number('radius','Radius (Å⁻¹)',.0908059024,.001,2,self.refresh)
         self.button('Restore Thales A/B',self.restore_detectors)
         self.pair_label=QtWidgets.QLabel();self.pair_label.setWordWrap(True);self.form.addRow(self.pair_label)
-        self.section('G. Output Settings',False)
+        self.section('Output Settings',False,key='G. Output Settings')
         self.button('Export current plot PNG / SVG…',self.export_plot)
         self.button('Save elastic preview…',self.save_preview)
         self.button('Export completed EMCD / EELS...',self.save_emcd)
@@ -111,15 +117,22 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.canvas.mpl_connect('motion_notify_event',self.drag_za)
         self.canvas.mpl_connect('button_release_event',self.release_za)
         self.zone.returnPressed.connect(self.apply_orientation);self.target.returnPressed.connect(self.apply_orientation)
-        self.sync_za();self.restore_detectors();self.refresh();self.setup_stage_b();self.setup_stage_d(workspace)
+        self.sync_za();self.restore_detectors();self.refresh();self.setup_calculation_controls();self.setup_project_workspace(workspace)
         self.responsive=ResponsiveLayout(self)
-        from .mdff_usability import configuration_dialog
-        configuration_dialog(self)
-        self.mdff_dialog.hide()
         self.model_box.setCurrentIndex(1)
+        from .mdff_usability import GlobalMDFFDialog
+        self.mdff_dialog=GlobalMDFFDialog(self)
+        self.structure_view_action=QtGui.QAction('View 3D Crystal Structure…',self)
+        self.structure_view_action.triggered.connect(self.show_structure_viewer)
+        self.setup_project_session()
+        from .parameter_wheel import protect_parameter_wheels
+        protect_parameter_wheels(self)
 
-    def section(self,title,expanded=True):
-        group=CollapsibleSection(title,expanded=expanded);group.setObjectName('settings_'+''.join(c if c.isalnum() else '_' for c in title));self.form=QtWidgets.QFormLayout(group.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);self.form_layout.addWidget(group)
+    def section(self,title,expanded=True,*,key=None):
+        group=CollapsibleSection(title.replace('&','&&'),expanded=expanded)
+        group.setObjectName('settings_'+''.join(c if c.isalnum() else '_' for c in (key or title)))
+        group.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred,QtWidgets.QSizePolicy.Policy.Preferred)
+        self.form=QtWidgets.QFormLayout(group.body);self.form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows);self.form_layout.addWidget(group)
 
     def number(self,key,label,value,lo,hi,callback):
         box=QtWidgets.QDoubleSpinBox();box.setRange(lo,hi);box.setDecimals(10);box.setValue(value);box.setSingleStep(.1);box.setKeyboardTracking(False)
@@ -133,8 +146,22 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             thickness=self.spin['thickness'].value(),beam_cutoff=self.spin['beam'].value(),potential_cutoff=self.spin['potential'].value(),b_factor=self.spin['b'].value(),basis_mode=self.basis_mode.currentData(),elastic_provider=self.elastic_provider_box.currentData())
 
     def set_values(self,values):
+        changed=any(self.spin[key].value()!=float(value) for key,value in values.items())
         for key,value in values.items():
-            with QtCore.QSignalBlocker(self.spin[key]):self.spin[key].setValue(float(value))
+            widget=self.spin[key]
+            with QtCore.QSignalBlocker(widget):
+                if (getattr(self,'_restoring',False) or getattr(self,'_session_restoring',False)) and np.isfinite(value):
+                    # Recorded valid settings must not silently clamp to a
+                    # newer editor's usual increment-button range.
+                    if isinstance(widget,QtWidgets.QDoubleSpinBox):
+                        from decimal import Decimal
+                        digits=max(0,-Decimal(str(float(value))).as_tuple().exponent)
+                        widget.setDecimals(max(widget.decimals(),min(323,digits)))
+                        widget.setRange(min(widget.minimum(),float(value)),max(widget.maximum(),float(value)))
+                    else:widget.setRange(min(widget.minimum(),int(value)),max(widget.maximum(),int(value)))
+                widget.setValue(float(value))
+        if 'grid' in values and hasattr(self,'angular_resolution'):self.sync_angular_resolution()
+        if changed:self.mark_project_dirty()
 
     def sync_za(self):
         q=za_from_tilt((self.spin['tx'].value(),self.spin['ty'].value()),self.spin['kv'].value());self.set_values(dict(qx=q[0],qy=q[1]))
@@ -174,7 +201,12 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         self.canvas.draw_idle()
 
     def refresh(self,*_,fit=False):
+        if getattr(self,'_session_restoring',False):return
         if not hasattr(self,'canvas'):return
+        if getattr(self,'_project_structure',self.structure) is not self.structure:self.mark_project_dirty()
+        self._project_structure=self.structure
+        viewer=getattr(self,'structure_viewer',None)
+        if viewer is not None:viewer.set_structure(self.structure)
         self._za_drag=False
         self.resolve_numerical_ui()
         try:
@@ -193,11 +225,13 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.spin['beam'].setToolTip(f'BW: limits diffraction beams retained in the Bloch-wave eigenproblem and MDFF response. MS: limits retained diffraction beams used for MDFF contraction. Additional FFT harmonics may participate in MS propagation. g=1/d, Å⁻¹; no 2π conversion. Approximate angular equivalent λ|g|max = {angle:.4f} mrad at {s.voltage:g} kV. Not the EELS detector collection limit.')
             target_valid=s.target in hkl and s.target!=(0,0,0)
             elastic_reason=self.structure.elastic_reason_for(s.elastic_provider)
-            supported=not elastic_reason and target_valid
+            preview_reason=self.preview_blocking_reason(s,hkl)
+            supported=not preview_reason
             numerical_reason=self._numerical_error or ''
             self.run_button.setEnabled(supported and not self.busy);self.align_button.setEnabled(target_valid and not self.busy)
             elastic_notice=('Elastic Preview uses the displayed settings unchanged; no automatic preset was applied for these inputs. Inherited values are not independently convergence-validated for this material. MDFF/EELS automatic settings remain unavailable: '+numerical_reason if numerical_reason else '')
-            self.run_button.setToolTip(elastic_reason or elastic_notice or 'Calculate elastic diffraction for the current structure and settings.')
+            target_notice=('Selected target is absent from the retained basis; full-basis elastic preview remains available. Choose a retained reflection for Bragg alignment.' if not target_valid else '')
+            self.run_button.setToolTip(preview_reason or target_notice or elastic_notice or 'Calculate elastic diffraction for the current structure and settings.')
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(elastic_reason or 'IAM BW elastic preview supported; EMCD material eligibility is separate.'))
             old_limits=(self.ax.get_xlim(),self.ax.get_ylim()) if self.ax.has_data() else ((-1.3,1.3),(-1.3,1.3))
             self.ax.clear();fresh=self.preview_is_current(s)
@@ -245,6 +279,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.structure_label.setText(f'{self.structure.atoms.get_chemical_formula()} · {len(self.structure.atoms)} atoms\n'+(self.structure.elastic_reason or 'IAM elastic species supported; geometry needs correction.'))
             self.info.setPlainText(self.structure.description()+'\n\nNo valid current geometry: '+message)
             self.run_button.setEnabled(False);self.align_button.setEnabled(False);self.tabs.setTabText(0,'Diffraction (last preview)');self.ax.clear();self.ax.set_title('Beam limit exceeded — no current plot' if beam_limit else 'Invalid configuration — no current plot')
+            self.run_button.setToolTip(message)
             if beam_limit:
                 self.ax.text(.5,.5,str(exc).split('.')[0]+'.\nSelect Manual (Advanced),\nthen lower the Beam / MDFF cutoff.',transform=self.ax.transAxes,ha='center',va='center',wrap=True)
             self.canvas.draw_idle();self.selection.setText(message);self.statusBar().showMessage(message)
@@ -278,7 +313,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             j=hkl.index(s.target);gg=g[j];error=float(excitation(gg,s.tilt,s.voltage))
             value=f'{self.last_result["intensity"][j]:.7g}' if fresh else 'not calculated for current inputs'
             text=f'Target {s.target}: q=({gg[0]:.6f}, {gg[1]:.6f}) Å⁻¹; |g|={np.linalg.norm(gg):.6f}\ns={error:+.9g} Å⁻¹; exit intensity={value} a.u.'
-        else:text='Target is not a nonzero reflection in this oriented basis. Click a valid spot or enter its hkl; no intensity is calculated.'
+        else:text='Target is not a nonzero retained reflection. Choose a valid spot for alignment or target intensity; other retained reflections can still be previewed in the full basis.'
         text+=f'\nZA=({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; tilt=({s.tilt[0]:.8f}, {s.tilt[1]:.8f}) mrad'
         text+=f'\nLaue center: ({za[0]:.6f}, {za[1]:.6f}) Å⁻¹; Laue radius: {radius:.6f} Å⁻¹'
         if radius<=1e-12:text+=' — On zone axis'
@@ -378,8 +413,94 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
         if path:
             try:
                 self.structure=Structure.from_cif(path)
+                self.show_structure_viewer(show=False)
                 self.last_result=None;self.table.setRowCount(0);self.refresh();self.inspect_structure()
             except Exception as exc:self.error(str(exc))
+    def show_structure_viewer(self,*_,show=True):
+        from .structure_viewer import CrystalStructureDialog
+        if getattr(self,'structure_viewer',None) is None:
+            self.structure_viewer=CrystalStructureDialog(self)
+            self.structure_viewer.globalDirectionApplied.connect(self.set_material_magnetization)
+            self.structure_viewer.editor.mdff_opener=self.open_mdff_context
+            self.structure_viewer.magnetizationModeChanged.connect(self.set_magnetization_mode)
+            self.structure_viewer.editor.changed.connect(self.emcd_stale)
+            self.structure_viewer.editor.pendingChanged.connect(self.emcd_stale)
+            self.structure_viewer.siteGroupsApplied.connect(lambda _:self.emcd_stale())
+            self.structure_viewer.siteGroupsApplied.connect(lambda model:setattr(self,'material_site_groups',model))
+            self.structure_viewer.editor.changed.connect(self.mark_project_dirty)
+            self.structure_viewer.editor.pendingChanged.connect(self.mark_project_dirty)
+            self.structure_viewer.set_magnetization_mode(self.magnetization_mode)
+        self.structure_viewer.set_structure(self.structure,force=True)
+        self.structure_viewer.set_global_direction(self.material_magnetization)
+        self.material_site_groups=self.structure_viewer.accepted_site_groups
+        if show:
+            self.structure_viewer.show();self.structure_viewer.raise_();self.structure_viewer.activateWindow()
+
+    def set_magnetization_mode(self,mode):
+        if mode not in ('global','local'):raise ValueError('Expected global or local magnetization mode')
+        changed=self.magnetization_mode!=mode
+        if changed and mode=='local' and not getattr(self,'_session_restoring',False):
+            try:self._saved_global_config=self.forward_settings(prepare=False)
+            except ValueError:self._saved_global_config=None
+        self.magnetization_mode=mode
+        viewer=getattr(self,'structure_viewer',None)
+        if viewer is not None and viewer.editor.magnetization_mode!=mode:viewer.set_magnetization_mode(mode)
+        self.sync_magnetization_mode()
+        if changed:self.emcd_stale()
+        if changed:self.mark_project_dirty()
+
+    def open_mdff_context(self,group_id=None):
+        from .mdff_workspace import MDFFWorkspace
+        for dialog in self.findChildren(MDFFWorkspace):
+            if dialog.isVisible() and dialog._context_id!=group_id:
+                if not dialog.confirm_context_exit():return None
+                dialog.hide()
+        if group_id is None:
+            from .mdff_usability import configuration_dialog
+            return configuration_dialog(self)
+        editor=self.structure_viewer.editor
+        item=next((editor.groups.topLevelItem(i) for i,r in enumerate(editor.rows()) if r[0]==group_id),None)
+        if item is None:raise ValueError('Unknown MDFF editing context: '+group_id)
+        editor.groups.setCurrentItem(item);dialog=editor.configure_mdff()
+        dialog.set_context_choices(self,group_id);return dialog
+
+    def sync_magnetization_mode(self):
+        local=self.magnetization_mode=='local'
+        self.axis.setEnabled(not local)
+        if hasattr(self,'numerical_mode'):
+            self.sync_sampling_controls()
+        self.refresh_material_direction()
+        if hasattr(self,'magnetization_mode_note'):
+            self.magnetization_mode_note.setText('Global magnetization is locked while site-specific magnetization is enabled.'
+                + ' Run uses applied group MDFFs and their energy grids.' if local else 'Global Magnetization Mode. Local directions are inactive; configure Global MDFF through the 3D viewer.')
+
+    def set_material_magnetization(self,direction):
+        vector=np.asarray(direction,float)
+        if vector.shape!=(3,) or not np.isfinite(vector).all() or np.linalg.norm(vector)<1e-12:
+            raise ValueError('Material M requires three finite nonzero crystal Cartesian components')
+        changed=getattr(self,'material_magnetization',None)!=tuple(vector)
+        self.material_magnetization=tuple(map(float,vector))
+        with QtCore.QSignalBlocker(self.axis):self.axis.setText(' '.join(f'{v:.17g}' for v in vector))
+        self.refresh_material_direction()
+        if changed:
+            viewer=getattr(self,'structure_viewer',None)
+            if viewer is not None:viewer.set_global_direction(self.material_magnetization)
+            if hasattr(self,'atomic_editor'):
+                self.atomic_editor.invalidate_preview('Material magnetization changed')
+                self.atomic_editor.preview_state.setText('STALE — Material magnetization changed; update preview.')
+            self.emcd_stale();self.mark_project_dirty()
+
+    def refresh_material_direction(self):
+        try:text=' '.join(f'{v:.12g}' for v in self.material_direction())
+        except ValueError:text='Invalid Material direction — correct Global Material M in the Viewer'
+        for editor in (getattr(self,'atomic_editor',None),getattr(self,'manual_spectral',None)):
+            if editor is not None and hasattr(editor,'direction'):
+                with QtCore.QSignalBlocker(editor.direction):editor.direction.setText(text)
+        if hasattr(self,'mdff_material_direction'):
+            self.mdff_material_direction.setText('Global Material target M (crystal Cartesian, read-only): '+text+
+                '. Set through Material → 3D Structure Viewer → Site Groups. '+
+                ('Inactive for the current Local calculation.' if self.magnetization_mode=='local' else 'Global Magnetization Mode.'))
+
     def inspect_structure(self):
         dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('Crystal structure — ASE import');dialog.resize(650,500);layout=QtWidgets.QVBoxLayout(dialog)
         text=QtWidgets.QPlainTextEdit(self.structure.description());text.setReadOnly(True);layout.addWidget(text);dialog.show();self.dialogs.append(dialog)
@@ -390,16 +511,22 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             # MDFF Automatic-policy failures do not invalidate displayed elastic
             # controls. Validate those controls and their provider independently;
             # Run EMCD / EELS retains its existing _numerical_error gate.
-            reason=self.structure.elastic_reason_for(self.settings().elastic_provider)
-            if reason:raise ValueError(reason)
             s=self.settings();actual=geometry(self.structure,s,systematic_row=self.row_projection.isChecked())
+            reason=self.preview_blocking_reason(s,actual[2])
+            if reason:raise ValueError(reason)
         except Exception as exc:self.error(str(exc));return
-        if s.target not in actual[2] or s.target==(0,0,0):self.error('Select a valid nonzero target');return
         self.refresh()
         self.busy=True;self.run_outcome='running';self.inputs.setEnabled(False);self.run_button.setEnabled(False);self.cancel_button.setEnabled(True);self.progress.setRange(0,0);self.emcd_button.setEnabled(False)
         self.statusBar().showMessage('Preparing crystal / selecting basis / running Bloch-wave elastic preview…')
         self.worker=PreviewWorker(Structure(self.structure.atoms.copy(),self.structure.source,self.structure.sha256,self.structure.import_warnings),s,self.row_projection.isChecked())
         self.worker.result.connect(self.completed);self.worker.failed.connect(self.preview_failed);self.worker.finished.connect(self.finished);self.worker.start()
+
+    def preview_blocking_reason(self,settings,hkl):
+        reason=self.structure.elastic_reason_for(settings.elastic_provider)
+        if reason:return reason
+        if settings.basis_mode=='two-beam' and (settings.target not in hkl or settings.target==(0,0,0)):
+            return 'Ideal two-beam preview requires a retained nonzero target; check its systematic absence and the beam cutoff.'
+        return ''
     def completed(self,result):
         if self.worker.isInterruptionRequested():return
         self.run_outcome='completed'
@@ -418,6 +545,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
             self.worker.requestInterruption();self.statusBar().showMessage('Cancelling...')
     def closeEvent(self,event):
         if self.busy:self.cancel();event.ignore();return
+        if not self.confirm_project_changes(self.close):event.ignore();return
         self.store_ui_preferences()
         super().closeEvent(event)
     def maximize_view(self):
@@ -458,7 +586,7 @@ class MainWindow(ProjectWorkspace,StageB,QtWidgets.QMainWindow):
 
 
 def add_about_menu(window):
-    from .runtime import LABEL, build_info
+    from emcd_sim.provenance import LABEL, build_info
     action=window.menuBar().addMenu('Help').addAction('About / build')
     action.triggered.connect(lambda:QtWidgets.QMessageBox.information(window,LABEL,json.dumps(build_info(),indent=2)))
     return action
@@ -481,7 +609,8 @@ def main():
     parser.add_argument('--unified-elastic-acceptance',type=Path,help='Opt-in bounded unified-provider native GUI acceptance in a new folder')
     parser.add_argument('--unified-historical-project',type=Path,help='Read-only historical Ni project for unified-provider acceptance')
     args=parser.parse_args()
-    from .runtime import configure_logging, LABEL, build_info
+    from .runtime import configure_logging
+    from emcd_sim.provenance import LABEL, build_info
     configure_logging()
     if args.unified_elastic_acceptance:
         from .unified_elastic_acceptance import run
@@ -518,10 +647,20 @@ def main():
         QtCore.QTimer.singleShot(30000,lambda:app.exit(2))
     if args.smoke_emcd_screenshot:
         window.propagation_box.setCurrentIndex(['bloch','fft-multislice','both'].index(args.smoke_propagation))
-        if args.smoke_atomic:window.model_box.setCurrentIndex(1)
+        # These opt-in smoke cases explicitly select the supported Ni preset.
+        window.model_box.setCurrentIndex(1 if args.smoke_atomic else 0)
+        if args.smoke_atomic:
+            from emcd_sim.forward_settings import NiForwardSettings
+            from .saved_atomic_ui import restore
+            restore(window.atomic_editor,NiForwardSettings(model='atomic',l3=852.7,l2=870.0),window.structure)
+        else:
+            window.validate_xmcd(show_error=False);window.declaration.setChecked(True);window.reference_ni.setChecked(True)
+        window.show_structure_viewer()
+        if window.mdff_dialog.apply_configuration() is None:raise ValueError(window.mdff_dialog.status.text())
+        window.structure_viewer.apply_groups()
         def capture_emcd():
             if window.busy:QtCore.QTimer.singleShot(100,capture_emcd);return
-            from .emcd_forward import export_result
+            from .result_export import export_result
             import datetime
             from .runtime import workspace
             root=(workspace()/'smoke_exports')/('atomic_' if args.smoke_atomic else 'xmcd_')

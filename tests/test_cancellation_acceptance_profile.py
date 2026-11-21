@@ -4,9 +4,10 @@ import json
 import pytest
 from PySide6 import QtWidgets
 
-from emcd_sim.gui import cancellation_acceptance, geometry
+from emcd_sim.gui import cancellation_acceptance
+from emcd_sim import structure_geometry as geometry
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.runtime import reference_source
+from emcd_sim.provenance import reference_source
 
 
 @pytest.mark.parametrize('mismatch', ['grid', 'beam_basis'])

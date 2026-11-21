@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use EMCD-Sim or source-derived software in research, please cite this software and the version used. Academic citation is requested; the MIT License is unchanged."
+type: software
+title: "EMCD-Sim: Electron Magnetic Circular Dichroism Simulation Software"
+authors:
+  - family-names: Peng
+    given-names: Ding
+repository-code: "https://github.com/dingpengem/EMCD-Sim"
+url: "https://github.com/dingpengem/EMCD-Sim"
+version: "0.9.0-beta.2"
+date-released: "2026-11-11"
+license: MIT

@@ -1,6 +1,7 @@
 """Compact editors over the existing authenticated MDFF providers."""
 import hashlib
 import json
+import logging
 from pathlib import Path
 import re
 import numpy as np
@@ -159,7 +160,11 @@ class AtomicSchematic(QtWidgets.QWidget):
             for v,label in ((lo,'2p3/2 → 3d'),(hi,'2p1/2 → 3d')):
                 energy.annotate(label,xy=(v,.9),xytext=(v,.35),rotation=90,ha='center',fontsize=8,arrowprops=dict(arrowstyle='->',color='#d95f02' if self.key in ('l3','l2','sigma') else '#555'))
             energy.set(xlabel='Energy loss (eV)',yticks=[],title=f'Schematic • σ={sigma:g} eV');energy.legend(fontsize=7)
-            r=np.array(e.table_values(e.frame),float);m=r[:,2]*(1 if self.reversal.currentIndex()==0 else -1)
+            r=np.array(e.table_values(e.frame),float)
+            direction=e.owner.material_direction() if hasattr(e.owner,'material_direction') else r[:,2]
+            if direction is None:raise ValueError('Material direction is unconfigured')
+            m=np.array(direction,float)
+            m=m/np.linalg.norm(m)*(1 if self.reversal.currentIndex()==0 else -1)
             # Beam supplied in crystal Cartesian coordinates by the main window.
             beam=getattr(e,'beam_crystal',np.array([0.,0.,1.])); beam=beam/np.linalg.norm(beam)
             project=lambda v:(v[0]+.4*v[2],v[1]+.3*v[2])
@@ -168,7 +173,7 @@ class AtomicSchematic(QtWidgets.QWidget):
                 offset=.25 if label=='beam' else -.2 if label in ('+M','−M') else 0
                 frame.text(u*1.25,v*1.25+offset,label,color=color,fontsize=8)
             angle=np.degrees(np.arccos(np.clip(m@beam/np.linalg.norm(m),-1,1)))
-            frame.set(xlim=(-1.4,1.4),ylim=(-1.4,1.4),title=f'Crystal frame • M/beam {angle:.1f}°');frame.set_aspect('equal');frame.axis('off')
+            frame.set(xlim=(-1.4,1.4),ylim=(-1.4,1.4),title=f'Crystal target • M/beam {angle:.1f}°');frame.set_aspect('equal');frame.axis('off')
         except (ValueError,TypeError):energy.text(.1,.5,'Complete valid energies / frame');frame.axis('off')
         self.canvas.draw_idle()
 
@@ -188,21 +193,9 @@ def compact_atomic(editor):
     move(e.element,'Element');move(e.fields['l3'],'L3 reference (eV)');move(e.fields['l2'],'L2 reference (eV)');move(e.fields['sigma'],'Gaussian σ (eV)')
     e.saved_model_notice=QtWidgets.QLabel();e.saved_model_notice.setWordWrap(True);e.saved_model_notice.hide();form.addRow(e.saved_model_notice)
     e.main_error=QtWidgets.QLabel();e.main_error.setWordWrap(True);e.main_error.setStyleSheet('color:#a12622');form.addRow(e.main_error)
-    direction=QtWidgets.QWidget();row=QtWidgets.QHBoxLayout(direction);row.setContentsMargins(0,0,0,0)
-    e.direction=QtWidgets.QLineEdit('0 0 1');row.addWidget(e.direction)
-    apply=QtWidgets.QPushButton('Apply direction');row.addWidget(apply)
-    e.apply_direction=apply
-    def set_direction():
-        try:
-            z=np.array([float(v) for v in e.direction.text().replace(',',' ').split()])
-            if z.shape!=(3,) or not np.isfinite(z).all() or np.linalg.norm(z)<1e-12:raise ValueError('Enter three finite nonzero crystal Cartesian components')
-            z=z/np.linalg.norm(z);seed=np.eye(3)[np.argmin(abs(z))];x=np.cross(seed,z);x/=np.linalg.norm(x);r=np.column_stack((x,np.cross(z,x),z))
-            e._loading=True;e.frame_mode.setCurrentIndex(2)
-            for i in range(3):
-                for j in range(3):e.frame.cellWidget(i,j).setText(str(r[i,j]))
-            e._loading=False;e.edited()
-        except ValueError as exc:e.status.setText(str(exc))
-    apply.clicked.connect(set_direction);form.addRow('Crystal M direction',direction)
+    e.direction=QtWidgets.QLineEdit('0 0 1');e.direction.setReadOnly(True)
+    e.direction.setToolTip('Target M is set through Material → 3D Structure Viewer → Site Groups. The complete Atomic orbital/spin frame remains explicit.')
+    form.addRow('Material target M (read-only)',e.direction)
     reset=QtWidgets.QPushButton('Reset defaults');reset.clicked.connect(e.reset_defaults);form.addRow(reset)
     notice=QtWidgets.QLabel('Cubic independent-electron 2p → 3d L2,3 model. Elemental edge references + generic synthetic electronic defaults; editable, not a material fit.');notice.setWordWrap(True);form.addRow(notice)
     e.layout.insertWidget(0,main)
@@ -236,37 +229,112 @@ def compact_atomic(editor):
     e.reset_defaults()
 
 
+from .mdff_workspace import MDFFWorkspace
+
+
+class GlobalMDFFDialog(MDFFWorkspace):
+    """Global draft controller for the shared three-model workspace."""
+    def __init__(self,window):
+        super().__init__(window);self.window=window
+        w=window
+        for widget in (w.model_box,w.model_description,w.axis,w.mdff_stack):
+            old=widget.parentWidget().layout()
+            if isinstance(old,QtWidgets.QFormLayout):old.takeRow(widget)
+        w.axis.hide()
+        w.mdff_material_direction=QtWidgets.QLabel();w.mdff_material_direction.setWordWrap(True)
+        self.mount_editor(w.structure_label.text(),w.model_box,w.mdff_stack,w.mdff_material_direction,w.model_description)
+        self.status=QtWidgets.QLabel('Global MDFF draft. Done validates and returns to Material; Viewer Apply and Close accepts the configuration.');self.status.setWordWrap(True)
+        self.science_layout.addWidget(self.status)
+        buttons=QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Apply | QtWidgets.QDialogButtonBox.StandardButton.Cancel | QtWidgets.QDialogButtonBox.StandardButton.Close)
+        self.buttons=buttons;self.outer.addWidget(buttons)
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).setText('Done')
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Apply).clicked.connect(self.finish_edit)
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).clicked.connect(self.reject)
+        buttons.button(QtWidgets.QDialogButtonBox.StandardButton.Close).hide()
+        preview=QtWidgets.QPushButton('Update numerical preview');self.outer.insertWidget(self.outer.count()-1,preview);preview.clicked.connect(w.preview_mdff)
+        self._entry=self.snapshot();self._draft_configuration=None;self._ready_snapshot=None;w.refresh_material_direction()
+
+    def snapshot(self):
+        from copy import deepcopy
+        w=self.window
+        names=('source_path','xmcd_element','xmcd_edge','xmcd_selected','xmcd_provenance','xmcd_validity','xmcd_scale','atomic_parameter_path')
+        manual=w._capture_manual_state();source=manual.pop('source')
+        return dict(model=w.model_box.currentIndex(),fields={n:getattr(w,n).text() for n in names},
+            spins={k:v.value() for k,v in w.spin.items() if k.startswith('atomic_') or k in ('eta','beta','xl3','xl2','sigma','radial')},
+            flags={n:getattr(w,n).isChecked() for n in ('declaration','explicit_xmcd','atomic_declaration','imported_declaration','radial_override')},
+            status=w.xmcd_status.currentIndex(),source_info=deepcopy(w.source_info),validated_path=w.validated_path,
+            atomic=deepcopy(w.atomic_editor.draft()),atomic_path=w.atomic_editor.validated_path,atomic_sha=w.atomic_editor.validated_sha256,
+            atomic_info=w.atomic_provider_info,external=w.atomic_editor.external_source_pending,historical=w.atomic_editor.historical_config,
+            manual=manual,manual_source=source,manual_key=w._manual_key,spectral=deepcopy(w.manual_spectral.draft()))
+
+    @staticmethod
+    def comparable(state):
+        state=dict(state)
+        for k in ('manual_source','atomic_info','historical'):state.pop(k,None)
+        state['spectral']=dict(state['spectral']);state['spectral'].pop('direction',None)
+        return state
+
+    def has_unapplied_edits(self):
+        return self._draft_configuration is not None or self.comparable(self.snapshot())!=self.comparable(self._entry)
+
+    def draft_ready(self):
+        return self._draft_configuration is not None and self.comparable(self.snapshot())==self.comparable(self._ready_snapshot)
+
+    def apply_configuration(self):
+        try:
+            if self.window.model_box.currentIndex()==0:self.window.validate_xmcd(show_error=False)
+            cfg=self.window.global_mdff_draft_settings()
+            from ..mdff_providers import material_reason
+            reason=material_reason(self.window.structure,cfg)
+            if reason:raise ValueError(reason)
+        except Exception as exc:
+            logging.getLogger('emcd_sim.gui').exception('Global MDFF draft validation failed')
+            self.status.setText('Invalid / unapplied: '+str(exc));self.refresh_context_status();return None
+        self._draft_configuration=cfg;self._ready_snapshot=self.snapshot()
+        self.window.emcd_stale()
+        self.status.setText('Global MDFF draft ready. Apply and Close in the Viewer accepts the complete Material configuration; Cancel discards it.')
+        self.refresh_context_status()
+        return cfg
+
+    def prepare_material_apply(self):
+        if not self.has_unapplied_edits():return None
+        if not self.draft_ready():raise ValueError('Global MDFF has unfinished edits: choose Done in MDFF Configuration, or Cancel the draft.')
+        return self.window.global_mdff_draft_settings()
+
+    def commit_material(self,cfg):
+        self.window._accepted_global_mdff=cfg;self.window._saved_global_config=cfg
+        self._draft_configuration=None;self._ready_snapshot=None;self._entry=self.snapshot()
+        self.status.setText('Global MDFF accepted with Material settings.')
+        self.refresh_context_status()
+
+    def reject(self):
+        from copy import deepcopy
+        w=self.window;s=self._entry;previous=getattr(w,'_session_restoring',False);w._session_restoring=True
+        try:
+            for n,text in s['fields'].items():getattr(w,n).setText(text)
+            w.set_values(s['spins']);w.atomic_editor.restore_draft(deepcopy(s['atomic']))
+            w.atomic_editor.validated_path=s['atomic_path'];w.atomic_editor.validated_sha256=s['atomic_sha'];w.atomic_editor.external_source_pending=s['external']
+            if s['historical'] is not None:
+                from .saved_atomic_ui import restore
+                restore(w.atomic_editor,s['historical'],w.structure)
+            w.atomic_provider_info=s['atomic_info']
+            raw=deepcopy(s['manual']);raw['source']=s['manual_source'];w._manual_bindings[s['manual_key']]=raw
+            w._activate_manual_state(s['manual_key'],remember=False);w.manual_spectral.restore_draft(deepcopy(s['spectral']))
+            w.model_box.setCurrentIndex(s['model']);w.model_changed(s['model'])
+            w.xmcd_status.setCurrentIndex(s['status']);w.source_info=deepcopy(s['source_info']);w.validated_path=s['validated_path']
+            for n,flag in s['flags'].items():getattr(w,n).setChecked(flag)
+        finally:w._session_restoring=previous
+        self._draft_configuration=None;self._ready_snapshot=None
+        self.status.setText('Global MDFF draft cancelled; accepted configuration retained.')
+        w.refresh_material_direction();w.emcd_stale();self.refresh_context_status();self.hide()
+
+
 def configuration_dialog(window):
-    """Dedicated roomy workspace using the same live provider controls."""
-    w=window
-    if hasattr(w,'mdff_dialog'):
-        w.mdff_dialog.show();w.mdff_dialog.raise_();return
-    dialog=QtWidgets.QDialog(w);dialog.setWindowTitle('MDFF configuration');dialog.resize(1120,800)
-    outer=QtWidgets.QVBoxLayout(dialog)
-    material=QtWidgets.QGroupBox('Material');row=QtWidgets.QHBoxLayout(material)
-    button=QtWidgets.QPushButton('Open CIF…');button.clicked.connect(w.load_cif);row.addWidget(button)
-    w.mdff_material=QtWidgets.QLabel(w.structure_label.text());w.mdff_material.setWordWrap(True);row.addWidget(w.mdff_material,1);outer.addWidget(material)
-    model=QtWidgets.QGroupBox('Model');form=QtWidgets.QFormLayout(model)
-    for widget,label in ((w.model_box,'MDFF model'),(w.model_description,''),(w.axis,'Crystal Cartesian reference M')):
-        old=widget.parentWidget().layout()
-        if isinstance(old,QtWidgets.QFormLayout):old.takeRow(widget)
-        form.addRow(label,widget)
-    outer.addWidget(model)
-    old=w.mdff_stack.parentWidget().layout()
-    if isinstance(old,QtWidgets.QFormLayout):old.takeRow(w.mdff_stack)
-    scroll=QtWidgets.QScrollArea();scroll.setWidgetResizable(True);scroll.setWidget(w.mdff_stack);outer.addWidget(scroll,1)
-    bar=QtWidgets.QHBoxLayout();outer.addLayout(bar)
-    preview=QtWidgets.QPushButton('Update numerical preview');preview.clicked.connect(w.preview_mdff);bar.addWidget(preview)
-    run=QtWidgets.QPushButton('Calculate EMCD / EELS');run.clicked.connect(w.start_emcd);bar.addWidget(run)
-    close=QtWidgets.QPushButton('Done');close.clicked.connect(dialog.hide);bar.addWidget(close)
-    def model_visibility(index):
-        visible=index!=1 and not (index==2 and w.manual_model.currentIndex()==1)
-        w.axis.setVisible(visible);form.labelForField(w.axis).setVisible(visible)
-        w.model_description.setText((
-            'XMCD-constrained tensor: requires a declared XAS/XMCD spectrum and its conventions.',
-            'Atomic ionization: approximate cubic 2p to 3d transitions from editable electronic parameters.',
-            'Manual tensor: constant coefficients or phenomenological L2,3 spectral strengths.')[index])
-    w.mdff_stack.currentChanged.connect(model_visibility);model_visibility(w.model_box.currentIndex())
-    w.mdff_refresh_model=model_visibility
-    w.manual_model.currentIndexChanged.connect(lambda _:model_visibility(w.model_box.currentIndex()))
-    w.mdff_dialog=dialog;w.mdff_scroll=scroll;dialog.show()
+    if not hasattr(window,'mdff_dialog'):window.mdff_dialog=GlobalMDFFDialog(window)
+    dialog=window.mdff_dialog;dialog.set_context_choices(window,None)
+    if window._accepted_global_mdff is None and not dialog.has_unapplied_edits():
+        elements=set(window.structure.atoms.get_chemical_symbols())
+        if len(elements)==1:
+            with QtCore.QSignalBlocker(window.xmcd_element):window.xmcd_element.setText(next(iter(elements)))
+    window.sync_xmcd_route();window.refresh_material_direction()
+    dialog.show();dialog.raise_();return dialog

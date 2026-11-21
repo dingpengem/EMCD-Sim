@@ -1,4 +1,5 @@
-"""Focused kernel cancellation and exact pre-fix numerical equivalence."""
+"""Kernel cancellation, exact callback neutrality and historical equivalence."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import subprocess,types,sys,threading,time
 from dataclasses import replace
 from unittest.mock import patch
@@ -7,8 +8,10 @@ import pytest
 from emcd_sim.cancellation import Cancelled
 from legacy_geometry import Ni017Geometry
 from emcd_sim import double_channeling as bw, multislice_double_channeling as ms
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings,calculate
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
+from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.forward_pipeline import calculate
+from numerical_roundoff import assert_bloch_observables, assert_roundoff, bloch_roundoff
 
 
 def reference_module(path,name):
@@ -20,7 +23,7 @@ def reference_module(path,name):
 
 @pytest.fixture
 def elastic():
-    return elastic_model(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
+    return elastic_model(Structure.nickel(),nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8))
 
 
 @pytest.mark.parametrize('method',['analytic','numerical'])
@@ -30,11 +33,19 @@ def test_bw_unchanged_and_depth_cancel(elastic,method):
     args=dict(method=method,depth_steps=9)
     expected=old.double_channeling_response(elastic,831.4778,q,2,**args)
     actual=bw.double_channeling_response(elastic,831.4778,q,2,cancelled=lambda:False,**args)
-    np.testing.assert_array_equal(actual,expected)
-    event=threading.Event();original=bw.depth_response
+    np.testing.assert_array_equal(actual,
+        bw.double_channeling_response(elastic,831.4778,q,2,**args))
+    if method=='numerical':
+        budget=bloch_roundoff(len(elastic.beams.hkl),args['depth_steps'])
+        scale=np.max(abs(expected),axis=(-2,-1),keepdims=True)
+        assert_roundoff(actual,expected,budget*scale,label='historical Bloch response')
+    else:
+        np.testing.assert_array_equal(actual,expected)
+    hook='_numerical_site_responses' if method=='numerical' else 'depth_response'
+    event=threading.Event();original=getattr(bw,hook)
     def depth(*a,**kw):
         event.set();return original(*a,**kw)
-    with patch.object(bw,'depth_response',side_effect=depth),pytest.raises(Cancelled):
+    with patch.object(bw,hook,side_effect=depth),pytest.raises(Cancelled):
         bw.double_channeling_response(elastic,831.4778,q,2,cancelled=event.is_set,**args)
 
 
@@ -68,13 +79,14 @@ def test_incoming_slice_cancel(elastic):
 
 
 def test_both_cancellation_prevents_incoming_ms():
-    from emcd_sim.gui import channeling
-    event=threading.Event();original=bw.depth_response
-    def depth(*a,**kw):event.set();return original(*a,**kw)
-    cfg=ForwardSettings(axis_declared=True,channeling_model='double',propagation='both',
+    from emcd_sim import channeling as channeling
+    event=threading.Event();original=channeling.calculate_detector_signals
+    def signals(*a,**kw):
+        value=original(*a,**kw);event.set();return value
+    cfg=NiForwardSettings(axis_declared=True,channeling_model='double',propagation='both',
         energy_scope='edges',angular_maps=False,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
-    with patch.object(bw,'depth_response',depth),patch.object(channeling,'fft_geometry') as fft:
-        with pytest.raises(Cancelled):calculate(Structure.nickel(),Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),cfg,cancelled=event.is_set)
+    with patch.object(channeling,'calculate_detector_signals',signals),patch.object(channeling,'fft_geometry') as fft:
+        with pytest.raises(Cancelled):calculate(Structure.nickel(),nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8),cfg,cancelled=event.is_set)
     fft.assert_not_called()
 
 
@@ -83,13 +95,14 @@ def test_full_spectrum_unchanged(solver):
     oldbw=reference_module('src/emcd_sim/double_channeling.py','emcd_sim._baseline_bw')
     oldms=reference_module('src/emcd_sim/multislice_double_channeling.py','emcd_sim._baseline_ms')
     oldbw.PreparedBlochIncoming=bw.PreparedBlochIncoming
-    from emcd_sim.gui import channeling
-    cfg=ForwardSettings(axis_declared=True,channeling_model='double',propagation=solver,
+    from emcd_sim import channeling as channeling
+    cfg=NiForwardSettings(axis_declared=True,channeling_model='double',propagation=solver,
         energy_points=9,angular_maps=True,grid=9,depth=9,fft_grid=24,subpixels=16,correction=False)
-    structure=Structure.nickel();settings=Settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
+    structure=Structure.nickel();settings=nickel_geometry_settings(thickness=2,beam_cutoff=.9,potential_cutoff=1.8)
     def historical_arguments(elastic,kw):
         from emcd_sim.historical_ni import HistoricalNiSites
         kw.pop('cancelled',None)
+        kw.pop('prepared_outgoing',None)  # The archived reference prepares its own outgoing basis.
         sites=kw.pop('ionization_sites')
         assert isinstance(sites,HistoricalNiSites)
         # The archived API predates explicit sites. Certify the adapter supplies
@@ -102,6 +115,9 @@ def test_full_spectrum_unchanged(solver):
         before=calculate(structure,settings,cfg)
     after=calculate(structure,settings,cfg)
     for method in before['methods']:
+        if method=='bloch':
+            assert_bloch_observables(after['methods'][method],before['methods'][method],cfg)
+            continue
         for key,value in before['methods'][method]['spectra'].items():
             np.testing.assert_array_equal(value,after['methods'][method]['spectra'][key])
         for edge,fields in before['methods'][method]['maps'].items():

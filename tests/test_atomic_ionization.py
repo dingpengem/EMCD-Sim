@@ -112,8 +112,9 @@ def test_export_provenance_and_no_overwrite(tmp_path):
 @pytest.mark.parametrize('channel',['single','double'])
 def test_atomic_fe_bw_ms_project(tmp_path,channel):
     from ase.build import bulk
-    from emcd_sim.gui.geometry import Structure,Settings
-    from emcd_sim.gui.generalized_forward import calculate,settings_for_source
+    from emcd_sim.structure_geometry import Structure, Settings
+    from emcd_sim.forward_pipeline import calculate
+    from emcd_sim.mdff_providers import settings_for_source
     from emcd_sim.gui.project_io import save_project,load_project,source_status
     source=export_atomic_parameters(parameter_file(tmp_path/'params.json'),tmp_path/'tensor.json')
     cfg=settings_for_source(source.path,energy_scope='edges',grid=9,depth=9,subpixels=8,fft_grid=16,slice_step=.01,
@@ -159,7 +160,7 @@ def test_atomic_gui_generation_restoration_and_legacy_gate(tmp_path,monkeypatch)
     from PySide6 import QtWidgets
     from ase.build import bulk
     from emcd_sim.gui.app import MainWindow
-    from emcd_sim.gui.geometry import Structure
+    from emcd_sim.structure_geometry import Structure
     from emcd_sim.gui.project_io import save_project,load_project
     import time
     monkeypatch.setenv('EMCD_GUI_WORKSPACE',str(tmp_path/'workspace'))
@@ -179,6 +180,9 @@ def test_atomic_gui_generation_restoration_and_legacy_gate(tmp_path,monkeypatch)
         assert not w.imported_declaration.isChecked()
         w.imported_declaration.setChecked(True);w.energy_scope.setCurrentIndex(1);w.angular_maps.setChecked(True)
         w.detectors=np.array([[.2,.2],[.2,-.2]]);w.sync_detectors();w.correction.setChecked(False);w.refresh();w.emcd_stale()
+        w.show_structure_viewer()
+        assert w.mdff_dialog.apply_configuration() is not None,w.mdff_dialog.status.text()
+        w.structure_viewer.apply_groups()
         assert w.emcd_button.isEnabled(),w.emcd_button.toolTip()
         w.start_emcd();limit=time.monotonic()+90
         while w.busy and time.monotonic()<limit:app.processEvents();time.sleep(.01)

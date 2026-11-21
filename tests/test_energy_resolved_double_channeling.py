@@ -1,18 +1,22 @@
 """Energy streaming, prepared incoming fields and unchanged per-energy physics."""
+from emcd_sim.study_presets import nickel_geometry_settings
+from emcd_sim.cancellation import Cancelled
+from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.historical_ni import energy_grid
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from dataclasses import replace
 from unittest.mock import patch
 import numpy as np
 import pytest
-from emcd_sim.gui import emcd_forward as f
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+from emcd_sim import forward_pipeline as f
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.double_channeling import prepare_incoming_bloch,double_channeling_response,outgoing_elastic
 
 
 @pytest.fixture
 def small():
-    return Structure.nickel(),Settings(voltage=200,tilt=(-7.116725439974256,0),thickness=8,beam_cutoff=.9,potential_cutoff=1.8),f.ForwardSettings(
+    return Structure.nickel(),nickel_geometry_settings(voltage=200,tilt=(-7.116725439974256,0),thickness=8,beam_cutoff=.9,potential_cutoff=1.8),NiForwardSettings(
         axis_declared=True,channeling_model='double',energy_scope='full',energy_points=9,grid=9,depth=9,
         fft_grid=24,angular_maps=False,correction=False,l3=831.4778,l2=848.698)
 
@@ -53,17 +57,17 @@ def test_energy_checkpoint_reuses_only_completed_points(small):
         if data is None:return cache.get((method,e))
         cache[method,e]=data;writes.append(e)
     first=f.calculate(a,s,c,energy_ev=np.array([c.l3,c.l2]),energy_checkpoint=checkpoint)
-    with patch('emcd_sim.gui.channeling.double_channeling_response',side_effect=AssertionError('Completed point restarted')):
+    with patch('emcd_sim.channeling.double_channeling_response',side_effect=AssertionError('Completed point restarted')):
         again=f.calculate(a,s,c,energy_ev=np.array([c.l3,c.l2]),energy_checkpoint=checkpoint)
     assert len(writes)==2
     for k in first['spectra']:np.testing.assert_array_equal(first['spectra'][k],again['spectra'][k])
 
 
 def test_invalid_energy_grid_and_no_extrapolation(small):
-    c=small[2];native=f.energy_grid(c)
+    c=small[2];native=energy_grid(c)
     for energy in ([native[0]-1,c.l3,c.l2],[c.l3,c.l2,native[-1]+1],[c.l2,c.l3],[c.l3,np.nan,c.l2]):
-        with pytest.raises(ValueError):f.energy_grid(c,energy)
-    with pytest.raises(ValueError,match='include'):f.energy_grid(c,[826,833,850])
+        with pytest.raises(ValueError):energy_grid(c,energy)
+    with pytest.raises(ValueError,match='include'):energy_grid(c,[826,833,850])
 
 
 def test_outgoing_energy_and_frozen_branch_convention(small):
@@ -83,18 +87,19 @@ def test_reversal_and_single_unchanged(small):
     p=f.calculate(a,s,c);m=f.calculate(a,s,replace(c,eta=-1))
     np.testing.assert_allclose(p['spectra']['D_mag'],-m['spectra']['D_mag'],atol=1e-14)
     np.testing.assert_allclose(p['spectra']['D_nonmag'],m['spectra']['D_nonmag'],atol=1e-14)
-    with patch('emcd_sim.gui.channeling.prepare_incoming_bloch',side_effect=AssertionError('Single uses legacy propagation')):
+    with patch('emcd_sim.channeling.prepare_incoming_bloch',side_effect=AssertionError('Single uses legacy propagation')):
         r=f.calculate(a,s,replace(c,channeling_model='single'))
     assert r['config'].channeling_model=='single'
 
 
 def test_cancelled_spectrum_resumes_without_repeating_completed_energy(small):
-    from emcd_sim.gui import channeling,memory_budget
+    from emcd_sim import channeling as channeling
+    from emcd_sim import memory_budget as memory_budget
     a,s,c=small;energy=np.array([c.l3,c.l2]);cache={};stop=[False]
     def checkpoint(method,e,data):
         if data is None:return cache.get(e)
         cache[e]=data;stop[0]=True
-    with pytest.raises(f.Cancelled):
+    with pytest.raises(Cancelled):
         f.calculate(a,s,c,energy_ev=energy,energy_checkpoint=checkpoint,cancelled=lambda:stop[0])
     assert set(cache)=={c.l3}
     assert memory_budget.assess_memory(0)['concurrent_calculations']==0

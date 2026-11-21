@@ -1,4 +1,5 @@
 """Configuration-only acceptance: scientific propagation is forbidden throughout."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import json
 from contextlib import ExitStack
 from dataclasses import asdict,replace
@@ -8,11 +9,11 @@ import numpy as np
 import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Settings,Structure
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.structure_geometry import Settings, Structure
+from emcd_sim.forward_settings import NiForwardSettings
 from emcd_sim.gui.numerical_settings import resolve_parameters,REFERENCE_SOURCE_SHA256
 from emcd_sim.gui.project_io import load_project,save_project
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.propagation import numerical_info
 from historical_xmcd_test_support import (HISTORICAL_XMCD_SHA256, historical_xmcd_source,
     relocate_historical_xmcd_config)
 
@@ -22,10 +23,10 @@ def window(tmp_path):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with ExitStack() as stack:
         solvers=[]
-        for name in ('emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.stage_b.calculate',
-                     'emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.stage_b.EMCDWorker.run',
-                     'emcd_sim.gui.propagation.propagate','emcd_sim.gui.channeling.double_channeling_response',
-                     'emcd_sim.gui.channeling.multislice_double_channeling_response'):
+        for name in ('emcd_sim.forward_pipeline.calculate','emcd_sim.gui.calculation_worker.calculate',
+                     'emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run',
+                     'emcd_sim.channeling.propagate','emcd_sim.channeling.double_channeling_response',
+                     'emcd_sim.channeling.multislice_double_channeling_response'):
             solvers.append(stack.enter_context(patch(name,side_effect=AssertionError('Unexpected scientific solve'))))
         # Automatic starting presets apply to the built-in Ni workflow, not
         # the redesigned parameter-backed Atomic provider (Manual required).
@@ -33,13 +34,21 @@ def window(tmp_path):
         w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
         assert set(w.structure.atoms.get_chemical_symbols())=={'Ni'}
         assert w.source_info and w.validated_path==w.source_path.text()
+        w.show_structure_viewer()
+        # Automatic presets are a supported saved historical Ni capability;
+        # source-backed material providers intentionally require Manual mode.
+        w.reference_ni.setChecked(True)
+        assert w.mdff_dialog.apply_configuration() is not None
+        w.structure_viewer.apply_groups()
+        assert type(w._accepted_global_mdff) is NiForwardSettings
+        w.numerical_mode.setCurrentIndex(0)
         yield w
         w.close();app.processEvents()
         for solver in solvers:solver.assert_not_called()
 
 
 def reference_config(**kwargs):
-    return replace(ForwardSettings(),source_sha256=REFERENCE_SOURCE_SHA256,axis_declared=True,l3=831.4778,**kwargs)
+    return replace(NiForwardSettings(),source_sha256=REFERENCE_SOURCE_SHA256,axis_declared=True,l3=831.4778,**kwargs)
 
 
 @pytest.mark.parametrize('minimum',[38,130])
@@ -49,34 +58,34 @@ def test_fft_selection_never_truncates_or_exceeds_supported_mesh(monkeypatch,min
         calls.append((settings,cfg));assert kwargs['check_memory'] is False
         if cfg.fft_grid<minimum:raise ValueError('Unsafe FFT Nyquist boundary')
         return {}
-    monkeypatch.setattr('emcd_sim.gui.propagation.numerical_info',support)
-    cfg=replace(ForwardSettings(),propagation='both')
+    monkeypatch.setattr('emcd_sim.propagation.numerical_info',support)
+    cfg=replace(NiForwardSettings(),propagation='both')
     if minimum>128:
         with pytest.raises(ValueError,match='Automatic FFT setup unavailable'):
-            resolve_parameters(Structure.nickel(),Settings(),cfg)
+            resolve_parameters(Structure.nickel(),nickel_geometry_settings(),cfg)
     else:
-        values,_=resolve_parameters(Structure.nickel(),Settings(),cfg)
+        values,_=resolve_parameters(Structure.nickel(),nickel_geometry_settings(),cfg)
         assert values['fft_grid']==minimum
     assert [c.fft_grid for s,c in calls]==list(range(32,min(minimum,128)+1,2))
-    assert all(s.beam_cutoff==3.2 and s.potential_cutoff==2.5 and c.depth==64 and c.slice_step==2. for s,c in calls)
+    assert all(s.beam_cutoff==2.5 and s.potential_cutoff==2.0 and c.depth==64 and c.slice_step==2. for s,c in calls)
 
 
 def test_pure_resolution_never_calls_scientific_solvers():
     with ExitStack() as stack:
-        for name in ('emcd_sim.gui.propagation.propagate','emcd_sim.gui.emcd_forward.calculate',
-                     'emcd_sim.gui.channeling.double_channeling_response',
-                     'emcd_sim.gui.channeling.multislice_double_channeling_response',
+        for name in ('emcd_sim.channeling.propagate','emcd_sim.forward_pipeline.calculate',
+                     'emcd_sim.channeling.double_channeling_response',
+                     'emcd_sim.channeling.multislice_double_channeling_response',
                      'numpy.linalg.eigh'):
             stack.enter_context(patch(name,side_effect=AssertionError('Unexpected scientific solve')))
         for method in ('bloch','fft-multislice','both'):
-            resolve_parameters(Structure.nickel(),Settings(),reference_config(propagation=method))
+            resolve_parameters(Structure.nickel(),nickel_geometry_settings(),reference_config(propagation=method))
 
 
 @pytest.mark.parametrize('method',['bloch','fft-multislice','both'])
 @pytest.mark.parametrize('channel',['single','double'])
 def test_reference_selection_and_fft_support(method,channel):
     cfg=reference_config(propagation=method,channeling_model=channel)
-    reference=replace(Settings(elastic_provider='nickel-lobato-2014'),voltage=200,tilt=(-7.116725439974256,0))
+    reference=replace(nickel_geometry_settings(elastic_provider='nickel-lobato-2014'),voltage=200,tilt=(-7.116725439974256,0))
     values,meta=resolve_parameters(Structure.nickel(),reference,cfg)
     assert (values['beam'],values['potential'],values['fft_grid'],values['depth'],values['slice_step'])==(4.6,6.2,48,257,.04)
     assert meta['source']=='Matching reference configuration'
@@ -85,27 +94,29 @@ def test_reference_selection_and_fft_support(method,channel):
 
 
 @pytest.mark.parametrize('settings,cfg',[
-    (replace(Settings(),thickness=31),reference_config()),
-    (replace(Settings(),voltage=300),reference_config()),
-    (replace(Settings(),tilt=(-7,0)),reference_config()),
-    (replace(Settings(),b_factor=.1),reference_config()),
-    (Settings(),replace(reference_config(),source_sha256='other')),
-    (Settings(),replace(reference_config(),magnetization=(1,0,0))),
-    (Settings(),replace(reference_config(),centers=((0,0),(0,0)))),
-    (Settings(),replace(reference_config(),radial=.05)),
-    (Settings(),replace(reference_config(),l3=852.7)),
+    (replace(nickel_geometry_settings(),thickness=31),reference_config()),
+    (replace(nickel_geometry_settings(),voltage=300),reference_config()),
+    (replace(nickel_geometry_settings(),tilt=(-7,0)),reference_config()),
+    (replace(nickel_geometry_settings(),b_factor=.1),reference_config()),
+    (nickel_geometry_settings(),replace(reference_config(),source_sha256='other')),
+    (nickel_geometry_settings(),replace(reference_config(),magnetization=(1,0,0))),
+    (nickel_geometry_settings(),replace(reference_config(),centers=((0,0),(0,0)))),
+    (nickel_geometry_settings(),replace(reference_config(),radial=.05)),
+    (nickel_geometry_settings(),replace(reference_config(),l3=852.7)),
 ])
 def test_unmatched_never_claims_convergence(settings,cfg):
     values,meta=resolve_parameters(Structure.nickel(),settings,cfg)
-    assert values['beam']==3.2 and values['potential']==2.5
+    assert values['beam']==2.5 and values['potential']==2.0
     assert 'convergence not established' in meta['status']
 
 
-def test_unsupported_geometry_no_fallback():
-    # The full basis admission cap can reject this geometry even before the
-    # MS geometry gate; neither rejection may truncate beams or switch engines.
-    with pytest.raises(ValueError,match='FFT EMCD supports Ni|interactive limit'):
-        resolve_parameters(Structure.nickel(),replace(Settings(),zone=(0,1,1)),replace(ForwardSettings(),propagation='both'))
+def test_supported_orientation_and_invalid_geometry_no_fallback():
+    cfg=replace(NiForwardSettings(),propagation='both')
+    values,meta=resolve_parameters(Structure.nickel(),replace(nickel_geometry_settings(),zone=(0,1,1)),cfg)
+    assert values['fft_grid']>=32 and meta['physical_settings']['zone']==(0,1,1)
+    assert 'convergence not established' in meta['status']
+    with pytest.raises(ValueError,match=r'Zone direction cannot be \[000\]'):
+        resolve_parameters(Structure.nickel(),replace(nickel_geometry_settings(),zone=(0,0,0)),cfg)
 
 
 def test_auto_defaults_display_and_no_solvers(window):
@@ -113,7 +124,7 @@ def test_auto_defaults_display_and_no_solvers(window):
     assert w.numerical_mode.currentIndex()==0
     assert w.shared_sampling_group.isHidden() and not w.shared_resources_group.isHidden()
     assert not w.spin['beam'].isEnabled() and not w.spin['fft_grid'].isEnabled()
-    assert w.spin['grid'].value()==97 and w.memory_budget.currentData()==2048
+    assert w.spin['grid'].value()==97 and w.memory_budget.value()==2048
     assert 'FFT grid' not in w.numerical_values.text()
     for index in (1,2,0):
         w.propagation_box.setCurrentIndex(index)
@@ -122,19 +133,19 @@ def test_auto_defaults_display_and_no_solvers(window):
         assert cfg.depth==actual['depth'] and cfg.grid==actual['grid'] and cfg.fft_grid==actual['fft_grid']
         assert ('FFT grid' in w.numerical_values.text())==(index!=0)
         assert w.ms_settings_group.isHidden()
-    w.new_project();assert w.numerical_mode.currentIndex()==0
+    w.new_project();assert w.numerical_mode.currentIndex()==1
 
 
 def test_manual_roundtrip_preserves_physics_and_overrides(window):
     w=window;original=w.numerical_snapshot();physical=w.settings()
     w.numerical_mode.setCurrentIndex(1);assert w.numerical_snapshot()==original
     w.spin['beam'].setValue(2.8);w.spin['potential'].setValue(2.4);w.spin['depth'].setValue(33)
-    w.spin['grid'].setValue(65);w.memory_budget.setCurrentIndex(0)
+    w.spin['grid'].setValue(65);w.memory_mode.setCurrentIndex(1);w.memory_budget.setValue(512)
     manual=w.numerical_snapshot();cfg=w.forward_settings()
     for i in (1,2,0):w.propagation_box.setCurrentIndex(i)
     assert w.numerical_snapshot()==manual
     w.numerical_mode.setCurrentIndex(0)
-    assert w.spin['grid'].value()==97 and w.spin['beam'].value()==3.2 and w.spin['potential'].value()==2.5
+    assert w.spin['grid'].value()==97 and w.spin['beam'].value()==2.5 and w.spin['potential'].value()==2.0
     w.numerical_mode.setCurrentIndex(1)
     assert w.numerical_snapshot()==manual and w.forward_settings()==cfg
     assert replace(w.settings(),beam_cutoff=physical.beam_cutoff,potential_cutoff=physical.potential_cutoff)==physical
@@ -198,7 +209,7 @@ def test_legacy_keeps_explicit_manual(window,tmp_path):
 def test_historical_source_relocation_rejects_unverified_identity(tmp_path,failure):
     from emcd_sim.gui.project_io import source_status
     source=historical_xmcd_source(tmp_path)
-    cfg=ForwardSettings(source='recorded-original.xmcd',source_sha256=HISTORICAL_XMCD_SHA256)
+    cfg=NiForwardSettings(source='recorded-original.xmcd',source_sha256=HISTORICAL_XMCD_SHA256)
     positive=relocate_historical_xmcd_config(cfg,source)
     assert replace(positive,source=cfg.source)==cfg
     assert source_status(dict(config=cfg,metadata={},source_overrides=dict(xmcd=positive.source)))['xmcd']['verified']
@@ -215,7 +226,7 @@ def test_historical_source_relocation_rejects_unverified_identity(tmp_path,failu
 
 
 def test_memory_rejection_does_not_lower_settings(window,monkeypatch):
-    import emcd_sim.gui.propagation as prop
+    import emcd_sim.propagation as prop
     before=window.numerical_snapshot()
     monkeypatch.setattr(prop,'numerical_info',Mock(side_effect=ValueError('Estimated process peak exceeds 2048 MiB budget')))
     window.emcd_stale()
@@ -224,7 +235,7 @@ def test_memory_rejection_does_not_lower_settings(window,monkeypatch):
 
 
 def test_run_starts_one_worker_only(window,monkeypatch):
-    import emcd_sim.gui.stage_b as sb
+    import emcd_sim.gui.calculation_controls as sb
     worker=Mock();worker.isInterruptionRequested.return_value=False
     factory=Mock(return_value=worker);monkeypatch.setattr(sb,'EMCDWorker',factory)
     window.start_emcd();assert factory.call_count==1 and worker.start.call_count==1

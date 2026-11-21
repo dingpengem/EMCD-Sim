@@ -301,7 +301,10 @@ class AtomicParameterEditor(QtWidgets.QWidget):
     def update_derived(self):
         if hasattr(self,"schematic"):
             self.schematic.draw()
-            try:self.direction.setText(" ".join(self.frame.cellWidget(i,2).text() for i in range(3)))
+            try:
+                direction=self.owner.material_direction() if hasattr(self.owner,'material_direction') else None
+                self.direction.setText(('Unconfigured' if direction is None else ' '.join(map(str,direction)))
+                    if hasattr(self.owner,'material_direction') else ' '.join(self.frame.cellWidget(i,2).text() for i in range(3)))
             except ValueError:pass
         if hasattr(self,'main_error'):self.main_error.setText(capability_reason(self.element.currentData()) or self.reference_problem)
         scientific_status=self.scientific_status.currentText()
@@ -332,7 +335,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
         try:
             frame = np.array(self.table_values(self.frame), float)
             valid = np.isfinite(frame).all() and np.allclose(frame.T @ frame, np.eye(3), atol=1e-12, rtol=0) and np.isclose(np.linalg.det(frame), 1, atol=1e-12, rtol=0)
-            self.derived_axis.setText('Derived crystal M = '+str(frame[:,2].tolist()) if valid else 'Invalid proper frame; no silent repair.')
+            self.derived_axis.setText('Source quantization axis (frame z) = '+str(frame[:,2].tolist()) if valid else 'Invalid proper frame; no silent repair.')
         except ValueError: self.derived_axis.setText('Select/enter a complete proper frame.')
         self.refresh_origin_labels()
         self.edge_status.setText('Edge input provenance - verify the current chemical environment; table references are not material predictions.\n'+
@@ -527,7 +530,7 @@ class AtomicParameterEditor(QtWidgets.QWidget):
     def load_demo(self):
         if any(w.text() for k,w in self.fields.items() if k not in ('l3','l2')):
             if QtWidgets.QMessageBox.question(self, 'Replace current draft?', 'Load the explicitly synthetic Fe software demonstration into the editable fields?') != QtWidgets.QMessageBox.StandardButton.Yes: return
-        from .runtime import resource_root
+        from emcd_sim.provenance import resource_root
         root = resource_root(); path = root/'examples/synthetic_fe_atomic_parameters.json'
         if not path.exists(): path = root/'docs/examples/synthetic_fe_atomic_parameters.json'
         self.load_document(path)
@@ -547,8 +550,9 @@ class AtomicParameterEditor(QtWidgets.QWidget):
             if self.external_source_pending:raise InputProblem('source','Import or validate the newly selected external JSON first; no old editor tensor will be substituted')
             doc = self.document(); path, digest = persist_document(self.workspace(), doc)
             # Existing provider performs transition generation, Hermiticity, PSD and provenance verification.
-            from .generalized_forward import settings_for_provider
-            settings_for_provider(path, 'atomic')
+            from ..mdff_providers import settings_for_provider
+            cfg=settings_for_provider(path, 'atomic')
+            if hasattr(self.owner,'bind_material_reference'):self.owner.bind_material_reference(cfg)
             self.validated_path = str(path); self.validated_sha256 = digest; self.source_location.setText(str(path))
             self._loading = True; self.use_editor.setChecked(True); self._loading = False
             self.sourceReady.emit(str(path))
@@ -564,10 +568,11 @@ class AtomicParameterEditor(QtWidgets.QWidget):
                 if not self.validated_path:return
             _, digest = read_document(self.validated_path)
             if digest != self.validated_sha256: raise ValueError('Atomic source checksum changed')
-            from .generalized_forward import settings_for_provider
-            from ..mdff_providers import load_provider
+            from ..mdff_providers import settings_for_provider, source_for
             from .tensor_spectrum_preview import TensorSpectrumPreview
-            source=load_provider(settings_for_provider(self.validated_path,'atomic'))
+            cfg=settings_for_provider(self.validated_path,'atomic')
+            if hasattr(self.owner,'bind_material_reference'):cfg=self.owner.bind_material_reference(cfg)
+            source=source_for(cfg)
             old=getattr(self,'preview_dialog',None)
             if old is not None:old.close()
             self.preview_dialog=TensorSpectrumPreview(source,self)

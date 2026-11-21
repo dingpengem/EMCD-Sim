@@ -1,4 +1,5 @@
 """Stage D persistence and scientific comparison using compact real fixtures."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import unittest,uuid,json,threading
@@ -11,20 +12,22 @@ from contextlib import ExitStack
 import numpy as np
 from PySide6 import QtWidgets,QtCore
 from matplotlib.figure import Figure
-from emcd_sim.gui.emcd_forward import calculate,ForwardSettings,DEFAULT_SOURCE
-from emcd_sim.gui.geometry import Structure,Settings
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.forward_settings import NiForwardSettings, DEFAULT_NI_SOURCE
+from emcd_sim.structure_geometry import Structure, Settings, restore_structure
 from emcd_sim.gui.project_io import *
-from emcd_sim.gui.results_browser import Registry
+from emcd_sim.gui.project_collection import load_collection
+from emcd_sim.gui.results_browser import ResultRegistry
 from emcd_sim.gui.compare_results import map_compatibility,draw_saved_comparison,scalar_rows,export_comparison_data
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.results import draw_maps,draw_eels
+from emcd_sim.gui.result_presentation import draw_maps, draw_eels
 
 ROOT=Path('outputs/gui_stage_d')/('tests_'+uuid.uuid4().hex)
 
 
 def no_solvers():
     stack=ExitStack()
-    for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni','emcd_sim.gui.emcd_forward.tensors','emcd_sim.gui.emcd_forward.calculate'):
+    for name in ('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes','emcd_sim.multislice_reference.fft_multislice_ni','emcd_sim.historical_ni.tensors','emcd_sim.forward_pipeline.calculate'):
         stack.enter_context(patch(name,side_effect=AssertionError('Forward solver called during read/compare')))
     return stack
 
@@ -32,10 +35,10 @@ def no_solvers():
 class ProjectTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        ROOT.mkdir(parents=True);cfg=ForwardSettings(propagation='both',axis_declared=True,source_sha256=sha256(DEFAULT_SOURCE),energy_points=17,grid=17,depth=12,subpixels=16)
-        cls.result=calculate(Structure.nickel(),Settings(),cfg)
-        cls.atomic=calculate(Structure.nickel(),Settings(),replace(cfg,model='atomic',propagation='fft-multislice',l3=852.7,l2=870.,correction=False))
-        cls.second=calculate(Structure.nickel(),replace(Settings(),tilt=(-6.5,0)),replace(cfg,energy_points=17))
+        ROOT.mkdir(parents=True);cfg=NiForwardSettings(propagation='both',axis_declared=True,source_sha256=sha256(DEFAULT_NI_SOURCE),energy_points=17,grid=17,depth=12,subpixels=16)
+        cls.result=calculate(Structure.nickel(),nickel_geometry_settings(),cfg)
+        cls.atomic=calculate(Structure.nickel(),nickel_geometry_settings(),replace(cfg,model='atomic',propagation='fft-multislice',l3=852.7,l2=870.,correction=False))
+        cls.second=calculate(Structure.nickel(),replace(nickel_geometry_settings(),tilt=(-6.5,0)),replace(cfg,energy_points=17))
         cls.folder=ROOT/'complete';save_project(cls.result,cls.folder);save_project(cls.second,ROOT/'second_complete')
     def assert_equal(self,a,b):
         self.assertEqual(list(a['methods']),list(b['methods']))
@@ -61,7 +64,7 @@ class ProjectTests(unittest.TestCase):
                 with np.load(path/filename,allow_pickle=False) as data:
                     for k in data.files:self.assertFalse(data[k].dtype.hasobject)
     def test_external_sources_missing_no_recomputation(self):
-        path=ROOT/'source_copy.xmcd';path.write_bytes(DEFAULT_SOURCE.read_bytes());cfg=replace(self.result['config'],source=str(path),source_sha256=sha256(path))
+        path=ROOT/'source_copy.xmcd';path.write_bytes(DEFAULT_NI_SOURCE.read_bytes());cfg=replace(self.result['config'],source=str(path),source_sha256=sha256(path))
         changed=dict(self.result,config=cfg,methods={n:dict(m,config=cfg,metadata=dict(m['metadata'],mdff=asdict(cfg))) for n,m in self.result['methods'].items()},metadata=dict(self.result['metadata'],mdff=asdict(cfg)))
         save_project(changed,ROOT/'missing_source');path.unlink()
         with no_solvers():opened=load_project(ROOT/'missing_source');draw_maps(Figure(figsize=(12,8),layout='constrained'),opened,'L3');draw_eels(Figure(figsize=(10,8)),opened,method='overlay')
@@ -80,12 +83,12 @@ class ProjectTests(unittest.TestCase):
         from ase.io import write
         original=ROOT/'original_Ni.cif';relocated=ROOT/'relocated_Ni.cif';write(original,Structure.nickel().atoms,format='cif');relocated.write_bytes(original.read_bytes())
         structure=Structure.from_cif(original)
-        result=calculate(structure,Settings(),replace(self.result['config'],propagation='bloch',grid=9,depth=4,energy_points=9))
+        result=calculate(structure,nickel_geometry_settings(),replace(self.result['config'],propagation='bloch',grid=9,depth=4,energy_points=9))
         save_project(result,ROOT/'cif_project');original.unlink()
         with no_solvers():opened=load_project(ROOT/'cif_project')
         self.assertFalse(source_status(opened)['cif']['available']);self.assertIn('cif',rerun_reason(opened));self.assert_equal(result,opened)
         opened['source_overrides']={'cif':str(relocated)};self.assertEqual(rerun_reason(opened),'')
-        opened['source_overrides']['cif']=str(DEFAULT_SOURCE);self.assertIn('mismatch',rerun_reason(opened))
+        opened['source_overrides']['cif']=str(DEFAULT_NI_SOURCE);self.assertIn('mismatch',rerun_reason(opened))
     def test_atomic_save_failure_and_cancellation_preserve_existing(self):
         before=sha256(self.folder/'project.json')
         with patch('emcd_sim.gui.project_io.np.savez_compressed',side_effect=OSError('disk failure')):
@@ -94,21 +97,23 @@ class ProjectTests(unittest.TestCase):
         with self.assertRaises(Cancelled):save_project(self.result,self.folder,replace_existing=True,cancelled=lambda:True)
         self.assertEqual(before,sha256(self.folder/'project.json'))
         with self.assertRaises(FileExistsError):save_project(self.result,self.folder)
-        self.assertEqual([],list(ROOT.glob('.complete.saving_*')))
+        self.assertEqual([],list(ROOT.glob('.r_*'))+list(ROOT.glob('.rb_*')))
         (self.folder/'notes.txt').write_text('User notes must survive Save')
         figures=self.folder/'figures';figures.mkdir();(figures/'README.txt').write_text('User figure attachments')
         save_project(self.result,self.folder,replace_existing=True)
         self.assertEqual((self.folder/'notes.txt').read_text(),'User notes must survive Save')
         self.assertTrue((self.folder/'figures/README.txt').exists());self.assert_equal(self.result,load_project(self.folder))
         (self.folder/'notes.txt').write_text('Notes are not physical-data integrity inputs');load_project(self.folder)
+        self.assertEqual([],list(ROOT.glob('.r_*'))+list(ROOT.glob('.rb_*')))
     def test_replacement_failure_rolls_back(self):
         path=ROOT/'rollback';save_project(self.result,path);before=sha256(path/'project.json');rename=Path.rename
         def fail_final(p,target):
-            if '.saving_' in p.name and Path(target)==path.resolve():raise OSError('Final rename blocked')
+            if p.name.startswith('.r_') and Path(target)==path.resolve():raise OSError('Final rename blocked')
             return rename(p,target)
         with patch.object(Path,'rename',fail_final):
             with self.assertRaises(OSError):save_project(self.second,path,replace_existing=True)
         self.assertEqual(before,sha256(path/'project.json'));load_project(path)
+        self.assertEqual([],list(ROOT.glob('.r_*'))+list(ROOT.glob('.rb_*')))
     def test_legacy_readonly_without_fabricated_snapshot(self):
         for source in ('outputs/gui_stage_b/xmcd_20261015_234528','outputs/gui_stage_c/windows_20261016_000116/xmcd_both'):
             source=Path(source)
@@ -129,10 +134,10 @@ class ProjectTests(unittest.TestCase):
         self.assertIn('A_raw_plus_sum',rows[0]);self.assertIn('relative_detectability_proxy',rows[0])
         export_comparison_data(entries,ROOT/'comparison_csv');self.assertTrue((ROOT/'comparison_csv/scalar_metrics.csv').exists())
     def test_registry_rename_remove_missing_path(self):
-        path=ROOT/'registry.json';registry=Registry(path);record=registry.register(self.result,self.folder);before=sha256(self.folder/'project.json');registry.rename(record['id'],'User display name')
-        registry=Registry(path);self.assertEqual(registry.records[0]['name'],'User display name');self.assertEqual(before,sha256(self.folder/'project.json'))
-        registry.records[0]['path']=str(ROOT/'moved_project');registry.persist();self.assertEqual(len(Registry(path).records),1)
-        registry.remove(record['id']);self.assertTrue(self.folder.exists());self.assertEqual(Registry(path).records,[])
+        path=ROOT/'registry.json';registry=ResultRegistry(path);record=registry.register(self.result,self.folder);before=sha256(self.folder/'project.json');registry.rename(record['id'],'User display name')
+        registry=ResultRegistry(path);self.assertEqual(registry.records[0]['name'],'User display name');self.assertEqual(before,sha256(self.folder/'project.json'))
+        registry.records[0]['path']=str(ROOT/'moved_project');registry.persist();self.assertEqual(len(ResultRegistry(path).records),1)
+        registry.remove(record['id']);self.assertTrue(self.folder.exists());self.assertEqual(ResultRegistry(path).records,[])
 
 
 class ZWorkspaceTests(unittest.TestCase):
@@ -149,12 +154,18 @@ class ZWorkspaceTests(unittest.TestCase):
     def test_project_selection_inputs_and_use_settings_without_solver(self):
         w=self.w;s=w.settings();row=w.browser.register(ProjectTests.second,ROOT/'second_complete',name='Tilted result')
         with no_solvers():w.display_saved_result(ProjectTests.second,row)
-        self.assertEqual(s,w.settings());self.assertIn('current inputs differ',w.maps_view.label.text())
+        self.assertNotEqual(s,w.settings())
+        self.assertEqual(ProjectTests.second['settings'],w.settings())
+        for key,value in ProjectTests.second['spectra'].items():
+            np.testing.assert_array_equal(w.emcd_result['spectra'][key],value)
         with no_solvers():w.use_result_settings()
         np.testing.assert_allclose(w.settings().tilt,ProjectTests.second['settings'].tilt,atol=1e-9);self.assertFalse(w.busy)
+        project=self.workspace/'Project';w.save_to_path(project);self.wait_io();self.assertTrue(w._io_success)
         before=w.settings();w.close();w=MainWindow(workspace=self.workspace);self.w=w;w.error=lambda message:None
-        self.assertEqual(len(w.browser.registry.records),1)
-        self.assertEqual(w.settings().zone,Settings().zone)
+        self.assertEqual(len(w.browser.registry.records),0)  # history belongs to the explicitly opened project
+        self.assertEqual(w.settings().zone,nickel_geometry_settings().zone)
+        with no_solvers():w.open_project_path(project);self.wait_io()
+        self.assertEqual(len(w.browser.registry.records),1);self.assertEqual(w.settings(),before)
     def test_threaded_open_failed_load_preserves_previous(self):
         w=self.w;w.emcd_result=ProjectTests.second
         with no_solvers():w.open_project_path(ProjectTests.folder);self.wait_io()
@@ -163,17 +174,19 @@ class ZWorkspaceTests(unittest.TestCase):
     def assert_equal_selected(self,result):
         for key,value in result['spectra'].items():np.testing.assert_array_equal(value,self.w.emcd_result['spectra'][key])
     def test_background_save_register_compare_no_physics(self):
-        w=self.w;w.emcd_result=ProjectTests.result;w.register_completed(ProjectTests.result);w.save_to_path(ROOT/('ui_save_'+uuid.uuid4().hex));self.wait_io()
-        self.assertEqual(len(Registry(self.workspace/'results_index.json').records),1)
+        w=self.w;w.emcd_result=ProjectTests.result;w.register_completed(ProjectTests.result);project=ROOT/('ui_save_'+uuid.uuid4().hex);w.save_to_path(project);self.wait_io()
+        self.assertEqual(len(load_collection(project)['runs']),1)
         first=w.selected_record;second=w.browser.register(ProjectTests.second,ROOT/'second_complete',name='Mistilt')
         for i in range(w.browser.table.rowCount()):
             idx=w.browser.table.model().index(i,0);w.browser.table.selectionModel().select(idx,QtCore.QItemSelectionModel.SelectionFlag.Select|QtCore.QItemSelectionModel.SelectionFlag.Rows)
-        with no_solvers():w.compare_selected();self.wait_io()
-        self.assertEqual(w.tabs.tabText(w.tabs.currentIndex()),'Compare saved runs');self.assertEqual(w.tabs.currentWidget().entries()[0][1]['config'].model,'xmcd')
+        with no_solvers():w.compare_selected();self.app.processEvents()
+        dialog=w.dialogs[-1];self.assertEqual(dialog.windowTitle(),'Compare Calculations')
+        self.assertNotEqual(dialog.first.currentData(),dialog.second.currentData());self.assertEqual(dialog.runs[0][1]['config'].model,'xmcd')
+        dialog.close()
     def test_cancel_load_keeps_completed_result(self):
         w=self.w;w.emcd_result=ProjectTests.result;entered=threading.Event();release=threading.Event()
         def blocked(*a,**k):entered.set();release.wait(5);return ProjectTests.second
-        with patch('emcd_sim.gui.results_browser.load_project',blocked):
+        with patch('emcd_sim.gui.project_session.load_collection',blocked):
             w.open_project_path(ProjectTests.folder);self.assertTrue(entered.wait(5));w.cancel();release.set();self.wait_io()
         self.assertIs(w.emcd_result,ProjectTests.result);self.assertEqual(w.progress.value(),0)
     def test_atomic_settings_do_not_require_unused_xmcd(self):

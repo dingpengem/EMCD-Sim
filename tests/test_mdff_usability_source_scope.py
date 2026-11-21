@@ -24,7 +24,9 @@ def positive_gate():
     global _VALID_BYTES
     positive()  # Real disk controls pass before any isolated byte override.
     d,_=scope.load_scope()
-    _VALID_BYTES={p:(scope.ROOT/p).read_bytes() for p in set(d['protected'])|set(d['candidate'])|set(d['bootstrap'])}
+    paths={scope.READABILITY_RENAMES.get(p,p) for p in set(d['protected'])|set(d['candidate'])|set(d['bootstrap'])}
+    paths.update(scope.READABILITY_ADDED);paths.add(scope.READABILITY_PATH)
+    _VALID_BYTES={p:(scope.ROOT/p).read_bytes() for p in paths}
     yield
     _VALID_BYTES=None
     positive()  # Real disk controls pass after all bounded override cases.
@@ -57,7 +59,15 @@ def test_positive_and_independent_historical_queries():
         'test_missing_references_and_unsupported_element','test_historical_ni_is_not_silently_migrated'}
 
 
-@pytest.mark.parametrize('path',scope.ACCEPTED_PATHS)
+@pytest.mark.parametrize('path',tuple(scope.READABILITY_RENAMES.get(p,p) for p in scope.ACCEPTED_PATHS)+scope.READABILITY_ADDED+
+    # These services moved from already protected (not additive) owners.
+    tuple(scope.READABILITY_RENAMES[p] for p in (
+        'src/emcd_sim/gui/emcd_forward.py',
+        'src/emcd_sim/gui/generalized_forward.py',
+        'src/emcd_sim/gui/parallel_resources.py',
+        'src/emcd_sim/gui/propagation.py',
+        'src/emcd_sim/gui/channeling.py'))+
+    ('src/emcd_sim/gui/memory_budget.py','src/emcd_sim/gui/forward_pipeline.py',))
 def test_each_candidate_mutation(path):
     rejected({path:(scope.ROOT/path).read_bytes()+b'\nunauthorized bytes\n'},path)
 
@@ -67,7 +77,7 @@ def test_registration_support_mutation(path):
     rejected({path:(scope.ROOT/path).read_bytes()+b'\nunauthorized bytes\n'},path)
 
 
-@pytest.mark.parametrize('path',[scope.MANIFEST_PATH,scope.ARCHIVE_PATH])
+@pytest.mark.parametrize('path',[scope.MANIFEST_PATH,scope.ARCHIVE_PATH,scope.READABILITY_PATH])
 def test_pinned_declaration_and_archive_mutation(path):
     rejected({path:(scope.ROOT/path).read_bytes()+b' '},path)
 

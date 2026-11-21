@@ -1,19 +1,22 @@
 """Focused actual-kernel dispatch, parity, memory and compatibility checks."""
+from emcd_sim.study_presets import nickel_geometry_settings
+from emcd_sim.cancellation import Cancelled
+from emcd_sim.forward_settings import NiForwardSettings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from dataclasses import replace,asdict
 from unittest.mock import patch
 import numpy as np
 import pytest
-from emcd_sim.gui import emcd_forward as forward
-from emcd_sim.gui.geometry import Structure,Settings,geometry
+from emcd_sim import forward_pipeline as forward
+from emcd_sim.structure_geometry import Structure, Settings, geometry
 from emcd_sim.gui.project_io import config_from_dict,save_project,load_project
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.propagation import numerical_info
 
 
 @pytest.fixture
 def small():
-    return Structure.nickel(),Settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),forward.ForwardSettings(
+    return Structure.nickel(),nickel_geometry_settings(thickness=8,beam_cutoff=.9,potential_cutoff=1.8),NiForwardSettings(
         axis_declared=True,energy_scope='edges',angular_maps=False,grid=17,depth=17,subpixels=16,fft_grid=24,correction=False)
 
 
@@ -21,7 +24,7 @@ def small():
 @pytest.mark.parametrize('channel',['single','double'])
 def test_six_routes_use_actual_kernels(small,propagation,channel):
     s,settings,cfg=small
-    from emcd_sim.gui import channeling
+    from emcd_sim import channeling as channeling
     with patch.object(channeling,'double_channeling_response',wraps=channeling.double_channeling_response) as bw,patch.object(channeling,'multislice_double_channeling_response',wraps=channeling.multislice_double_channeling_response) as ms:
         r=forward.calculate(s,settings,replace(cfg,propagation=propagation,channeling_model=channel))
     assert set(r['methods'])==({'bloch','fft-multislice'} if propagation=='both' else {propagation})
@@ -60,7 +63,8 @@ def test_enlarged_basis_support_and_concurrent_memory(small):
     s,settings,cfg=small
     for zone,row,n in (((0,0,1),True,17),((0,1,7),False,59)):
         settings=replace(settings,zone=zone,beam_cutoff=4.6,potential_cutoff=6.2)
-        cfg=replace(cfg,systematic_row=row,channeling_model='double',propagation='both',fft_grid=48,depth=257,grid=193)
+        cfg=replace(cfg,systematic_row=row,channeling_model='double',propagation='both',fft_grid=48,depth=257,grid=193,
+            worker_mode='manual',parallel_workers=4)
         assert len(geometry(s,settings,systematic_row=row)[2])==n
         info=numerical_info(s,settings,cfg,check_memory=False)
         assert info['estimated_working_mib']>info['dense_working_estimate_mib']
@@ -116,8 +120,8 @@ def test_double_full_energy_coverage_is_actually_evaluated(small):
 
 
 def test_cancelled_double_job_releases_reservation(small):
-    from emcd_sim.gui import memory_budget
-    with pytest.raises(forward.Cancelled):
+    from emcd_sim import memory_budget as memory_budget
+    with pytest.raises(Cancelled):
         forward.calculate(*small[:2],replace(small[2],channeling_model='double'),cancelled=lambda:True)
     assert memory_budget.assess_memory(0)['concurrent_calculations']==0
 

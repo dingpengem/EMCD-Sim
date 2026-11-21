@@ -16,10 +16,12 @@ def run(output,historical_project=None):
     from ase.io import write as write_cif
     from matplotlib.backend_bases import MouseEvent
     from .app import MainWindow
-    from .geometry import Structure,elastic_model,indices
-    from .emcd_forward import material_reason
-    from .project_io import load_project,save_project,fingerprints,restore_structure,load_elastic_project
-    from .runtime import build_info
+    from emcd_sim.structure_geometry import Structure, elastic_model
+    from .geometry import indices
+    from ..historical_ni import material_reason
+    from .project_io import load_project, save_project, fingerprints, load_elastic_project
+    from emcd_sim.structure_geometry import restore_structure
+    from emcd_sim.provenance import build_info
     from ..adaptive_scattering import adaptive_factor,data_resource,COEFFICIENT_SHA256
     from ..elastic_providers import ADAPTIVE,LOBATO,LEGACY
     from ..geometry import electron_wavelength_angstrom
@@ -131,10 +133,10 @@ def run(output,historical_project=None):
         w.set_values(dict(kv=200,tx=-1000*electron_wavelength_angstrom(200)/3.524,ty=15,
             thickness=1,beam=.9,potential=1.8,grid=9,depth=9,subpixels=16))
         w.propagation_box.setCurrentIndex(0);w.channeling_box.setCurrentIndex(0)
-        w.energy_scope.setCurrentIndex(1);w.angular_maps.setChecked(False);w.correction.setChecked(False)
+        w.energy_scope.setCurrentIndex(w.energy_scope.findData('edges'));w.angular_maps.setChecked(False);w.correction.setChecked(False)
         w.declaration.setChecked(True);w.worker_mode.setCurrentIndex(1);w.worker_count.setValue(1)
         # Reconnect the bundled source, never an old project's external path.
-        from .runtime import reference_source
+        from emcd_sim.provenance import reference_source
         w.source_path.setText(str(reference_source()));w.validate_xmcd();w.declaration.setChecked(True)
         w.correction.setChecked(False);w.refresh();w.emcd_stale()
         assert w.emcd_button.isEnabled(),w.emcd_button.toolTip()

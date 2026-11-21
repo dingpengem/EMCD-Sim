@@ -4,6 +4,7 @@ No profiling hooks are installed by importing this module. AST instrumentation
 adds timing contexts around existing statements in an in-memory copy only;
 production source and the mathematical statements themselves are unchanged.
 """
+from emcd_sim.historical_ni import tensors
 import argparse,ast,cProfile,csv,hashlib,inspect,json,os,platform,pstats,subprocess,sys
 import threading,time,tracemalloc
 from collections import defaultdict
@@ -15,11 +16,13 @@ from unittest.mock import patch
 import numpy as np
 from emcd_sim import multislice_double_channeling as ms
 from emcd_sim.double_channeling import intensities_from_response
-from emcd_sim.gui import channeling,emcd_forward as forward
-from emcd_sim.gui.geometry import elastic_model,geometry
-from emcd_sim.gui.project_io import load_project,restore_structure
-from emcd_sim.gui.memory_budget import memory_snapshot
-from emcd_sim.gui import memory_budget
+from emcd_sim import channeling as channeling
+from emcd_sim import forward_pipeline as forward
+from emcd_sim.structure_geometry import elastic_model, geometry
+from emcd_sim.gui.project_io import load_project
+from emcd_sim.structure_geometry import restore_structure
+from emcd_sim.memory_budget import memory_snapshot
+from emcd_sim import memory_budget as memory_budget
 from emcd_sim.geometry import VirtualDetector
 from emcd_sim.benchmark import nickel_physical_benchmark
 
@@ -141,7 +144,7 @@ def setup(reference=REFERENCE):
     # The tensor importer requires >=2 energies. Reuse the saved spectral axis
     # exactly; only its L3 tensor is contracted/propagated by this profiler.
     saved_energy=np.asarray(saved['spectra']['energy_ev']);assert saved_energy[0]==cfg.l3
-    tensors=forward.tensors(cfg,saved_energy,R)
+    tensors=tensors(cfg,saved_energy,R)
     return dict(saved=saved,settings=settings,cfg=cfg,elastic=elastic,model=model,qx=qx,qy=qy,
                 weights=weights,query=query,inverse=inverse,sign=sign,tensors=tensors)
 

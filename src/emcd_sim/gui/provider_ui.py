@@ -3,15 +3,36 @@ from dataclasses import asdict,replace
 from pathlib import Path
 import json
 from PySide6 import QtCore,QtWidgets
-from .generalized_forward import ProviderSettings,settings_for_provider,source_for
-from .emcd_forward import DEFAULT_SOURCE
+from emcd_sim.material_inputs import ProviderSettings
+from ..mdff_providers import settings_for_provider, source_for
+from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
 from ..imported_mdff import CONVENTION
 
 
 class ProviderUI:
+    def material_direction(self):
+        if hasattr(self,'row'):return self.row[3]
+        viewer=getattr(self,'structure_viewer',None)
+        return viewer.draft_global_direction() if viewer is not None and viewer.editor.magnetization_mode=='global' else self.material_magnetization
+
+    def bind_material_reference(self,cfg):
+        """Reuse the existing physical-pair validator for the Material target."""
+        from ..mdff_providers import bind_group_direction
+        if hasattr(self,'row'):row=self.row[:4]+(cfg,)
+        else:
+            indices=tuple(i for i,atom in enumerate(self.structure.atoms) if atom.symbol==cfg.ionizing_element)
+            if not indices:raise ValueError('MDFF source element is absent from the Material structure')
+            row=('Global Material M',cfg.ionizing_element,indices,self.material_direction(),cfg)
+        return bind_group_direction(row)
+
     def xmcd_declaration_controls(self):
-        self.explicit_xmcd=QtWidgets.QCheckBox('Use explicit material declarations')
-        self.form.addRow(self.explicit_xmcd)
+        self.explicit_xmcd=QtWidgets.QCheckBox('Use explicit material declarations',self)
+        self.explicit_xmcd.setChecked(True)
+        self.explicit_xmcd.hide()  # Retained for saved historical settings.
+        self.reference_ni=QtWidgets.QCheckBox('Historical reference Ni adapter (a=3.524 Å; v0.8 behavior)')
+        self.reference_ni.hide()  # Saved compatibility state, not an ordinary model choice.
+        self.reference_ni.toggled.connect(lambda checked:self.explicit_xmcd.setChecked(not checked))
+        self.explicit_xmcd.toggled.connect(self.sync_xmcd_route)
         self.xmcd_element=QtWidgets.QLineEdit('Ni');self.form.addRow('Declared source element',self.xmcd_element)
         self.xmcd_edge=QtWidgets.QLineEdit('L2,3');self.form.addRow('Declared core-loss edge',self.xmcd_edge)
         self.xmcd_l23_controls=tuple(widget for key in ('xl3','xl2') for widget in (self.spin[key],self.form.labelForField(self.spin[key])))
@@ -20,7 +41,10 @@ class ProviderUI:
         self.xmcd_selected.setEnabled(False)  # L2,3 uses the visible energy controls.
         self.xmcd_provenance=QtWidgets.QLineEdit();self.form.addRow('Source / provenance',self.xmcd_provenance)
         self.xmcd_validity=QtWidgets.QLineEdit();self.form.addRow('Physical assumptions / limits',self.xmcd_validity)
-        self.xmcd_scale=QtWidgets.QLineEdit();self.form.addRow('Relative tensor reference (A^2/eV)',self.xmcd_scale)
+        self.xmcd_scale=QtWidgets.QLineEdit('1');self.form.addRow('Relative tensor reference (A^2/eV)',self.xmcd_scale)
+        self.xmcd_scale.setToolTip('Default 1: one relative reference unit after source-max normalization. This is not an absolute cross-section calibration.')
+        note=QtWidgets.QLabel('Element/edge are editing-context declarations, not five-column file metadata. Native peak selections are suggestions: confirm their L3/L2 assignment. Relative reference defaults to 1; no absolute calibration is implied.')
+        note.setWordWrap(True);self.form.addRow(note)
         self.xmcd_status=QtWidgets.QComboBox();self.xmcd_status.addItems(['physical_source_unvalidated','synthetic']);self.form.addRow('Scientific status',self.xmcd_status)
         for widget in (self.xmcd_element,self.xmcd_edge,self.xmcd_provenance,self.xmcd_validity,self.xmcd_scale):
             widget.textChanged.connect(self.xmcd_declaration_changed)
@@ -33,8 +57,47 @@ class ProviderUI:
     def xmcd_declaration_changed(self,*_):
         for widget in self.xmcd_l23_controls:widget.setVisible(self.xmcd_edge.text().strip()=='L2,3')
         self.xmcd_selected.setEnabled(self.xmcd_edge.text().strip()!='L2,3' or not (self.source_info or {}).get('selected'))
-        self.declaration.setChecked(False)
+        if self.sender() in (self.xmcd_element,self.xmcd_edge):
+            self.declaration.setChecked(False)
+            if hasattr(self,'xmcd_conventions'):self.xmcd_conventions.setChecked(False)
         self.emcd_stale()
+
+    def sync_xmcd_route(self,*_):
+        with QtCore.QSignalBlocker(self.reference_ni):self.reference_ni.setChecked(not self.explicit_xmcd.isChecked())
+        for widget in (self.xmcd_element,self.xmcd_edge,self.xmcd_selected,self.xmcd_provenance,self.xmcd_validity,self.xmcd_scale,self.xmcd_status):
+            widget.setEnabled(self.explicit_xmcd.isChecked())
+
+    def xmcd_descriptions(self):
+        path=Path(self.source_path.text())
+        return (f'{path.name}; five-column XAS/XMCD input; identity checked, material calibration not established',
+                'Effective axisymmetric XMCD model; uniform selected magnetic state; shared XAS and reversal-odd XMCD; no full ab-initio MDFF or absolute material calibration')
+
+    def source_conventions_confirmed(self):
+        return (self.xmcd_conventions if hasattr(self,'xmcd_conventions') else self.declaration).isChecked()
+
+    def xmcd_source_declaration(self,base):
+        if self.xmcd_edge.text().strip()=='L2,3':
+            selected=dict(L3=base.l3,L2=base.l2);info=self.source_info or {}
+            if not info.get('selected') and info.get('explicit_selected')!=selected:
+                raise ValueError('Select the source-covered L3/L2 energies beside the source controls')
+        else:
+            if not self.xmcd_selected.text().strip():raise ValueError('Selected core edges: enter explicit source-covered energies (eV)')
+            selected=json.loads(self.xmcd_selected.text())
+        bounds=(self.source_info or {}).get('bounds')
+        if bounds is not None:
+            for edge,value in selected.items():
+                if not bounds[0]<=value<=bounds[1]:raise ValueError(f'{edge} selection (eV): choose an energy in the source range {bounds[0]:g}–{bounds[1]:g} eV')
+        raw=self.xmcd_scale.text().strip()
+        try:scale=float(raw)
+        except ValueError:raise ValueError('Relative tensor reference (A^2/eV): enter a positive finite number; the relative-model default is 1 (not absolute calibration)') from None
+        import math
+        if not math.isfinite(scale) or scale<=0:raise ValueError('Relative tensor reference (A^2/eV): enter a positive finite number')
+        provenance,limits=self.xmcd_descriptions()
+        return dict(element=self.xmcd_element.text().strip(),edge=self.xmcd_edge.text().strip(),selected_ev=selected,
+            magnetization_crystal=list(base.magnetization),handedness='RP_minus_LP_in_declared_axis',eta=base.eta,beta=base.beta,
+            normalization='source_max_nonmagnetic',convention=CONVENTION,source=self.xmcd_provenance.text().strip() or provenance,
+            validity=self.xmcd_validity.text().strip() or limits,status=self.xmcd_status.currentText(),source_sha256=base.source_sha256,
+            reference_tensor_scale_angstrom2_per_ev=scale,magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
 
     def xmcd_energy_selected(self,edge,value):
         if self.source_info is not None and self.validated_path==self.source_path.text():
@@ -111,7 +174,6 @@ class ProviderUI:
                 self.atomic_editor.load_document(path,validated=True)
             if self.atomic_editor.validated_sha256!=digest:raise ValueError('Atomic source changed while loading the editor; validate again')
             self.atomic_provider_info=cfg
-            with QtCore.QSignalBlocker(self.axis):self.axis.setText(' '.join(map(str,cfg.magnetization)))
             self.atomic_provider_status.setText(cfg.ionizing_element+'; APPROXIMATE / physically unvalidated\nSHA256 '+cfg.source_sha256)
         except Exception as exc:
             self.atomic_editor.external_source_pending=True
@@ -134,44 +196,38 @@ class ProviderUI:
             path=self.atomic_parameter_path.text().strip()
             if not path:
                 if self.atomic_editor.active:raise ValueError('Generalized atomic editor has unvalidated edits; generate the current source first')
-                if symbols!={'Ni'}:raise ValueError('Atomic Ionization requires explicit element-specific parameters; Ni defaults are not transferred')
+                if self.atomic_editor.historical_config is None:
+                    raise ValueError('Atomic Ionization requires explicit element-specific parameters or a retained historical project')
+                if symbols!={'Ni'}:raise ValueError('Retained historical Atomic source supports only Ni')
                 return base
             cfg=self.atomic_provider_info
             if cfg is None or cfg.source!=str(Path(path).resolve()):raise ValueError('Validate the current atomic parameter source first')
             acknowledged=self.atomic_declaration.isChecked() or (self.atomic_editor.active and not self.atomic_editor.external_source_pending)
         elif base.model=='xmcd':
             if not self.explicit_xmcd.isChecked() and symbols=={'Ni'}:return base
-            if Path(base.source).resolve()==DEFAULT_SOURCE.resolve() and symbols!={'Ni'}:
+            if Path(base.source).resolve()==DEFAULT_NI_SOURCE.resolve() and symbols!={'Ni'}:
                 raise ValueError('Bundled Ni XMCD cannot be used for another element; select its declared source')
-            if self.xmcd_edge.text().strip()=='L2,3':
-                selected=dict(L3=base.l3,L2=base.l2)
-                info=self.source_info or {}
-                if not info.get('selected') and info.get('explicit_selected')!=selected:
-                    raise ValueError('Explicit native edge selections required: select both L3/L2 energies or enter their JSON')
-            else:
-                if not self.xmcd_selected.text().strip():
-                    raise ValueError('Explicit native edge selections JSON required for this edge')
-                selected=json.loads(self.xmcd_selected.text())
-            declaration=dict(element=self.xmcd_element.text().strip(),edge=self.xmcd_edge.text().strip(),selected_ev=selected,
-                magnetization_crystal=list(base.magnetization),handedness='RP_minus_LP_in_declared_axis',eta=base.eta,beta=base.beta,
-                normalization='source_max_nonmagnetic',convention=CONVENTION,source=self.xmcd_provenance.text().strip(),
-                validity=self.xmcd_validity.text().strip(),status=self.xmcd_status.currentText(),source_sha256=base.source_sha256,
-                reference_tensor_scale_angstrom2_per_ev=float(self.xmcd_scale.text()),
-                magnetic_state='uniform_fm',reversal_assumption='axisymmetric_XMCD_odd_shared_XAS')
+            declaration=self.xmcd_source_declaration(base)
             cfg=settings_for_provider(base.source,'xmcd',declaration)
             acknowledged=base.axis_declared
         else:return base
         fields=asdict(base);fields['atomic']=base.atomic
         for key in ('model','source','source_sha256','l3','l2','magnetization','axis_declared'):fields.pop(key,None)
         cfg=replace(cfg,**fields,magnetization=base.magnetization,axis_declared=acknowledged)
-        source_for(cfg)
-        return cfg
+        return self.bind_material_reference(cfg)
 
     def restore_provider_settings(self,cfg,path=None):
         if cfg.model=='atomic':
             self.atomic_editor.set_crystal(self.structure,preserve_validation=True)
             with QtCore.QSignalBlocker(self.atomic_parameter_path):self.atomic_parameter_path.setText(path or cfg.source)
             self.validate_atomic_parameters(expected_sha256=cfg.source_sha256)
+            if self.atomic_provider_info is None:
+                # An older result may not contain a GUI draft. Do not leave
+                # another run's electronic parameters under this missing source.
+                self.atomic_editor.restore_draft({})
+                with QtCore.QSignalBlocker(self.atomic_editor.element):
+                    self.atomic_editor.element.setCurrentIndex(self.atomic_editor.element.findData(cfg.ionizing_element))
+                self.atomic_editor._element=cfg.ionizing_element
             with QtCore.QSignalBlocker(self.atomic_declaration):self.atomic_declaration.setChecked(bool(self.atomic_provider_info and cfg.axis_declared))
         elif cfg.model=='xmcd':
             d=cfg.provider_declaration
@@ -182,6 +238,7 @@ class ProviderUI:
                 with QtCore.QSignalBlocker(widget):widget.setText(value)
             with QtCore.QSignalBlocker(self.xmcd_status):self.xmcd_status.setCurrentText(d['status'])
             with QtCore.QSignalBlocker(self.explicit_xmcd):self.explicit_xmcd.setChecked(True)
+            self.sync_xmcd_route()
             if d['edge']=='L2,3':
                 for key,edge in (('xl3','L3'),('xl2','L2')):
                     with QtCore.QSignalBlocker(self.spin[key]):self.spin[key].setValue(d['selected_ev'][edge])

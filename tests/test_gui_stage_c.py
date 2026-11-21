@@ -1,4 +1,5 @@
 """Focused Stage C: genuine oriented FFT waves, shared MDFF, GUI and exports."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import unittest,uuid,threading,importlib.util
@@ -9,9 +10,14 @@ from unittest.mock import patch
 import numpy as np
 from matplotlib.figure import Figure
 from PySide6 import QtWidgets
-from emcd_sim.gui.emcd_forward import *
-from emcd_sim.gui.propagation import numerical_info,error_pair
-from emcd_sim.gui.results import draw_maps,draw_eels,draw_diffraction
+from emcd_sim.cancellation import Cancelled
+from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.structure_geometry import Settings, Structure
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.gui.result_export import export_result
+from emcd_sim.historical_ni import tensors
+from emcd_sim.propagation import numerical_info, error_pair
+from emcd_sim.gui.result_presentation import draw_maps, draw_eels, draw_diffraction
 from emcd_sim.gui.app import MainWindow
 from legacy_geometry import Ni017Geometry
 from emcd_sim.multislice_reference import fft_multislice_ni,_projected_ni_potential
@@ -21,7 +27,7 @@ from emcd_sim.multislice_reference import project_fft_amplitudes,coherence_from_
 class PropagationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.structure=Structure.nickel();cls.settings=Settings(voltage=200,beam_cutoff=3.2,potential_cutoff=2.2,tilt=(-7.116725439974256,0),elastic_provider='nickel-lobato-2014');cls.cfg=ForwardSettings(propagation='both',energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True,slice_step=.04)
+        cls.structure=Structure.nickel();cls.settings=nickel_geometry_settings(voltage=200,beam_cutoff=3.2,potential_cutoff=2.2,tilt=(-7.116725439974256,0),elastic_provider='nickel-lobato-2014');cls.cfg=NiForwardSettings(propagation='both',energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True,slice_step=.04)
         cls.result=calculate(cls.structure,cls.settings,cls.cfg)
     def test_actual_oriented_potential_and_common_projection(self):
         r=self.result;geo=Ni017Geometry();u,hkl,g=_projected_ni_potential(32,200,0,2.2,geo)
@@ -44,7 +50,7 @@ class PropagationTests(unittest.TestCase):
         self.assertGreater(out.max(),1e-9);self.assertFalse(r['fft']['summary']['renormalized'])
         np.testing.assert_array_equal(psi,fft.amplitudes[:,[lookup[h] for h in common]])
     def test_tensor_reuse_once_and_bw_legacy(self):
-        self.assertEqual(ForwardSettings('atomic').model,'atomic')
+        self.assertEqual(NiForwardSettings('atomic').model,'atomic')
         cfg=replace(self.cfg,energy_points=9,grid=9,depth=8)
         with patch('emcd_sim.historical_ni.tensors',wraps=tensors) as build:
             both=calculate(self.structure,self.settings,cfg)
@@ -85,7 +91,8 @@ class PropagationTests(unittest.TestCase):
         for cfg in (replace(self.cfg,fft_grid=13),replace(self.cfg,fft_grid=10),replace(self.cfg,slice_step=0)):
             with self.assertRaises(ValueError):calculate(self.structure,self.settings,cfg)
         self.assertEqual(numerical_info(self.structure,self.settings,self.cfg)['fft_harmonics'],1024)
-        with self.assertRaisesRegex(ValueError,'512 MiB'):numerical_info(self.structure,self.settings,replace(self.cfg,grid=193,memory_budget_mib=512,propagation='bloch'))
+        with patch('emcd_sim.memory_budget.memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=512.)):
+            with self.assertRaisesRegex(ValueError,'512 MiB'):numerical_info(self.structure,self.settings,replace(self.cfg,grid=193,memory_budget_mib=512,propagation='bloch'))
     def test_shared_scales_difference_maps_and_export(self):
         r=self.result;figs=[Figure(figsize=(14,9),layout='constrained') for _ in range(3)]
         for f,name in zip(figs,('bloch','fft-multislice','difference')):draw_maps(f,r,'L3',name,field='I_mag')
@@ -106,7 +113,11 @@ class ZGUIStageCTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         if not hasattr(PropagationTests,'result'):PropagationTests.setUpClass()
-    def setUp(self):self.w=MainWindow(workspace=Path('outputs')/('stage_c_worker_'+uuid.uuid4().hex));self.w.model_box.setCurrentIndex(0);self.w.validate_xmcd(show_error=False);self.w.declaration.setChecked(True);self.w.error=lambda s:None
+    def setUp(self):
+        from runtime_fixtures import apply_global_mdff
+        self.w=MainWindow(workspace=Path('outputs')/('stage_c_worker_'+uuid.uuid4().hex))
+        self.w.model_box.setCurrentIndex(0);self.w.validate_xmcd(show_error=False);self.w.declaration.setChecked(True)
+        apply_global_mdff(self.w);self.w.error=lambda s:None
     def tearDown(self):
         if self.w.busy:self.w.cancel();self.w.worker.wait(10000);self.app.processEvents()
         self.w.close();self.app.processEvents()
@@ -127,16 +138,16 @@ class ZGUIStageCTests(unittest.TestCase):
         w=self.w;prior=PropagationTests.result;w.emcd_result=prior;w.propagation_box.setCurrentIndex(2)
         entered=threading.Event();release=threading.Event()
         def blocked(*args,**kwargs):entered.set();release.wait(5);return {'partial':True}
-        with patch('emcd_sim.gui.stage_b.calculate',blocked):
+        with patch('emcd_sim.gui.calculation_worker.calculate',blocked):
             w.start_emcd();self.assertTrue(entered.wait(5));w.cancel();release.set();self.assertTrue(w.worker.wait(10000));self.app.processEvents()
         self.assertIs(w.emcd_result,prior);self.assertEqual(w.progress.value(),0)
-        with patch('emcd_sim.gui.stage_b.calculate',side_effect=ValueError('FFT failure')):
+        with patch('emcd_sim.gui.calculation_worker.calculate',side_effect=ValueError('FFT failure')):
             w.start_emcd();self.assertTrue(w.worker.wait(5000));self.app.processEvents()
         self.assertIs(w.emcd_result,prior);self.assertEqual(w.run_outcome,'failed')
     def test_real_cancellation_between_bw_and_ms_contracts(self):
         events=[]
         def progress(stage):events.append(stage)
-        with self.assertRaises(Cancelled):calculate(Structure.nickel(),Settings(),replace(PropagationTests.cfg,energy_points=9,grid=9),progress,lambda:any('Calculating fft-multislice EELS' in x for x in events))
+        with self.assertRaises(Cancelled):calculate(Structure.nickel(),nickel_geometry_settings(),replace(PropagationTests.cfg,energy_points=9,grid=9),progress,lambda:any('Calculating fft-multislice EELS' in x for x in events))
         self.assertTrue(any('Calculating bloch EELS' in x for x in events))
 
 

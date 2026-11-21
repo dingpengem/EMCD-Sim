@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 
 from test_atomic_parameter_editor import window, iron
-from emcd_sim.gui.generalized_forward import source_for, energy_grid, tensors
-from emcd_sim.gui.forward_pipeline import calculate
-from emcd_sim.gui.geometry import Settings
+from emcd_sim.mdff_providers import source_for, energy_grid, tensors
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.structure_geometry import Settings
 from emcd_sim.gui.project_io import save_project, load_project
 
 
@@ -31,19 +31,19 @@ def test_manual_fe_selections_preview_calculation_and_reopen(window, tmp_path):
     # set_values blocks signals: populated controls alone are not a user selection.
     w.set_values({'xl3': 710, 'xl2': 723})
     w.declaration.setChecked(True)
-    with pytest.raises(ValueError,match='Explicit native edge selections'):
-        w.forward_settings()
+    with pytest.raises(ValueError,match='Select the source-covered L3/L2 energies'):
+        w.global_mdff_draft_settings()
     w.spin['xl3'].setValue(711)
     w.declaration.setChecked(True)
-    with pytest.raises(ValueError,match='Explicit native edge selections'):
-        w.forward_settings()
+    with pytest.raises(ValueError,match='Select the source-covered L3/L2 energies'):
+        w.global_mdff_draft_settings()
     w.spin['xl3'].setValue(710)
     w.spin['xl2'].setValue(724);w.spin['xl2'].setValue(723)
     w.declaration.setChecked(True)
-    cfg = w.forward_settings()
+    cfg = w.global_mdff_draft_settings()
     assert source_for(cfg).metadata['selected_ev'] == {'L3': 710, 'L2': 723}
     w.validate_xmcd();w.declaration.setChecked(True)
-    assert w.forward_settings().provider_declaration['selected_ev'] == {'L3': 710, 'L2': 723}
+    assert w.global_mdff_draft_settings().provider_declaration['selected_ev'] == {'L3': 710, 'L2': 723}
     w.preview_mdff()
     assert not w.errors
     cfg = replace(cfg, energy_scope='edges', grid=9, depth=5, subpixels=4,
@@ -63,29 +63,29 @@ def test_manual_fe_selections_preview_calculation_and_reopen(window, tmp_path):
     assert not w.xmcd_selected.isEnabled()
     assert (w.spin['xl3'].value(), w.spin['xl2'].value()) == (710, 723)
     w.declaration.setChecked(True)
-    assert w.forward_settings().provider_declaration['selected_ev'] == {'L3': 710, 'L2': 723}
+    assert w.global_mdff_draft_settings().provider_declaration['selected_ev'] == {'L3': 710, 'L2': 723}
     # Even leftover text from another edge cannot override visible L2,3 controls.
     w.xmcd_selected.setText('{"L3": 710, "L2": 723}')
     w.spin['xl3'].setValue(711);w.spin['xl2'].setValue(724)
     w.declaration.setChecked(True)
-    assert w.forward_settings().provider_declaration['selected_ev'] == {'L3': 711, 'L2': 724}
+    assert w.global_mdff_draft_settings().provider_declaration['selected_ev'] == {'L3': 711, 'L2': 724}
     w.set_values({'xl3': 831})
     w.declaration.setChecked(True)
     with pytest.raises(ValueError):
-        w.forward_settings()
+        w.global_mdff_draft_settings()
     w.xmcd_edge.setText('K')
     assert w.xmcd_selected.isEnabled()
     w.xmcd_selected.setText('{"K": 715}')
     w.declaration.setChecked(True)
-    native = w.forward_settings()
+    native = w.global_mdff_draft_settings()
     assert source_for(native).metadata['selected_ev'] == {'K': 715}
     w.restore_provider_settings(native)
     assert w.xmcd_selected.isEnabled()
     w.declaration.setChecked(True)
-    assert w.forward_settings().provider_declaration['selected_ev'] == {'K': 715}
+    assert w.global_mdff_draft_settings().provider_declaration['selected_ev'] == {'K': 715}
     other = tmp_path/'other_fe.xmcd';other.write_bytes(path.read_bytes())
     w.source_path.setText(str(other));w.validate_xmcd()
     w.xmcd_edge.setText('L2,3');w.set_values({'xl3': 710, 'xl2': 723})
     w.declaration.setChecked(True)
-    with pytest.raises(ValueError,match='Explicit native edge selections'):
-        w.forward_settings()
+    with pytest.raises(ValueError,match='Select the source-covered L3/L2 energies'):
+        w.global_mdff_draft_settings()

@@ -33,7 +33,7 @@ REVIEW_FILES = (
     'docs/ELASTIC_ATOMIC_FACTORS.md', 'docs/ELASTIC_PROVIDER_REVIEW.md',
     'src/emcd_sim/scattering.py', 'src/emcd_sim/elastic.py',
     'src/emcd_sim/physical_elastic.py', 'src/emcd_sim/legacy_atomic_factors.py',
-    'src/emcd_sim/gui/app.py', 'src/emcd_sim/gui/geometry.py',
+    'src/emcd_sim/gui/app.py', 'src/emcd_sim/gui/geometry.py', 'src/emcd_sim/structure_geometry.py',
     'src/emcd_sim/gui/emcd_forward.py', 'tests/test_gui_stage_a.py',
     'tests/test_species_weighted_elastic.py', 'tests/test_legacy_atomic_factors.py',
     'scripts/research/validate_atomic_elastic.py', 'scripts/research/audit_legacy_mott.py',
@@ -60,7 +60,7 @@ def main():
     with (OUT/'ni_provider_comparison.csv').open('w',newline='',encoding='utf-8') as f:
         writer=csv.writer(f);writer.writerow(['g_inverse_angstrom','lobato_angstrom','legacy_angstrom','relative_difference_percent'])
         writer.writerows(zip(g,nickel_lobato_factor(g),table.factor('Ni',g),100*(table.factor('Ni',g)/nickel_lobato_factor(g)-1)))
-    from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+    from emcd_sim.structure_geometry import Structure, Settings, elastic_model
     # Use the original dependencies as well as the original GUI adapter.
     # Importing an old adapter against the modified solver is not an
     # independent numerical reference.

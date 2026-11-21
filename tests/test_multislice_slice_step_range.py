@@ -7,11 +7,14 @@ import numpy as np
 import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Structure, Settings, elastic_model
-from emcd_sim.gui.emcd_forward import ForwardSettings, calculate, export_result
-from emcd_sim.gui.propagation import numerical_info
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
+from emcd_sim.forward_settings import NiForwardSettings
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.gui.result_export import export_result
+from emcd_sim.propagation import numerical_info
 from emcd_sim.gui.project_io import save_project, load_project, fingerprints
 from emcd_sim.multislice_double_channeling import ProjectedFFT, incident_fields
+from runtime_fixtures import apply_global_mdff
 
 STEPS = [.04, .5, 1., 2., 5., 10.]
 
@@ -20,8 +23,8 @@ STEPS = [.04, .5, 1., 2., 5., 10.]
 def small():
     structure = Structure.nickel()
     settings = Settings(zone=(0,0,1), target=(2,0,0), voltage=200,
-                        thickness=.5, beam_cutoff=.9, potential_cutoff=1.8)
-    cfg = ForwardSettings(model='atomic', propagation='fft-multislice',
+                        thickness=.5, beam_cutoff=.9, potential_cutoff=1.8,tilt=(-5.5866881404, 0.0))
+    cfg = NiForwardSettings(model='atomic', propagation='fft-multislice',
         grid=9, depth=3, fft_grid=12, subpixels=4, energy_scope='edges',
         l3=852.7, l2=870., correction=False, centers=((.2,.2),(.2,-.2)))
     return structure, settings, cfg
@@ -33,9 +36,10 @@ def test_manual_gui_preserves_requested_maximum(tmp_path, step, mode):
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     w = MainWindow(workspace=tmp_path/'workspace')
     try:
-        assert w.spin['slice_step'].value() == ForwardSettings().slice_step == 2.
+        assert w.spin['slice_step'].value() == NiForwardSettings().slice_step == 2.
         assert (w.spin['slice_step'].minimum(), w.spin['slice_step'].maximum()) == (.001,10.)
         w.model_box.setCurrentIndex(0);w.validate_xmcd(show_error=False);w.declaration.setChecked(True)
+        w.reference_ni.setChecked(True);apply_global_mdff(w)
         w.numerical_mode.setCurrentIndex(mode)
         w.propagation_box.setCurrentIndex(1)
         before = w.numerical_snapshot()
@@ -44,7 +48,7 @@ def test_manual_gui_preserves_requested_maximum(tmp_path, step, mode):
         assert w.spin['slice_step'].value() == w.forward_settings().slice_step == step
         assert all(v == w.numerical_snapshot()[k] for k,v in before.items() if k != 'slice_step')
         if step > .04:
-            assert 'split-step errors' in w.memory_label.text()
+            assert 'split-step errors' in w.compute_resources.estimate.toolTip()
         assert w.emcd_button.isEnabled(), w.emcd_button.toolTip()
         for numerical_mode in (1,0,1,0):
             w.numerical_mode.setCurrentIndex(numerical_mode)

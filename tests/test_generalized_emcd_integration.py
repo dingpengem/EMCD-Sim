@@ -1,4 +1,5 @@
 """Independent general row selection, reduced-energy propagation and export."""
+from emcd_sim.study_presets import nickel_geometry_settings
 from pathlib import Path
 from dataclasses import replace
 import json
@@ -6,7 +7,7 @@ import numpy as np
 import pytest
 from emcd_sim.crystal import fcc_nickel
 from emcd_sim.projected_geometry import ProjectedGeometry
-from emcd_sim.gui.geometry import Structure,Settings,elastic_model
+from emcd_sim.structure_geometry import Structure, Settings, elastic_model
 from emcd_sim.multislice_double_channeling import ProjectedFFT
 
 @pytest.mark.parametrize('zone,target',[
@@ -14,7 +15,7 @@ from emcd_sim.multislice_double_channeling import ProjectedFFT
     ((1,1,1),(2,-2,0)),((7,1,0),(0,0,2))])
 def test_row_uses_actual_target_or_actual_local_x_support(zone,target):
     geo=ProjectedGeometry.from_crystal(fcc_nickel(),zone,target)
-    s=Settings(zone=zone,target=target,thickness=2,voltage=200,beam_cutoff=3.2,potential_cutoff=3.8)
+    s=Settings(zone=zone,target=target,thickness=2,voltage=200,beam_cutoff=3.2,potential_cutoff=3.8,tilt=(-5.5866881404, 0.0))
     elastic=elastic_model(Structure.nickel(),s,systematic_row=True)
     results=[]
     for descriptor in (geo,None):
@@ -46,7 +47,7 @@ def test_outgoing_energy_carrier_and_adjoint_without_elastic_eigenmodes():
 
 def test_generalized_117_saved_gui_export_retains_raw_relative_data(tmp_path):
     from emcd_sim.gui.project_io import load_project,fingerprints
-    from emcd_sim.gui.emcd_forward import export_result
+    from emcd_sim.gui.result_export import export_result
     root=Path('outputs/generalized_multislice_emcd_validation/gui')
     paths=[p for p in root.glob('117_double_*/project') if (p.parent/'acceptance.json').exists()]
     if not paths:pytest.skip('Real GUI acceptance artifact not yet available')
@@ -65,10 +66,11 @@ def test_generalized_117_saved_gui_export_retains_raw_relative_data(tmp_path):
 @pytest.mark.parametrize('channel',['single','double'])
 def test_general_ms_only_never_uses_bw_wavefields(zone,target,cutoff,channel):
     from unittest.mock import patch
-    from emcd_sim.gui.emcd_forward import ForwardSettings,calculate
+    from emcd_sim.forward_settings import NiForwardSettings
+    from emcd_sim.forward_pipeline import calculate
     geo=ProjectedGeometry.from_crystal(fcc_nickel(),zone,target);g=geo.crystal.g_vector(target)[0]
     s=Settings(zone=zone,target=target,voltage=200,thickness=.5,tilt=(geo.bragg_tilt(),0),beam_cutoff=cutoff,potential_cutoff=3.8)
-    c=ForwardSettings(axis_declared=True,propagation='fft-multislice',channeling_model=channel,energy_scope='edges',grid=9,depth=5,
+    c=NiForwardSettings(axis_declared=True,propagation='fft-multislice',channeling_model=channel,energy_scope='edges',grid=9,depth=5,
         fft_grid=24,subpixels=16,centers=((g/2,g/2),(g/2,-g/2)),radius=.16*g,correction=False,worker_mode='manual')
     with patch('emcd_sim.physical_elastic.PhysicalElasticModel.amplitudes',side_effect=AssertionError('BW wavefield used by MS-only')):
         r=calculate(Structure.nickel(),s,c)
@@ -79,13 +81,13 @@ def test_general_ms_only_never_uses_bw_wavefields(zone,target,cutoff,channel):
 
 def test_validation_driver_resumes_json_checkpoint_without_solver(tmp_path,monkeypatch):
     import importlib.util
-    from emcd_sim.gui.emcd_forward import ForwardSettings
+    from emcd_sim.forward_settings import NiForwardSettings
     path=Path(__file__).parents[1]/'scripts/validate_generalized_emcd.py'
     spec=importlib.util.spec_from_file_location('generalized_resume_test',path)
     m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
     monkeypatch.setattr(m,'OUT',tmp_path/'results')
     source=tmp_path/'source.txt';source.write_text('source identity only',encoding='utf-8')
-    s=Settings();c=ForwardSettings(source=str(source))
+    s=nickel_geometry_settings();c=NiForwardSettings(source=str(source))
     folder=m.OUT/'cases'/'finished';folder.mkdir(parents=True)
     record=dict(identity=m.case_identity(s,c),fingerprints={'array':'unchanged'})
     checkpoint=folder/'case.json';checkpoint.write_text(json.dumps(record),encoding='utf-8');before=checkpoint.read_bytes()

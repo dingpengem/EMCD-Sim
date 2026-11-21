@@ -1,85 +1,53 @@
-# Windows installation and source setup
+# Install EMCD-Sim v0.9.0-beta.2 on Windows
 
-[Home](../README.md) | [Quick Start](QUICK_START.md) | [MDFF workflows](MDFF_WORKFLOWS.md) | [User manual](USER_GUIDE.md)
+[Home](../README.md) · [Quick Start](QUICK_START.md) · [Tutorial](TUTORIAL.md) · [User Guide](USER_GUIDE.md)
 
-## Choose the correct version
+## Ordinary packaged use
 
-The Windows Research Beta is [v0.8.1-beta.2](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.8.1-beta.2), package version `0.8.1b2`. It includes the MDFF editor redesign and explicit XMCD selection repair. Earlier beta.1 assets and their matching documentation remain available.
+1. Open the [Windows Research Beta release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.2). Under **Assets**, download **EMCD-Sim-v0.9.0-beta.2-Windows.zip**. GitHub's automatic Source code ZIP is not the Windows application. Earlier releases remain unchanged.
+2. Use Windows 11 x64 and install/repair the official [Microsoft Visual C++ v14 x64 Redistributable](https://aka.ms/vc14/vc_redist.x64.exe) if needed. The tested runtime is **14.44.35211**; use a compatible current v14 runtime. This remains an external dependency: Microsoft runtime DLLs are not bundled contrary to the established redistribution policy.
+3. In File Explorer, right-click the downloaded ZIP and choose **Extract All…** into a new writable folder. Wait for extraction to finish. Keep the **complete EMCD-Sim folder** and all `_internal` contents together.
+4. Open the extracted folder and double-click **EMCD-Sim.exe**, beside `_internal`. Do not run from inside the ZIP or copy the EXE alone. Follow local SmartScreen/security policy; the research binary is not code-signed. Do not disable antivirus as a workaround.
+5. Check the displayed version and **Help → About** build identity. Start with the [Quick Start](QUICK_START.md), not a restored unknown configuration. The example CIF and XMCD file are under `_internal/examples/Ni_FCC_a3.52.cif` and `_internal/data/wien2k_ni/Ni_fm.xmcd`.
+6. Save projects to a writable location. Updating means extracting a new complete package into a different directory; preserve previous projects and required source files.
 
-## Windows binary installation
+**Python, Conda, WIEN2k and manual OpenBLAS/OMP environment variables are not required for packaged use.** The application supplies its Python/Qt and supported numerical libraries. Windows beta.2 is distinct from the unchanged macOS ARM64 release and has its own source revision.
 
-On Windows 10/11 x64, first install the **official Microsoft x64 Visual C++ v14 Redistributable, 14.44.35211 or newer**, directly from [Microsoft's runtime page](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) ([official x64 download](https://aka.ms/vc14/vc_redist.x64.exe)). The package includes no Microsoft runtime DLL copies or installer. Windows supplies the UCRT/API sets. A missing `MSVCP140.dll` or `VCRUNTIME140*.dll` means this prerequisite needs installation/repair; do not copy DLLs from download sites.
+## Compute Resources
 
-The accompanying **EMCD-Sim-v0.8.1-beta.2-Qt-sources.zip** supplies matching Qt/PySide/Shiboken sources and [build/replacement instructions](../packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md). It is separate from the runnable ZIP. Qt PDF and Virtual Keyboard are excluded as unused; included dependency licenses remain separate from the application's MIT license.
+In **Shared Calculation Settings → Compute Resources**, **CPU Workers** and **Memory Budget** each offer **Auto (recommended)** or **Manual**. Auto considers detected hardware, useful tasks and current memory/commit headroom; it never silently reduces beams, energy points, FFT/grid or depth sampling. SC has one outer worker; DC may use more. More workers are not necessarily faster.
 
-1. Open the intended version's release page and download its **complete Windows ZIP**. GitHub's automatic source archive and an outer Actions artifact wrapper are not the portable application. Beta.2 supplies `EMCD-Sim-v0.8.1-beta.2-Windows.zip`.
-2. Download the checksum file from that same release and compare the matching ZIP entry:
+The panel shows effective workers/budget, the current calculation estimate and admission status. A memory budget is a ceiling, not expected consumption; the estimate includes reserves and differs from measured RSS. Insufficient admission must be resolved before Run. Manual values are remembered when switching back to Auto and reopening projects. Run applies and verifies supported BLAS thread limits and restores them afterward; users need no shell-variable workaround.
 
-   ```powershell
-   Get-FileHash -LiteralPath '.\EMCD-Sim-v0.8.1-beta.2-Windows.zip' -Algorithm SHA256
-   Get-Content -LiteralPath '.\SHA256SUMS.txt'
-   ```
+## Projects and exports
 
-   Do not reuse an older release's checksum. On mismatch, obtain a fresh copy from the intended release.
-3. Use **Extract All...** into a new writable directory. Preserve the complete structure:
+Use **File → New Project**, **Open Project…**, **Save**, **Save As…**, and **Close Project**. Save creates a complete folder; Open Project selects that folder. Keep all its files. The lower **Project Results** panel retains separate calculations; **Restore Settings from Selected Run…** differs from merely viewing an old result. Compare exactly two selected runs in the separate comparison dialog.
 
-   ```text
-   EMCD-Sim/
-       EMCD-Sim.exe
-       _internal/
-       README.txt
-       ...other bundled files...
-   ```
+In Results, inspect detector spectra and selected angular maps. **Results → Export Results…** writes CSV/NPZ and available figures; figure export also sits near its plot. Save/Open restores existing arrays without rerunning. External spectroscopy files are not all automatically embedded: retain required sources. Missing/changed sources may block rerun while saved arrays remain viewable. Never bypass scientific source/frame validation.
 
-4. Launch the extracted `EMCD-Sim.exe`. Keep every supporting file and `_internal` beside it. Do not run inside the ZIP, copy only the EXE, combine versions, or overwrite an older installation in place.
-5. Inspect **Help > About** for version/source identity, then follow the matching [Quick Start](QUICK_START.md).
+## Guides, sources and licenses
 
-The Windows x64 package includes Python and required Python/Qt libraries. Binary users do not need Python, Conda, a compiler, WIEN2k, or a pre-existing project JSON. Use writable project directories and sufficient RAM/disk for your configuration; inspect the resource estimate rather than assuming a universal hardware minimum.
+Offline guides, citation, scientific references and illustrations are in `_internal/documentation/`; online [Quick Start](QUICK_START.md) and [Tutorial](TUTORIAL.md) use current controls. The release's **EMCD-Sim-v0.9.0-beta.2-Corresponding-Source.zip** contains the exact application snapshot plus matching Qt/PySide/Shiboken 6.12 sources and replacement instructions. Do not substitute the older beta.1 application source.
 
-The application is unsigned. Verify download origin and follow organizational policy. Native verification is not code signing or SmartScreen certification. Do not disable security protections to launch it.
+The unchanged Qt 6.12 [technical replacement guide](../packaging/assets/qt-licenses/SOURCE_AND_REPLACEMENT.md) retains historical beta.1 example names; the source kit's outer README identifies the actual beta.2 package and commit. Applicable dependency licenses/notices accompany the binaries. Unused Qt PDF and Virtual Keyboard are excluded; required Qt plugins and spglib runtime/licenses are retained. The existing build manifest and `_internal/build_info.json` record dependencies and exact committed source. No independent clean-PC/VM validation is claimed.
 
-Current development-package examples include `_internal/examples/Fe_BCC_a2.8665.cif`, `Ni_FCC_a3.52.cif`, their provenance/license information, and `synthetic_fe_atomic_parameters.json`. The atomic example is a **synthetic software demonstration**, not calibrated Fe spectroscopy. The application also selects its bundled five-column Ni XMCD source. These example paths are not a claim that every historical binary has identical contents.
-
-## Create, save, and reopen a project
-
-No project JSON is required at startup. Open a CIF or choose **File > New** for Ni, supply a valid MDFF, choose a small calculation profile, and run. **File > Save Project** asks for a parent directory and new project folder name. The application writes metadata and arrays, including its own project JSON. Reopen the complete folder with **File > Open Project...**; choose **Use These Settings** before rerunning.
-
-Saving a completed numerical result is different from exporting a figure or retaining an uncalculated draft. Keep all project JSON/CIF/NPZ files together. Preserve external XMCD inputs: saved arrays may remain viewable without them, but rerunning requires the matching source. Editor-generated inputs have their implemented portable attachments; arbitrary external files are not universally embedded.
-
-## Source installation
-
-Source use is separate from installing a portable binary. The package requires **Python >=3.10**; the established Windows build uses Python **3.11**. With Git and Python 3.11 available, use PowerShell in a directory appropriate for a new clone:
-
-```powershell
-git clone https://github.com/dingpengem/EMCD-Sim.git
-Set-Location EMCD-Sim
-py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[gui]"
-.\.venv\Scripts\python.exe -m emcd_sim.gui
-```
-
-If `py` is unavailable, use your chosen interpreter's explicit path. Calling the venv interpreter avoids shell activation or execution-policy changes. The installed GUI entry point is also `emcd-gui`.
-
-[pyproject.toml](../pyproject.toml) declares NumPy/Matplotlib and the PySide6/ASE `gui` extra, with their transitive requirements. Developers can install `.[dev,gui]` for tests. [packaging/requirements-windows.txt](../packaging/requirements-windows.txt) pins the established Windows **build** environment, including PyInstaller and `six`; binary users do not install it. The [build procedure](../packaging/README.md) preserves mandatory content/license inventories. Source installation neither certifies another platform nor resolves binary redistribution requirements.
-
-## Platform and verification status
-
-Windows x64 is the tested packaged platform. The `aaa69a1` EXE passed native ambiguity handling, Fe 710/723 eV preview/calculation, application-created saving, restart, reopening, and recalculation on the development host. The rebuilt beta.2 EXE (`88dc9ec`, `0.8.1b2`) also passed the affected native workflow: ambiguous/L3-only rejection, explicit Fe 710/723 eV preview and calculation, normal application-created save, process restart/reopen, restored preview and recalculation. Its Microsoft runtime DLLs loaded from System32 with no dependency-environment paths. Independent clean-PC/VM installation remains **unverified**. Linux/macOS are not supplied or certified; recorded interpreter-shutdown and Qt-modal CI problems remain limitations.
-
-The full `7730e38` run remains **FAILED: 1,191 passed, 1 failed, 54 skipped**. The repair passed four focused cases. The user's prerelease-specific exception permits using this evidence without another complete regression; it does not waive scientific, security, redistribution, or formal publishing requirements. See [draft release notes](RELEASE_NOTES_0_8_1_BETA_2.md).
-
-## Troubleshooting and data locations
+## Troubleshooting
 
 | Symptom | Action |
 | --- | --- |
-| Startup failure or missing DLL/Python/Qt files | Verify and freshly extract the complete ZIP. Check quarantine under local policy; do not mix package versions. |
-| Run disabled or preview unavailable | Read the inline reason. Validate source/declarations; ambiguous L2,3 XMCD requires both explicit energies. Check structure/site and geometry eligibility. |
-| Stale preview | Update MDFF preview after changing inputs. Elastic **Preview diffraction** is separate. Old curves are snapshots, not permission to execute old input. |
-| Source/project verification failure | Preserve original data and locate the matching source. Do not alter metadata to bypass verification. |
-| Memory rejection | Inspect requested/effective settings and available RAM. Free memory or explicitly choose a smaller supported configuration; raising a budget does not create RAM. |
-| Cramped controls/plots | Resize, scroll, collapse advanced sections, use viewer maximize/restore, or **View > Restore Default Layout**. MDFF configuration scrolls separately. |
-| Save failure | Choose a writable directory outside installation and retain the complete project, not only its figure. |
+| Missing MSVCP140/VCRUNTIME140 DLL | Install/repair the official Microsoft x64 runtime above. |
+| Missing Python/Qt file or startup failure | Freshly extract the complete ZIP; inspect quarantine under local policy, and do not combine versions. |
+| Run disabled | Read the full reason; validate the active Global/group source, conventions, frame and coverage, then finish **Done → Apply and Close**. |
+| Inactive — Global mode on a group | That Local row is not used by Global calculation; check the Global provider's actual readiness. |
+| Stale result notice | Compare working inputs with the displayed saved run. Resolve genuinely missing/changed sources; do not blindly reapply or bypass validation. |
+| Memory admission rejected | Review the effective settings and workers. Increasing a budget does not create RAM. |
+| Crowded Results | Resize/scroll or use **Maximize / restore results**. Dedicated legends and toolbar overflow preserve access and figure identification. |
+| Save failed | Select a writable location and retain the complete project folder. |
 
-Default application data are in `%LOCALAPPDATA%\EMCD-Sim`: workspace files include `results_index.json` and `ui.ini`, and rotated logs are in `logs\runtime.log`. `EMCD_GUI_WORKSPACE` redirects the workspace, not the application-data log directory. Report exact source/binary identity, settings, relevant input/error, and avoid sharing unrelated private data.
+Default application data are under `%LOCALAPPDATA%\EMCD-Sim`; logs are in `logs\runtime.log`. `EMCD_GUI_WORKSPACE` redirects workspace files, not that log directory. Include build identity, relevant settings and a bounded error excerpt when reporting problems.
 
-Update into a new directory and retain older projects until compatibility is checked. Earlier v0.6.1 magnetic results used a superseded convention; opening their arrays does not upgrade or revalidate their physics.
+## Source development — optional and separate
+
+Developers may clone the repository, check out the required version and install `.[gui]` in a Python >=3.10 virtual environment. The Windows package uses Python 3.11. See [build requirements](../packaging/requirements-windows.txt) and [packaging workflow](../packaging/README.md); these are maintainer instructions, not EXE prerequisites. No Conda installation or environment activation is required.
+
+Research limitations, unchanged historical failed/incomplete broad checks and current focused acceptance are in the [release notes](RELEASE_NOTES_0_9_0_BETA_2.md). Finite-basis agreement is not convergence or quantitative material calibration.

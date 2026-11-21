@@ -1,0 +1,212 @@
+"""Read-only total, site and element views of completed multi-site arrays."""
+from collections import Counter
+import json
+import numpy as np
+
+
+def material(result):
+    counts = Counter(result['model'].elastic.crystal.species)
+    return ''.join(symbol+(str(n) if n != 1 else '') for symbol,n in counts.items())
+
+
+def ionizing_label(result):
+    if result.get('groups'):return ', '.join(dict.fromkeys(g['metadata']['element'] for g in result['groups'].values()))
+    element=getattr(result['config'],'ionizing_element',None) or result.get('metadata',{}).get('imported_mdff',{}).get('element')
+    if element:return element
+    species=set(getattr(result['model'].elastic.crystal,'species',()))
+    return next(iter(species)) if len(species)==1 else 'Declared ionizing sites'
+
+
+def description(result):
+    meta = result['metadata'];sites = meta['multisite']
+    return (f'{material(result)} | {meta["solver"]} | {meta["scientific_status"]}\nModeled partial core-edge spectrum; mean per selected ionizing atom '
+            f'(fixed denominator {sites["selected_atom_count"]}). Provider amplitudes retained; no absolute cross-element calibration.\n'
+            'Active state: all explicit provider '+('−M' if sites['global_reversal'] else '+M')+' states.')
+
+
+def covered_segments(result, energy, group_ids=None):
+    """Do not draw invented spectral tails across unmodeled inter-edge gaps."""
+    channels = result['metadata']['multisite']['channels']
+    selected = channels.values() if group_ids is None else (channels[gid] for gid in group_ids)
+    intervals = sorted(channel['modeled_window_ev'] for channel in selected
+                       if channel['modeled_window_ev'] is not None)
+    merged = []
+    for lo,hi in intervals:
+        if merged and lo <= merged[-1][1]:merged[-1][1] = max(hi,merged[-1][1])
+        else:merged.append([lo,hi])
+    return [(energy>=lo)&(energy<=hi) for lo,hi in merged]
+
+
+def angular_group_view(result, group_id, normalization='weighted'):
+    """Display adapter over saved group means, with the fixed total denominator."""
+    from ..mdff_edges import selected_samples
+    group=result['groups'][group_id];meta=group['metadata']
+    channel=result['metadata']['multisite']['channels'][group_id]
+    bounds=channel['modeled_window_ev']
+    if channel['omitted_by_request'] or bounds is None:raise ValueError(group_id+' is excluded/unmodeled; not a physical zero')
+    scale=1. if normalization=='mean' else meta['multiplicity']/result['metadata']['multisite']['selected_atom_count']
+    energies=dict(selected_samples(result['config']))
+    maps={key:{field:scale*np.asarray(value) for field,value in fields.items()}
+          for key,fields in group.get('maps',{}).items() if key in energies and bounds[0]<=energies[key]<=bounds[1]}
+    if not maps:raise ValueError('No modeled angular maps were saved for '+group_id)
+    return dict(result,maps=maps,angular_selection=dict(group_id=group_id,normalization=normalization,
+        scale=scale,multiplicity=meta['multiplicity'],magnetization_crystal=meta['magnetization_crystal']))
+
+
+def energy_sample_index(result, energy):
+    """Resolve a declared selection to an actual saved sample, without rounding."""
+    grid=np.asarray(result['spectra']['energy_ev'],float)
+    found=np.flatnonzero(grid==float(energy))
+    if not len(found):found=np.flatnonzero(np.isclose(grid,energy,rtol=0,atol=1e-9))
+    if len(found)!=1:raise ValueError('Selected energy does not identify one saved sample: '+str(energy))
+    return int(found[0])
+
+
+def total_energy_samples(result, maps_only=True):
+    """One aggregate entry per stored energy; aliases are provenance, not scopes."""
+    from ..mdff_edges import selected_samples
+    samples=dict(selected_samples(result['config']))
+    records={};groups=result.get('groups',{});channels=result.get('metadata',{}).get('multisite',{}).get('channels',{})
+    for key,energy in samples.items():
+        if maps_only and key not in result['maps']:continue
+        index=energy_sample_index(result,energy)
+        record=records.setdefault(index,dict(index=index,energy_ev=float(result['spectra']['energy_ev'][index]),keys=[]))
+        record['keys'].append(key)
+    for record in records.values():
+        index=record['index'];edges=[]
+        active=[gid for gid,c in channels.items() if not c['omitted_by_request'] and c['active_energy_mask'][index]]
+        for gid in active:
+            source=groups[gid]['metadata']['source']
+            for edge,energy in source.get('selected_ev',{}).items():
+                try:matches=energy_sample_index(result,energy)==index
+                except ValueError:matches=False
+                if matches and (source['element'],edge) not in edges:edges.append((source['element'],edge))
+        if groups:
+            # Some stored providers declare a core edge without named selections.
+            if not edges:edges=list(dict.fromkeys((groups[g]['metadata']['element'],groups[g]['metadata']['source']['edge']) for g in active))
+            multiple=len({g['metadata']['element'] for g in groups.values()})>1
+            record['edge_label']=' / '.join((element+' ' if multiple else '')+edge for element,edge in edges) or 'Unmodeled sample'
+        else:record['edge_label']=' / '.join(dict.fromkeys(record['keys']))
+        record['partial']=bool(groups) and len(active)!=len(groups)
+        record['active_groups']=active
+    records=sorted(records.values(),key=lambda record:record['energy_ev'])
+    labels=[(r['edge_label'],f'{r["energy_ev"]:.4f}') for r in records]
+    for record,label in zip(records,labels):
+        energy=f'{record["energy_ev"]:.17g}' if labels.count(label)>1 else label[1]
+        record['label']=record['edge_label']+' · '+energy+' eV'+(' · modeled channels' if record['partial'] else '')
+    return records
+
+
+def angular_choices(result, groups=False):
+    """Labels identify scope explicitly; item data retains the original saved key."""
+    from ..mdff_edges import selected_samples
+    samples=dict(selected_samples(result['config']))
+    if not groups:return [(r['label'],(None,r['keys'][0])) for r in total_energy_samples(result)]
+    choices=[]
+    for gid,group in result['groups'].items():
+        try:maps=angular_group_view(result,gid)['maps']
+        except ValueError:continue
+        selections=group['metadata']['source'].get('selected_ev',{})
+        if selections:
+            for edge,energy in sorted(selections.items(),key=lambda item:item[1]):
+                try:index=energy_sample_index(result,energy)
+                except ValueError:continue  # A declared source selection need not have been calculated.
+                candidates=[key for key in maps if energy_sample_index(result,samples[key])==index]
+                preferred=gid+':'+edge
+                if candidates:choices.append((f'{gid} | {edge} | {energy:.4f} eV',(gid,preferred if preferred in candidates else candidates[0])))
+        else:
+            choices.extend((f'{gid} | {key} | {samples[key]:.4f} eV',(gid,key)) for key in maps)
+    return choices
+
+
+SPECTRAL_KEYS = ('I_A_plus','I_B_plus','I_A_minus','I_B_minus','N_A','N_B','M_A','M_B',
+                 'D_raw','D_mag','D_nonmag','Sigma_ref')
+PANELS = [
+    ('Raw detector intensities', [('I_A_plus','A +state'),('I_B_plus','B +state'),('I_A_minus','A −state'),('I_B_minus','B −state')]),
+    ('Global reversal-even', [('N_A','Even A'),('N_B','Even B')]),
+    ('Global reversal-odd', [('M_A','Odd A'),('M_B','Odd B')]),
+    ('Detector A − B differences', [('D_raw','Conventional +state A−B'),('D_mag','Magnetic odd A−B'),('D_nonmag','Nonmagnetic even A−B')])]
+QUANTITIES = [
+    ('EELS / magnetic and nonmagnetic components',None),('Raw EELS +state (A, B)',PANELS[0][1][:2]),
+    ('Raw EELS −state (A, B)',PANELS[0][1][2:]),('Reversal-even (A, B)',PANELS[1][1]),
+    ('Reversal-odd (A, B)',PANELS[2][1]),('Conventional A−B (+state)',PANELS[3][1][:1]),
+    ('Magnetic A−B',PANELS[3][1][1:2]),('Nonmagnetic A−B',PANELS[3][1][2:])]
+
+
+def spectral_series(result, selection=('total',None), normalization='weighted', compared=(), include_total=False):
+    """Additive components are n_s I_s / N, never independently peak-scaled.
+
+    Stored group spectra are means over that group's atoms. Their original
+    arrays, including bookkeeping exclusions, are left untouched. Coverage is
+    carried separately so an excluded channel is never plotted as a physical 0.
+    """
+    mode,value = selection;groups = result['groups'];denominator = result['metadata']['multisite']['selected_atom_count']
+    if mode == 'total':return [dict(label='Total',spectra=result['spectra'],groups=tuple(groups),normalization='total',scale=1.)]
+    if mode == 'element':
+        ids = tuple(gid for gid,g in groups.items() if g['metadata']['element'] == value)
+        if not ids:raise ValueError('Unknown ionizing element: '+str(value))
+        spectra = dict(energy_ev=result['spectra']['energy_ev'])
+        for key in SPECTRAL_KEYS:
+            spectra[key] = sum(groups[gid]['metadata']['multiplicity']/denominator*np.asarray(groups[gid]['spectra'][key]) for gid in ids)
+        return [dict(label='Element '+value,spectra=spectra,groups=ids,normalization='weighted',scale=None)]
+    ids = (value,) if mode == 'group' else tuple(compared) if mode == 'compare' else ()
+    if mode not in ('group','compare'):raise ValueError('Unknown spectral result selection')
+    series = []
+    for gid in ids:
+        if gid not in groups:raise ValueError('Unknown site group: '+str(gid))
+        entry = groups[gid];meta = entry['metadata']
+        scale = 1. if normalization == 'mean' else meta['multiplicity']/denominator
+        spectra = {key:scale*np.asarray(entry['spectra'][key]) for key in SPECTRAL_KEYS}
+        spectra['energy_ev'] = result['spectra']['energy_ev']
+        series.append(dict(label=gid+' · '+meta['element']+' '+meta['source']['edge'],spectra=spectra,
+                           groups=(gid,),normalization='mean' if normalization == 'mean' else 'weighted',scale=scale))
+    if mode == 'compare' and include_total:series.extend(spectral_series(result))
+    return series
+
+
+def selection_description(result, series):
+    n = result['metadata']['multisite']['selected_atom_count']
+    if not series:return 'No comparison groups selected. Choose groups below; no calculation is required.'
+    parts = [item for item in series if item['normalization'] != 'total']
+    total = f'Total normalized intensity: mean per selected ionizing atom (N={n}).'
+    if not parts:return total
+    names = ', '.join(item['label'] for item in parts)
+    note = (names+' · per-atom mean within each group; these curves are not additive components of the total.'
+            if parts[0]['normalization']=='mean' else
+            names+f' · additive contribution: Σ n_s I_s / N, fixed N={n}; no peak or area rescaling.')
+    return note+(' '+total if len(parts)<len(series) else '')
+
+
+def comparison_text(result):
+    meta = result['metadata'];sites = meta['multisite']
+    lines = [description(result),'',
+        'Raw detector states: I_A_plus, I_B_plus, I_A_minus, I_B_minus.',
+        'Reversal-even N=(I_plus+I_minus)/2; reversal-odd M=(I_plus-I_minus)/2 at each detector.',
+        'D_raw=I_A_plus-I_B_plus; D_mag=M_A-M_B; D_nonmag=N_A-N_B.',
+        'A reversal-odd signal is not automatically conventional detector-difference EMCD.',
+        'Active configuration: all provider '+('−M' if sites['global_reversal'] else '+M')+' states; reversal swaps every pair together.',
+        'Omitted excitations and unmodeled tails are not physical zeros.','']
+    for gid,entry in result['groups'].items():
+        d = entry['metadata'];source = d['source']
+        lines.append(f'{gid}: {d["element"]}, indices {d["indices"]}, multiplicity {d["multiplicity"]}, weight {d["contribution_weight"]:g}')
+        lines.append(f'  {source["edge"]}; {source["units"]}; {source["normalization"]}; source {source["path"]}')
+        lines.append(f'  {source.get("provider_identity","imported tensor")}; {source["status"]}; {source["source"][:300]}')
+        lines.append(f'  Frame {source["frame_to_crystal"]}; declared M {d["magnetization_crystal"]}')
+    lines += ['',meta['limitations'],'','BW/MS diagnostics: '+json.dumps(result.get('comparison',{}),default=str)]
+    return '\n'.join(lines)
+
+
+DEFINITIONS = {
+    'I_A_plus': 'Raw detector A, active provider state',
+    'I_B_plus': 'Raw detector B, active provider state',
+    'I_A_minus': 'Raw detector A, globally reversed provider state',
+    'I_B_minus': 'Raw detector B, globally reversed provider state',
+    'N_A': '(I_A_plus + I_A_minus)/2; reversal-even at A',
+    'N_B': '(I_B_plus + I_B_minus)/2; reversal-even at B',
+    'M_A': '(I_A_plus - I_A_minus)/2; reversal-odd at A',
+    'M_B': '(I_B_plus - I_B_minus)/2; reversal-odd at B',
+    'D_raw': 'I_A_plus - I_B_plus; conventional detector difference',
+    'D_mag': 'M_A - M_B; magnetic reversal-odd detector difference',
+    'D_nonmag': 'N_A - N_B; nonmagnetic reversal-even detector difference',
+    'Sigma_ref': 'N_A + N_B',
+}

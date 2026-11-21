@@ -1,4 +1,5 @@
 """Focused Stage B real-kernel, source, atomic reversal and Qt lifecycle checks."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import unittest,uuid,threading,importlib.util
@@ -8,9 +9,16 @@ from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 from PySide6 import QtWidgets
-from emcd_sim.gui.emcd_forward import *
+from emcd_sim.forward_settings import DEFAULT_NI_SOURCE, NiForwardSettings
+from emcd_sim.historical_ni import NiLocalConfig, energy_grid, material_reason, tensors
+from emcd_sim.structure_geometry import Settings, Structure
+from emcd_sim.forward_pipeline import calculate
+from emcd_sim.gui.result_export import export_result
+from emcd_sim.xmcd_source import inspect_xmcd_source
+from emcd_sim.wien2k_xmcd import load_wien2k_xmcd
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import orientation
+from runtime_fixtures import apply_global_mdff
+from emcd_sim.structure_geometry import orientation
 from emcd_sim.elastic import depth_coherence
 from legacy_geometry import Ni017Geometry,rotated_tensor
 from emcd_sim.historical_ni import ni_local_transitions
@@ -21,26 +29,26 @@ from emcd_sim.single_channeling_tensor import run_tensor_with_coherence
 class ForwardTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.structure=Structure.nickel();cls.settings=Settings(beam_cutoff=2.2,potential_cutoff=2.2,voltage=200,tilt=(-7.116725439974256,0))
-        cls.cfg=ForwardSettings(energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True)
+        cls.structure=Structure.nickel();cls.settings=nickel_geometry_settings(beam_cutoff=2.2,potential_cutoff=2.2,voltage=200,tilt=(-7.116725439974256,0))
+        cls.cfg=NiForwardSettings(energy_points=17,grid=17,depth=12,subpixels=16,axis_declared=True)
         cls.result=calculate(cls.structure,cls.settings,cls.cfg)
     def test_source_native_and_independent_import_validation(self):
-        info=inspect_source(DEFAULT_SOURCE)
+        info=inspect_xmcd_source(DEFAULT_NI_SOURCE)
         self.assertEqual(info['selected'],dict(L3=831.271,L2=848.698))
         folder=Path('outputs')/('gui_b_source_'+uuid.uuid4().hex);folder.mkdir();path=folder/'independent.txt'
-        source=load_wien2k_xmcd(DEFAULT_SOURCE);e=source.energy_ev-100
+        source=load_wien2k_xmcd(DEFAULT_NI_SOURCE);e=source.energy_ev-100
         np.savetxt(path,np.column_stack((e,source.right,source.left,source.right-source.left,source.right+source.left)))
-        info=inspect_source(path);self.assertIsNone(info['audit']);self.assertAlmostEqual(info['selected']['L3'],731.271)
+        info=inspect_xmcd_source(path);self.assertIsNone(info['audit']);self.assertAlmostEqual(info['selected']['L3'],731.271)
         cfg=replace(self.cfg,source=str(path),l3=731.271,l2=748.698,axis_declared=False)
         with self.assertRaises(ValueError):tensors(cfg,energy_grid(cfg),np.eye(3))
         with self.assertRaises(ValueError):energy_grid(replace(cfg,l3=831.271))
         with self.assertRaises(ValueError):energy_grid(replace(cfg,source_sha256='bad'))
         np.savetxt(path,np.ones((5,4)))
-        with self.assertRaises(ValueError):inspect_source(path)
+        with self.assertRaises(ValueError):inspect_xmcd_source(path)
     def test_rotation_reversal_and_psd(self):
         R=orientation(self.structure.atoms.cell.array,(0,1,7));e=np.array([831.271,848.698])
         p,m=tensors(self.cfg,e,R)
-        np.testing.assert_allclose(p.tensor_angstrom2_per_ev,rotated_tensor(DEFAULT_SOURCE,e).tensor_angstrom2_per_ev,atol=1e-15)
+        np.testing.assert_allclose(p.tensor_angstrom2_per_ev,rotated_tensor(DEFAULT_NI_SOURCE,e).tensor_angstrom2_per_ev,atol=1e-15)
         np.testing.assert_allclose(m.tensor_angstrom2_per_ev,p.tensor_angstrom2_per_ev.conj(),atol=1e-15)
         self.assertGreaterEqual(np.linalg.eigvalsh(p.tensor_angstrom2_per_ev).min(),-1e-15)
         np.testing.assert_allclose(R@np.array([0,0,1]),[0,-1/np.sqrt(50),7/np.sqrt(50)])
@@ -63,7 +71,7 @@ class ForwardTests(unittest.TestCase):
     def test_coherence_core_contraction_map_integrals_and_parity(self):
         r=self.result;e=r['spectra']['energy_ev'];model=r['model']
         np.testing.assert_allclose(r['coherence'],depth_coherence(model.elastic,30,12),atol=1e-15)
-        core=run_tensor_with_coherence(model,rotated_tensor(DEFAULT_SOURCE,e),r['coherence'],thickness_nm=30,grid_size=17,reference_energy_ev=self.cfg.l3,integration_mode='fractional',aperture_subpixels=16)
+        core=run_tensor_with_coherence(model,rotated_tensor(DEFAULT_NI_SOURCE,e),r['coherence'],thickness_nm=30,grid_size=17,reference_energy_ev=self.cfg.l3,integration_mode='fractional',aperture_subpixels=16)
         np.testing.assert_allclose(core.chiral_spectrum('A'),r['spectra']['I_A_plus'],rtol=1e-13)
         dq2=(r['qx'][0,1]-r['qx'][0,0])**2
         for edge,energy in (('L3',self.cfg.l3),('L2',self.cfg.l2)):
@@ -89,23 +97,31 @@ class ForwardTests(unittest.TestCase):
         self.assertTrue((folder/'L3_angular_maps.png').exists())
     def test_gates_and_memory(self):
         changed=Structure.nickel();changed.atoms.cell*=1.1;self.assertTrue(material_reason(changed))
-        with self.assertRaisesRegex(ValueError,'512 MiB'):calculate(self.structure,Settings(beam_cutoff=6.5),replace(self.cfg,grid=97,memory_budget_mib=512))
+        # Admission includes current RSS. A bounded SC calculation can fit
+        # 512 MiB in a fresh process; force genuine pressure for this rejection
+        # check instead of depending on memory retained by earlier tests.
+        with patch('emcd_sim.memory_budget.memory_snapshot',return_value=dict(available_ram_mib=32768.,process_rss_mib=512.)):
+            with self.assertRaisesRegex(ValueError,'512 MiB'):calculate(self.structure,nickel_geometry_settings(beam_cutoff=6.5),replace(self.cfg,grid=97,memory_budget_mib=512))
 
 
 class WorkerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    def setUp(self):self.w=MainWindow(workspace=Path('outputs')/('stage_b_worker_'+uuid.uuid4().hex));self.w.model_box.setCurrentIndex(0);self.w.validate_xmcd(show_error=False);self.w.declaration.setChecked(True);self.w.error=lambda s:None
+    def setUp(self):
+        self.w=MainWindow(workspace=Path('outputs')/('stage_b_worker_'+uuid.uuid4().hex))
+        self.w.model_box.setCurrentIndex(0);self.w.validate_xmcd(show_error=False);self.w.declaration.setChecked(True)
+        apply_global_mdff(self.w)
+        self.w.error=lambda s:None
     def tearDown(self):
         if self.w.busy:self.w.cancel();self.w.worker.wait(5000);self.app.processEvents()
         self.w.close();self.app.processEvents()
     def test_cancel_and_failed_not_completed(self):
         entered=threading.Event();release=threading.Event();w=self.w
         def blocked(*args,**kwargs):entered.set();release.wait(5);return {'not':'registered'}
-        with patch('emcd_sim.gui.stage_b.calculate',blocked):
+        with patch('emcd_sim.gui.calculation_worker.calculate',blocked):
             w.start_emcd();self.assertTrue(entered.wait(5));w.cancel();release.set();self.assertTrue(w.worker.wait(5000));self.app.processEvents()
         self.assertIsNone(w.emcd_result);self.assertFalse(w.busy);self.assertEqual(w.progress.value(),0)
-        with patch('emcd_sim.gui.stage_b.calculate',side_effect=ValueError('Failure check')):
+        with patch('emcd_sim.gui.calculation_worker.calculate',side_effect=ValueError('Failure check')):
             w.start_emcd();self.assertTrue(w.worker.wait(5000));self.app.processEvents()
         self.assertIsNone(w.emcd_result);self.assertEqual(w.run_outcome,'failed');self.assertEqual(w.progress.value(),0)
     def test_snapshot_stale_and_model_switch_geometry(self):

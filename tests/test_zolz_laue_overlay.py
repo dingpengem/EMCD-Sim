@@ -1,4 +1,5 @@
 """Geometry and interaction controls for the display-only zero-excitation circle."""
+from emcd_sim.study_presets import nickel_geometry_settings
 import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from dataclasses import replace
@@ -14,12 +15,12 @@ from PySide6 import QtWidgets
 from matplotlib.backend_bases import MouseEvent
 from matplotlib.colors import to_rgba
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Settings, Structure, geometry, excitation, align_bragg, za_from_tilt
+from emcd_sim.structure_geometry import Settings, Structure, geometry, excitation, align_bragg, za_from_tilt
 
 
 @pytest.mark.parametrize('voltage',[200,300])
 def test_bragg_circle_and_sampled_excitation(voltage):
-    s=replace(Settings(),voltage=voltage)
+    s=replace(nickel_geometry_settings(),voltage=voltage)
     _,_,hkl,g,_=geometry(Structure.nickel(),s)
     target=g[hkl.index((2,0,0))]
     tilt=align_bragg(target,[0,15],voltage,'Y')
@@ -37,8 +38,8 @@ def window(tmp_path):
     # Any inadvertent scientific execution fails rather than doing expensive work.
     with ExitStack() as guards:
         for name in ('emcd_sim.gui.app.preview','emcd_sim.gui.app.PreviewWorker.start',
-                     'emcd_sim.gui.stage_b.calculate','emcd_sim.gui.stage_b.EMCDWorker.start',
-                     'emcd_sim.gui.propagation.propagate','emcd_sim.gui.emcd_forward.calculate',
+                     'emcd_sim.gui.calculation_worker.calculate','emcd_sim.gui.calculation_worker.EMCDWorker.start',
+                     'emcd_sim.channeling.propagate','emcd_sim.forward_pipeline.calculate',
                      'numpy.linalg.eigh'):
             guards.enter_context(patch(name,side_effect=AssertionError('Unexpected solver')))
         w=MainWindow(workspace=tmp_path/'project');w.show();app.processEvents()

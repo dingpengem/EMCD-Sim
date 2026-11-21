@@ -122,7 +122,7 @@ def main():
             ax.plot(*r['model'].elastic.crystal.g_vector(r['settings'].target)[:2],'s',mfc='none',mec='crimson',ms=7)
     fig.suptitle('[111], 2 nm: raw L3 fields on 97×97 grid; crystal M=[001]')
     fig.savefig(OUT/'bw_ms_maps.png',dpi=150);fig.savefig(OUT/'bw_ms_maps.svg')
-    from emcd_sim.gui.results import draw_eels
+    from emcd_sim.gui.result_presentation import draw_eels
     paths=[p for p in (OUT/'gui').glob('117_double_*/project') if (p.parent/'acceptance.json').exists()]
     if paths:
         demo=load_project(sorted(paths)[-1])
@@ -139,7 +139,7 @@ def main():
         refs[label]=dict(status='Reused immutable Milestone-A result; not rerun',case_json=str(p.relative_to(ROOT)),arrays_sha256=d['arrays_sha256'],comparison=d['comparison'])
     for label in ('111_grid65','111_grid97','111_joint','117_legacy_t8'):
         r=load_project(OUT/'cases'/label/'project')
-        from emcd_sim.gui.prb_benchmark import benchmark_spectra
+        from emcd_sim.detector_signals import benchmark_spectra
         for method,m in r['methods'].items():
             sp=m['spectra'];curves,_=benchmark_spectra(sp)
             for edge,e in [('L3',r['config'].l3),('L2',r['config'].l2)]:

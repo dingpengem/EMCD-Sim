@@ -7,7 +7,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from ni_117_magnetization import OUT,ENERGIES,sha,write_json,write_npz
-from emcd_sim.gui.prb_benchmark import relative_dichroism_percent
+from emcd_sim.detector_signals import relative_dichroism_percent
 
 AXES=('crystal001','incident')
 

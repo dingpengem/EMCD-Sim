@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
+from runtime_fixtures import apply_global_mdff
 
 
 @pytest.fixture
@@ -15,12 +16,13 @@ def window(tmp_path):
     app=QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     with ExitStack() as guards:
         for name in ('emcd_sim.gui.app.preview','emcd_sim.gui.app.PreviewWorker.start',
-                     'emcd_sim.gui.stage_b.calculate','emcd_sim.gui.stage_b.EMCDWorker.start',
-                     'emcd_sim.gui.propagation.propagate','emcd_sim.gui.emcd_forward.calculate',
+                     'emcd_sim.gui.calculation_worker.calculate','emcd_sim.gui.calculation_worker.EMCDWorker.start',
+                     'emcd_sim.channeling.propagate','emcd_sim.forward_pipeline.calculate',
                      'numpy.linalg.eigh'):
             guards.enter_context(patch(name,side_effect=AssertionError('Viewport must not run solvers')))
         w=MainWindow(workspace=tmp_path/'workspace')
-        w.numerical_mode.setCurrentIndex(1);w.model_box.setCurrentIndex(1)
+        w.numerical_mode.setCurrentIndex(1);w.model_box.setCurrentIndex(0)
+        w.validate_xmcd(show_error=False);w.declaration.setChecked(True);apply_global_mdff(w)
         yield w
         w.close();app.processEvents()
 

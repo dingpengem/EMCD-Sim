@@ -7,11 +7,12 @@ from ase import Atoms
 from ase.build import bulk
 from PySide6 import QtWidgets,QtCore
 from emcd_sim.gui.app import MainWindow
-from emcd_sim.gui.geometry import Structure
+from emcd_sim.structure_geometry import Structure
 from emcd_sim.gui.project_io import save_project,load_project
-from emcd_sim.gui.emcd_forward import export_result
+from emcd_sim.gui.result_export import export_result
 from test_unified_mdff_providers import oxygen_source,xmcd_source
 from test_atomic_ionization import parameter_file
+from runtime_fixtures import apply_global_mdff
 
 MODELS=['XMCD-constrained MDFF','Atomic Ionization MDFF','Manual tensor']
 
@@ -20,6 +21,7 @@ def app():return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
 def configure(w,channel='single'):
+    w.refresh()
     w.numerical_mode.setCurrentIndex(1)
     w.zone.setText('0 0 1');w.target.setText('1 0 0')
     w.set_values(dict(kv=200,tx=-5,ty=7,thickness=.2,beam=.6,potential=1.2,grid=9,depth=9,
@@ -52,14 +54,15 @@ def test_non_3d_k_edge_actual_gui_export_reopen(tmp_path,monkeypatch,model,chann
             w.xmcd_selected.setText(json.dumps(d['selected_ev']));w.xmcd_provenance.setText(d['source'])
             w.xmcd_validity.setText(d['validity']);w.xmcd_scale.setText('1');w.xmcd_status.setCurrentText('synthetic')
             w.validate_xmcd();w.declaration.setChecked(True)
-        w.energy_scope.setCurrentIndex(1);w.refresh();w.emcd_stale()
+        w.energy_scope.setCurrentIndex(w.energy_scope.findData('edges'));w.refresh();apply_global_mdff(w);w.emcd_stale()
         assert w.emcd_button.isEnabled(),w.emcd_button.toolTip()
         w.start_emcd();wait(w,application)
         assert not errors,errors
         r=w.emcd_result
         assert set(r['maps'])=={'K'} and r['spectra']['energy_ev'].shape==(1,)
-        assert [w.maps_view.choice.itemText(i) for i in range(w.maps_view.choice.count())]==['K']
-        assert w.eels_view.choice.count()==1
+        assert w.maps_view.choice.count()==1 and w.maps_view.choice.currentData()==(None,'K')
+        assert w.maps_view.map_options()['energy_ev']==710.
+        assert w.eels_view.choice.count()==2 and w.eels_view.choice.itemData(1)==710.
         w.preview_mdff();assert not errors,errors
         if model=='xmcd':
             preview=w.xmcd_preview
@@ -78,7 +81,7 @@ def test_non_3d_k_edge_actual_gui_export_reopen(tmp_path,monkeypatch,model,chann
         assert not (tmp_path/'exports/L3_angular_maps.png').exists()
         opened=load_project(tmp_path/'exports')
         np.testing.assert_array_equal(opened['spectra']['D_mag'],r['spectra']['D_mag'])
-        w.emcd_result=opened;w.use_result_settings();w.emcd_stale()
+        w.display_saved_result(opened);w.emcd_stale()
         assert w.emcd_button.isEnabled(),w.emcd_button.toolTip()
         p.write_bytes(p.read_bytes()+b' ');w.emcd_stale()
         assert not w.emcd_button.isEnabled()
@@ -118,13 +121,15 @@ def test_atomic_input_route_and_failed_generation_clears_stale_state(tmp_path,mo
         w.structure=Structure(bulk('Fe','bcc',a=2.866,cubic=True),'Synthetic Fe')
         configure(w);w.target.setText('1 1 0');w.model_box.setCurrentIndex(1)
         path=parameter_file(tmp_path/'atomic.json');w.atomic_parameter_path.setText(str(path));w.validate_atomic_parameters()
-        w.atomic_declaration.setChecked(True);w.energy_scope.setCurrentIndex(1);w.refresh();w.emcd_stale()
+        w.atomic_declaration.setChecked(True);w.energy_scope.setCurrentIndex(w.energy_scope.findData('edges'));w.refresh();apply_global_mdff(w);w.emcd_stale()
         assert w.emcd_button.isEnabled(),w.emcd_button.toolTip()
         assert w.forward_settings().model=='atomic'
         w.start_emcd();wait(w,application);assert not errors,errors
-        save_project(w.emcd_result,tmp_path/'project');w.emcd_result=load_project(tmp_path/'project');w.use_result_settings()
+        save_project(w.emcd_result,tmp_path/'project');w.display_saved_result(load_project(tmp_path/'project'))
         assert w.model_box.currentIndex()==1 and w.forward_settings().ionizing_element=='Fe'
-        path.write_text('{}');w.validate_atomic_parameters()
+        live_source=Path(w.atomic_parameter_path.text())
+        assert live_source.resolve()==path.resolve()  # External inputs keep their original-source requirement.
+        live_source.write_text('{}');w.validate_atomic_parameters()
         assert w.atomic_provider_info is None and not w.atomic_declaration.isChecked()
         assert not w.emcd_button.isEnabled() and w.emcd_result is not None
     finally:
@@ -133,7 +138,7 @@ def test_atomic_input_route_and_failed_generation_clears_stale_state(tmp_path,mo
 
 
 def test_imported_reopen_and_revalidation_clear_acknowledgement(tmp_path,monkeypatch):
-    from emcd_sim.gui.generalized_forward import settings_for_source
+    from emcd_sim.mdff_providers import settings_for_source
     from single_element_helpers import write_source
     monkeypatch.setenv('EMCD_GUI_WORKSPACE',str(tmp_path/'workspace'))
     application=app();w=MainWindow()
@@ -164,9 +169,9 @@ def test_ambiguous_xmcd_requires_explicit_selections_no_ni_default(tmp_path,monk
         w.xmcd_validity.setText('Not physical Fe spectroscopy');w.xmcd_scale.setText('1');w.xmcd_status.setCurrentText('synthetic')
         w.validate_xmcd();w.declaration.setChecked(True)
         assert w.source_info['selected'] is None
-        with pytest.raises(ValueError,match='Explicit native edge selections'):w.forward_settings()
-        w.xmcd_selected.setText('{"L3":710,"L2":723}');w.declaration.setChecked(True)
-        cfg=w.forward_settings();assert (cfg.l3,cfg.l2)==(710,723)
+        with pytest.raises(ValueError,match='Select the source-covered L3/L2 energies'):w.global_mdff_draft_settings()
+        w.spin['xl3'].setValue(710);w.spin['xl2'].setValue(723);w.declaration.setChecked(True)
+        cfg=w.global_mdff_draft_settings();assert (cfg.l3,cfg.l2)==(710,723)
     finally:w.close();application.processEvents()
 
 
@@ -178,7 +183,7 @@ def test_run_detects_source_change_without_prior_gui_event(tmp_path,monkeypatch)
         w.structure=Structure(bulk('Fe','bcc',a=2.866,cubic=True),'Synthetic source-integrity test')
         configure(w);w.target.setText('1 1 0');w.model_box.setCurrentIndex(2)
         p=write_source(tmp_path/'imported.json');w.imported_path.setText(str(p));w.validate_imported_mdff()
-        w.imported_declaration.setChecked(True)
+        w.imported_declaration.setChecked(True);apply_global_mdff(w)
         p.write_bytes(p.read_bytes()+b' ')
         w.start_emcd()
         assert errors and not w.busy and w.imported_info is None
@@ -187,14 +192,15 @@ def test_run_detects_source_change_without_prior_gui_event(tmp_path,monkeypatch)
 
 
 def test_historical_ni_missing_xmcd_clears_acknowledgement(tmp_path,monkeypatch):
-    from emcd_sim.gui.emcd_forward import DEFAULT_SOURCE
+    from emcd_sim.forward_settings import DEFAULT_NI_SOURCE
     monkeypatch.setenv('EMCD_GUI_WORKSPACE',str(tmp_path/'workspace'))
     application=app();w=MainWindow();errors=[];w.error=errors.append
     try:
         w.numerical_mode.setCurrentIndex(1)
         w.model_box.setCurrentIndex(0)
-        p=tmp_path/'ni.xmcd';p.write_bytes(DEFAULT_SOURCE.read_bytes())
+        p=tmp_path/'ni.xmcd';p.write_bytes(DEFAULT_NI_SOURCE.read_bytes())
         w.source_path.setText(str(p));w.validate_xmcd();w.declaration.setChecked(True)
+        apply_global_mdff(w)
         p.unlink();w.start_emcd()
         assert errors and not w.busy and not w.declaration.isChecked()
         assert w.source_info is None and not w.emcd_button.isEnabled()

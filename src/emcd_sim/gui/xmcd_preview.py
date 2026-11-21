@@ -14,7 +14,7 @@ class XMCDPreview(QtWidgets.QGroupBox):
 
     def __init__(self, window):
         super().__init__('Preview — source data and provider tensor')
-        self.window=window;self.snapshot=None;self.is_stale=True;self.curves=[]
+        self.window=window;self.snapshot=None;self.input_snapshot=None;self.is_stale=True;self.curves=[]
         layout=QtWidgets.QVBoxLayout(self);layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         self.status=QtWidgets.QLabel('Select and validate the XAS/XMCD source in the main XMCD input.');self.status.setWordWrap(True);layout.addWidget(self.status)
         row=QtWidgets.QHBoxLayout();layout.addLayout(row)
@@ -39,8 +39,9 @@ class XMCDPreview(QtWidgets.QGroupBox):
         path=w.source_path.text()
         try:digest=hashlib.sha256(Path(path).read_bytes()).hexdigest()
         except (OSError,ValueError):digest='missing'
-        axis=w.axis.text() if w.model_box.currentIndex()==0 else w._mdff_axes[0]
-        return (path,digest,w.validated_path,(w.source_info or {}).get('sha256'),axis,w.declaration.isChecked(),
+        try:axis=tuple(w.material_direction())
+        except (ValueError,TypeError):axis='invalid Material direction'
+        return (path,digest,w.validated_path,(w.source_info or {}).get('sha256'),axis,w.source_conventions_confirmed(),
             w.explicit_xmcd.isChecked(),tuple(w.spin[k].value() for k in ('eta','beta','xl3','xl2')),
             tuple(field.text() for field in (w.xmcd_element,w.xmcd_edge,w.xmcd_selected,w.xmcd_provenance,w.xmcd_validity,w.xmcd_scale)),
             w.xmcd_status.currentText(),tuple(w.structure.atoms.get_chemical_symbols()))
@@ -54,23 +55,25 @@ class XMCDPreview(QtWidgets.QGroupBox):
 
     def update_preview(self):
         w=self.window
+        self.snapshot=None;self.input_snapshot=None
         try:
-            from .emcd_forward import ForwardSettings
+            from emcd_sim.forward_settings import NiForwardSettings
             from ..wien2k_xmcd import load_wien2k_xmcd
             from ..mdff_providers import prepare_provider
             start=self.fingerprint()
             if not w.source_info or w.validated_path!=w.source_path.text():
-                raise ValueError('Select and validate a five-column XAS/XMCD source in the main XMCD input.')
+                raise ValueError('Select and validate a matching five-column XAS/XMCD source in this editing context.')
             source=load_wien2k_xmcd(w.source_path.text())
             if source.source_sha256!=w.source_info['sha256']:raise ValueError('Source checksum changed. Validate the selected source again.')
             raw=Path(w.source_path.text()).read_bytes()
             if hashlib.sha256(raw).hexdigest()!=source.source_sha256:raise ValueError('Source checksum changed during input loading.')
             input_columns=np.loadtxt(io.BytesIO(raw),comments='#',ndmin=2)
-            axis=tuple(float(v) for v in w.axis.text().replace(',',' ').split())
-            base=ForwardSettings(model='xmcd',source=w.source_path.text(),source_sha256=source.source_sha256,
-                magnetization=axis,axis_declared=w.declaration.isChecked(),eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
+            self.input_snapshot=dict(energy=source.energy_ev.copy(),input_columns=input_columns.copy())
+            axis=w.material_direction()
+            base=NiForwardSettings(model='xmcd',source=w.source_path.text(),source_sha256=source.source_sha256,
+                magnetization=axis,axis_declared=w.source_conventions_confirmed(),eta=w.spin['eta'].value(),beta=w.spin['beta'].value(),
                 l3=w.spin['xl3'].value(),l2=w.spin['xl2'].value())
-            if not base.axis_declared:raise ValueError('Declare the source magnetic axis, RP/LP convention and edge assignments before previewing the tensor.')
+            if not base.axis_declared:raise ValueError('Acknowledge this context\'s source conventions and native edge assignments before tensor preview. Material target M is set in the 3D Viewer.')
             cfg=w.declared_provider_settings(base)
             provider=prepare_provider(cfg)
             # The historical adapter has no source element field: its existing
@@ -93,7 +96,7 @@ class XMCDPreview(QtWidgets.QGroupBox):
             self.draw()
         except Exception as exc:
             self.is_stale=True
-            self.status.setText('Preview unavailable: '+str(exc)+' Check the main XMCD input and its declarations.')
+            self.status.setText('Preview unavailable: '+str(exc)+' Check this context\'s Material direction, native edge selections and source declarations. Valid input curves, when available, are source data only.')
             self.draw()
 
     def draw(self,*_):
@@ -102,15 +105,21 @@ class XMCDPreview(QtWidgets.QGroupBox):
             if not self.status.text().startswith('Preview unavailable:'):
                 self.status.setText('STALE numerical preview — update for current source and settings.')
         self.figure.clear();inputs,tensor=self.figure.subplots(2,1);self.curves=[]
+        source=self.snapshot or self.input_snapshot
+        if source is not None:
+            e=source['energy'];prefix='STALE — ' if self.is_stale and self.snapshot is not None else ''
+            for label,column in (('RP (input)',1),('LP (input)',2),('XAS (input: RP + LP)',4),('XMCD (input: RP − LP)',3)):
+                inputs.plot(e,source['input_columns'][:,column],label=label)
+            inputs.set(title=prefix+'Input source spectra',ylabel='Source intensity (a.u.)');inputs.legend(fontsize=7,ncol=2)
+            inputs.set(xlabel='Energy loss (eV)',xlim=(e[0],e[-1]))
+        else:
+            inputs.text(.5,.5,'Select and validate the source in this XMCD context',ha='center',va='center',transform=inputs.transAxes,wrap=True)
+            inputs.set_axis_off()
         if self.snapshot is None:
-            inputs.text(.5,.5,'Input data: use the main XMCD input',ha='center',va='center',transform=inputs.transAxes)
-            tensor.text(.5,.5,'Calculated tensor: valid source and declarations required',ha='center',va='center',transform=tensor.transAxes,wrap=True)
-            inputs.set_axis_off();tensor.set_axis_off()
+            tensor.text(.5,.5,'Tensor preview blocked — see the message above.\nComplete this context\'s source, edge, scale and magnetic declarations.',ha='center',va='center',transform=tensor.transAxes,wrap=True)
+            tensor.set_axis_off()
         else:
             s=self.snapshot;e=s['energy'];prefix='STALE — ' if self.is_stale else ''
-            for label,column in (('RP (input)',1),('LP (input)',2),('XAS (input: RP + LP)',4),('XMCD (input: RP − LP)',3)):
-                inputs.plot(e,s['input_columns'][:,column],label=label)
-            inputs.set(title=prefix+'Input source spectra',ylabel='Source intensity (a.u.)');inputs.legend(fontsize=7,ncol=2)
             selected=self.state.currentText()
             states=('+M','−M') if selected.startswith('Reversal') else ('Even','Odd') if selected=='Even / odd' else (selected,)
             name=self.component.currentText()
@@ -132,7 +141,7 @@ def install_xmcd_preview(window,panel,form):
     form.setFormAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
     advanced=CollapsibleSection('Advanced source declarations',expanded=False);detail=QtWidgets.QFormLayout(advanced.body)
     detail.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
-    for widget in (window.explicit_xmcd,window.xmcd_element,window.xmcd_edge,window.xmcd_selected,window.xmcd_provenance,window.xmcd_validity,window.xmcd_scale,window.xmcd_status):
+    for widget in (window.xmcd_selected,window.xmcd_provenance,window.xmcd_validity,window.xmcd_status):
         taken=form.takeRow(widget)
         if taken.labelItem:detail.addRow(taken.labelItem.widget(),widget)
         else:detail.addRow(widget)

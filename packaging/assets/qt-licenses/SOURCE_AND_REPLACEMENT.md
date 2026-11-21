@@ -1,4 +1,4 @@
-# Qt source, building and replacement (v0.8.1-beta.2)
+# Qt source, building and replacement (v0.9.0-beta.1)
 
 EMCD-Sim remains MIT licensed. This distribution dynamically uses Qt 6.12.0,
 PySide6 6.12.0 and Shiboken6 6.12.0 under their LGPL v3 alternatives, with
@@ -11,8 +11,8 @@ work to debug modifications to them, as permitted by LGPL v3.
 
 ## Corresponding source supplied with this release
 
-Download **EMCD-Sim-v0.8.1-beta.2-Qt-sources.zip** from the same release page as
-the Windows ZIP. It contains the following unmodified official source archives,
+The accompanying **EMCD-Sim-v0.9.0-beta.1-Qt-sources.zip** is supplied beside
+the local Windows candidate ZIP; this candidate has not been published. It contains the following unmodified official source archives,
 this guide and the exact EMCD-Sim source snapshot (including packaging scripts).
 The existing upstream-provenance.json records the official URLs, versions,
 archive sizes and checksums checked against the publisher's SHA256 sidecars.

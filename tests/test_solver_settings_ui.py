@@ -1,4 +1,6 @@
 """Configuration-level regression for shared/solver-specific UI; no propagation."""
+from emcd_sim.study_presets import nickel_geometry_settings
+from reference_imports import relocate_reference_imports
 import os,sys,types,subprocess,json,ast,copy
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from contextlib import ExitStack
@@ -9,10 +11,11 @@ import pytest
 from PySide6 import QtWidgets
 from emcd_sim.gui.app import MainWindow
 from emcd_sim.gui.project_io import config_from_dict,load_project
-from emcd_sim.gui.propagation import numerical_info
-from emcd_sim.gui.geometry import Structure,Settings
-from emcd_sim.gui.emcd_forward import ForwardSettings
+from emcd_sim.propagation import numerical_info
+from emcd_sim.structure_geometry import Structure, Settings
+from emcd_sim.forward_settings import NiForwardSettings
 from historical_xmcd_test_support import historical_xmcd_source,relocate_historical_xmcd_config
+from runtime_fixtures import apply_global_mdff
 
 BASE='2ede25e63827830617b335a4df6d9d521ac65a9b'
 
@@ -23,9 +26,13 @@ def app():
 @pytest.fixture
 def window(app,tmp_path):
     with ExitStack() as guards:
-        for name in ('emcd_sim.gui.emcd_forward.calculate','emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.stage_b.EMCDWorker.run','emcd_sim.gui.channeling.double_channeling_response','emcd_sim.gui.channeling.multislice_double_channeling_response'):
+        for name in ('emcd_sim.forward_pipeline.calculate','emcd_sim.gui.app.PreviewWorker.run','emcd_sim.gui.calculation_worker.EMCDWorker.run','emcd_sim.channeling.double_channeling_response','emcd_sim.channeling.multislice_double_channeling_response'):
             guards.enter_context(patch(name,side_effect=AssertionError('No propagation allowed in presentation tests')))
         w=MainWindow(workspace=tmp_path/'workspace');w.numerical_mode.setCurrentIndex(1);w.model_box.setCurrentIndex(1)
+        from emcd_sim.gui.saved_atomic_ui import restore
+        saved=NiForwardSettings(model='atomic',axis_declared=True)
+        restore(w.atomic_editor,replace(saved,l3=saved.atomic.l3_ev,l2=saved.atomic.l2_ev),w.structure)
+        apply_global_mdff(w)
         try:yield w
         finally:w.close();app.processEvents()
 
@@ -40,7 +47,7 @@ def baseline_window(path):
             source=source.replace('from .stage_b import StageB','from ._baseline_stage_b import StageB')
             source=source.replace('from .results_browser import ProjectWorkspace','from ._baseline_results_browser import ProjectWorkspace')
         module=types.ModuleType('emcd_sim.gui.'+name);module.__package__='emcd_sim.gui';module.__file__=str(Path('src/emcd_sim/gui')/filename)
-        sys.modules[module.__name__]=module;exec(compile(source,module.__file__,'exec'),module.__dict__);modules.append(module)
+        sys.modules[module.__name__]=module;exec(compile(relocate_reference_imports(source),module.__file__,'exec'),module.__dict__);modules.append(module)
     # The archived controls predate the provider field; represent their original
     # Ni identity explicitly in the current Settings schema.
     from functools import partial
@@ -57,17 +64,21 @@ def test_released_configuration_exactly_preserved(window,tmp_path,app,channeling
         from emcd_sim.gui.saved_atomic_ui import restore
         window.atomic_editor.external_source_pending=True  # Failed new draft must not block a retained saved model.
         restore(window.atomic_editor,old.forward_settings(),window.structure)
+        window.compute_resources.restore(old.forward_settings())
         assert not window.atomic_editor.active
         window.elastic_provider_box.setCurrentIndex(window.elastic_provider_box.findData('nickel-lobato-2014'))
         window.set_values(dict(kv=legacy.voltage,tx=legacy.tilt[0],ty=legacy.tilt[1],beam=legacy.beam_cutoff,potential=legacy.potential_cutoff));window.refresh()
         # Compare matched explicit inputs; the approved new-project default is 2 nm.
         window.set_values(dict(slice_step=old.forward_settings().slice_step))
+        apply_global_mdff(window)
         assert window.settings()==old.settings()
         assert replace(window.forward_settings(),fft_generators=None)==old.forward_settings()
         assert window.forward_settings().fft_generators is None
         for w in (old,window):
             w.set_values(dict(beam=2.8,potential=2.4,b=.15,grid=65,depth=33,subpixels=24,halfwidth=.75,fft_grid=48,slice_step=.025,energy=51,window_lo=877,window_hi=881))
-            w.memory_budget.setCurrentIndex(w.memory_budget.findData(4096));w.channeling_box.setCurrentIndex(channeling)
+            if w is old:w.memory_budget.setCurrentIndex(w.memory_budget.findData(4096))
+            else:w.memory_budget.setValue(4096)
+            w.channeling_box.setCurrentIndex(channeling)
         for method in (0,1,0,2,1):
             old.propagation_box.setCurrentIndex(method);window.propagation_box.setCurrentIndex(method)
             assert window.settings()==old.settings()
@@ -94,15 +105,15 @@ def test_solver_visibility_and_classification(window,selection):
     assert window.spin['slice_step'].isHidden()==(selection==0)
     assert window.memory_budget.parentWidget()==window.shared_resources_group
     assert 'analytic' in window.spin['depth'].toolTip() and 'numerical' in window.spin['depth'].toolTip()
-    assert 'not a required allocation' in window.memory_budget.toolTip()
+    assert 'Total process-peak budget' in window.memory_budget.toolTip()
+    assert 'Manual values are never raised automatically' in window.memory_budget.toolTip()
 
 
 def test_switching_updates_real_memory_estimates_without_mutating_settings(window,monkeypatch):
-    import emcd_sim.gui.propagation as propagation
+    import emcd_sim.propagation as propagation
     original=propagation.numerical_info;calls=[]
     def capture(*args,**kwargs):
-        cfg=args[2];value=original(*args,**dict(kwargs,check_memory=False));calls.append((cfg,value))
-        value.update(estimated_process_peak_mib=value['estimated_working_mib']+128,available_ram_mib=32000)
+        cfg=args[2];value=original(*args,**kwargs);calls.append((cfg,value))
         return value
     monkeypatch.setattr(propagation,'numerical_info',capture)
     expected=window.forward_settings();settings=window.settings()
@@ -111,19 +122,23 @@ def test_switching_updates_real_memory_estimates_without_mutating_settings(windo
         window.propagation_box.setCurrentIndex(index);window.emcd_stale()
         assert replace(window.forward_settings(),fft_generators=None)==replace(expected,propagation=method,fft_generators=None)
         assert window.settings()==settings
+        assert calls,window.emcd_button.toolTip()
         assert calls[-1][0].propagation==method
-        assert ('0 FFT harmonics' in window.memory_label.text())==(method=='bloch')
-        assert 'Retained beams:' in window.memory_label.text()
+        info=calls[-1][1]
+        assert (info['fft_harmonics']==0)==(method=='bloch')
+        shown=window.compute_resources.estimate.text()
+        assert f"Beams: {info['bw_beams']}" in shown
+        assert f"Estimated peak process memory: {info['estimated_process_peak_mib']:.1f} MiB" in shown
     assert any(v['fft_storage_working_mib']>0 for c,v in calls if c.propagation!='bloch')
 
 
 def test_general_ms_orientation_supported_but_non_zolz_target_rejected(window):
     window.spin['beam'].setValue(.9)
     window.zone.setText('0 1 1');window.propagation_box.setCurrentIndex(1);window.emcd_stale()
-    info=numerical_info(Structure.nickel(),replace(Settings(),zone=(0,1,1),beam_cutoff=.9),replace(ForwardSettings(),propagation='fft-multislice'),check_memory=False)
+    info=numerical_info(Structure.nickel(),replace(nickel_geometry_settings(),zone=(0,1,1),beam_cutoff=.9),replace(NiForwardSettings(),propagation='fft-multislice'),check_memory=False)
     assert info['fft_harmonics']==1024
     with pytest.raises(ValueError,match='ZOLZ'):
-        numerical_info(Structure.nickel(),replace(Settings(),zone=(1,1,1),target=(2,0,0)),replace(ForwardSettings(),propagation='fft-multislice'),check_memory=False)
+        numerical_info(Structure.nickel(),replace(nickel_geometry_settings(),zone=(1,1,1),target=(2,0,0)),replace(NiForwardSettings(),propagation='fft-multislice'),check_memory=False)
 
 
 def test_saved_settings_and_arrays_preserved_without_solver(window,tmp_path):
@@ -144,16 +159,12 @@ def test_saved_settings_and_arrays_preserved_without_solver(window,tmp_path):
 
 
 def test_solver_configuration_and_physics_unchanged():
-    current=ast.parse(Path('src/emcd_sim/gui/stage_b.py').read_text(encoding='utf-8-sig'))
-    old=ast.parse(subprocess.check_output(['git','show',BASE+':src/emcd_sim/gui/stage_b.py']).decode('utf-8-sig'))
     find=lambda tree,name:next(n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef) and n.name==name)
-    def mapped_keywords(tree):
-        call=next(n for n in ast.walk(find(tree,'forward_settings')) if isinstance(n,ast.Call) and isinstance(n.func,ast.Name) and n.func.id=='ForwardSettings')
-        return {k.arg:ast.dump(k.value) for k in call.keywords if k.arg not in ('worker_mode','parallel_workers','fft_generators')}
-    assert mapped_keywords(current)==mapped_keywords(old)
-    # The energy-support scheduler is now intentionally in emcd_forward/channeling.
-    # Protect configuration, tensor construction and energy selection independently
-    # of that scheduling change, plus byte-identical propagation/physics modules.
+    # Complete request equality with the archived GUI is exercised behaviorally
+    # above for both channeling modes, every solver and matched explicit inputs.
+    # The request constructor now belongs to global_mdff_draft_settings rather
+    # than the accepted-request accessor; its AST call shape is not the API.
+    # Keep the independent tensor/energy and scientific formulation checks.
     path='src/emcd_sim/gui/emcd_forward.py'
     current_forward=ast.parse(Path('src/emcd_sim/historical_ni.py').read_text(encoding='utf-8-sig'))
     orientation=ast.parse(Path('src/emcd_sim/mdff_orientation.py').read_text(encoding='utf-8-sig'))
@@ -163,10 +174,13 @@ def test_solver_configuration_and_physics_unchanged():
             # The species gate was approved at d1c93ba, before this continuation.
             previous=ast.parse(subprocess.check_output(['git','show','d1c93ba:'+path]).decode('utf-8-sig'))
             moved=copy.deepcopy(find(current_forward,name))
-            local_import=ast.parse('from .gui.geometry import Structure').body[0]
-            assert ast.dump(moved.body[0])==ast.dump(local_import)
-            moved.body.pop(0)
-            assert ast.dump(moved)==ast.dump(find(previous,name))
+            expected=copy.deepcopy(find(previous,name))
+            # Phase 3B removed the GUI dependency using the identical explicit
+            # ASE Ni cell. Keep every eligibility condition/error unchanged.
+            reference=ast.parse('ref=Structure.nickel().atoms').body[0]
+            assert ast.dump(expected.body[0])==ast.dump(reference)
+            expected.body[:1]=ast.parse("from ase.build import bulk\nref=bulk('Ni','fcc',a=3.524,cubic=True)").body
+            assert ast.dump(moved)==ast.dump(expected)
         else:
             actual=find(orientation if name=='axis_rotation' else current_forward,name)
             assert ast.dump(actual)==ast.dump(find(old_forward,name))
@@ -185,7 +199,7 @@ def test_solver_configuration_and_physics_unchanged():
     # bit-for-bit with archived code in test_ms_double_buffers for [001]/[017].
     assert ast.dump(find(ms_current,'indices'))==ast.dump(find(ms_old,'indices'))
     path='src/emcd_sim/gui/propagation.py'
-    now=ast.parse(Path(path).read_text(encoding='utf-8-sig'));before=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
+    now=ast.parse(Path('src/emcd_sim/propagation.py').read_text(encoding='utf-8-sig'));before=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for node in before.body:
         if isinstance(node,ast.FunctionDef) and node.name not in ('numerical_info','propagate','projected_geometry_for','export_comparison','compare_methods'):assert ast.dump(find(now,node.name))==ast.dump(node)
     # Comparison now uses the validated selected-edge labels. Its formulas and
@@ -194,6 +208,12 @@ def test_solver_configuration_and_physics_unchanged():
     loops=[n for n in ast.walk(expected) if isinstance(n,ast.For) and isinstance(n.target,ast.Name) and n.target.id=='edge']
     assert len(loops)==1
     loops[0].iter=ast.Name(id='bm',ctx=ast.Load())
+    # Responsibility/name migration only; retain the complete comparison math.
+    for node in ast.walk(expected):
+        if isinstance(node,ast.ImportFrom) and node.module=='emcd_forward':
+            assert [item.name for item in node.names]==['metrics']
+            node.module='emcd_sim.forward_results';node.level=0;node.names=[ast.alias(name='selected_edge_metrics')]
+        elif isinstance(node,ast.Name) and node.id=='metrics':node.id='selected_edge_metrics'
     assert ast.dump(find(now,'compare_methods'))==ast.dump(expected)
     # Save/load recipe migration has functional tests. Retain the unchanged
     # atomic-save, integrity and structure guards independently of that migration.
@@ -202,7 +222,13 @@ def test_solver_configuration_and_physics_unchanged():
     archived=ast.parse(subprocess.check_output(['git','show',BASE+':'+path]).decode('utf-8-sig'))
     for name in ('save_project','_read_npz','safe_path','structures_match','restore_structure'):
         from unit_metadata_guard import normalize_unit_metadata
-        actual=find(present,name)
+        owner=ast.parse(Path('src/emcd_sim/structure_geometry.py').read_text(encoding='utf-8-sig')) if name in ('structures_match','restore_structure') else present
+        actual=find(owner,name)
+        if name in ('structures_match','restore_structure'):
+            # Phase 3C added responsibility docstrings at the new owner. Keep
+            # the complete executable AST comparison, including tolerances.
+            assert ast.get_docstring(actual)
+            actual=copy.deepcopy(actual);actual.body.pop(0)
         if name=='save_project':
             # Current complete file identity was checked above. Retain the
             # historical AST assertion against its authenticated parent source;
@@ -211,4 +237,15 @@ def test_solver_configuration_and_physics_unchanged():
             _,parent_sources=load_scope()
             parent=ast.parse(parent_sources[path].decode('utf-8-sig'))
             actual=find(parent,name)
-        assert ast.dump(normalize_unit_metadata(actual))==ast.dump(find(archived,name))
+        expected=copy.deepcopy(find(archived,name))
+        if name=='restore_structure':
+            # Stage 4D preserves exact Cartesian positions and original ASE
+            # arrays. Allow precisely these additions, retaining every legacy
+            # species/cell/occupancy/source expression and the array safeguards.
+            expected.body[-1:-1]=ast.parse('''if 'crystallographic_sites' in snapshot:atoms.info['crystallographic_sites']=snapshot['crystallographic_sites']
+if 'cartesian_positions' in snapshot:atoms.set_positions(snapshot['cartesian_positions'])
+for name,array in snapshot.get('atom_arrays',{}).items():
+    if name in ('numbers','positions'):raise ValueError('Reserved ASE array in structure snapshot')
+    atoms.new_array(name,np.asarray(array['values'],dtype=array['dtype']))
+''').body
+        assert ast.dump(normalize_unit_metadata(actual))==ast.dump(expected)
