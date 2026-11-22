@@ -70,6 +70,14 @@ def run(output):
         w.show_structure_viewer()
         assert w.mdff_dialog.apply_configuration() is not None,w.mdff_dialog.status.text()
         w.structure_viewer.apply_groups();w.refresh();settle(.1)
+    def diagnostics(value):
+        found=[]
+        if isinstance(value,dict):
+            if 'max_concurrent_tasks' in value:found.append(value)
+            for child in value.values():found.extend(diagnostics(child))
+        elif isinstance(value,(tuple,list)):
+            for child in value:found.extend(diagnostics(child))
+        return found
     def calculate(label):
         state.update(case=label,phase='preparation');begin=len(samples);start=time.monotonic()
         info=w.compute_resources.info
@@ -85,7 +93,7 @@ def run(output):
         wait();assert w.run_outcome=='completed',report['errors']
         state['phase']='completed steady state';settle(.5)
         record.update(verdict='PASS',elapsed=time.monotonic()-start,execution=w.emcd_result['metadata']['execution'],
-            memory_after=memory_snapshot(),samples=[begin,len(samples)])
+            memory_after=memory_snapshot(),task_diagnostics=diagnostics(w.emcd_result),samples=[begin,len(samples)])
         report['cases'].append(record)
     try:
         settle(1);report['idle']=memory_snapshot();report['snapshots'].append(report['idle'])

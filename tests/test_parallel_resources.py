@@ -56,6 +56,7 @@ def test_single_has_no_detector_parallelism_and_both_retains_request():
 def test_backend_unknown_is_not_guessed_from_cpu(monkeypatch):
     import emcd_sim.parallel_resources as module
     monkeypatch.setattr(module,'_numpy_blas',lambda:None)
+    monkeypatch.setattr(module,'_accelerate_blas',lambda:None)
     with patch.dict('sys.modules',{'threadpoolctl':None}):value=module.native_backend_info()
     assert value['backend']=='Unknown' and value['threads'] is None
 
@@ -112,6 +113,9 @@ def test_automatic_ms_reduces_only_workers_to_fit_ram(monkeypatch):
 def test_execution_plan_change_rejected_before_solver(monkeypatch):
     from emcd_sim import forward_pipeline as forward_pipeline
     monkeypatch.setattr('emcd_sim.parallel_resources.native_backend_info',lambda:native(1))
+    # The expected Auto count is a property of this 12-CPU fixture,
+    # independent of the host running the test (including Apple Silicon).
+    monkeypatch.setattr('emcd_sim.hardware_resources.hardware_snapshot',lambda:dict(logical_processors=12,available_physical_cores=None,efficiency_classes={},available_ram_mib=32768.,process_rss_mib=64.,total_ram_mib=65536.))
     solve=Mock();monkeypatch.setattr(forward_pipeline,'_calculate_uniform_prepared',solve)
     cfg=replace(NiForwardSettings(),model='atomic',channeling_model='double',l3=852.7,l2=870.)
     with pytest.raises(ValueError,match='Resources changed'):

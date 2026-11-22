@@ -44,6 +44,7 @@ datas = [(str(stage/'build_info.json'), '.'), (str(root/'LICENSE'), '.'),
          (str(root/'docs/examples/synthetic_fe_atomic_parameters.json'), 'examples'),
          (str(root/'src/emcd_sim/data'), 'emcd_sim/data'),
          (str(distribution('ase').locate_file('ase/spacegroup/spacegroup.dat')), 'ase/spacegroup')]
+datas += [(str(root/'README.md'),'documentation'), (str(root/'docs'),'documentation/docs')]
 # Include the interpreter/bootloader and Conda native-runtime notices too.
 python_license=Path(get_path('stdlib'))/'LICENSE.txt'
 if not python_license.is_file():raise ValueError('Python runtime LICENSE.txt is required')

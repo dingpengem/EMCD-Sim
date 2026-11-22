@@ -127,7 +127,7 @@ def calculation_blas_guard(cancelled=None):
             previous.append((get,set_threads,int(get())))
             set_threads(1)
             if int(get())!=1:raise ValueError('Single-thread BLAS verification failed: '+info['library'])
-        yield [dict(info,threads=int(get())) for get,_,info in runtimes]
+        yield [dict(info,threads=int(get()),**({'threading_mode':'single'} if info.get('scope')=='thread-local' else {})) for get,_,info in runtimes]
     finally:
         try:
             restoration_error=None
@@ -174,6 +174,10 @@ def native_backend_info(*,hardware=None):
     if found:
         _,threads,info=found;result.update(info)
         value=int(threads());result['threads']=value if value>0 else None
+    elif _accelerate_blas() is not None:
+        get,_,info=_accelerate_blas()
+        result.update(info,version=platform.mac_ver()[0],threads=1 if int(get())==1 else None,
+                      threading_mode='single' if int(get())==1 else 'automatic')
     else:
         # Optional introspection supports other installed runtimes, including MKL.
         # It is never required or used to change their process-global settings.
