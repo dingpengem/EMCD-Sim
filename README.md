@@ -7,15 +7,21 @@ Research software for electron magnetic circular dichroism (EMCD), core-loss EEL
 | Platform | Version and package | Installation | First calculation | Release notes |
 | --- | --- | --- | --- | --- |
 | Windows x64 | [v0.9.0-beta.3 Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.3/EMCD-Sim-v0.9.0-beta.3-Windows.zip) | [Windows installation](docs/INSTALL_WINDOWS.md) | [Windows Quick Start](docs/QUICK_START.md) | [Windows beta.3](docs/RELEASE_NOTES_0_9_0_BETA_3.md) |
-| macOS Apple Silicon | [v0.9.0-beta.1-macos-arm64.1 ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1-macos-arm64.1/EMCD-Sim-v0.9.0-beta.1-macos-arm64.1-macOS-ARM64.zip) | [macOS installation](docs/INSTALL_MACOS.md) | [macOS Quick Start](docs/QUICK_START_MACOS.md) | [macOS ARM64 notes](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1-macos-arm64.1/docs/RELEASE_NOTES_MACOS_ARM64_1.md) |
+| macOS Apple Silicon | [v0.9.0-beta.3 macOS ARM64 ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.3-macos-arm64.1/EMCD-Sim-v0.9.0-beta.3-macos-arm64.zip) | [macOS installation](docs/INSTALL_MACOS.md) | [macOS Quick Start](docs/QUICK_START_MACOS.md) | [macOS beta.3 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3-macos-arm64.1) |
 
 Download and **extract the complete folder**, then launch the EXE/app. For Windows, retain **_internal beside EMCD-Sim.exe**; the EXE alone is not self-contained. Packaged use requires neither Python nor Conda, nor manual BLAS environment variables. Windows requires the documented external Microsoft x64 VC++ v14 runtime. The macOS app is ad-hoc signed, not notarized; follow its first-launch guide.
 
-Windows and macOS packages have **different source revisions**. Each package's build information and matching corresponding-source asset identify its exact source. [Earlier releases](https://github.com/dingpengem/EMCD-Sim/releases), including Windows beta.1, remain available unchanged.
+Windows and macOS packages have **different source revisions**. Each package's build information and matching corresponding-source asset identify its exact source. [Earlier releases](https://github.com/dingpengem/EMCD-Sim/releases), including Windows beta.1 and [macOS beta.1](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1), remain available unchanged.
 
-Published Windows beta.3 source: `f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6`; published macOS ARM64 source: `03dc8f8d1f0374984c9fc81866eaa32ce48008d0`. The prior Windows beta.2 source remains `18f63bfe20c24be128c53c5f55ef3cfdf7f6b246`. This homepage's post-publication update does not change the tagged packages. The macOS package has not received the Windows Phase 3 refactor.
+Published Windows beta.3 source: `f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6`; published macOS ARM64 beta.3 source: `05eb7b372003f177e03e65846e720260b7d3ad9c`. The prior Windows beta.2 source remains `18f63bfe20c24be128c53c5f55ef3cfdf7f6b246`. This homepage's post-publication update does not change the tagged packages. The macOS beta.3 package includes the Phase 3 refactor from the Windows baseline and focused macOS packaging, resource and Viewer-focus corrections.
 
-## Phase 3 Update and Validation
+## macOS ARM64 beta.3 Update
+
+The macOS Research Beta now packages the Phase 3 headless, material-independent engine with BW/MS Single/Double Channeling and explicit Global/Local magnetic configuration. Valid MDFF **Done** stages the draft and returns focus to the existing 3D Viewer; complete Material acceptance still requires **Apply and Close**. MDFF Cancel retains its rollback behavior and returns focus to that Viewer.
+
+The user passed manual GUI acceptance of this exact candidate, including real mouse interaction with MDFF Done. Focused verification recorded **8 native Cocoa tests**, **30 affected offscreen tests passed / 1 optional fixture skipped**, and **42 packaged lifecycle checks**, plus packaged Ni calculations, Save/Open and exports. All 231 bundled Mach-O files support ARM64. Earlier RC4 numerical/memory checks retain their own provenance; they were not rerun or relabeled as RC5 results. This is ad-hoc signed, without Developer ID or notarization; clean-machine/quarantined-download installation remains untested. See the [macOS beta.3 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3-macos-arm64.1) and [public acceptance and source provenance](docs/MACOS_BETA3_PUBLIC_RELEASE.md).
+
+## Windows Phase 3 Update and Validation
 
 Windows beta.3 packages the canonical headless, material-independent forward engine with explicit structure, material/provider and geometry inputs. It preserves BW/FFT multislice Single/Double Channeling, explicit multisite magnetic configurations and MDFF preparation, centralized CPU/memory management, historical Ni presets and saved-project compatibility. This refactor changes scientific ownership and maintenance; it adds no new physical model.
 
@@ -50,7 +56,9 @@ Next-Gen A established an audited design and bounded performance foundation:
 
 Depth-localized scattering, convergent probes, scanned STEM-EMCD and GPU/HPC execution are **future work**, not implemented beta.3 features. The proposed engine/models/physics/providers directory migration remains deferred.
 
-## Performance Benchmarks
+## Historical Performance Benchmarks
+
+These previously recorded development measurements are preserved for their original version, hardware and measurement context. They are not new beta.3 release benchmarks or evidence of a beta.3 speed or memory-efficiency improvement.
 
 Existing completed **one-worker calculation wall times**, excluding launch, rendering, saving and export:
 

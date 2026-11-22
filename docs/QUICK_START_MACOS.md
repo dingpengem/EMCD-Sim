@@ -1,12 +1,14 @@
 # macOS ARM64 Quick Start — Ni EMCD spectrum and momentum-space maps
 
-[Home](../README.md) · [macOS Installation](INSTALL_MACOS.md) · [macOS Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1) · [Windows Quick Start](QUICK_START.md) · [MDFF Workflows](MDFF_WORKFLOWS.md)
+[Home](../README.md) · [macOS Installation](INSTALL_MACOS.md) · [macOS Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3-macos-arm64.1) · [Windows Quick Start](QUICK_START.md) · [MDFF Workflows](MDFF_WORKFLOWS.md)
 
 This walkthrough uses a **normal-size, illustrative FCC Ni Bloch-wave Single Channeling request**, with **a sampled L₂,₃ spectrum and 97×97 momentum-space maps at the selected L₃/L₂ energies**. It is a more representative introduction than the earlier 2-energy, 9×9 packaged smoke test.
 
-**Validated packaged workflow (11 November 2026): PASS.** This exact case completed in the published ARM64 app, including raw CIF/XMCD configuration, Done → Apply and Close, calculation, figure/data export, and project close/reopen. This was **automated native Qt acceptance**, not direct human inspection. See the [acceptance record](MACOS_QUICK_START_ACCEPTANCE.md) for application identity, measurements and remaining GUI limitations. Neither this recipe nor the optional [minimal installation diagnostic](INSTALL_MACOS.md#5-optional-minimal-packaged-ni-diagnostic) establishes physical convergence, experimental calibration or quantitative magnetic moments.
+**Historical beta.1 packaged workflow (11 November 2026): PASS.** This exact case completed in the then-published ARM64 app from source `03dc8f8d1f0374984c9fc81866eaa32ce48008d0`, including raw CIF/XMCD configuration, Done → Apply and Close, calculation, figure/data export, and project close/reopen. This was **automated native Qt acceptance**, not direct human inspection. See the [acceptance record](MACOS_QUICK_START_ACCEPTANCE.md) for application identity, measurements and remaining GUI limitations. Neither this recipe nor the optional [minimal installation diagnostic](INSTALL_MACOS.md#5-optional-minimal-packaged-ni-diagnostic) establishes physical convergence, experimental calibration or quantitative magnetic moments.
 
-You need an Apple Silicon Mac with macOS 15+ and the [standalone ARM64 Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1). [Install it with Finder](INSTALL_MACOS.md#2-download-and-install-using-finder). No Python, Conda, Terminal or developer tools are required. The package is ad-hoc signed, not Apple notarized; see the [first-launch guidance](INSTALL_MACOS.md#3-first-launch-and-troubleshooting).
+You need an Apple Silicon Mac with macOS 15+ and the [standalone ARM64 Research Beta](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3-macos-arm64.1). [Install it with Finder](INSTALL_MACOS.md#2-download-and-install-using-finder). No Python, Conda, Terminal or developer tools are required. The package is ad-hoc signed, not Apple notarized; see the [first-launch guidance](INSTALL_MACOS.md#3-first-launch-and-troubleshooting).
+
+**Current macOS beta.3:** the user passed manual GUI acceptance of exact source `05eb7b372003f177e03e65846e720260b7d3ad9c`, including real mouse MDFF Done / 3D Viewer interaction. Focused packaged lifecycle, small Ni calculation, Save/Open and export checks also passed; see [current acceptance and provenance](MACOS_BETA3_PUBLIC_RELEASE.md). The full 243-energy/97×97 case, measurements and figures in this walkthrough remain historical beta.1 evidence; they were not rerun as an RC5 acceptance campaign. Clean-machine/quarantined-download installation remains untested.
 
 ## 1. Copy the bundled input files
 
@@ -94,9 +96,9 @@ Both dimensions are real numerical sampling choices, but they address different 
 
 The completed run evaluated **9,409 q pixels at each selected energy** and **162 detector-support pixels at each of the other 241 energies**. Each spectral energy has its own calculated response; final detector intensities are not interpolated between two edge results. This saves full-field work while retaining the requested spectral sampling. It does not establish sampling convergence.
 
-## 6. Verified run and genuine figures
+## 6. Historical beta.1 verified run and genuine figures
 
-Measured on **Apple M2 Pro, 10 logical cores (6P + 4E), 16 GiB RAM, macOS 26.3.1**, using the unchanged published app from source `03dc8f8d1f0374984c9fc81866eaa32ce48008d0`.
+Recorded on 11 November 2026 on **Apple M2 Pro, 10 logical cores (6P + 4E), 16 GiB RAM, macOS 26.3.1**, using the unchanged then-published beta.1 app from source `03dc8f8d1f0374984c9fc81866eaa32ce48008d0`.
 
 | Recorded quantity | Actual value |
 | --- | --- |
@@ -109,6 +111,8 @@ Measured on **Apple M2 Pro, 10 logical cores (6P + 4E), 16 GiB RAM, macOS 26.3.1
 | Calculation wall time | 93.4 seconds; Run through display 94.4 seconds |
 | Spectrum / selected maps | 243 samples / two 97×97 maps |
 | Completion, export, project close/reopen | PASS |
+
+All figures and measurements in this section describe that historical beta.1 run, not the current beta.3 package. The recorded Auto budgets and instrumented timing are not current budget or performance promises.
 
 Memory readings have different scopes: the conservative Run estimate is not a measured high-water mark. The run/display sample peak used 1,939 readings with a 20 ms target interval; scheduling makes actual intervals nonuniform and short peaks can be missed. Existing system memory pressure was Warning with about 4.6 GiB swap in use; admission was Ready. These are observations from one instrumented run, not a speed or RAM guarantee for other Macs. Auto budgets refresh as available memory changes.
 
@@ -164,4 +168,4 @@ The **Completed run** line records the actual BW 1 / 729 MiB allocation. Above i
 
 Download the unchanged production exports: [243-row spectra CSV](examples/macos-ni-quickstart/bloch_spectra.csv), [spectrum arrays](examples/macos-ni-quickstart/virtual_detector_eels.npz), and [L₃/L₂ maps, q coordinates and aperture weights](examples/macos-ni-quickstart/angular_maps.npz). The CSV opens in a spreadsheet; the NPZ archives are optional numerical reference data, not software you need to install. [Export contents and definitions](examples/macos-ni-quickstart/README.md).
 
-**PASS:** the exact published-app numerical workflow, normal MDFF acceptance transaction, result selectors, exports, and restoration of settings/declarations/results. **INCOMPLETE:** direct human trackpad/Retina/file-picker/focus acceptance, independent matched Windows numerical comparison, physical convergence and quantitative source calibration. No app rebuild, scientific-code change, release-tag move or release-ZIP replacement was made. The [acceptance record](MACOS_QUICK_START_ACCEPTANCE.md) separates those scopes.
+**Historical beta.1 PASS:** the exact then-published app's numerical workflow, normal MDFF acceptance transaction, result selectors, exports, and restoration of settings/declarations/results. **Historical beta.1 INCOMPLETE:** direct human trackpad/Retina/file-picker/focus acceptance, independent matched Windows numerical comparison, physical convergence and quantitative source calibration. No app rebuild, scientific-code change, release-tag move or release-ZIP replacement was made for that historical check. The unchanged [historical acceptance record](MACOS_QUICK_START_ACCEPTANCE.md) separates those scopes. Current beta.3 manual and focused packaged acceptance is recorded [separately](MACOS_BETA3_PUBLIC_RELEASE.md); the Windows 1,763-array comparison was **not run on this Mac**, and physical convergence/calibration remains unestablished.

@@ -2,7 +2,7 @@
 
 EMCD-Sim is a desktop application. You do not need programming experience, Terminal, Python, Conda or developer tools to use the packaged app.
 
-Use the published **v0.9.0-beta.1-macos-arm64.1** Research Beta on the [official releases page](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.1-macos-arm64.1). Download the macOS application ZIP from its **Assets** list. Do not download a Windows ZIP or GitHub's **Source code** ZIP as a Mac application. After installing, follow the [normal Ni spectrum + 97×97 momentum-map Quick Start](QUICK_START_MACOS.md). The smaller two-energy example below is retained only as an optional packaged diagnostic.
+Use the published **v0.9.0-beta.3-macos-arm64.1** Research Beta on the [official releases page](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3-macos-arm64.1). Download the macOS application ZIP from its **Assets** list. Do not download a Windows ZIP or GitHub's **Source code** ZIP as a Mac application. After installing, follow the [normal Ni spectrum + 97×97 momentum-map Quick Start](QUICK_START_MACOS.md). The smaller two-energy example below is retained only as an optional packaged diagnostic.
 
 ## 1. Check your Mac
 
@@ -18,7 +18,7 @@ For the published macOS ARM64 Research Beta:
 
 1. Open the [official releases page](https://github.com/dingpengem/EMCD-Sim/releases) in Safari or your usual browser.
 2. Find **macOS ARM64 Research Beta**. Expand **Assets** if the download list is collapsed.
-3. Download the file ending in **macOS-ARM64.zip**. The published file is `EMCD-Sim-v0.9.0-beta.1-macos-arm64.1-macOS-ARM64.zip`.
+3. Open the [macOS beta.3 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3-macos-arm64.1) and download **EMCD-Sim-v0.9.0-beta.3-macos-arm64.zip**. Choose the app archive, not the Corresponding-Source archive.
 4. Open **Finder** by clicking its blue face icon in the Dock. Click **Downloads** in the sidebar.
 5. Double-click the ZIP and wait for extraction to finish. Safari may already have extracted it; in that case, open the extracted folder.
 6. Find **EMCD-Sim.app**. Finder may show it simply as **EMCD-Sim** with an application icon. Keep the entire application together.
@@ -154,6 +154,6 @@ To stop a calculation, click **Cancel** and wait for stopping to finish before s
 
 The Quick Start settings and result image come from the previously completed native Mac packaged case **Ni_global_BW_single**. Its saved settings, export and expected two-energy output were checked when preparing this guide. The Viewer image is also an actual native Mac capture. No Finder installation or security-alert screenshot has been fabricated.
 
-The Compute Resources controls were separately checked on the `d528b98` application source. The final release's packaged checks and source identity are reported on its release page. Human download → Finder installation → Quick Start acceptance, trackpad/GUI inspection and authentic matched Windows numerical comparisons remain incomplete. Compact windows can still clip some diffraction titles; enlarge the window and report inaccessible controls.
+The Compute Resources controls were separately checked on the historical `d528b98` application source. For current macOS beta.3, the user passed manual GUI acceptance of exact source `05eb7b372003f177e03e65846e720260b7d3ad9c`, including real mouse MDFF Done / 3D Viewer interaction. Focused native Cocoa tests, packaged lifecycle checks, Ni calculations, Save/Open and exports passed; see [current acceptance and source provenance](MACOS_BETA3_PUBLIC_RELEASE.md). The historical two-energy diagnostic and figures above retain their original provenance. Clean-machine/quarantined-download installation remains untested, and the Windows 1,763-array comparison was **not run on this Mac**. Compact windows can still clip some diffraction titles; enlarge the window and report inaccessible controls.
 
-See [MDFF workflows](MDFF_WORKFLOWS.md) and the [User Guide](USER_GUIDE.md) for scientific explanations. Some shared tutorials have Windows installation paths; use the Mac instructions above instead. See [Mac acceptance](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1-macos-arm64.1/docs/MACOS_ACCEPTANCE.md), the [macOS release notes](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1-macos-arm64.1/docs/RELEASE_NOTES_MACOS_ARM64_1.md) and the release page's attached acceptance report for validation details.
+See [MDFF workflows](MDFF_WORKFLOWS.md) and the [User Guide](USER_GUIDE.md) for scientific explanations. Some shared tutorials have Windows installation paths; use the Mac instructions above instead. See [historical beta.1 Mac acceptance](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1-macos-arm64.1/docs/MACOS_ACCEPTANCE.md), the [historical beta.1 release notes](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1-macos-arm64.1/docs/RELEASE_NOTES_MACOS_ARM64_1.md), and the [current beta.3 release](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3-macos-arm64.1) for validation details.
