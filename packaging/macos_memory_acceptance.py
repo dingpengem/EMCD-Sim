@@ -2,7 +2,7 @@
 import ctypes,gc,json,os,subprocess,threading,time,traceback
 from pathlib import Path
 import numpy as np
-from PySide6 import QtWidgets
+from PySide6 import QtCore,QtWidgets
 
 
 def run(output):
@@ -55,6 +55,15 @@ def run(output):
                 w.cancel();raise TimeoutError('Memory case timed out')
         settle(.25)
     w.error=lambda message:report['errors'].append(str(message))
+    # Exercise the real supported replacement action so repeated runs retain
+    # a comparable single-record state instead of waiting for human input.
+    def replace_completed_record():
+        for dialog in app.topLevelWidgets():
+            if isinstance(dialog,QtWidgets.QMessageBox) and dialog.isVisible() and dialog.windowTitle()=='Retain Calculation':
+                for button in dialog.buttons():
+                    if button.text()=='Replace Selected Calculation':
+                        button.click();return
+    retention_timer=QtCore.QTimer();retention_timer.timeout.connect(replace_completed_record);retention_timer.start(10)
     def configure(method,channel,mode,workers,larger=False):
         w.numerical_mode.setCurrentIndex(1)
         w.set_values(dict(thickness=1,beam=1.5 if larger else .9,potential=2 if larger else 1.8,
@@ -125,7 +134,7 @@ def run(output):
         if w.busy:w.cancel();wait()
         w.project_dirty=False
         for dialog in w.dialogs:dialog.close()
-        w.mdff_dialog.close();w.close();settle(.5);stop.set();thread.join(2)
+        w.mdff_dialog.close();w.close();settle(.5);retention_timer.stop();stop.set();thread.join(2)
         (output/'samples.json').write_text(json.dumps(samples,indent=2))
         for record in report['cases']:
             if 'samples' not in record:continue
