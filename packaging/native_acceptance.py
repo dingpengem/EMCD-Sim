@@ -352,12 +352,12 @@ def run_multisite(output):
         assert w.active_project_path==str(path)
     execute=QtWidgets.QMessageBox.exec
     def retain(dialog):
-        if dialog.windowTitle()=='Retain Calculation':dialog.defaultButton().click();return 0
+        if any(b.text()=='Keep as New Calculation' for b in dialog.buttons()):dialog.defaultButton().click();return 0
         return execute(dialog)
     previous_hook=sys.excepthook
     sys.excepthook=lambda kind,value,tb:report['errors'].append(''.join(traceback.format_exception(kind,value,tb)))
     try:
-        assert app.platformName()=='windows','Native Windows platform required'
+        assert app.platformName()==('cocoa' if sys.platform=='darwin' else 'windows'),'Native desktop platform required'
         assert build_info()['application_version']==__version__
         with (patch.object(QtWidgets.QMessageBox,'exec',retain),
               patch.object(QtWidgets.QMessageBox,'warning',return_value=QtWidgets.QMessageBox.StandardButton.Discard),
@@ -505,10 +505,10 @@ def run_grouping(output, historical_project=None):
         return w.structure_viewer,w.structure_viewer.editor
     execute=QtWidgets.QMessageBox.exec
     def retain(dialog):
-        if dialog.windowTitle()=='Retain Calculation':dialog.defaultButton().click();return 0
+        if any(b.text()=='Keep as New Calculation' for b in dialog.buttons()):dialog.defaultButton().click();return 0
         return execute(dialog)
     try:
-        assert report['frozen'] and app.platformName()=='windows','Packaged native Windows EXE required'
+        assert report['frozen'] and app.platformName()==('cocoa' if sys.platform=='darwin' else 'windows'),'Packaged native desktop app required'
         with (patch.object(QtWidgets.QMessageBox,'exec',retain),
               patch.object(QtWidgets.QMessageBox,'warning',return_value=QtWidgets.QMessageBox.StandardButton.Discard),
               patch.object(QtWidgets.QMessageBox,'question',return_value=QtWidgets.QMessageBox.StandardButton.Yes)):

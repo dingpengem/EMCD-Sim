@@ -12,33 +12,98 @@ MAX_WORKERS=2**31-1
 _blas_control_lock=threading.RLock()
 
 
+@lru_cache(maxsize=1)
+def _accelerate_blas():
+    """Verified wheel backend and macOS 15+ per-thread BLAS/LAPACK control."""
+    if sys.platform != 'darwin':return None
+    import scipy
+    packages=[p for p in (np,scipy) if _declared_blas(p)=='accelerate']
+    if not packages:return None
+    library=ctypes.CDLL('/System/Library/Frameworks/Accelerate.framework/Accelerate')
+    try:get,set_mode=library.BLASGetThreading,library.BLASSetThreading
+    except AttributeError:return None
+    get.argtypes=[];get.restype=ctypes.c_uint
+    set_mode.argtypes=[ctypes.c_uint];set_mode.restype=ctypes.c_int
+    def set_threads(mode):
+        if set_mode(mode)!=0:raise ValueError('Accelerate rejected BLAS threading mode')
+    return get,set_threads,dict(backend='Accelerate',library=library._name,
+        configuration='Apple Accelerate BLAS/LAPACK; per-thread control',
+        parallel=1,scope='thread-local',packages=[p.__name__ for p in packages])
+
+
+def _declared_blas(package):
+    return getattr(package.__config__,'CONFIG',{}).get('Build Dependencies',{}).get('blas',{}).get('name','').lower()
+
+
+def _loaded_openblas_paths():
+    """Find already-loaded Conda/custom macOS libraries as well as wheel layouts."""
+    if sys.platform!='darwin':return set()
+    try:
+        dyld=ctypes.CDLL('/usr/lib/libSystem.B.dylib')
+        count=dyld._dyld_image_count;name=dyld._dyld_get_image_name
+        count.argtypes=[];count.restype=ctypes.c_uint32
+        name.argtypes=[ctypes.c_uint32];name.restype=ctypes.c_char_p
+        paths=set()
+        for index in range(count()):
+            value=name(index)
+            if value and b'openblas' in value.lower():paths.add(Path(os.fsdecode(value)).resolve())
+        return paths
+    except (AttributeError,OSError):return set()
+
+
+@contextmanager
+def detector_blas_guard():
+    """Accelerate state is thread-local: protect each executor thread too."""
+    runtime=_accelerate_blas()
+    if runtime is None:
+        yield;return
+    get,set_threads,_=runtime
+    previous=int(get())
+    try:
+        set_threads(1)
+        if int(get())!=1:raise ValueError('Accelerate single-thread verification failed')
+        yield
+    finally:
+        set_threads(previous)
+        if int(get())!=previous:raise RuntimeError('Could not restore Accelerate threading mode')
+
+
 def _blas_runtimes():
     # Import the LAPACK consumer before taking the execution snapshot. NumPy
     # and SciPy wheels can load DIFFERENT OpenBLAS runtimes. Rediscover on each
     # request rather than caching the first library seen by a GUI preview.
     import scipy.linalg
     import scipy
-    runtimes=[]
+    runtimes=[];paths=_loaded_openblas_paths()
     for package in (np,scipy):
-        folder=Path(package.__file__).resolve().parent.parent/(package.__name__+'.libs')
-        for path in sorted(set(folder.glob('*openblas*.dll'))|set(folder.glob('*openblas*.so*'))):
-            library=ctypes.CDLL(str(path))
-            for prefix,suffix in ((p,s) for p in ('scipy_openblas_','openblas_') for s in ('64_','','_')):
-                try:
-                    get=getattr(library,prefix+'get_num_threads'+suffix)
-                    set_threads=getattr(library,prefix+'set_num_threads'+suffix)
-                    parallel=getattr(library,prefix+'get_parallel'+suffix)
-                    config=getattr(library,prefix+'get_config'+suffix)
-                except AttributeError:continue
-                get.argtypes=[];get.restype=ctypes.c_int
-                set_threads.argtypes=[ctypes.c_int];set_threads.restype=None
-                parallel.argtypes=[];parallel.restype=ctypes.c_int
-                config.argtypes=[];config.restype=ctypes.c_char_p
-                runtimes.append((get,set_threads,dict(library=str(path),configuration=config().decode(),
-                    threads=int(get()),parallel=int(parallel()))))
-                break
-            else:
-                raise ValueError('Cannot verify OpenBLAS control API: '+str(path))
+        base=Path(package.__file__).resolve().parent
+        folders=(base.parent/(package.__name__+'.libs'),base/'.dylibs')
+        paths.update(p.resolve() for folder in folders for pattern in ('*openblas*.dll','*openblas*.so*','*openblas*.dylib') for p in folder.glob(pattern))
+    for path in sorted(paths):
+        library=ctypes.CDLL(str(path))
+        for prefix,suffix in ((p,s) for p in ('scipy_openblas_','openblas_') for s in ('64_','','_')):
+            try:
+                get=getattr(library,prefix+'get_num_threads'+suffix)
+                set_threads=getattr(library,prefix+'set_num_threads'+suffix)
+                parallel=getattr(library,prefix+'get_parallel'+suffix)
+                config=getattr(library,prefix+'get_config'+suffix)
+            except AttributeError:continue
+            get.argtypes=[];get.restype=ctypes.c_int
+            set_threads.argtypes=[ctypes.c_int];set_threads.restype=None
+            parallel.argtypes=[];parallel.restype=ctypes.c_int
+            config.argtypes=[];config.restype=ctypes.c_char_p
+            runtimes.append((get,set_threads,dict(backend='OpenBLAS',library=str(path),configuration=config().decode(),
+                threads=int(get()),parallel=int(parallel()))))
+            break
+        else:
+            raise ValueError('Cannot verify OpenBLAS control API: '+str(path))
+    accelerate=_accelerate_blas()
+    if accelerate is None and any(_declared_blas(p)=='accelerate' for p in (np,scipy)):
+        raise ValueError('Accelerate thread control is unavailable: macOS 15+ BLASGetThreading/BLASSetThreading APIs are required. Use a supported macOS/runtime combination; the thread count is not assumed unlimited.')
+    if accelerate is not None:
+        get,set_threads,info=accelerate
+        runtimes.append((get,set_threads,dict(info,threads=1 if int(get())==1 else None,
+            threading_mode='single' if int(get())==1 else 'automatic')))
     return runtimes
 
 
@@ -62,7 +127,7 @@ def calculation_blas_guard(cancelled=None):
             previous.append((get,set_threads,int(get())))
             set_threads(1)
             if int(get())!=1:raise ValueError('Single-thread BLAS verification failed: '+info['library'])
-        yield [dict(info,threads=int(get())) for get,_,info in runtimes]
+        yield [dict(info,threads=int(get()),**({'threading_mode':'single'} if info.get('scope')=='thread-local' else {})) for get,_,info in runtimes]
     finally:
         try:
             restoration_error=None
@@ -109,6 +174,10 @@ def native_backend_info(*,hardware=None):
     if found:
         _,threads,info=found;result.update(info)
         value=int(threads());result['threads']=value if value>0 else None
+    elif _accelerate_blas() is not None:
+        get,_,info=_accelerate_blas()
+        result.update(info,version=platform.mac_ver()[0],threads=1 if int(get())==1 else None,
+                      threading_mode='single' if int(get())==1 else 'automatic')
     else:
         # Optional introspection supports other installed runtimes, including MKL.
         # It is never required or used to change their process-global settings.
