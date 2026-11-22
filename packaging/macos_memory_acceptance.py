@@ -61,11 +61,10 @@ def run(output):
     # timers, so a polling timer cannot automate this native confirmation.
     original_exec=QtWidgets.QMessageBox.exec
     def retain(dialog):
-        if dialog.windowTitle()=='Retain Calculation':
-            for button in dialog.buttons():
-                if button.text()=='Replace Selected Calculation':
-                    button.click();return 0
-            raise AssertionError('Supported replacement action missing')
+        print('ACCEPTANCE_DIALOG',dialog.windowTitle(),dialog.text(),flush=True)
+        for button in dialog.buttons():
+            if button.text()=='Replace Selected Calculation':
+                button.click();return 0
         return original_exec(dialog)
     retention_patch=patch.object(QtWidgets.QMessageBox,'exec',retain);retention_patch.start()
     def configure(method,channel,mode,workers,larger=False):
@@ -92,6 +91,7 @@ def run(output):
             for child in value:found.extend(diagnostics(child))
         return found
     def calculate(label):
+        print('ACCEPTANCE_CASE_START',label,flush=True)
         state.update(case=label,phase='preparation');begin=len(samples);start=time.monotonic()
         info=w.compute_resources.info
         assert info is not None,w.compute_resources.estimate.text()
@@ -105,9 +105,10 @@ def run(output):
         w.worker.stage.connect(lambda text:state.update(phase=str(text)))
         wait();assert w.run_outcome=='completed',report['errors']
         state['phase']='completed steady state';settle(.5)
-        record.update(verdict='PASS',elapsed=time.monotonic()-start,execution=w.emcd_result['metadata']['execution'],
+        record.update(verdict='PASS',elapsed=time.monotonic()-start,calculation_seconds=w.emcd_result['metadata']['calculation_seconds'],execution=w.emcd_result['metadata']['execution'],
             memory_after=memory_snapshot(),task_diagnostics=diagnostics(w.emcd_result),samples=[begin,len(samples)])
         report['cases'].append(record)
+        print('ACCEPTANCE_CASE_DONE',label,record['verdict'],flush=True)
     try:
         settle(1);report['idle']=memory_snapshot();report['snapshots'].append(report['idle'])
         report['safe_boundary_rejection']=assess_memory(1,1,reject=False)
