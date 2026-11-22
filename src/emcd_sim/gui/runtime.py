@@ -20,7 +20,8 @@ _native_fault_file=None
 
 
 def user_directory():
-    base = Path(os.environ.get('LOCALAPPDATA', str(Path.home() / '.local/share')))
+    default = Path.home() / ('Library/Application Support' if sys.platform=='darwin' else '.local/share')
+    base = Path(os.environ.get('LOCALAPPDATA', str(default)))
     return base / 'EMCD-Sim'
 
 
