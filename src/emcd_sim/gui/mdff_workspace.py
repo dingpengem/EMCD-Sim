@@ -100,4 +100,27 @@ class MDFFWorkspace(QtWidgets.QDialog):
         return True
 
     def finish_edit(self):
-        if self.apply_configuration() is not None:self.hide()
+        if self.apply_configuration() is not None:
+            self.hide()
+            self.return_to_viewer()
+
+    def originating_viewer(self):
+        from .structure_viewer import CrystalStructureDialog
+        parent=self.parentWidget()
+        while parent is not None:
+            if isinstance(parent,CrystalStructureDialog):return parent
+            parent=parent.parentWidget()
+        return getattr(self._window,'structure_viewer',None)
+
+    def return_to_viewer(self):
+        viewer=self.originating_viewer()
+        if viewer is None:return
+        def activate():
+            # Finish the handoff after Cocoa handles hiding the editor and
+            # the mouse release, then raise the existing
+            # Viewer. Never show a cancelled Viewer or cover a new MDFF context.
+            if not viewer.isVisible():return
+            if any(isinstance(d,MDFFWorkspace) and d.isVisible() and d.originating_viewer() is viewer
+                   for d in QtWidgets.QApplication.topLevelWidgets()):return
+            viewer.raise_();viewer.activateWindow()
+        QtCore.QTimer.singleShot(0,viewer,activate)

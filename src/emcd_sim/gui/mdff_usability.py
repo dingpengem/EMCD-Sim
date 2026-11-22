@@ -327,6 +327,7 @@ class GlobalMDFFDialog(MDFFWorkspace):
         self._draft_configuration=None;self._ready_snapshot=None
         self.status.setText('Global MDFF draft cancelled; accepted configuration retained.')
         w.refresh_material_direction();w.emcd_stale();self.refresh_context_status();self.hide()
+        self.return_to_viewer()
 
 
 def configuration_dialog(window):

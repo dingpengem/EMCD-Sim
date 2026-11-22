@@ -597,3 +597,4 @@ class GroupMDFFDialog(ProviderUI, MDFFWorkspace):
         self.restore_snapshot(self._applied_snapshot or self._entry)
         self.draftChanged.emit()
         super().reject()
+        self.return_to_viewer()
