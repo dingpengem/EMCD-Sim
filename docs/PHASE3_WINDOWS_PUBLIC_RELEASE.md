@@ -1,11 +1,13 @@
 # Phase 3 Windows Public Research Beta — Candidate Acceptance
 
-**RELEASE CANDIDATE READY — AWAITING MANUAL GUI APPROVAL**
+**PUBLISHED — AUTOMATIC AND MANUAL ACCEPTANCE PASSED**
 
-Automatic preparation and acceptance are complete for the exact candidate below.
-Human GUI acceptance has not been provided. Public release GO remains pending:
-no push, tag, draft release or publication has occurred. A clean-machine test
-has not been performed.
+The user explicitly confirmed PASSED manual GUI acceptance of the exact
+candidate below and authorized publication without another confirmation.
+The prerelease is published. All five public assets were downloaded without
+authentication and verified against approved sizes and SHA-256 values.
+A clean-machine test has not been performed. Homepage verification and the
+final documentation commit identity are recorded at handoff.
 
 ## A. Release and source identity
 
@@ -21,9 +23,9 @@ has not been performed.
 | Native-QA version correction implementation | cc79262f50a9a17c541cea5af219beb255f0c058 |
 | **Actual clean EXE / source archive / required tag source** | **f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6** |
 | Local main during build and automatic QA | f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6 |
-| Documentation handoff main | The documentation-only commit containing this report; exact SHA is recorded after commit in release_provenance.json, candidate.json and the final handoff |
-| Final public main | Pending manual acceptance, publication and the verified-link README update |
-| Proposed annotated tag | v0.9.0-beta.3; verified unused; **not created** |
+| Prepublication documentation main | 3091cd6eb0b72b9dc56aaafed14d07b027fd6d39 |
+| Final public main / README commit | This post-publication documentation update; exact matching local/remote SHA recorded after push in release_provenance.json and the final response |
+| Published annotated tag | v0.9.0-beta.3; object **9abfa61af50959df3b7b84b892cee1f3bbe3dc3c** |
 | Scientific convention | forward_born_dagger_g_minus_h_v1 |
 | Final stabilized Phase 3 implementation | 41e376c3b891df2ef225c43a5db0e1f6bc1794b8; calculation source preserved |
 
@@ -212,74 +214,94 @@ the replacement binary; no earlier native pass substituted for them.
 Old projects retain their arrays and original physics/source provenance;
 loading does not silently recalculate or relabel conventions.
 
-## D. Manual approval and GitHub publication
+## D. Manual acceptance and GitHub publication
 
-**Manual GUI approval: NOT RECEIVED. Publication: NOT PERFORMED.**
+**Manual GUI approval: PASSED. Publication: COMPLETE. Public assets: VERIFIED.**
 
-Extract the whole new Windows ZIP to a separate folder and manually verify:
+The user explicitly confirmed acceptance of the exact candidate in publication
+request a04ee861-63d2-4888-9a8b-3803c27a5cbc, covering startup/navigation, Ni
+BW/FFT results, Global/Local MDFF Apply/Cancel, Save/Open/restoration, exports,
+and cancellation/restart. The approved ZIP and EXE have not been rebuilt or
+replaced. A clean Windows PC/VM remains recommended and untested.
 
-1. Windows application startup.
-2. Normal main-window appearance and navigation.
-3. Ni BW/FFT calculation and result display.
-4. Global/Local MDFF editing and Apply/Cancel.
-5. Project Save/Open and restored results.
-6. CSV/NPZ/figure exports.
-7. Cancellation and subsequent restart.
-
-Confirm the exact ZIP SHA-256 shown in section B. A clean Windows PC/VM is
-recommended if available; it has not been tested. A different rebuilt ZIP
-requires renewed acceptance. The gate comes from the supplied release request,
-section 7; automated QA and historical approvals do not satisfy it.
-
-| Publication item | Current state |
+| Publication item | Verified identity / state |
 | --- | --- |
-| Repository | dingpengem/EMCD-Sim; authenticated ownership/access verified |
-| Refreshed origin/main | 8bd06771c60014f33175b0f4b96ca334fc17ffc6 |
-| Proposed tag / required source | v0.9.0-beta.3 / f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6; tag absent |
-| Release URL / verified public download | Pending manual acceptance and publication; no new public URL claimed |
-| Public README download links | Unchanged until publication/download verification |
-| Existing public releases/assets | 11 releases / 36 assets unchanged by ID, source target, size and digest at 2026-11-21T22:38:48.667Z |
+| Repository | dingpengem/EMCD-Sim; authenticated dingpengem owner/push access |
+| Initial normal main push | 8bd06771c60014f33175b0f4b96ca334fc17ffc6 → 3091cd6eb0b72b9dc56aaafed14d07b027fd6d39 |
+| Annotated tag | v0.9.0-beta.3; object **9abfa61af50959df3b7b84b892cee1f3bbe3dc3c** |
+| Remote peeled source | **f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6** |
+| Prerelease | [v0.9.0-beta.3](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3), ID 454159968 |
+| Direct Windows download | [Approved Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.3/EMCD-Sim-v0.9.0-beta.3-Windows.zip) |
+| Published UTC | 2026-11-22T03:12:23Z |
+| Public downloads | All five assets downloaded without authentication; exact bytes/SHA-256 match section B |
+| Existing releases/assets | 11 releases / 36 assets preserved by ID, target, size and digest after publication at 2026-11-22T03:15:32.270Z |
 | Existing Windows beta.2 / macOS | Untouched; macOS remains v0.9.0-beta.1-macos-arm64.1 from its separate source |
 
-After explicit acceptance: revalidate source/artifact/remote identities, normally
-push main, annotate/tag the **actual build source**, publish the prerelease and
-all ZIPs/manifests/checksums, download and verify public assets, then update/push
-README links. Later homepage/report commits must not be mistaken for the EXE
-source. No unchanged EXE rebuild is needed for a homepage-only update.
+Five assets were uploaded to a prerelease draft and all server digests matched
+the approved local files before publication. After publication, every asset
+was downloaded into the separate publication/public-downloads directory.
+All four downloaded checksum entries passed. The downloaded manifest and
+application source archive identify f2965cb. The EXE inside the downloaded
+Windows ZIP matches the approved EXE SHA-256.
+
+Only after public-download verification were README's primary Windows link,
+Phase 3 validation summary, release/report links and four Next-Gen A links
+updated. The macOS download, benchmark evidence and scientific limitations are
+preserved. The README's existing current-source registration entry and required
+bootstrap pin are maintained through the existing mechanism, preserving all
+historical bytes and scientific pins.
+
+The rendered homepage is checked after this documentation update's normal push.
+The exact final README/local/remote main SHA and served-homepage verification
+result are recorded after push in release_provenance.json, local publication
+evidence and the final response. The annotated source tag remains f2965cb;
+the homepage/report commit does not identify a different EXE.
 
 ## E. Git safety and local handoff
 
-The checkout remained clean at f2965cb through all automatic checks. A fresh
-fetch found main **67 ahead / 0 behind** origin/main before this report's
-documentation commit. That documentation-only successor adds one local commit;
-clean status is verified at handoff. Its exact SHA is recorded in local
-release_provenance.json/candidate.json and the final response, and is resolvable
-with `git log -1 --format=%H -- docs/PHASE3_WINDOWS_PUBLIC_RELEASE.md`.
+The checkout remained clean at f2965cb throughout automatic acceptance.
+At the candidate gate it was 67 ahead / 0 behind origin/main before the
+prepublication report commit, which produced 3091cd6. Publication fetched again,
+confirmed no divergence and normally pushed main. The final documentation-only
+README/report successor is also pushed normally, with exact matching local and
+remote identities recorded at handoff.
 
 Protected unapplied stash:
 `9191d6439615675124d944533ceb21e66c72fda3`, unchanged.
-No apply/pop/drop, checkout move, reset, remerge, force-push, history rewrite,
-tag creation, push, release creation or publication occurred. Phase 3 and
-Next-Gen A branch/worktree identities remain preserved. Source archives contain
-only reviewed tracked inputs and exclude unrelated local research work.
+No apply/pop/drop, checkout move, reset, remerge, force-push or history rewrite
+occurred. Only authorized main and the beta.3 tag were pushed. Phase 3 and
+Next-Gen A branch/worktree identities are preserved. No unrelated research
+files were staged or included in source archives.
 
 Final evidence root:
 `C:/Users/peng863/EMCD-Sim/build/phase3-windows-public-release/rebuilt-f2965cb`.
-Each build/native/verification stem has exact argv/environment, source identity,
-start/end, exit, PID ownership and source-cleanliness records and logs.
-candidate-f2965cb contains package-verification.json, final-automatic-review.json,
-raw/reviewed comparisons, saved projects and screenshots. Initial 27-check and
-22-case evidence plus the superseded failure remain in the parent release
-evidence directory.
+The candidate directory retains package-verification.json,
+final-automatic-review.json, raw/reviewed independent comparisons, saved
+projects and screenshots. The publication subdirectory records approved input
+verification, draft/uploads, public downloads, tag identity, old-release
+preservation and homepage verification. Initial 27-check/22-case evidence and
+the superseded failure remain in the parent release evidence directory.
+
+Existing main-push CI workflows are automatic. No additional workflow was
+dispatched, no new full-suite acceptance is claimed, and no CI-produced artifact
+replaced the approved release. Only the affected documentation registration
+checks are run locally for the README update.
+
+Post-publication documentation checks passed: two existing registration tests
+in 74.50 pytest seconds, plus successful in-memory README mutation rejection by
+both existing source guards. Historical registration bytes and scientific pins
+are unchanged; only the current README digest and its required bootstrap pin
+were updated. No test assertion or scientific setting changed.
 
 ## F. Future development baseline
 
-Proposed accepted release source:
-**f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6**, subject to manual acceptance
-and publication. After those gates, create feature/nextgen-b1-depth-events from
-then-current main containing this source and verified publication/README
-documentation. Record the final public main SHA at that time. The source tag
-continues to identify f2965cb.
+Accepted published scientific source:
+**f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6**.
+
+Future feature/nextgen-b1-depth-events work should start from current main
+containing this source and the verified publication/README documentation.
+The exact final main/README SHA is recorded in the handoff and
+release_provenance.json. The source tag continues to identify f2965cb.
 
 No B1 branch, new physics, package restructuring, GPU/HPC implementation,
-reference replacement or unrelated cleanup was performed in this release task.
+reference replacement or unrelated cleanup was performed.

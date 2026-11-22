@@ -6,14 +6,22 @@ Research software for electron magnetic circular dichroism (EMCD), core-loss EEL
 
 | Platform | Version and package | Installation | First calculation | Release notes |
 | --- | --- | --- | --- | --- |
-| Windows x64 | [v0.9.0-beta.2 Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.2/EMCD-Sim-v0.9.0-beta.2-Windows.zip) | [Windows installation](docs/INSTALL_WINDOWS.md) | [Windows Quick Start](docs/QUICK_START.md) | [Windows beta.2](docs/RELEASE_NOTES_0_9_0_BETA_2.md) |
+| Windows x64 | [v0.9.0-beta.3 Windows ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.3/EMCD-Sim-v0.9.0-beta.3-Windows.zip) | [Windows installation](docs/INSTALL_WINDOWS.md) | [Windows Quick Start](docs/QUICK_START.md) | [Windows beta.3](docs/RELEASE_NOTES_0_9_0_BETA_3.md) |
 | macOS Apple Silicon | [v0.9.0-beta.1-macos-arm64.1 ZIP](https://github.com/dingpengem/EMCD-Sim/releases/download/v0.9.0-beta.1-macos-arm64.1/EMCD-Sim-v0.9.0-beta.1-macos-arm64.1-macOS-ARM64.zip) | [macOS installation](docs/INSTALL_MACOS.md) | [macOS Quick Start](docs/QUICK_START_MACOS.md) | [macOS ARM64 notes](https://github.com/dingpengem/EMCD-Sim/blob/v0.9.0-beta.1-macos-arm64.1/docs/RELEASE_NOTES_MACOS_ARM64_1.md) |
 
-Download and **extract the complete folder**, then launch the EXE/app. Packaged use requires neither Python nor Conda, nor manual BLAS environment variables. Windows requires the documented external Microsoft x64 VC++ v14 runtime. The macOS app is ad-hoc signed, not notarized; follow its first-launch guide.
+Download and **extract the complete folder**, then launch the EXE/app. For Windows, retain **_internal beside EMCD-Sim.exe**; the EXE alone is not self-contained. Packaged use requires neither Python nor Conda, nor manual BLAS environment variables. Windows requires the documented external Microsoft x64 VC++ v14 runtime. The macOS app is ad-hoc signed, not notarized; follow its first-launch guide.
 
 Windows and macOS packages have **different source revisions**. Each package's build information and matching corresponding-source asset identify its exact source. [Earlier releases](https://github.com/dingpengem/EMCD-Sim/releases), including Windows beta.1, remain available unchanged.
 
-Published Windows beta.2 source: `18f63bfe20c24be128c53c5f55ef3cfdf7f6b246`; published macOS ARM64 source: `03dc8f8d1f0374984c9fc81866eaa32ce48008d0`. This homepage's post-publication download-link update does not change either tagged package.
+Published Windows beta.3 source: `f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6`; published macOS ARM64 source: `03dc8f8d1f0374984c9fc81866eaa32ce48008d0`. The prior Windows beta.2 source remains `18f63bfe20c24be128c53c5f55ef3cfdf7f6b246`. This homepage's post-publication update does not change the tagged packages. The macOS package has not received the Windows Phase 3 refactor.
+
+## Phase 3 Update and Validation
+
+Windows beta.3 packages the canonical headless, material-independent forward engine with explicit structure, material/provider and geometry inputs. It preserves BW/FFT multislice Single/Double Channeling, explicit multisite magnetic configurations and MDFF preparation, centralized CPU/memory management, historical Ni presets and saved-project compatibility. This refactor changes scientific ownership and maintenance; it adds no new physical model.
+
+The recorded complete regression at `a97ccf14e890b9e52fc57d47261117717825f5ba` passed **1,762 tests with 62 existing skips and zero failures/errors** (1,824 collected). Independent original-source comparison passed **22 cases / 2,294 exact arrays**. The final Windows EXE passed **19 projects / 57 NPZ files / 1,763 exact arrays**, all **11 native QA profiles**, and **manual GUI acceptance**. All five public assets were downloaded and checksum-verified. These results retain their recorded source identities; the complete regression was not rerun for release bookkeeping. Clean-PC/VM validation is not claimed.
+
+See the [beta.3 release and downloads](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3), [release notes](docs/RELEASE_NOTES_0_9_0_BETA_3.md), [release acceptance and source provenance](docs/PHASE3_WINDOWS_PUBLIC_RELEASE.md), and [complete regression/integration report](docs/PHASE3_FINAL_REGRESSION_AND_MAIN_INTEGRATION.md).
 
 ## Capabilities
 
@@ -30,6 +38,17 @@ interfaces; this refactor adds no scientific capabilities.
 | Propagation | Bloch-wave (BW) and FFT Multislice (MS), Single and Double Channeling. Elastic paths within a localized event remain coherent; independent ionization events sum incoherently. |
 | Results | Shared Global/Local Total, Element, Group Mean, additive Group Contribution and comparison views; spectra, selected angular maps, CSV/NPZ and PNG/SVG exports. |
 | Projects and resources | Multiple calculations, Save/Open and two-run comparison; hardware-aware Auto/Manual workers and memory admission, bounded tasks and automatic BLAS safeguards. |
+
+## Next-Gen A: Design and Measured Groundwork
+
+Next-Gen A established an audited design and bounded performance foundation:
+
+- [Architecture readiness](docs/NEXTGEN_A_ARCHITECTURE_READINESS.md)
+- [Depth and STEM physics design](docs/NEXTGEN_A_DEPTH_STEM_PHYSICS_DESIGN.md)
+- [Measured performance baseline](docs/NEXTGEN_A_PERFORMANCE_BASELINE.md)
+- [Implementation roadmap](docs/NEXTGEN_A_IMPLEMENTATION_ROADMAP.md)
+
+Depth-localized scattering, convergent probes, scanned STEM-EMCD and GPU/HPC execution are **future work**, not implemented beta.3 features. The proposed engine/models/physics/providers directory migration remains deferred.
 
 ## Performance Benchmarks
 
@@ -90,7 +109,7 @@ Academic citation is strongly requested, **not an added MIT license condition**.
 
 Research Beta, not calibrated quantitative spectroscopy. Finite ZOLZ, finite beam/FFT/depth support and continuous-depth localized ionization limit the model. General convergence is unestablished. The Ni 2.0 Å⁻¹ potential cutoff omits the first off-row harmonic near 2.029 Å⁻¹. Synthetic/effective MDFF do not establish absolute cross sections, calibrated Fe₃O₄/NiFe₂O₄ spectra or magnetic moments. Reversal-odd intensity and conventional detector A−B are distinct signals. Unsupported source-frame changes remain rejected; general tensor rotation and magCIF remain future work.
 
-Historical failed/incomplete regression and source-guard records remain unchanged; focused release checks are not a new full regression. Independent clean-PC/VM validation and code signing are not claimed. [Release notes](docs/RELEASE_NOTES_0_9_0_BETA_2.md) state the evidence and limits.
+Historical failed/incomplete regression and source-guard records remain unchanged; focused release checks are not a new full regression. Independent clean-PC/VM validation and code signing are not claimed. [Release notes](docs/RELEASE_NOTES_0_9_0_BETA_3.md) state the evidence and limits.
 
 ## License
 

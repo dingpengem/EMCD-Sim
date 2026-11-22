@@ -1,10 +1,12 @@
 # EMCD-Sim v0.9.0-beta.3 — Windows Research Beta
 
-**Windows x64 release candidate. Publication and manual GUI approval are pending.**
-This source snapshot describes the release scope and established baseline.
-The new build's measured acceptance, exact source commit and asset checksums
-are recorded in `docs/PHASE3_WINDOWS_PUBLIC_RELEASE.md` after the build,
-and in the GitHub release when publication is authorized.
+**Published Windows x64 Research Beta. Manual GUI acceptance PASSED.**
+The [GitHub prerelease](https://github.com/dingpengem/EMCD-Sim/releases/tag/v0.9.0-beta.3)
+uses the approved, unchanged build from
+`f2965cbfbddb0b839c5eb4db8e1b50d2047fa4a6`. All five public assets were
+downloaded without authentication and verified against the approved sizes and
+SHA-256 values. Measured acceptance, source identity and artifact details are
+recorded in [the release report](PHASE3_WINDOWS_PUBLIC_RELEASE.md).
 
 ## What's changed
 
@@ -70,7 +72,7 @@ the release source used for the new **22-case / 2,294-exact-array** comparison.
 The complete regression retains its original tested-source identity and was
 not restarted for release bookkeeping.
 
-**Manual GUI approval and publication remain pending.** The exact Windows ZIP
+**Manual GUI approval PASSED and the prerelease is published.** The exact Windows ZIP
 SHA-256 is `da12fff50ec062f9c1054c40cf34b0435924d3091dfd99f31e44fe6ea4c1089e`.
 See the [measured release report](PHASE3_WINDOWS_PUBLIC_RELEASE.md) for artifact
 identities, native outcomes, retained limitations and the manual checklist.
